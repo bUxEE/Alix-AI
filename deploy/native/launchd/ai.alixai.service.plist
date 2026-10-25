@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  AlixAI native service for macOS (M5-02, ADR 0012, master plan 16.2): a system LaunchDaemon, installed to
+  /Library/LaunchDaemons/ai.alixai.service.plist, owned root:wheel, mode 0644. Install steps: ../README.md.
+  Written to launchd.plist(5) and checked statically; not run on a macOS host (ADR 0012, "What was not measured").
+
+  Identity: the hidden role account _alixai, which owns nothing but its own data and log directories and shares
+  nothing with LocalAI (a separate account, or its container). launchd has no equivalent of the systemd
+  sandbox or of cgroup limits: the isolation here is the account, the 0077 umask and the loopback-only listener.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>ai.alixai.service</string>
+
+  <!-- The document parser worker, /usr/local/bin/alixai-parser (M5-22, ADR 0014), sits beside this binary and is started by it once per document. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/bin/alixai</string>
+    <string>serve</string>
+    <string>-config</string>
+    <string>/usr/local/etc/alixai/alixai.yaml</string>
+  </array>
+
+  <key>UserName</key>
+  <string>_alixai</string>
+  <key>GroupName</key>
+  <string>_alixai</string>
+
+  <key>WorkingDirectory</key>
+  <string>/usr/local/var/lib/alixai</string>
+  <!-- 0077, as the decimal integer launchd takes -->
+  <key>Umask</key>
+  <integer>63</integer>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <!-- restart after a failure or a crash, not after a clean stop -->
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+  <key>ExitTimeOut</key>
+  <integer>30</integer>
+
+  <key>StandardOutPath</key>
+  <string>/usr/local/var/log/alixai/alixai.log</string>
+  <key>StandardErrorPath</key>
+  <string>/usr/local/var/log/alixai/alixai.log</string>
+
+  <key>SoftResourceLimits</key>
+  <dict>
+    <key>NumberOfFiles</key>
+    <integer>4096</integer>
+  </dict>
+</dict>
+</plist>

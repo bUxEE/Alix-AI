@@ -1,0 +1,6 @@
+{
+  "external": {
+    "enabled": true,
+    "mode": "hybrid"
+  }
+}

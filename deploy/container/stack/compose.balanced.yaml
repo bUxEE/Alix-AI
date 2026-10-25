@@ -1,0 +1,18 @@
+# Balanced profile (master plan 7.2): the same caps as deploy/container/localai/compose.balanced.yaml, on the
+# LocalAI container. Four resident backends: controller, embedder, speech to text, text to speech.
+# Anything measured under this file is labelled emulated, never certified.
+#   docker compose -f compose.yaml -f compose.balanced.yaml up -d
+services:
+  localai:
+    mem_limit: 16g
+    memswap_limit: 16g
+    cpus: 8
+    environment:
+      LOCALAI_THREADS: "8"
+      LOCALAI_MAX_ACTIVE_BACKENDS: ${LOCALAI_MAX_ACTIVE_BACKENDS:-4}
+    labels:
+      ai.alixai.profile: balanced
+      ai.alixai.evidence: emulated
+  alixai:
+    environment:
+      ALIXAI_PROFILE: balanced

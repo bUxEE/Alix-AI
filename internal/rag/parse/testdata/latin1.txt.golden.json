@@ -1,0 +1,28 @@
+{
+  "format": "txt",
+  "parser": "1.2.0+0730409c",
+  "text": "Café menu\n\nCrème brûlée costs € 5 – and “quoted”.\n",
+  "blocks": [
+    {
+      "kind": "paragraph",
+      "start": 0,
+      "end": 10,
+      "text": "Café menu"
+    },
+    {
+      "kind": "paragraph",
+      "start": 12,
+      "end": 61,
+      "text": "Crème brûlée costs € 5 – and “quoted”."
+    }
+  ],
+  "warnings": [
+    "charset_fallback_windows1252"
+  ],
+  "chunks": [
+    {
+      "kind": "paragraph",
+      "text": "Café menu\n\nCrème brûlée costs € 5 – and “quoted”."
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+data: {"type":"RUN_STARTED","threadId":"ses_test_01","runId":"run_help"}
+
+data: {"type":"STATE_DELTA","delta":[{"op":"add","path":"/alixai","value":{"pending":null}}]}
+
+data: {"type":"STEP_STARTED","stepName":"generating"}
+
+id: 0
+data: {"type":"STEP_FINISHED","stepName":"generating"}
+
+data: {"type":"STEP_STARTED","stepName":"verifying"}
+
+id: 1
+data: {"type":"STEP_FINISHED","stepName":"verifying"}
+
+id: 2
+data: {"type":"CUSTOM","name":"alixai.directive","value":{"turn_id":"trn_01J00000000000000000000001","capability_id":null,"act":"offer_help","facts":[],"must_state":[],"missing_fields":[],"invalid_fields":[],"allowed_suggestions":[{"choice_id":"items.create","label":"Create an item","value":{"kind":"identifier","value":"items.create"},"description":"Create a new item with a name, a quantity and a size"},{"choice_id":"items.get","label":"Get an item","value":{"kind":"identifier","value":"items.get"},"description":"Look up one item by its ID and report its name"}],"confirmation":{"mode":"none","bindings":[]},"permitted_next_actions":[],"sources":[]}}
+
+data: {"type":"TEXT_MESSAGE_START","messageId":"msg_trn_01J00000000000000000000001_1","role":"assistant"}
+
+id: 3
+data: {"type":"TEXT_MESSAGE_CONTENT","messageId":"msg_trn_01J00000000000000000000001_1","delta":"Here is what I can do."}
+
+data: {"type":"TEXT_MESSAGE_END","messageId":"msg_trn_01J00000000000000000000001_1"}
+
+data: {"type":"CUSTOM","name":"alixai.suggestions","value":{"suggestions":[{"title":"Create an item","message":"Create an item"},{"title":"Get an item","message":"Get an item"}]}}
+
+id: 4
+data: {"type":"RUN_FINISHED","threadId":"ses_test_01","runId":"run_help","result":{"finishReason":"completed","turnId":"trn_01J00000000000000000000001"},"outcome":{"type":"success"}}
+

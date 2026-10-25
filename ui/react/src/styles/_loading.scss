@@ -1,0 +1,110 @@
+@use "mixins" as *;
+
+// Loading, refetch and failure of the panels, and the shared panel header with its refresh control.
+
+.alix-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--alixai-space-3);
+}
+
+.alix-refresh {
+  @include pressable;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--alixai-radius-md);
+  background: none;
+  color: var(--alixai-text-muted);
+  cursor: pointer;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover:not(:disabled) {
+      background: var(--alixai-surface-sunken);
+      color: var(--alixai-text);
+    }
+  }
+
+  &:disabled {
+    cursor: progress;
+    opacity: 0.55;
+  }
+}
+
+.alix-loadable {
+  position: relative;
+  min-width: 0;
+
+  > .alix-loadable__label {
+    @include visually-hidden;
+  }
+
+  &__overlay {
+    @include enter;
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    border-radius: var(--alixai-radius-md);
+    background: color-mix(in oklch, var(--alixai-surface) 72%, transparent);
+
+    .alix-loadable__label {
+      @include visually-hidden;
+    }
+  }
+
+  &__spinner {
+    display: inline-block;
+    width: 1.125rem;
+    height: 1.125rem;
+    border: 2px solid var(--alixai-border-strong);
+    border-top-color: var(--alixai-accent);
+    border-radius: 50%;
+    animation: alix-spin 700ms linear infinite;
+
+    @include reduced-motion {
+      animation-duration: 1600ms;
+    }
+  }
+}
+
+@keyframes alix-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.alix-skeleton {
+  display: block;
+  height: 0.875rem;
+  border-radius: var(--alixai-radius-sm);
+  background: var(--alixai-surface-sunken);
+  animation: alix-pulse 1400ms var(--alixai-ease-in-out) infinite;
+
+  @include reduced-motion {
+    animation: none;
+  }
+}
+
+.alix-load-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--alixai-space-2) var(--alixai-space-3);
+  padding: var(--alixai-space-3) var(--alixai-space-4);
+  border-radius: var(--alixai-radius-md);
+  background: var(--alixai-danger-soft);
+  color: var(--alixai-danger);
+  font-size: var(--alixai-text-sm);
+
+  &__retry {
+    @include button-base;
+    min-height: 2rem;
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "capability_id": null,
+  "fields": {},
+  "entity_refs": [],
+  "intent": "cancel",
+  "uncertainty": {
+    "overall": 0.7
+  },
+  "trace_id": "trc_01J0000000000000000000000Q"
+}

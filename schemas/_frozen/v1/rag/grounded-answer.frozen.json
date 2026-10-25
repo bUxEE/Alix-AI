@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:rag:grounded-answer:v1",
+  "title": "GroundedAnswer",
+  "description": "A successful RAG answer (master plan 12.4, 12.5, rule 9): the answer as an ordered list of claims, each tied to the citations that support it, and the citations themselves. Provenance is structural: a claim with no citation index is not valid, an answer with no claim is not valid, and an answer with no citation is not valid, so an uncited document answer cannot be written down in this shape. Each citation is the client-facing Citation (urn:alixai:schema:conversation:citation:v1), which exposes exactly what 12.5 lists (source ID, authorised display name, version or hash, locator when known, availability and staleness, a permission-checked open reference, the claims the source supports) and nothing internal: it has no source_egress and no source_classification, and the closed object rejects them. Only the core builds this object, after claim/source verification and the final authorisation and version recheck. The text of a claim is model-written and has been verified against the evidence; the citations and the links between them are the core's. That every citation_indexes entry points at an existing citation, and that each claim text appears among the claims of every citation it names, is checked by the core; JSON Schema cannot express it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["outcome", "claims", "citations", "notices"],
+  "properties": {
+    "outcome": {
+      "description": "Always answered. Discriminates a GroundedAnswer from a NoSupportedEvidence result inside an AnswerResult.",
+      "x-alixai-authority": "alixai",
+      "const": "answered"
+    },
+    "claims": {
+      "description": "The answer, in order, one verified claim per entry. A client renders the claim texts in sequence and uses citation_indexes for footnotes. At least one.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": { "$ref": "#/$defs/claim" }
+    },
+    "citations": {
+      "description": "The original, authorised sources supporting the answer, one Citation each, in the order claims refer to them. At least one: an answer without a source is NoSupportedEvidence.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": { "$ref": "urn:alixai:schema:conversation:citation:v1" }
+    },
+    "notices": {
+      "description": "Labels for a degraded or adjusted retrieval, for example reduced_semantic_recall. Empty means none.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:rag:shared:v1#/$defs/retrievalNotices"
+    }
+  },
+  "$defs": {
+    "claim": {
+      "description": "One statement of the answer and the citations that support it.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "citation_indexes"],
+      "properties": {
+        "text": {
+          "description": "The claim as one short statement, written by the model and kept only because the claim/source check found it supported by the cited evidence.",
+          "x-alixai-authority": "model",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "citation_indexes": {
+          "description": "Zero-based positions in the answer's citations array of the citations that support this claim. At least one: a claim without a citation is not returned.",
+          "x-alixai-authority": "alixai",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 31
+          }
+        }
+      }
+    }
+  }
+}

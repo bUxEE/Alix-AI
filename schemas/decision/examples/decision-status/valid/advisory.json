@@ -1,0 +1,20 @@
+{
+  "mode": "advisory",
+  "provider_id": "localai-decision",
+  "model_id": "clm-v0.1-8b",
+  "model_revision": "rev-3",
+  "accepted_count": 120,
+  "rejected_count": 5,
+  "fallback_counts": [
+    {
+      "reason": "low_confidence",
+      "count": 3
+    },
+    {
+      "reason": "timeout",
+      "count": 2
+    }
+  ],
+  "since": "2026-10-07T08:00:00Z",
+  "generated_at": "2026-10-07T09:30:00Z"
+}

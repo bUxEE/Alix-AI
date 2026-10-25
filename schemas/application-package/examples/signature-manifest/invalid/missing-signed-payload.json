@@ -1,0 +1,12 @@
+{
+  "format": "alixai.signature-manifest/v1",
+  "signatures": [
+    {
+      "key_id": "demo-library-publisher-2026",
+      "algorithm": "ed25519",
+      "signature": "Rz7akOSLT7731uGIGgS5wVvJStp7j4qMKd3FPOA4UlESxXp/dl+RTYrPf4mpf6buPV9QFkv25poRIPnMdATnDg==",
+      "signed_at": "2026-10-02T09:05:00Z",
+      "expires_at": "2027-10-02T09:05:00Z"
+    }
+  ]
+}

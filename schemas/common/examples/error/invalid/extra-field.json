@@ -1,0 +1,6 @@
+{
+  "code": "internal",
+  "message": "unexpected fault",
+  "retryable": false,
+  "stack": "goroutine 1"
+}

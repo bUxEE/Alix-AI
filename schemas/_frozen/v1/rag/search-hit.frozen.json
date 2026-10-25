@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:rag:search-hit:v1",
+  "title": "SearchHit",
+  "description": "One result of a search, as a client sees it (master plan 14.2, 12.5): the source's ID, authorised display name, version or hash, where in the source when known, availability and staleness, a permission-checked open reference, and the matching passage. It is the client-facing counterpart of an EvidenceItem and deliberately a separate, closed shape: it has no source_egress and no source_classification, and a hit that carries one is rejected. A search returns passages, not an answer, so it has no 'answer claims'; those belong to the Citation of a GroundedAnswer. An empty search is a normal empty result, not an answer, so nothing here converts model familiarity into a document claim.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["evidence_id", "rank", "source_id", "display_name", "version", "availability", "staleness", "open_ref", "excerpt"],
+  "properties": {
+    "evidence_id": {
+      "description": "The hit's handle inside this response (e1, e2, ...).",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:rag:shared:v1#/$defs/evidenceId"
+    },
+    "rank": {
+      "description": "Position in the result, from 1.",
+      "x-alixai-authority": "alixai",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9999
+    },
+    "source_id": {
+      "description": "ID of the registered source.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/sourceId"
+    },
+    "display_name": {
+      "description": "The source's name as the requesting principal is authorised to see it.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "version": {
+      "description": "Source version or content hash the passage belongs to.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/opaqueVersion"
+    },
+    "locator": {
+      "description": "Where in the source the passage sits, when known: a page, a section, a record or a character span.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:conversation:citation:v1#/$defs/locator"
+    },
+    "availability": {
+      "description": "Whether the source can be opened by this principal: available, unavailable or removed.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:conversation:citation:v1#/properties/availability"
+    },
+    "staleness": {
+      "description": "Whether the version is the latest: current, stale or unknown.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:conversation:citation:v1#/properties/staleness"
+    },
+    "open_ref": {
+      "description": "Permission-checked, opaque way to open or preview the source; never a URL or a path.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:conversation:citation:v1#/$defs/openRef"
+    },
+    "excerpt": {
+      "description": "The matching passage, verbatim from the source and bounded in length. Relayed by the core, never rewritten; untrusted data that a client shows as text and never interprets.",
+      "x-alixai-authority": "host",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8192
+    }
+  }
+}

@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:settings:effective-settings:v1",
+  "title": "Effective settings",
+  "description": "What the deployment, tenant and user settings add up to for the caller (master plan 14.2), computed by the core with fixed rules and never by a model. Preferences take the most specific level that states them. Policy narrows from the top: voice, attachments and history export are on only when the deployment level allowed them and no level below switched them off; retention and attachment size are the smallest value any level states, capped by the operator's ceiling; switched-off capabilities add up across levels; extra confirmation takes the lowest threshold. The effective view is read only and is never an input to the policy gateway: what a model may use is decided from the package, the token and the host policy alone. decided_by names, for the fields that more than one level can state, which level decided the value.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["levels", "model_profile", "voice", "history", "privacy", "attachments", "sources", "notifications", "streaming", "accessibility", "capabilities", "confirmation", "decided_by"],
+  "properties": {
+    "levels": {
+      "description": "The revision of the document each level contributed; 0 means that level has no document.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["deployment", "tenant", "user"],
+      "properties": {
+        "deployment": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+        "tenant": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+        "user": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }
+      }
+    },
+    "language": {
+      "description": "The effective language, when any level states one.",
+      "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/languageTag"
+    },
+    "model_profile": {
+      "description": "The effective approved model and resource profile.",
+      "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/profileId"
+    },
+    "voice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowed", "enabled", "speech_rate_pct", "auto_play", "barge_in"],
+      "properties": {
+        "allowed": { "description": "The deployment and tenant policy allow voice.", "type": "boolean" },
+        "enabled": { "description": "Voice is allowed and the user asked for it.", "type": "boolean" },
+        "voice_id": { "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/voiceId" },
+        "speech_rate_pct": { "type": "integer", "minimum": 50, "maximum": 200 },
+        "auto_play": { "type": "boolean" },
+        "barge_in": { "type": "boolean" }
+      }
+    },
+    "history": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["retention_days", "auto_cleanup", "export_allowed"],
+      "properties": {
+        "retention_days": { "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/retentionDays" },
+        "auto_cleanup": { "type": "boolean" },
+        "export_allowed": { "type": "boolean" }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["store_transcript"],
+      "properties": {
+        "store_transcript": { "description": "The transcript may be kept and the user did not ask otherwise.", "type": "boolean" }
+      }
+    },
+    "attachments": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowed", "enabled", "max_file_mb"],
+      "properties": {
+        "allowed": { "description": "The deployment and tenant policy allow attachments.", "type": "boolean" },
+        "enabled": { "description": "Attachments are allowed and the user accepts uploads.", "type": "boolean" },
+        "max_file_mb": { "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/fileMegabytes" }
+      }
+    },
+    "sources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["include_attachments", "citation_display"],
+      "properties": {
+        "include_attachments": { "type": "boolean" },
+        "citation_display": { "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/citationDisplay" }
+      }
+    },
+    "notifications": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowed", "enabled", "events"],
+      "properties": {
+        "allowed": { "type": "boolean" },
+        "enabled": { "description": "Notifications are allowed and the user wants them.", "type": "boolean" },
+        "events": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": { "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/notificationEvent" }
+        }
+      }
+    },
+    "streaming": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "unit"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "unit": { "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/streamUnit" }
+      }
+    },
+    "accessibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reduced_motion", "high_contrast", "text_scale_pct", "screen_reader", "captions"],
+      "properties": {
+        "reduced_motion": { "type": "boolean" },
+        "high_contrast": { "type": "boolean" },
+        "text_scale_pct": { "type": "integer", "minimum": 100, "maximum": 300 },
+        "screen_reader": { "type": "boolean" },
+        "captions": { "type": "boolean" }
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["disabled"],
+      "properties": {
+        "disabled": {
+          "description": "Capabilities switched off at any level, sorted.",
+          "type": "array",
+          "maxItems": 192,
+          "uniqueItems": true,
+          "items": { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/capabilityId" }
+        }
+      }
+    },
+    "confirmation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "extra_from_risk_level": {
+          "description": "Present when any level asked for extra confirmation: the lowest risk level that was asked for. The platform floor applies whether or not this is present.",
+          "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/riskLevel"
+        }
+      }
+    },
+    "decided_by": {
+      "description": "For language, model_profile, voice.enabled, history.retention_days, history.export_allowed, privacy.store_transcript, attachments.enabled, attachments.max_file_mb, notifications.enabled and confirmation.extra_from_risk_level: the level that decided the value.",
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z][a-z_]{0,31}(\\.[a-z][a-z_]{0,31})?$" },
+      "additionalProperties": { "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/decidedBy" }
+    }
+  }
+}

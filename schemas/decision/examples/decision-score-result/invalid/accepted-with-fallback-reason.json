@@ -1,0 +1,25 @@
+{
+  "disposition": "accepted",
+  "provider_id": "localai-decision",
+  "model_id": "clm-v0.1-8b",
+  "model_revision": "rev-3",
+  "contract_version": "2026-10-01.3",
+  "decision_type": "capability_routing",
+  "schema_version": 1,
+  "tenant_id": "tenant-acme",
+  "application_id": "app-booking",
+  "selections": [
+    {
+      "candidate_id": "book_appointment",
+      "score": 0.91,
+      "calibrated_confidence": 0.87
+    }
+  ],
+  "ood_status": "in_distribution",
+  "latency_ms": 42,
+  "cache_status": "miss",
+  "trace_id": "trace-7f3a",
+  "audit_ref": "aud_01J0000000000000000000000A",
+  "issued_at": "2026-10-07T09:30:01Z",
+  "fallback_reason": "timeout"
+}

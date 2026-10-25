@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "report_id": "rdr_01J0000000000000000000000A",
+  "advisory": true,
+  "generated_at": "2026-10-12T09:00:00Z",
+  "scanned_root": "/home/operator/projects/clinic-booking",
+  "inputs_sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  "catalog_version": 1,
+  "catalog_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "mode": "deterministic_only",
+  "scan": {
+    "files_scanned": 212,
+    "files_skipped": 4031,
+    "bytes_scanned": 1804332,
+    "secret_files_recorded": 2,
+    "values_redacted": 5,
+    "truncated": true
+  },
+  "checklist": [
+    {
+      "requirement_id": "req.data.read",
+      "category": "deterministic_data",
+      "check_id": "application.deterministic_results",
+      "level": "mandatory",
+      "status": "found",
+      "finding_ids": [
+        "fnd_0123456789abcdef"
+      ]
+    }
+  ],
+  "summary": {
+    "found": 1,
+    "partial": 0,
+    "missing": 0,
+    "unverified": 0,
+    "contradicted": 0
+  },
+  "findings": [
+    {
+      "schema_version": 1,
+      "finding_id": "fnd_0123456789abcdef",
+      "requirement_id": "req.data.read",
+      "category": "deterministic_data",
+      "status": "found",
+      "source": "deterministic",
+      "check_id": "application.deterministic_results",
+      "evidence": [
+        {
+          "path": "src/api/reads.ts",
+          "line_start": 12,
+          "line_end": 48,
+          "file_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "summary": "Three read operations return schema-typed responses.",
+      "remediation": {
+        "en": "Add a typed response schema to each read operation.",
+        "it": "Aggiungere uno schema di risposta tipizzato a ogni operazione di lettura."
+      }
+    }
+  ],
+  "previous_report_id": "rdr_01J0000000000000000000000B",
+  "model_leg": {
+    "status": "not_configured",
+    "calls": 0,
+    "proposals_received": 0,
+    "dropped_proposals": 0,
+    "attempted_overrides": 0
+  }
+}

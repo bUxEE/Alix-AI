@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:settings:shared:v1",
+  "title": "Settings building blocks",
+  "description": "Definitions shared by the settings schemas (master plan section 14.2, Settings and client preferences), referenced as urn:alixai:schema:settings:shared:v1#/$defs/<name>. This file is a definitions library: it constrains nothing on its own. It depends on nothing outside schemas/common. Every object in the settings schemas is closed (additionalProperties false) and no member can hold a secret, a URL, a path, a free-form tool or server definition, a scope, a role, a confirmation switch, a budget or a provider: a setting can only select among things the operator approved, switch something off for itself, or ask for MORE confirmation. Anything else is a member that does not exist, and a document that names one is refused whole.",
+  "$defs": {
+    "languageTag": {
+      "title": "Language tag",
+      "description": "A BCP 47 tag in canonical case: a lower-case 2 or 3 letter language, an optional Title-case 4 letter script and an optional upper-case 2 letter or 3 digit region (en, it, pt-BR, zh-Hant-TW). The service also checks it against the languages the application's active package supports.",
+      "type": "string",
+      "pattern": "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|[0-9]{3}))?$"
+    },
+    "profileId": {
+      "title": "Model profile ID",
+      "description": "The id of an approved model and resource profile (lite, balanced, experimental-4g, ...): lower case letters, digits and hyphens, 1 to 32 characters, never a URL, a path, a provider id with an underscore or a minted pprf_ id. The operator decides which profiles are approved (the settings.approved_profiles configuration); a profile that is not approved is refused whatever its spelling.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,31}$"
+    },
+    "voiceId": {
+      "title": "Voice ID",
+      "description": "The id of an installed voice (lower case letters, digits, underscore and hyphen, 1 to 64 characters). It names a voice; it never holds a path, a URL or a key.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+    },
+    "riskLevel": {
+      "title": "Risk level",
+      "description": "The risk scale of master plan 11.4: 0 read, 1 reversible, 2 consequential, 3 privileged.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "retentionDays": {
+      "title": "History retention in days",
+      "description": "How many days conversation history is kept: 1 to 3650. The operator's settings.max_history_retention_days is a ceiling; a longer value is refused and, whatever is stored, the effective retention never exceeds the shortest value any level states.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3650
+    },
+    "fileMegabytes": {
+      "title": "Attachment size limit in megabytes",
+      "description": "The largest single attachment in whole megabytes: 1 to 1024. The operator's settings.max_attachment_mb is a ceiling.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1024
+    },
+    "capabilitySwitches": {
+      "title": "Capability switches",
+      "description": "The capabilities this level switches OFF. There is no list that switches one on: what the model may use is decided by the policy gateway from the package, the token and the host policy, and a setting can only narrow it. Every id must be one the caller is itself allowed to use (an undeclared, admin-only or out-of-scope id is refused, the same answer for all three so the inventory cannot be probed). Levels add up: a capability that any level switches off is off.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "disabled": {
+          "description": "Capability IDs switched off, at most 64, no duplicates.",
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/capabilityId" }
+        }
+      }
+    },
+    "confirmationRaise": {
+      "title": "Extra confirmation",
+      "description": "Ask for an explicit confirmation from this risk level up, in ADDITION to what the platform already requires. The platform floor (level 2 needs an explicit confirmation, level 3 the host application's own step-up) is not a setting and cannot be lowered, switched off or bypassed; this member can only add. Levels combine by taking the LOWEST threshold, so a user can never relax what a tenant or the deployment asked for.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "extra_from_risk_level": { "$ref": "#/$defs/riskLevel" }
+      }
+    },
+    "policyVoice": {
+      "title": "Voice policy",
+      "description": "Whether voice may be used under this level. Voice is off until the deployment level allows it; a lower level can only keep that or switch it off.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allowed": { "description": "True permits voice for everyone below this level.", "type": "boolean" }
+      }
+    },
+    "policyHistory": {
+      "title": "History policy",
+      "description": "Retention and export of conversation history. Retention is a ceiling for the levels below (the shortest wins); export is off until the deployment level allows it and any level below can switch it off.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "retention_days": { "$ref": "#/$defs/retentionDays" },
+        "export_allowed": { "description": "True permits exporting one's own history, under the host's authorisation.", "type": "boolean" }
+      }
+    },
+    "policyPrivacy": {
+      "title": "Privacy policy",
+      "description": "Whether the transcript of a conversation may be stored at all. On unless a level switches it off.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "transcript_allowed": { "description": "False stops the transcript being kept; the structured session state the core needs to continue a turn is unaffected.", "type": "boolean" }
+      }
+    },
+    "policyAttachments": {
+      "title": "Attachment policy",
+      "description": "Whether attachments may be uploaded and how large one may be. Off until the deployment level allows it; the size is a ceiling (the smallest wins).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allowed": { "description": "True permits attachments for everyone below this level.", "type": "boolean" },
+        "max_file_mb": { "$ref": "#/$defs/fileMegabytes" }
+      }
+    },
+    "policyNotifications": {
+      "title": "Notification policy",
+      "description": "Whether notifications may be raised. On unless a level switches it off.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allowed": { "description": "False switches notifications off for everyone below this level.", "type": "boolean" }
+      }
+    },
+    "notificationEvent": {
+      "title": "Notification event",
+      "description": "An event a client may be notified about.",
+      "type": "string",
+      "enum": ["action_ready", "job_finished", "source_indexed"]
+    },
+    "citationDisplay": {
+      "title": "Citation display",
+      "description": "How a client shows the sources of an answer. Citations themselves are never optional (master plan 3 rule 9); this is only how they are laid out.",
+      "type": "string",
+      "enum": ["inline", "footnote", "panel"]
+    },
+    "streamUnit": {
+      "title": "Streaming unit",
+      "description": "How much text a streamed answer delivers at a time.",
+      "type": "string",
+      "enum": ["token", "sentence"]
+    },
+    "decidedBy": {
+      "title": "Which level decided a value",
+      "description": "default (nothing stated it), deployment, tenant, user, or operator (a ceiling from the operator's configuration capped it).",
+      "type": "string",
+      "enum": ["default", "deployment", "tenant", "user", "operator"]
+    }
+  }
+}

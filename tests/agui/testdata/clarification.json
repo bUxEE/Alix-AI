@@ -1,0 +1,192 @@
+{
+  "name": "clarification",
+  "description": "A request with a missing number: the core asks for it as plain text and the run ends successfully, awaiting the answer. The pending question is in the shared state.",
+  "protocol": "AG-UI 1.0 (@ag-ui/core 1.0.1)",
+  "source": "engine",
+  "request": {
+    "method": "POST",
+    "path": "/v1/agui",
+    "body": {
+      "context": [],
+      "forwardedProps": {},
+      "messages": [
+        {
+          "content": "create an item named widget, small",
+          "id": "m1",
+          "role": "user"
+        }
+      ],
+      "runId": "run_clarify",
+      "state": {},
+      "threadId": "ses_test_01",
+      "tools": []
+    }
+  },
+  "response": {
+    "status": 200,
+    "content_type": "text/event-stream",
+    "sse_file": "clarification.sse",
+    "ids": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "event_types": [
+      "RUN_STARTED",
+      "STATE_DELTA",
+      "STEP_STARTED",
+      "STEP_FINISHED",
+      "STEP_STARTED",
+      "STEP_FINISHED",
+      "STEP_STARTED",
+      "STEP_FINISHED",
+      "STEP_STARTED",
+      "STEP_FINISHED",
+      "CUSTOM",
+      "TEXT_MESSAGE_START",
+      "TEXT_MESSAGE_CONTENT",
+      "TEXT_MESSAGE_END",
+      "STATE_DELTA",
+      "RUN_FINISHED"
+    ],
+    "events": [
+      {
+        "type": "RUN_STARTED",
+        "threadId": "ses_test_01",
+        "runId": "run_clarify"
+      },
+      {
+        "type": "STATE_DELTA",
+        "delta": [
+          {
+            "op": "add",
+            "path": "/alixai",
+            "value": {
+              "pending": null
+            }
+          }
+        ]
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "interpreting"
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "interpreting"
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "validating"
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "validating"
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "generating"
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "generating"
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "verifying"
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "verifying"
+      },
+      {
+        "type": "CUSTOM",
+        "name": "alixai.directive",
+        "value": {
+          "turn_id": "trn_01J00000000000000000000001",
+          "capability_id": "items.create",
+          "act": "ask_missing",
+          "facts": [],
+          "must_state": [],
+          "missing_fields": [
+            "quantity"
+          ],
+          "invalid_fields": [],
+          "next_question": {
+            "field": "quantity",
+            "answer_kind": "text"
+          },
+          "allowed_suggestions": [],
+          "confirmation": {
+            "mode": "none",
+            "bindings": []
+          },
+          "permitted_next_actions": [],
+          "sources": []
+        }
+      },
+      {
+        "type": "TEXT_MESSAGE_START",
+        "messageId": "msg_trn_01J00000000000000000000001_1",
+        "role": "assistant"
+      },
+      {
+        "type": "TEXT_MESSAGE_CONTENT",
+        "messageId": "msg_trn_01J00000000000000000000001_1",
+        "delta": "How many?"
+      },
+      {
+        "type": "TEXT_MESSAGE_END",
+        "messageId": "msg_trn_01J00000000000000000000001_1"
+      },
+      {
+        "type": "STATE_DELTA",
+        "delta": [
+          {
+            "op": "replace",
+            "path": "/alixai/pending",
+            "value": {
+              "capabilityId": "items.create",
+              "collectedFields": [
+                {
+                  "name": "name",
+                  "origin": "user_turn"
+                },
+                {
+                  "name": "size",
+                  "origin": "user_turn"
+                }
+              ],
+              "expiresAt": "2026-10-02T12:30:00Z",
+              "kind": "clarification",
+              "missingFields": [
+                "quantity"
+              ],
+              "phase": "",
+              "question": {
+                "answerKind": "text",
+                "field": "quantity"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "RUN_FINISHED",
+        "threadId": "ses_test_01",
+        "runId": "run_clarify",
+        "result": {
+          "finishReason": "awaiting_input",
+          "turnId": "trn_01J00000000000000000000001"
+        },
+        "outcome": {
+          "type": "success"
+        }
+      }
+    ]
+  }
+}

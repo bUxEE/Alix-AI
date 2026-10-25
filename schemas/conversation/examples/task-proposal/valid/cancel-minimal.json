@@ -1,0 +1,10 @@
+{
+  "capability_id": "tasks.cancel",
+  "fields": {},
+  "entity_refs": [],
+  "intent": "cancel",
+  "uncertainty": {
+    "overall": 0.4
+  },
+  "trace_id": "trc_01J0000000000000000000000B"
+}

@@ -1,0 +1,63 @@
+{
+  "type": "confirmation_panel",
+  "preparation_id": "prep_01J0000000000000000000000A",
+  "summary": "Book Dr. Rossi for Anna Verdi on 14 October 2026 at 10:30.",
+  "effects": [
+    {
+      "operation": "create",
+      "entity_type": "appointment",
+      "description": "Create an appointment with Dr. Rossi on 14 October 2026 at 10:30.",
+      "changes": [
+        {
+          "field": "slot_date",
+          "value": {
+            "kind": "date",
+            "value": "2026-10-14"
+          },
+          "display": "Tuesday 14 October 2026"
+        },
+        {
+          "field": "slot_start",
+          "value": {
+            "kind": "time",
+            "value": "10:30"
+          }
+        },
+        {
+          "field": "patient_id",
+          "value": {
+            "kind": "identifier",
+            "value": "pat_881"
+          }
+        }
+      ],
+      "external": false
+    },
+    {
+      "operation": "send",
+      "entity_type": "notification",
+      "description": "Email a booking confirmation to anna.verdi@example.test.",
+      "changes": [
+        {
+          "field": "recipient",
+          "value": {
+            "kind": "text",
+            "value": "anna.verdi@example.test"
+          }
+        }
+      ],
+      "external": true
+    }
+  ],
+  "risk_level": 3,
+  "expires_at": "2026-10-09T08:10:05Z",
+  "confirmation": {
+    "mode": "step_up",
+    "bindings": [
+      "preparation_id",
+      "principal",
+      "session",
+      "data_versions"
+    ]
+  }
+}

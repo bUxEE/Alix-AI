@@ -1,0 +1,28 @@
+{
+  "terms": [
+    {
+      "id": "title",
+      "entity_type": "title",
+      "labels": {}
+    },
+    {
+      "id": "reservation",
+      "labels": {
+        "en": {
+          "preferred": "reservation",
+          "synonyms": [
+            "hold"
+          ],
+          "definition": "A copy of a title set aside for a member until a pickup date."
+        },
+        "it": {
+          "preferred": "prenotazione",
+          "synonyms": [
+            "riserva"
+          ],
+          "definition": "Una copia di un titolo messa da parte per un socio fino a una data di ritiro."
+        }
+      }
+    }
+  ]
+}

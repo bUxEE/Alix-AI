@@ -1,0 +1,17 @@
+{
+  "name": "alixai-workspace",
+  "version": "0.0.0",
+  "private": true,
+  "description": "AlixAI workspace root (private). The Go core lives beside it; this file only drives the TypeScript packages.",
+  "license": "Apache-2.0",
+  "packageManager": "pnpm@12.3.4",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "typecheck": "pnpm --filter @alixai/sdk run typecheck",
+    "test": "pnpm --filter @alixai/sdk run test",
+    "build": "pnpm --filter @alixai/sdk run build",
+    "schemas:check": "go run ./tools/schemagen --check"
+  }
+}

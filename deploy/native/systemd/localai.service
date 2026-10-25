@@ -1,0 +1,84 @@
+# LocalAI for the native AlixAI install (M5-21, ADR 0012, master plan 16.1 and 16.2). Needs systemd 247 or later.
+# Written to systemd.exec(5) and checked statically; not run on a Linux host (ADR 0012, "What was not measured").
+#
+# Why a separate unit. alixai.service has an empty capability set, NoNewPrivileges and DynamicUser, so the AlixAI
+# service cannot start LocalAI under another identity and must not try (SEC-080). LocalAI therefore runs here, under
+# an identity of its own (a transient uid shared with nothing), and `alixai serve` ATTACHES to it: it health-checks
+# the runtime through the LocalAI adapter, backs off while it is unhealthy and settles the in-flight actions when
+# it dies (supervisor.runtime: unit in alixai.yaml). systemd keeps this unit alive: Restart=on-failure below.
+#
+# What runs. `alixai supervisor exec` is the command of THIS unit only (never of alixai.service). It spawns the
+# absolute LocalAI binary of localai.yaml with no shell and an explicit environment, keeps it alive with backoff and
+# exits non-zero when it gives up, so the Restart= below starts it again with a fresh budget. It refuses to run as
+# root.
+#
+# Network. LocalAI listens on 127.0.0.1:8080 and calls nothing: the cgroup IP filter allows loopback only (master
+# plan 16.1: outbound access is denied by default). Models, the backend catalogue and the backends are provisioned
+# by the operator before the first start (README.md); nothing is downloaded by this unit.
+[Unit]
+Description=LocalAI runtime for AlixAI (supervised)
+After=network.target
+ConditionPathExists=/etc/alixai/localai.yaml
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+# `alixai supervisor exec` does not speak sd_notify; alixai.service waits for LocalAI to answer, not for this unit.
+Type=exec
+ExecStart=/usr/local/bin/alixai supervisor exec -config /etc/alixai/localai.yaml
+Restart=on-failure
+RestartSec=5s
+# Room for the supervisor: SIGTERM to LocalAI, its stop grace (10 s by default), then a kill and the wait for the process group to go.
+TimeoutStopSec=60s
+SyslogIdentifier=alixai-localai
+
+# --- identity and directories (not alixai.service's) ---
+DynamicUser=yes
+StateDirectory=alixai-localai
+StateDirectoryMode=0700
+UMask=0077
+# Root-owned file /etc/alixai/localai-api-key (mode 0600), the same key alixai.service reads; this unit sees it at
+# /run/credentials/localai.service/localai-api-key, which is what localai.yaml's api_key_ref names.
+LoadCredential=localai-api-key:/etc/alixai/localai-api-key
+
+# --- privileges ---
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictSUIDSGID=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+SystemCallArchitectures=native
+# MemoryDenyWriteExecute is left off on purpose: LocalAI's backends are separate native programs that may map
+# writable and executable memory. The sandbox below and the deny list are the compensation.
+SystemCallFilter=~@mount @swap @reboot @raw-io @module @debug @obsolete @cpu-emulation @clock
+
+# --- filesystem and kernel surface ---
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+
+# --- network: loopback only ---
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+IPAddressDeny=any
+IPAddressAllow=localhost
+
+# --- resources: the lite profile of the container stack (compose.lite.yaml: 8 GiB, 4 CPU, no swap; master plan 7.4) ---
+# Raise or lower MemoryMax= and CPUQuota= per profile in a drop-in (systemctl edit localai), never in this file.
+MemoryMax=8G
+MemorySwapMax=0
+CPUQuota=400%
+TasksMax=1024
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

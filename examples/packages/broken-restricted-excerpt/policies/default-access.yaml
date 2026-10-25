@@ -1,0 +1,18 @@
+policy_id: default-access
+description: Members search and reserve; visitors only search. The notes field of a reservation is not shown to the model.
+role_grants:
+- role: member
+  capabilities:
+  - catalog.find_title
+  - reservations.create
+- role: visitor
+  capabilities:
+  - catalog.find_title
+risk_overrides: []
+field_projection:
+- capability_id: reservations.create
+  roles:
+  - member
+  model_visible_fields:
+  - title
+  - pickup_date

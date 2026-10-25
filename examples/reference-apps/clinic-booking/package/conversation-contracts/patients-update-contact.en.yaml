@@ -1,0 +1,60 @@
+capability_id: patients.update_contact
+language: en
+contract_version: 1.0.0
+terminology:
+  - patient
+  - clinic_site
+  - phone_number
+  - email_address
+  - contact_details
+field_prompts:
+  - field: patient
+    label: Patient
+    prompt: "Whose contact details should I change? Tell me the patient's name, or say it is you."
+    examples:
+      - Maria Rossi
+  - field: phone
+    label: Phone number
+    prompt: "What is the new phone number? You can skip this if only the email changes."
+    examples:
+      - "+1 555 0123"
+  - field: email
+    label: Email address
+    prompt: "What is the new email address? You can skip this if only the phone number changes."
+    examples:
+      - maria.new@example.test
+clarifications:
+  - rule_id: patient_multiple
+    prompt: "More than one patient matches {input.patient}. Which one do you mean?"
+corrections:
+  acknowledgement: "Okay, I have changed that."
+  correctable_fields:
+    - patient
+    - phone
+    - email
+  prepared_action_invalidated: "That changes the update, so the earlier summary no longer applies. I will prepare the update again with the new details."
+cancellations:
+  acknowledgement: "Okay, I stopped. Nothing was updated."
+success:
+  - outcome: contact_updated
+    text: "Done. The contact details on file for {patient_name} were updated: {contact_fields_updated}."
+failures:
+  - code: permission_denied
+    text: "You are not allowed to change contact details, so nothing was updated."
+  - code: scope_violation
+    text: "I cannot change that record: it is not available to you. Nothing was updated."
+  - code: validation_failed
+    text: "I could not update that: give a new phone number, a new email address or both, and check their format. Nothing was updated."
+  - code: missing_fields
+    text: "I still need to know whose contact details to change. Nothing was updated."
+  - code: stale
+    text: "The patient record changed after I prepared this update, so I did not apply it. Nothing was updated; I can prepare it again."
+  - code: expired
+    text: "The update was not applied in time, or it was withdrawn, so nothing was updated."
+  - code: uncertain_outcome
+    text: "I could not confirm whether the contact details were updated. I will check before doing anything else, so please do not ask for it again yet."
+  - code: unavailable
+    text: "The appointment system is not reachable right now, so nothing was updated."
+next_actions:
+  - id: book_for_updated_patient
+    label: "Book an appointment for this patient"

@@ -1,0 +1,58 @@
+capability_id: appointments.cancel
+language: en
+contract_version: 1.0.0
+terminology:
+  - appointment
+  - appointment_reference
+  - patient
+  - doctor
+field_prompts:
+  - field: appointment
+    label: Appointment
+    prompt: "Which appointment should I cancel? Give me its reference, or the patient's name and the date."
+    examples:
+      - APT-7K3Q9X
+      - Maria Rossi 2026-10-14
+  - field: reason
+    label: Reason
+    prompt: "Why is it being cancelled? The patient asked, the doctor is unavailable, a scheduling error, or something else. You can skip this."
+clarifications:
+  - rule_id: appointment_multiple
+    prompt: "More than one appointment matches {input.appointment}. Which one do you mean?"
+corrections:
+  acknowledgement: "Okay, I have changed that."
+  correctable_fields:
+    - appointment
+    - reason
+  prepared_action_invalidated: "That changes which appointment is cancelled, so the earlier summary no longer applies. I will prepare the cancellation again and ask you to confirm."
+cancellations:
+  acknowledgement: "Okay, I stopped. Nothing was cancelled."
+confirmations:
+  request: "Please confirm this cancellation: appointment {appointment_reference} for {patient_name} with {doctor_name} on {appointment_starts_at}. The time will be free again and the patient will be told. Shall I cancel it?"
+  declined: "Okay, I did not cancel anything."
+  expired: "That cancellation is no longer valid, so nothing was cancelled. I can prepare it again if you like."
+success:
+  - outcome: cancelled
+    text: "Done. Appointment {appointment_reference} for {patient_name} on {appointment_starts_at} is cancelled and its time is free again."
+failures:
+  - code: permission_denied
+    text: "You are not allowed to cancel appointments, so nothing was cancelled."
+  - code: scope_violation
+    text: "I cannot cancel that: the appointment is not available to you. Nothing was cancelled."
+  - code: validation_failed
+    text: "I could not cancel that: an appointment that has started or passed cannot be cancelled. Nothing was cancelled."
+  - code: conflict
+    text: "That appointment is already cancelled. Nothing was changed."
+  - code: stale
+    text: "The appointment changed after I prepared this cancellation, so I did not cancel it. Nothing was cancelled; I can prepare it again."
+  - code: expired
+    text: "The cancellation was not confirmed in time, or it was withdrawn, so nothing was cancelled."
+  - code: missing_fields
+    text: "I still need to know which appointment to cancel. Nothing was cancelled."
+  - code: uncertain_outcome
+    text: "I could not confirm whether the appointment was cancelled. I will check before doing anything else, so please do not ask for it again yet."
+  - code: unavailable
+    text: "The appointment system is not reachable right now, so nothing was cancelled."
+next_actions:
+  - id: book_new_appointment
+    label: "Book a new appointment"

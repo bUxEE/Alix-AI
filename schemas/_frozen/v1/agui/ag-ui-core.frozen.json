@@ -1,0 +1,2536 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ag-ui:core:1.0.1",
+  "title": "AG-UI core schemas, @ag-ui/core 1.0.1, protocol 1.0",
+  "description": "Vendored by tools/aguischema/generate.mjs from the pinned @ag-ui/core release (see VERSION). Generated: do not edit. Every AG-UI schema is a member of $defs. Members declared as any-typed are open (additionalProperties {}), as the release defines them; the zod refinements that reject null or undefined on any-typed members are not expressible in JSON Schema and are asserted by the Go tests of internal/agui.",
+  "$defs": {
+    "ActivityDeltaEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "activityType": {
+          "type": "string"
+        },
+        "messageId": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "patch": {
+          "$ref": "#/$defs/JsonPatch"
+        },
+        "rawEvent": {},
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "type": {
+          "const": "ACTIVITY_DELTA",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "messageId",
+        "activityType",
+        "patch"
+      ],
+      "type": "object"
+    },
+    "ActivityMessage": {
+      "additionalProperties": {},
+      "properties": {
+        "activityType": {
+          "type": "string"
+        },
+        "content": {},
+        "id": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "role": {
+          "const": "activity",
+          "type": "string"
+        },
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        }
+      },
+      "required": [
+        "id",
+        "role",
+        "activityType",
+        "content"
+      ],
+      "type": "object"
+    },
+    "ActivitySnapshotEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "activityType": {
+          "type": "string"
+        },
+        "content": {},
+        "messageId": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "rawEvent": {},
+        "replace": {
+          "type": "boolean"
+        },
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "type": {
+          "const": "ACTIVITY_SNAPSHOT",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "messageId",
+        "activityType",
+        "content"
+      ],
+      "type": "object"
+    },
+    "AddOperation": {
+      "additionalProperties": {},
+      "properties": {
+        "op": {
+          "const": "add",
+          "type": "string"
+        },
+        "path": {
+          "$ref": "#/$defs/JsonPointer"
+        },
+        "value": {}
+      },
+      "required": [
+        "op",
+        "path",
+        "value"
+      ],
+      "specOpen": true,
+      "type": "object"
+    },
+    "AgentCapabilities": {
+      "additionalProperties": {},
+      "properties": {
+        "custom": {},
+        "execution": {
+          "$ref": "#/$defs/ExecutionCapabilities"
+        },
+        "humanInTheLoop": {
+          "$ref": "#/$defs/HumanInTheLoopCapabilities"
+        },
+        "identity": {
+          "$ref": "#/$defs/IdentityCapabilities"
+        },
+        "multiAgent": {
+          "$ref": "#/$defs/MultiAgentCapabilities"
+        },
+        "multimodal": {
+          "$ref": "#/$defs/MultimodalCapabilities"
+        },
+        "output": {
+          "$ref": "#/$defs/OutputCapabilities"
+        },
+        "reasoning": {
+          "$ref": "#/$defs/ReasoningCapabilities"
+        },
+        "state": {
+          "$ref": "#/$defs/StateCapabilities"
+        },
+        "tools": {
+          "$ref": "#/$defs/ToolsCapabilities"
+        },
+        "transport": {
+          "$ref": "#/$defs/TransportCapabilities"
+        }
+      },
+      "type": "object"
+    },
+    "AssistantMessage": {
+      "additionalProperties": {},
+      "properties": {
+        "content": {
+          "type": "string"
+        },
+        "encryptedValue": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "role": {
+          "const": "assistant",
+          "type": "string"
+        },
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "toolCalls": {
+          "items": {
+            "$ref": "#/$defs/ToolCall"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "role"
+      ],
+      "type": "object"
+    },
+    "Attributable": {
+      "additionalProperties": {},
+      "properties": {
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        }
+      },
+      "type": "object"
+    },
+    "AudioInputContent": {
+      "additionalProperties": {},
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "metadata": {},
+        "source": {
+          "$ref": "#/$defs/InputContentSource"
+        },
+        "type": {
+          "const": "audio",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "source"
+      ],
+      "type": "object"
+    },
+    "BaseEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "rawEvent": {},
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "type": {
+          "$ref": "#/$defs/EventType"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "type": "object"
+    },
+    "BaseMessage": {
+      "additionalProperties": {},
+      "properties": {
+        "encryptedValue": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        },
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        }
+      },
+      "required": [
+        "id",
+        "role"
+      ],
+      "type": "object"
+    },
+    "ContentPart": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/TextInputContent"
+        },
+        {
+          "$ref": "#/$defs/ImageInputContent"
+        },
+        {
+          "$ref": "#/$defs/AudioInputContent"
+        },
+        {
+          "$ref": "#/$defs/VideoInputContent"
+        },
+        {
+          "$ref": "#/$defs/DocumentInputContent"
+        }
+      ]
+    },
+    "Context": {
+      "additionalProperties": {},
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "description",
+        "value"
+      ],
+      "type": "object"
+    },
+    "CopyOperation": {
+      "additionalProperties": {},
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/JsonPointer"
+        },
+        "op": {
+          "const": "copy",
+          "type": "string"
+        },
+        "path": {
+          "$ref": "#/$defs/JsonPointer"
+        }
+      },
+      "required": [
+        "op",
+        "from",
+        "path"
+      ],
+      "specOpen": true,
+      "type": "object"
+    },
+    "CustomEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "rawEvent": {},
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "type": {
+          "const": "CUSTOM",
+          "type": "string"
+        },
+        "value": {}
+      },
+      "required": [
+        "type",
+        "name",
+        "value"
+      ],
+      "type": "object"
+    },
+    "DataSource": {
+      "additionalProperties": {},
+      "properties": {
+        "mimeType": {
+          "type": "string"
+        },
+        "type": {
+          "const": "data",
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "value",
+        "mimeType"
+      ],
+      "type": "object"
+    },
+    "DeveloperMessage": {
+      "additionalProperties": {},
+      "properties": {
+        "content": {
+          "type": "string"
+        },
+        "encryptedValue": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "role": {
+          "const": "developer",
+          "type": "string"
+        },
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        }
+      },
+      "required": [
+        "id",
+        "role",
+        "content"
+      ],
+      "type": "object"
+    },
+    "DocumentInputContent": {
+      "additionalProperties": {},
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "metadata": {},
+        "source": {
+          "$ref": "#/$defs/InputContentSource"
+        },
+        "type": {
+          "const": "document",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "source"
+      ],
+      "type": "object"
+    },
+    "Event": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/TextMessageStartEvent"
+        },
+        {
+          "$ref": "#/$defs/TextMessageContentEvent"
+        },
+        {
+          "$ref": "#/$defs/TextMessageEndEvent"
+        },
+        {
+          "$ref": "#/$defs/TextMessageChunkEvent"
+        },
+        {
+          "$ref": "#/$defs/ToolCallStartEvent"
+        },
+        {
+          "$ref": "#/$defs/ToolCallArgsEvent"
+        },
+        {
+          "$ref": "#/$defs/ToolCallEndEvent"
+        },
+        {
+          "$ref": "#/$defs/ToolCallChunkEvent"
+        },
+        {
+          "$ref": "#/$defs/ToolCallResultEvent"
+        },
+        {
+          "$ref": "#/$defs/StateSnapshotEvent"
+        },
+        {
+          "$ref": "#/$defs/StateDeltaEvent"
+        },
+        {
+          "$ref": "#/$defs/MessagesSnapshotEvent"
+        },
+        {
+          "$ref": "#/$defs/ActivitySnapshotEvent"
+        },
+        {
+          "$ref": "#/$defs/ActivityDeltaEvent"
+        },
+        {
+          "$ref": "#/$defs/RawEvent"
+        },
+        {
+          "$ref": "#/$defs/CustomEvent"
+        },
+        {
+          "$ref": "#/$defs/RunStartedEvent"
+        },
+        {
+          "$ref": "#/$defs/RunFinishedEvent"
+        },
+        {
+          "$ref": "#/$defs/RunErrorEvent"
+        },
+        {
+          "$ref": "#/$defs/StepStartedEvent"
+        },
+        {
+          "$ref": "#/$defs/StepFinishedEvent"
+        },
+        {
+          "$ref": "#/$defs/ReasoningStartEvent"
+        },
+        {
+          "$ref": "#/$defs/ReasoningMessageStartEvent"
+        },
+        {
+          "$ref": "#/$defs/ReasoningMessageContentEvent"
+        },
+        {
+          "$ref": "#/$defs/ReasoningMessageEndEvent"
+        },
+        {
+          "$ref": "#/$defs/ReasoningMessageChunkEvent"
+        },
+        {
+          "$ref": "#/$defs/ReasoningEndEvent"
+        },
+        {
+          "$ref": "#/$defs/ReasoningEncryptedValueEvent"
+        },
+        {
+          "$ref": "#/$defs/SubagentStartedEvent"
+        },
+        {
+          "$ref": "#/$defs/SubagentFinishedEvent"
+        },
+        {
+          "$ref": "#/$defs/SubagentErrorEvent"
+        }
+      ]
+    },
+    "EventType": {
+      "enum": [
+        "TEXT_MESSAGE_START",
+        "TEXT_MESSAGE_CONTENT",
+        "TEXT_MESSAGE_END",
+        "TEXT_MESSAGE_CHUNK",
+        "TOOL_CALL_START",
+        "TOOL_CALL_ARGS",
+        "TOOL_CALL_END",
+        "TOOL_CALL_CHUNK",
+        "TOOL_CALL_RESULT",
+        "STATE_SNAPSHOT",
+        "STATE_DELTA",
+        "MESSAGES_SNAPSHOT",
+        "ACTIVITY_SNAPSHOT",
+        "ACTIVITY_DELTA",
+        "RAW",
+        "CUSTOM",
+        "RUN_STARTED",
+        "RUN_FINISHED",
+        "RUN_ERROR",
+        "STEP_STARTED",
+        "STEP_FINISHED",
+        "REASONING_START",
+        "REASONING_MESSAGE_START",
+        "REASONING_MESSAGE_CONTENT",
+        "REASONING_MESSAGE_END",
+        "REASONING_MESSAGE_CHUNK",
+        "REASONING_END",
+        "REASONING_ENCRYPTED_VALUE",
+        "SUBAGENT_STARTED",
+        "SUBAGENT_FINISHED",
+        "SUBAGENT_ERROR"
+      ],
+      "type": "string"
+    },
+    "ExecutionCapabilities": {
+      "additionalProperties": {},
+      "properties": {
+        "codeExecution": {
+          "type": "boolean"
+        },
+        "maxExecutionTime": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "maxIterations": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sandboxed": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "FileSource": {
+      "additionalProperties": {},
+      "properties": {
+        "mimeType": {
+          "type": "string"
+        },
+        "provider": {
+          "type": "string"
+        },
+        "type": {
+          "const": "file",
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "value"
+      ],
+      "type": "object"
+    },
+    "FunctionCall": {
+      "additionalProperties": {},
+      "properties": {
+        "arguments": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "arguments"
+      ],
+      "type": "object"
+    },
+    "HumanInTheLoopCapabilities": {
+      "additionalProperties": {},
+      "properties": {
+        "approvals": {
+          "type": "boolean"
+        },
+        "approveWithEdits": {
+          "type": "boolean"
+        },
+        "feedback": {
+          "type": "boolean"
+        },
+        "interrupts": {
+          "type": "boolean"
+        },
+        "interventions": {
+          "type": "boolean"
+        },
+        "supported": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "IdentityCapabilities": {
+      "additionalProperties": {},
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "documentationUrl": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "provider": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ImageInputContent": {
+      "additionalProperties": {},
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "metadata": {},
+        "source": {
+          "$ref": "#/$defs/InputContentSource"
+        },
+        "type": {
+          "const": "image",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "source"
+      ],
+      "type": "object"
+    },
+    "InputContentSource": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/DataSource"
+        },
+        {
+          "$ref": "#/$defs/InputContentUrlSource"
+        },
+        {
+          "$ref": "#/$defs/FileSource"
+        }
+      ]
+    },
+    "InputContentUrlSource": {
+      "additionalProperties": {},
+      "properties": {
+        "mimeType": {
+          "type": "string"
+        },
+        "type": {
+          "const": "url",
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "value"
+      ],
+      "type": "object"
+    },
+    "Interrupt": {
+      "additionalProperties": {},
+      "properties": {
+        "expiresAt": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "responseSchema": {},
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "toolCallId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "reason"
+      ],
+      "type": "object"
+    },
+    "JsonPatch": {
+      "items": {
+        "$ref": "#/$defs/JsonPatchOperation"
+      },
+      "type": "array"
+    },
+    "JsonPatchOperation": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/AddOperation"
+        },
+        {
+          "$ref": "#/$defs/RemoveOperation"
+        },
+        {
+          "$ref": "#/$defs/ReplaceOperation"
+        },
+        {
+          "$ref": "#/$defs/MoveOperation"
+        },
+        {
+          "$ref": "#/$defs/CopyOperation"
+        },
+        {
+          "$ref": "#/$defs/TestOperation"
+        }
+      ]
+    },
+    "JsonPointer": {
+      "pattern": "^(\\/([^/~]|~[01])*)*$",
+      "type": "string"
+    },
+    "Message": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/DeveloperMessage"
+        },
+        {
+          "$ref": "#/$defs/SystemMessage"
+        },
+        {
+          "$ref": "#/$defs/AssistantMessage"
+        },
+        {
+          "$ref": "#/$defs/UserMessage"
+        },
+        {
+          "$ref": "#/$defs/ToolMessage"
+        },
+        {
+          "$ref": "#/$defs/ActivityMessage"
+        },
+        {
+          "$ref": "#/$defs/ReasoningMessage"
+        }
+      ]
+    },
+    "MessagesSnapshotEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "messages": {
+          "items": {
+            "$ref": "#/$defs/Message"
+          },
+          "type": "array"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "rawEvent": {},
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "type": {
+          "const": "MESSAGES_SNAPSHOT",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "messages"
+      ],
+      "type": "object"
+    },
+    "Metadata": {},
+    "MoveOperation": {
+      "additionalProperties": {},
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/JsonPointer"
+        },
+        "op": {
+          "const": "move",
+          "type": "string"
+        },
+        "path": {
+          "$ref": "#/$defs/JsonPointer"
+        }
+      },
+      "required": [
+        "op",
+        "from",
+        "path"
+      ],
+      "specOpen": true,
+      "type": "object"
+    },
+    "MultiAgentCapabilities": {
+      "additionalProperties": {},
+      "properties": {
+        "delegation": {
+          "type": "boolean"
+        },
+        "handoffs": {
+          "type": "boolean"
+        },
+        "subagents": {
+          "items": {
+            "$ref": "#/$defs/SubagentInfo"
+          },
+          "type": "array"
+        },
+        "supported": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "MultimodalCapabilities": {
+      "additionalProperties": {},
+      "properties": {
+        "input": {
+          "$ref": "#/$defs/MultimodalInputCapabilities"
+        },
+        "output": {
+          "$ref": "#/$defs/MultimodalOutputCapabilities"
+        }
+      },
+      "type": "object"
+    },
+    "MultimodalInputCapabilities": {
+      "additionalProperties": {},
+      "properties": {
+        "audio": {
+          "type": "boolean"
+        },
+        "file": {
+          "type": "boolean"
+        },
+        "image": {
+          "type": "boolean"
+        },
+        "pdf": {
+          "type": "boolean"
+        },
+        "video": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "MultimodalOutputCapabilities": {
+      "additionalProperties": {},
+      "properties": {
+        "audio": {
+          "type": "boolean"
+        },
+        "image": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "OptionalMetadata": {
+      "$ref": "#/$defs/Metadata"
+    },
+    "OutputCapabilities": {
+      "additionalProperties": {},
+      "properties": {
+        "structuredOutput": {
+          "type": "boolean"
+        },
+        "supportedMimeTypes": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "RawEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "event": {},
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "rawEvent": {},
+        "source": {
+          "type": "string"
+        },
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "type": {
+          "const": "RAW",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "event"
+      ],
+      "type": "object"
+    },
+    "ReasoningCapabilities": {
+      "additionalProperties": {},
+      "properties": {
+        "encrypted": {
+          "type": "boolean"
+        },
+        "streaming": {
+          "type": "boolean"
+        },
+        "supported": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "ReasoningEncryptedValueEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "encryptedValue": {
+          "type": "string"
+        },
+        "entityId": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "rawEvent": {},
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "subtype": {
+          "$ref": "#/$defs/ReasoningEncryptedValueSubtype"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "type": {
+          "const": "REASONING_ENCRYPTED_VALUE",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "subtype",
+        "entityId",
+        "encryptedValue"
+      ],
+      "type": "object"
+    },
+    "ReasoningEncryptedValueSubtype": {
+      "enum": [
+        "tool-call",
+        "message"
+      ],
+      "type": "string"
+    },
+    "ReasoningEndEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "messageId": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "rawEvent": {},
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "type": {
+          "const": "REASONING_END",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "messageId"
+      ],
+      "type": "object"
+    },
+    "ReasoningMessage": {
+      "additionalProperties": {},
+      "properties": {
+        "content": {
+          "type": "string"
+        },
+        "encryptedValue": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "role": {
+          "const": "reasoning",
+          "type": "string"
+        },
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        }
+      },
+      "required": [
+        "id",
+        "role",
+        "content"
+      ],
+      "type": "object"
+    },
+    "ReasoningMessageChunkEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "delta": {
+          "type": "string"
+        },
+        "messageId": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "rawEvent": {},
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "type": {
+          "const": "REASONING_MESSAGE_CHUNK",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "type": "object"
+    },
+    "ReasoningMessageContentEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "delta": {
+          "type": "string"
+        },
+        "messageId": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "rawEvent": {},
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "type": {
+          "const": "REASONING_MESSAGE_CONTENT",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "messageId",
+        "delta"
+      ],
+      "type": "object"
+    },
+    "ReasoningMessageEndEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "messageId": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "rawEvent": {},
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "type": {
+          "const": "REASONING_MESSAGE_END",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "messageId"
+      ],
+      "type": "object"
+    },
+    "ReasoningMessageStartEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "messageId": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "rawEvent": {},
+        "role": {
+          "const": "reasoning",
+          "type": "string"
+        },
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "type": {
+          "const": "REASONING_MESSAGE_START",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "messageId",
+        "role"
+      ],
+      "type": "object"
+    },
+    "ReasoningStartEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "messageId": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "rawEvent": {},
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "type": {
+          "const": "REASONING_START",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "messageId"
+      ],
+      "type": "object"
+    },
+    "RemoveOperation": {
+      "additionalProperties": {},
+      "properties": {
+        "op": {
+          "const": "remove",
+          "type": "string"
+        },
+        "path": {
+          "$ref": "#/$defs/JsonPointer"
+        }
+      },
+      "required": [
+        "op",
+        "path"
+      ],
+      "specOpen": true,
+      "type": "object"
+    },
+    "ReplaceOperation": {
+      "additionalProperties": {},
+      "properties": {
+        "op": {
+          "const": "replace",
+          "type": "string"
+        },
+        "path": {
+          "$ref": "#/$defs/JsonPointer"
+        },
+        "value": {}
+      },
+      "required": [
+        "op",
+        "path",
+        "value"
+      ],
+      "specOpen": true,
+      "type": "object"
+    },
+    "ResumeEntry": {
+      "additionalProperties": {},
+      "properties": {
+        "interruptId": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "payload": {},
+        "status": {
+          "enum": [
+            "resolved",
+            "cancelled"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "interruptId",
+        "status"
+      ],
+      "type": "object"
+    },
+    "Role": {
+      "enum": [
+        "developer",
+        "system",
+        "assistant",
+        "user",
+        "tool",
+        "activity",
+        "reasoning"
+      ],
+      "type": "string"
+    },
+    "RunAgentInput": {
+      "additionalProperties": {},
+      "properties": {
+        "context": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Context"
+          },
+          "type": "array"
+        },
+        "forwardedProps": {},
+        "messages": {
+          "items": {
+            "$ref": "#/$defs/Message"
+          },
+          "type": "array"
+        },
+        "parentRunId": {
+          "type": "string"
+        },
+        "protocolVersion": {
+          "type": "string"
+        },
+        "resume": {
+          "items": {
+            "$ref": "#/$defs/ResumeEntry"
+          },
+          "type": "array"
+        },
+        "runId": {
+          "type": "string"
+        },
+        "state": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/State"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "threadId": {
+          "type": "string"
+        },
+        "tools": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Tool"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "threadId",
+        "runId",
+        "messages"
+      ],
+      "type": "object"
+    },
+    "RunErrorEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "rawEvent": {},
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "type": {
+          "const": "RUN_ERROR",
+          "type": "string"
+        },
+        "usage": {
+          "items": {
+            "$ref": "#/$defs/TokenUsage"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "type",
+        "message"
+      ],
+      "type": "object"
+    },
+    "RunFinishedCancelledOutcome": {
+      "additionalProperties": {},
+      "properties": {
+        "type": {
+          "const": "cancelled",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "type": "object"
+    },
+    "RunFinishedEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "outcome": {
+          "$ref": "#/$defs/RunFinishedOutcome"
+        },
+        "rawEvent": {},
+        "result": {},
+        "runId": {
+          "type": "string"
+        },
+        "threadId": {
+          "type": "string"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "type": {
+          "const": "RUN_FINISHED",
+          "type": "string"
+        },
+        "usage": {
+          "items": {
+            "$ref": "#/$defs/TokenUsage"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "type",
+        "threadId",
+        "runId"
+      ],
+      "type": "object"
+    },
+    "RunFinishedInterruptOutcome": {
+      "additionalProperties": {},
+      "properties": {
+        "interrupts": {
+          "items": {
+            "$ref": "#/$defs/Interrupt"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "type": {
+          "const": "interrupt",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "interrupts"
+      ],
+      "type": "object"
+    },
+    "RunFinishedOutcome": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/RunFinishedSuccessOutcome"
+        },
+        {
+          "$ref": "#/$defs/RunFinishedInterruptOutcome"
+        },
+        {
+          "$ref": "#/$defs/RunFinishedCancelledOutcome"
+        }
+      ]
+    },
+    "RunFinishedSuccessOutcome": {
+      "additionalProperties": {},
+      "properties": {
+        "pendingToolCallIds": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "type": {
+          "const": "success",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "type": "object"
+    },
+    "RunStartedEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "input": {
+          "$ref": "#/$defs/RunAgentInput"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "parentRunId": {
+          "type": "string"
+        },
+        "protocolVersion": {
+          "type": "string"
+        },
+        "rawEvent": {},
+        "runId": {
+          "type": "string"
+        },
+        "threadId": {
+          "type": "string"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "type": {
+          "const": "RUN_STARTED",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "threadId",
+        "runId"
+      ],
+      "type": "object"
+    },
+    "State": {},
+    "StateCapabilities": {
+      "additionalProperties": {},
+      "properties": {
+        "deltas": {
+          "type": "boolean"
+        },
+        "memory": {
+          "type": "boolean"
+        },
+        "persistentState": {
+          "type": "boolean"
+        },
+        "snapshots": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "StateDeltaEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "delta": {
+          "$ref": "#/$defs/JsonPatch"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "rawEvent": {},
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "type": {
+          "const": "STATE_DELTA",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "delta"
+      ],
+      "type": "object"
+    },
+    "StateSnapshotEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "rawEvent": {},
+        "snapshot": {
+          "$ref": "#/$defs/State"
+        },
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "type": {
+          "const": "STATE_SNAPSHOT",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "snapshot"
+      ],
+      "type": "object"
+    },
+    "StepFinishedEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "rawEvent": {},
+        "stepName": {
+          "type": "string"
+        },
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "type": {
+          "const": "STEP_FINISHED",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "stepName"
+      ],
+      "type": "object"
+    },
+    "StepStartedEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "rawEvent": {},
+        "stepName": {
+          "type": "string"
+        },
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "type": {
+          "const": "STEP_STARTED",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "stepName"
+      ],
+      "type": "object"
+    },
+    "SubagentErrorEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "rawEvent": {},
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "type": {
+          "const": "SUBAGENT_ERROR",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "subagentRunId",
+        "message"
+      ],
+      "type": "object"
+    },
+    "SubagentFinishedEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "outcome": {
+          "$ref": "#/$defs/SubagentFinishedOutcome"
+        },
+        "rawEvent": {},
+        "result": {},
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "type": {
+          "const": "SUBAGENT_FINISHED",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "subagentRunId"
+      ],
+      "type": "object"
+    },
+    "SubagentFinishedOutcome": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/SubagentFinishedSuccessOutcome"
+        },
+        {
+          "$ref": "#/$defs/SubagentFinishedSuspendedOutcome"
+        }
+      ]
+    },
+    "SubagentFinishedSuccessOutcome": {
+      "additionalProperties": {},
+      "properties": {
+        "type": {
+          "const": "success",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "type": "object"
+    },
+    "SubagentFinishedSuspendedOutcome": {
+      "additionalProperties": {},
+      "properties": {
+        "interruptIds": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "type": {
+          "const": "suspended",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "type": "object"
+    },
+    "SubagentInfo": {
+      "additionalProperties": {},
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "SubagentRunId": {
+      "type": "string"
+    },
+    "SubagentStartedEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "parentMessageId": {
+          "type": "string"
+        },
+        "parentSubagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "parentToolCallId": {
+          "type": "string"
+        },
+        "rawEvent": {},
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "type": {
+          "const": "SUBAGENT_STARTED",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "subagentRunId",
+        "name"
+      ],
+      "type": "object"
+    },
+    "SystemMessage": {
+      "additionalProperties": {},
+      "properties": {
+        "content": {
+          "type": "string"
+        },
+        "encryptedValue": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "role": {
+          "const": "system",
+          "type": "string"
+        },
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        }
+      },
+      "required": [
+        "id",
+        "role",
+        "content"
+      ],
+      "type": "object"
+    },
+    "TestOperation": {
+      "additionalProperties": {},
+      "properties": {
+        "op": {
+          "const": "test",
+          "type": "string"
+        },
+        "path": {
+          "$ref": "#/$defs/JsonPointer"
+        },
+        "value": {}
+      },
+      "required": [
+        "op",
+        "path",
+        "value"
+      ],
+      "specOpen": true,
+      "type": "object"
+    },
+    "TextInputContent": {
+      "additionalProperties": {},
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "metadata": {},
+        "text": {
+          "type": "string"
+        },
+        "type": {
+          "const": "text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "text"
+      ],
+      "type": "object"
+    },
+    "TextMessageChunkEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "delta": {
+          "type": "string"
+        },
+        "messageId": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "rawEvent": {},
+        "role": {
+          "$ref": "#/$defs/TextMessageRole"
+        },
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "type": {
+          "const": "TEXT_MESSAGE_CHUNK",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "type": "object"
+    },
+    "TextMessageContentEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "delta": {
+          "type": "string"
+        },
+        "messageId": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "rawEvent": {},
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "type": {
+          "const": "TEXT_MESSAGE_CONTENT",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "messageId",
+        "delta"
+      ],
+      "type": "object"
+    },
+    "TextMessageEndEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "messageId": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "rawEvent": {},
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "type": {
+          "const": "TEXT_MESSAGE_END",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "messageId"
+      ],
+      "type": "object"
+    },
+    "TextMessageRole": {
+      "enum": [
+        "developer",
+        "system",
+        "assistant",
+        "user"
+      ],
+      "type": "string"
+    },
+    "TextMessageStartEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "messageId": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "rawEvent": {},
+        "role": {
+          "$ref": "#/$defs/TextMessageRole"
+        },
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "type": {
+          "const": "TEXT_MESSAGE_START",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "messageId"
+      ],
+      "type": "object"
+    },
+    "TokenUsage": {
+      "additionalProperties": {},
+      "properties": {
+        "cacheWriteInputTokens": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "cachedInputTokens": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "inputTokens": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "model": {
+          "type": "string"
+        },
+        "outputTokens": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "provider": {
+          "type": "string"
+        },
+        "reasoningTokens": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "totalTokens": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "Tool": {
+      "additionalProperties": {},
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "parameters": {}
+      },
+      "required": [
+        "name",
+        "description"
+      ],
+      "type": "object"
+    },
+    "ToolCall": {
+      "additionalProperties": {},
+      "properties": {
+        "encryptedValue": {
+          "type": "string"
+        },
+        "function": {
+          "$ref": "#/$defs/FunctionCall"
+        },
+        "id": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "type": {
+          "const": "function",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "function"
+      ],
+      "type": "object"
+    },
+    "ToolCallArgsEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "delta": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "rawEvent": {},
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "toolCallId": {
+          "type": "string"
+        },
+        "type": {
+          "const": "TOOL_CALL_ARGS",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "toolCallId",
+        "delta"
+      ],
+      "type": "object"
+    },
+    "ToolCallChunkEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "delta": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "parentMessageId": {
+          "type": "string"
+        },
+        "rawEvent": {},
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "toolCallId": {
+          "type": "string"
+        },
+        "toolCallName": {
+          "type": "string"
+        },
+        "type": {
+          "const": "TOOL_CALL_CHUNK",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "type": "object"
+    },
+    "ToolCallEndEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "rawEvent": {},
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "toolCallId": {
+          "type": "string"
+        },
+        "type": {
+          "const": "TOOL_CALL_END",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "toolCallId"
+      ],
+      "type": "object"
+    },
+    "ToolCallResultEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "content": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "$ref": "#/$defs/ContentPart"
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "messageId": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "rawEvent": {},
+        "role": {
+          "const": "tool",
+          "type": "string"
+        },
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "toolCallId": {
+          "type": "string"
+        },
+        "type": {
+          "const": "TOOL_CALL_RESULT",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "messageId",
+        "toolCallId",
+        "content"
+      ],
+      "type": "object"
+    },
+    "ToolCallStartEvent": {
+      "additionalProperties": {},
+      "properties": {
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "parentMessageId": {
+          "type": "string"
+        },
+        "rawEvent": {},
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "timestamp": {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        "toolCallId": {
+          "type": "string"
+        },
+        "toolCallName": {
+          "type": "string"
+        },
+        "type": {
+          "const": "TOOL_CALL_START",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "toolCallId",
+        "toolCallName"
+      ],
+      "type": "object"
+    },
+    "ToolMessage": {
+      "additionalProperties": {},
+      "properties": {
+        "content": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "$ref": "#/$defs/ContentPart"
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "encryptedValue": {
+          "type": "string"
+        },
+        "error": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "role": {
+          "const": "tool",
+          "type": "string"
+        },
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        },
+        "toolCallId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "role",
+        "content",
+        "toolCallId"
+      ],
+      "type": "object"
+    },
+    "ToolsCapabilities": {
+      "additionalProperties": {},
+      "properties": {
+        "clientProvided": {
+          "type": "boolean"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/Tool"
+          },
+          "type": "array"
+        },
+        "parallelCalls": {
+          "type": "boolean"
+        },
+        "supported": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "TransportCapabilities": {
+      "additionalProperties": {},
+      "properties": {
+        "httpBinary": {
+          "type": "boolean"
+        },
+        "pushNotifications": {
+          "type": "boolean"
+        },
+        "resumable": {
+          "type": "boolean"
+        },
+        "streaming": {
+          "type": "boolean"
+        },
+        "websocket": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "UserMessage": {
+      "additionalProperties": {},
+      "properties": {
+        "content": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "$ref": "#/$defs/ContentPart"
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "encryptedValue": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "role": {
+          "const": "user",
+          "type": "string"
+        },
+        "subagentRunId": {
+          "$ref": "#/$defs/SubagentRunId"
+        }
+      },
+      "required": [
+        "id",
+        "role",
+        "content"
+      ],
+      "type": "object"
+    },
+    "VideoInputContent": {
+      "additionalProperties": {},
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "metadata": {},
+        "source": {
+          "$ref": "#/$defs/InputContentSource"
+        },
+        "type": {
+          "const": "video",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "source"
+      ],
+      "type": "object"
+    }
+  }
+}

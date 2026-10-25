@@ -1,0 +1,46 @@
+{
+  "format": "csv",
+  "parser": "1.2.0+0730409c",
+  "text": "id | name | city | notes\n1 | Ada Lovelace | London | Pioneer, first programmer\n2 | Grace Hopper | New York | Compiler inventor\n3 | Katherine Johnson | White Sulphur Springs | Orbital mechanics",
+  "blocks": [
+    {
+      "kind": "table",
+      "start": 0,
+      "end": 192,
+      "text": "id | name | city | notes\n1 | Ada Lovelace | London | Pioneer, first programmer\n2 | Grace Hopper | New York | Compiler inventor\n3 | Katherine Johnson | White Sulphur Springs | Orbital mechanics",
+      "rows": [
+        {
+          "s": 0,
+          "e": 24
+        },
+        {
+          "s": 25,
+          "e": 78
+        },
+        {
+          "s": 79,
+          "e": 126
+        },
+        {
+          "s": 127,
+          "e": 192
+        }
+      ],
+      "has_header": true
+    }
+  ],
+  "chunks": [
+    {
+      "kind": "table_row",
+      "text": "1 | Ada Lovelace | London | Pioneer, first programmer"
+    },
+    {
+      "kind": "table_row",
+      "text": "2 | Grace Hopper | New York | Compiler inventor"
+    },
+    {
+      "kind": "table_row",
+      "text": "3 | Katherine Johnson | White Sulphur Springs | Orbital mechanics"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "types": ["node"],
+    "noEmit": true,
+    "paths": {
+      "@alixai/sdk": ["../../sdk/typescript/src/index.ts"],
+      "@alixai/copilotkit-adapter": ["../../sdk/copilotkit-adapter/src/index.ts"]
+    }
+  },
+  "include": ["src", "test", "vitest.config.ts"]
+}

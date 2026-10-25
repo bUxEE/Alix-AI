@@ -1,0 +1,5 @@
+# relay <-> the host published loopback port. A published port needs a network that is not internal, so this
+# is the only network with a route out; the relay dials nothing but the anchor.
+# Compose counterpart: networks.edge in ../stack/compose.yaml.
+[Network]
+NetworkName=alixai-edge

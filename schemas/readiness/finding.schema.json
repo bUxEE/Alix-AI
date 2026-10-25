@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:readiness:finding:v1",
+  "title": "ReadinessFinding",
+  "description": "One thing readiness discovery found, or did not find, about a requirement (master plan 9.5, ADR 0037). It is advisory: it is evidence of what the project contains, never a certification, an authorisation or an audit result. Every finding that says something is covered (found, partial) or contradicted cites evidence, and a deterministic verifier re-reads every cited span and re-hashes the file; a finding that does not confirm is unverified and says why. A finding a model proposed is model_verified only when the verifier confirmed it, and model_unverified findings are always unverified: they never count as covered. The model cannot change a status a rule decided.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "finding_id", "requirement_id", "category", "status", "source", "check_id", "evidence", "remediation"],
+  "properties": {
+    "schema_version": {
+      "description": "The contract generation of this document.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/schemaVersion"
+    },
+    "finding_id": {
+      "description": "The stable ID of the finding.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/findingId"
+    },
+    "requirement_id": {
+      "description": "The catalog requirement this finding is about.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/requirementId"
+    },
+    "category": {
+      "description": "What kind of thing the finding is about; the category of its requirement.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/category"
+    },
+    "status": {
+      "description": "Whether the finding shows the requirement covered. unverified never counts as covered.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/status"
+    },
+    "source": {
+      "description": "Who produced the finding: a rule, a model whose evidence the verifier confirmed, or a model whose evidence did not confirm.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/source"
+    },
+    "check_id": {
+      "description": "The integration audit check this finding feeds; the check of its requirement.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/checkId"
+    },
+    "evidence": {
+      "description": "Where the finding comes from. At least one entry unless the status is missing or unverified, because a finding without evidence cannot be found, partial or contradicted.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "maxItems": 32,
+      "items": { "$ref": "#/$defs/evidence" }
+    },
+    "summary": {
+      "description": "What was found, in a sentence. Secret-looking values are redacted before they reach this text.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/text"
+    },
+    "unverified_reason": {
+      "description": "Why the evidence did not confirm, or why the status could not be determined. Present when the status is unverified.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/text"
+    },
+    "remediation": {
+      "description": "What to do to cover the requirement. For a finding that already shows the requirement covered this says what, if anything, is left to do.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/remediationText"
+    }
+  },
+  "$defs": {
+    "evidence": {
+      "description": "One cited span of one file. The path is relative to the scanned root; the verifier re-reads the span and re-hashes the whole file, and the entry confirms only when the file still has this hash and the span exists.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "line_start", "line_end", "file_sha256"],
+      "properties": {
+        "path": {
+          "description": "The file, relative to the scanned root.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/relativePath"
+        },
+        "line_start": {
+          "description": "The first cited line, counting from 1.",
+          "x-alixai-authority": "host",
+          "type": "integer",
+          "minimum": 1
+        },
+        "line_end": {
+          "description": "The last cited line, counting from 1; not before line_start (the verifier rejects a span that ends before it starts or past the end of the file).",
+          "x-alixai-authority": "host",
+          "type": "integer",
+          "minimum": 1
+        },
+        "file_sha256": {
+          "description": "The SHA-256 of the whole file when it was scanned.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/sha256"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "enum": ["found", "partial", "contradicted"] } }, "required": ["status"] },
+      "then": { "properties": { "evidence": { "minItems": 1 } } }
+    },
+    {
+      "if": { "properties": { "source": { "const": "model_unverified" } }, "required": ["source"] },
+      "then": { "properties": { "status": { "const": "unverified" } } }
+    },
+    {
+      "if": { "properties": { "status": { "const": "unverified" } }, "required": ["status"] },
+      "then": { "required": ["unverified_reason"] }
+    }
+  ]
+}

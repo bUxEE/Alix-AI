@@ -1,0 +1,23 @@
+name: Question or integration help
+description: Ask how to use or integrate AlixAI.
+title: "[question] "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check `docs/` first. Never paste secrets, tokens or private data. Security concerns go
+        through `SECURITY.md`, not here.
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: What are you trying to do, and what have you tried?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+    validations:
+      required: true

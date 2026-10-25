@@ -1,0 +1,16 @@
+{
+  "capability_id": "tasks.create",
+  "fields": {
+    "title": "Call the supplier"
+  },
+  "entity_refs": [],
+  "intent": "task",
+  "uncertainty": {
+    "overall": 0.9
+  },
+  "ui_action": {
+    "name": "open panel; commit",
+    "arguments": {}
+  },
+  "trace_id": "trc_01J0000000000000000000000D"
+}

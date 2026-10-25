@@ -1,0 +1,8 @@
+{
+  "type": "capture.start",
+  "format": {
+    "encoding": "mp3",
+    "sample_rate": 16000,
+    "channels": 1
+  }
+}

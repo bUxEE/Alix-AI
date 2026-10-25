@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:settings:deployment-settings:v1",
+  "title": "Deployment settings",
+  "description": "The settings of one application's deployment of AlixAI (master plan 14.2): the top of the cascade for every tenant and user of that application. 'Deployment' here is per application: a token for application A can never read or write the deployment settings of application B (ADR-0016), and what the operator controls for the whole installation (approved profiles, retention and attachment ceilings, the runtime, external mode, data egress, credentials, budgets, the decision layer) is configuration and operator-only API, never a setting. The deployment level is where voice, attachments and history export are first allowed; the levels below can only keep or narrow that. Every member is optional (absent means the platform default) and the document is closed: a member that is not listed does not exist, and a document that names a forbidden one (a tool to enable, a scope, a confirmation switch, LocalAI administration, external or hybrid mode, egress, a credential, a budget, the decision layer) is refused whole and nothing is stored. The key (application) comes from the verified token, never from the body.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "default_language": {
+      "description": "The language used when neither a user nor a tenant states one. Must be one the application's active package supports.",
+      "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/languageTag"
+    },
+    "default_model_profile": {
+      "description": "The approved model and resource profile used when neither a user nor a tenant states one. Refused unless the operator approved it.",
+      "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/profileId"
+    },
+    "voice": { "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/policyVoice" },
+    "history": { "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/policyHistory" },
+    "privacy": { "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/policyPrivacy" },
+    "attachments": { "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/policyAttachments" },
+    "notifications": { "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/policyNotifications" },
+    "capabilities": {
+      "description": "Capabilities switched off for every tenant and user of the application. Narrowing only.",
+      "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/capabilitySwitches"
+    },
+    "confirmation": {
+      "description": "Confirmation asked for everyone in addition to the platform's. Raising only.",
+      "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/confirmationRaise"
+    }
+  }
+}

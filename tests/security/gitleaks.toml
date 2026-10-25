@@ -1,0 +1,20 @@
+# gitleaks configuration for the history scan of .github/workflows/security.yml (SEC-084).
+#
+# The default ruleset applies to everything. The only paths exempt from it hold synthetic secrets that exist to
+# test redaction, scanners and validators; nothing in them is a credential for any system. The in-tree scan
+# (tests/security/secrets TestSecRepoSecretScan) still reads these files and requires a real-looking key to
+# carry a TEST-ONLY marker in its own content.
+title = "AlixAI gitleaks"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "synthetic secrets in tests, fixtures and the published test-only key"
+paths = [
+  '''_test\.go$''',
+  '''(^|/)testdata/''',
+  '''^tools/devkeys/test-only-publisher\.key\.pem$''',
+  '''^schemas/.+/examples/.+/invalid/''',
+  '''^tests/performance/rag/corpus\.json$''',
+]

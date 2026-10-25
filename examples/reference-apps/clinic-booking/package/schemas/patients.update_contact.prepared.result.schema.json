@@ -1,0 +1,431 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Result of patients.update_contact prepare (patients_update_contact_prepare)",
+  "description": "The prepared contact-detail change: the exact effect (one patient record is updated), the patient's data version, a validity period of 120 seconds. The level is 1, so the application allows it to commit right after this summary.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status",
+    "identifiers",
+    "values",
+    "errors",
+    "allowed_next_actions"
+  ],
+  "properties": {
+    "status": {
+      "enum": [
+        "ok",
+        "rejected",
+        "unavailable"
+      ]
+    },
+    "identifiers": {
+      "type": "array",
+      "maxItems": 0
+    },
+    "values": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "field",
+              "value"
+            ],
+            "properties": {
+              "field": {
+                "const": "patient_name"
+              },
+              "value": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "value"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "text"
+                  },
+                  "value": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048
+                  }
+                }
+              },
+              "display": {
+                "type": "string",
+                "maxLength": 2048
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "field",
+              "value"
+            ],
+            "properties": {
+              "field": {
+                "const": "contact_fields_updated"
+              },
+              "value": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "value"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "text"
+                  },
+                  "value": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048
+                  }
+                }
+              },
+              "display": {
+                "type": "string",
+                "maxLength": 2048
+              }
+            }
+          }
+        ]
+      }
+    },
+    "errors": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "enum": [
+              "expired",
+              "internal",
+              "missing_fields",
+              "permission_denied",
+              "scope_missing",
+              "scope_violation",
+              "stale",
+              "unavailable",
+              "validation_failed"
+            ]
+          },
+          "field": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        }
+      }
+    },
+    "freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "as_of",
+        "version"
+      ],
+      "properties": {
+        "as_of": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^rv1-[0-9a-f]{32}$"
+        }
+      }
+    },
+    "allowed_next_actions": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "enum": [
+              "cancel",
+              "retry"
+            ]
+          },
+          "capability_id": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 200
+          }
+        }
+      }
+    },
+    "preparation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "summary",
+        "effects",
+        "data_versions",
+        "declared_risk_level",
+        "valid_for_seconds"
+      ],
+      "properties": {
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "effects": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "operation",
+              "entity_type",
+              "description",
+              "changes",
+              "external"
+            ],
+            "properties": {
+              "operation": {
+                "enum": [
+                  "create",
+                  "update",
+                  "delete",
+                  "send",
+                  "other"
+                ]
+              },
+              "entity_type": {
+                "enum": [
+                  "patient"
+                ]
+              },
+              "entity_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "changes": {
+                "type": "array",
+                "maxItems": 16,
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "field",
+                    "value"
+                  ],
+                  "properties": {
+                    "field": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "object",
+                      "required": [
+                        "kind",
+                        "value"
+                      ]
+                    }
+                  }
+                }
+              },
+              "external": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "data_versions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "entity_type",
+              "entity_id",
+              "version"
+            ],
+            "properties": {
+              "entity_type": {
+                "enum": [
+                  "patient"
+                ]
+              },
+              "entity_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "version": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              }
+            }
+          }
+        },
+        "declared_risk_level": {
+          "const": 1
+        },
+        "valid_for_seconds": {
+          "const": 120
+        }
+      }
+    },
+    "follow_up": false
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "ok"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "freshness"
+        ],
+        "properties": {
+          "errors": {
+            "maxItems": 0
+          },
+          "values": {
+            "allOf": [
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "field"
+                  ],
+                  "properties": {
+                    "field": {
+                      "const": "patient_name"
+                    }
+                  }
+                }
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "field"
+                  ],
+                  "properties": {
+                    "field": {
+                      "const": "contact_fields_updated"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "rejected"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "errors": {
+            "minItems": 1
+          },
+          "identifiers": {
+            "maxItems": 0
+          },
+          "values": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "unavailable"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "errors": {
+            "minItems": 1
+          },
+          "identifiers": {
+            "maxItems": 0
+          },
+          "values": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "ok"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "preparation"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+# Resource profile "4g": 4g RAM / 4 CPU. Use as an override on top of compose.yaml:
+#   docker compose -f compose.yaml -f compose.4g.yaml up -d
+#
+# EMULATED: these are cgroup caps on this container, not a certified machine. Numbers measured
+# under this file must be labelled "emulated", never "certified" (master plan 7.4).
+# memswap_limit == mem_limit disables swap for the container (master plan 7.4 "avoid swap").
+# LOCALAI_THREADS == cpus: under a CPU quota llama.cpp would otherwise size its thread pool
+# to the host's core count and be throttled.
+#
+# Experimental 4 GB text-only profile (master plan 7.1): not a supported minimum until it keeps
+# safe headroom under the full Lite test. One resident backend, the controller: retrieval is lexical on this
+# profile and no embedder, speech worker or reranker is resident (docs/operations/resource-budgets.md R2).
+
+services:
+  localai:
+    mem_limit: 4g
+    memswap_limit: 4g
+    cpus: 4
+    environment:
+      LOCALAI_THREADS: "4"
+      LOCALAI_MAX_ACTIVE_BACKENDS: ${LOCALAI_MAX_ACTIVE_BACKENDS:-1}
+    labels:
+      ai.alixai.profile: 4g
+      ai.alixai.evidence: emulated

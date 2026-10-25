@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:voice:language-pack:v1",
+  "title": "Voice language pack manifest",
+  "description": "One installable language pack (master plan 13, 16.3): the speech models for one language and the exact files that make them, one YAML file per pack in models/voice-packs/. Every model file carries a pinned size and sha256, so there is no unverified-but-allowed file. Quality scores and resource needs are present in every manifest and are explicit nulls until M4-06 measures them. The file is embedded in the binary (models/voice-packs), which ties the pins to the release; internal/voice/packs installs only manifests that came from that embedded set. The schema is self-contained.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "version", "language", "status", "models", "quality", "resources", "notes"],
+  "properties": {
+    "id": {
+      "description": "Pack id and file name stem (<id>.yaml). Lower case letters, digits and hyphens, starting with a letter (en, it, it-fast).",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+      "maxLength": 48
+    },
+    "name": { "type": "string", "minLength": 1, "maxLength": 120, "pattern": "\\S" },
+    "version": {
+      "description": "The pack's own version label. The exact bytes are identified by each file's revision and sha256.",
+      "type": "string", "minLength": 1, "maxLength": 40, "pattern": "\\S"
+    },
+    "language": {
+      "description": "BCP 47 language tag the pack serves.",
+      "type": "string",
+      "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+      "maxLength": 35
+    },
+    "status": {
+      "description": "Qualification state, the same lifecycle as the model registry. candidate: named by ADR 0015, not measured. qualified-emulated: measured in a resource-limited container, never a certification. certified: measured on real hardware. An operator may install a candidate, but only after explicitly approving it.",
+      "type": "string",
+      "enum": ["candidate", "qualified-emulated", "certified"]
+    },
+    "models": {
+      "description": "The models, keyed by voice role. A pack may provide any non-empty subset: an STT-only pack is valid and leaves output on text.",
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "stt": { "$ref": "#/$defs/model" },
+        "tts": { "$ref": "#/$defs/model" },
+        "vad": { "$ref": "#/$defs/model" }
+      }
+    },
+    "quality": {
+      "description": "Quality scores, measured by M4-06 on licence-clean audio. Null until measured.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stt_wer", "tts_time_to_first_audio_ms", "tts_real_time_factor", "measurement"],
+      "properties": {
+        "stt_wer": { "description": "Word error rate, 0 to 1.", "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "tts_time_to_first_audio_ms": { "type": ["number", "null"], "minimum": 0 },
+        "tts_real_time_factor": { "type": ["number", "null"], "minimum": 0 },
+        "measurement": {
+          "description": "Where the numbers above come from; null until measured.",
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["profile", "emulated", "measured_on", "results_path"],
+              "properties": {
+                "profile": { "type": "string", "enum": ["lite", "balanced", "experimental-4g"] },
+                "emulated": { "type": "boolean" },
+                "measured_on": { "type": "string", "format": "date" },
+                "results_path": { "type": "string", "minLength": 1, "pattern": "^[^/\\\\][^\\\\]*$" }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "resources": {
+      "description": "What the pack needs while it is the active pack. Null until measured, except disk, which is the sum of the file sizes and is checked against them.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["disk_bytes", "steady_rss_mb", "peak_rss_mb", "cpu_cores"],
+      "properties": {
+        "disk_bytes": { "type": "integer", "minimum": 1 },
+        "steady_rss_mb": { "type": ["integer", "null"], "minimum": 1 },
+        "peak_rss_mb": { "type": ["integer", "null"], "minimum": 1 },
+        "cpu_cores": { "type": ["integer", "null"], "minimum": 1 }
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 2000 },
+      "maxItems": 32
+    }
+  },
+  "$defs": {
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "engine", "registry_id", "files", "licence"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 120, "pattern": "\\S" },
+        "engine": {
+          "description": "The runtime backend that loads the files (whisper.cpp, piper, silero-vad). The engine is a separate process and is not part of the pack.",
+          "type": "string", "pattern": "^[a-z][a-z0-9._-]*$", "maxLength": 40
+        },
+        "registry_id": {
+          "description": "The model registry entry (models/registry/<id>.yaml) this model is qualified under, or null while the registry has none. A non-null id must resolve and its pinned hash must equal the file's.",
+          "type": ["string", "null"],
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "maxLength": 80
+        },
+        "files": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": { "$ref": "#/$defs/file" }
+        },
+        "licence": { "$ref": "#/$defs/licence" }
+      }
+    },
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "url", "revision", "size_bytes", "sha256"],
+      "properties": {
+        "name": {
+          "description": "File name in the pack directory. A bare name: no separators, no leading dot.",
+          "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "url": {
+          "description": "Where the operator fetches the pinned file. AlixAI never fetches it: install copies from a directory the operator provides.",
+          "type": "string", "format": "uri", "pattern": "^https://", "maxLength": 512
+        },
+        "revision": {
+          "description": "Upstream git commit the file was pinned at.",
+          "type": "string", "pattern": "^[0-9a-f]{40}$"
+        },
+        "size_bytes": { "type": "integer", "minimum": 1, "maximum": 8589934592 },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "licence": {
+      "description": "Recorded, not resolved: the final redistribution sign-off is the M5-H02 human licence review.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["spdx", "url", "redistribution_notes"],
+      "properties": {
+        "spdx": { "type": "string", "minLength": 1, "maxLength": 80, "pattern": "\\S" },
+        "url": { "type": "string", "format": "uri", "pattern": "^https://", "maxLength": 512 },
+        "redistribution_notes": { "type": "string", "minLength": 1, "maxLength": 2000 }
+      }
+    }
+  }
+}

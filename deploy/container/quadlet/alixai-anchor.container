@@ -1,0 +1,36 @@
+# Forwarder in the pod network namespace (compose service: anchor): 127.0.0.1:8080 -> the LocalAI container,
+# 7471 -> the loopback listener of AlixAI. Starts when LocalAI is healthy; its health check goes through the
+# forwarder to LocalAI /readyz, so "anchor healthy" means "AlixAI can reach LocalAI". No data, no secrets.
+[Unit]
+Description=AlixAI forwarder (LocalAI path and relay path)
+Requires=alixai-localai.service
+After=alixai-localai.service
+
+[Container]
+ContainerName=alixai-anchor
+Image=alixai-netctl.build
+Pod=alixai.pod
+User=65534
+Group=65534
+ReadOnly=true
+DropCapability=ALL
+NoNewPrivileges=true
+PidsLimit=64
+PodmanArgs=--memory=64m --memory-swap=64m --cpus=0.5
+Exec=forward 127.0.0.1:8080=localai:8080 0.0.0.0:7471=127.0.0.1:7470
+HealthCmd=/usr/local/bin/alixai-netctl probe http://127.0.0.1:8080/readyz
+HealthInterval=10s
+HealthTimeout=6s
+HealthRetries=6
+HealthStartPeriod=30s
+Notify=healthy
+LogDriver=journald
+Label=ai.alixai.component=anchor
+
+[Service]
+Restart=on-failure
+RestartSec=5s
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

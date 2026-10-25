@@ -1,0 +1,165 @@
+id: "invoices.void"
+version: "1.0.0"
+audience: "user"
+title: "Void an invoice"
+purpose: "Void an issued invoice that has no payments, in any team of the caller's organisation. Voiding is legally sensitive and cannot be undone: AlixAI can only start it. The manager finishes it in the ledger's own authenticated application, with the void reference that the prepared action shows. Voiding sends a notice to the customer."
+scope_level: "tenant"
+permissions:
+  - "invoices.void"
+fields:
+  - name: "invoice"
+    type: "entity_ref"
+    required: true
+    description: "The invoice to void, named by its number, its identifier or the customer's name."
+    entity_type: "invoice"
+  - name: "reason"
+    type: "enum"
+    required: true
+    description: "Why the invoice is voided."
+    values:
+      - "duplicate"
+      - "wrong_amount"
+      - "customer_cancelled"
+      - "other"
+entity_types:
+  invoice:
+    description: "An invoice of the caller's organisation, as the caller is allowed to see it."
+    resolve:
+      endpoint: "ledger-bridge"
+      native_method: "resolve_invoice_for_void"
+      result_schema: "schemas/resolve.result.schema.json"
+ambiguity:
+  - id: "invoice_multiple"
+    field: "invoice"
+    when: "multiple_matches"
+    action: "ask_user"
+    max_choices: 5
+  - id: "invoice_none"
+    field: "invoice"
+    when: "no_match"
+    action: "reject"
+validation:
+  - id: "invoice_voidable"
+    fields:
+      - "invoice"
+    description: "The invoice must be issued with no payments: a paid, partially paid or already void invoice cannot be voided."
+    error_code: "conflict"
+failure_states:
+  - code: "permission_denied"
+    description: "The principal's role may not void an invoice."
+  - code: "scope_violation"
+    description: "The record is outside the principal's reach (another team without manager access, or another organisation), or does not exist. The application does not say which."
+  - code: "validation_failed"
+    description: "A value is malformed or breaks one of the rules above. Nothing was changed."
+  - code: "missing_fields"
+    description: "A required field (invoice, reason) was not supplied. Nothing was changed."
+  - code: "conflict"
+    description: "The invoice is already void or has payments. Nothing was changed."
+  - code: "stale"
+    description: "A record changed after the action was prepared, so the preparation is no longer valid. Nothing was changed; it can be prepared again."
+  - code: "expired"
+    description: "The prepared action was not confirmed in time, or was withdrawn. Nothing was changed."
+  - code: "uncertain_outcome"
+    description: "The commit response was lost. What was recorded is established through the status operation before anything is retried."
+  - code: "step_up_required"
+    description: "The action can only be completed in the ledger application's own authenticated UI, with the void reference. Nothing was changed."
+  - code: "unavailable"
+    description: "The ledger cannot be reached. Nothing was changed."
+effect_class: "privileged"
+risk_level: 3
+operations:
+  validate:
+    endpoint: "ledger-bridge"
+    native_method: "invoices_void_validate"
+    result_schema: "schemas/invoices.void.validation.result.schema.json"
+    timeout_ms: 5000
+  prepare:
+    endpoint: "ledger-bridge"
+    native_method: "invoices_void_prepare"
+    result_schema: "schemas/invoices.void.prepared.result.schema.json"
+    timeout_ms: 8000
+  commit:
+    endpoint: "ledger-bridge"
+    native_method: "invoices_void_commit"
+    result_schema: "schemas/invoices.void.receipt.result.schema.json"
+    timeout_ms: 15000
+  status:
+    endpoint: "ledger-bridge"
+    native_method: "invoices_void_status"
+    result_schema: "schemas/invoices.void.receipt.result.schema.json"
+    timeout_ms: 5000
+confirmation:
+  mode: "step_up"
+  step_up_channel: "application_ui"
+prepared_action:
+  ttl_seconds: 900
+  invalidated_by:
+    - "record_revision"
+    - "permission_change"
+    - "user_change"
+    - "application_event"
+idempotency:
+  key_source: "prepared_action_id"
+  window_seconds: 86400
+  on_replay: "return_original_receipt"
+response_obligations:
+  - fact: "invoice_number"
+    when: "always"
+    description: "The number of the invoice."
+  - fact: "customer_name"
+    when: "prepared"
+    description: "The customer the invoice is for."
+  - fact: "invoice_total"
+    when: "prepared"
+    description: "The invoice amount with its currency."
+  - fact: "void_reference"
+    when: "always"
+    description: "The reference the manager quotes in the ledger application to finish the void."
+next_actions: []
+doc_refs:
+  - "iv-field-invoice"
+  - "iv-field-reason"
+  - "iv-rule-invoice_voidable"
+  - "iv-perm-invoices.void"
+  - "iv-failure-permission_denied"
+  - "iv-failure-scope_violation"
+  - "iv-failure-validation_failed"
+  - "iv-failure-missing_fields"
+  - "iv-failure-conflict"
+  - "iv-failure-stale"
+  - "iv-failure-expired"
+  - "iv-failure-uncertain_outcome"
+  - "iv-failure-step_up_required"
+  - "iv-failure-unavailable"
+  - "iv-risk"
+  - "iv-confirmation"
+  - "iv-outcome-voided"
+examples:
+  - id: "en-void-invoice"
+    language: "en"
+    test_only: true
+    utterance: "Void invoice INV-0001, it is a duplicate"
+    expected_fields:
+      invoice: "INV-0001"
+      reason: "duplicate"
+  - id: "en-void-wrong-amount"
+    language: "en"
+    test_only: true
+    utterance: "Cancel the Acme invoice, the amount was wrong"
+    expected_fields:
+      invoice: "Acme"
+      reason: "wrong_amount"
+  - id: "it-annulla-fattura"
+    language: "it"
+    test_only: true
+    utterance: "Annulla la fattura INV-0001, è un duplicato"
+    expected_fields:
+      invoice: "INV-0001"
+      reason: "duplicate"
+  - id: "it-annulla-importo"
+    language: "it"
+    test_only: true
+    utterance: "Annulla la fattura di Acme, l'importo era sbagliato"
+    expected_fields:
+      invoice: "Acme"
+      reason: "wrong_amount"

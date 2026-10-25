@@ -1,0 +1,67 @@
+capability_id: "quotes.draft"
+language: "it"
+contract_version: "1.0.0"
+terminology:
+  - "quote"
+  - "customer"
+field_prompts:
+  - field: "customer"
+    label: "Cliente"
+    prompt: "Per quale cliente è il preventivo?"
+    examples:
+      - "Acme Srl"
+  - field: "description"
+    label: "Descrizione"
+    prompt: "A cosa si riferisce il preventivo?"
+    examples:
+      - "Annual support contract"
+  - field: "amount_minor"
+    label: "Importo in unità minime"
+    prompt: "Qual è l'importo? Dammelo in unità minime della valuta, per esempio 125050 per 1250,50 EUR."
+    examples:
+      - "125050"
+  - field: "currency"
+    label: "Valuta"
+    prompt: "Quale valuta? Deve essere quella del cliente."
+  - field: "valid_days"
+    label: "Validità in giorni"
+    prompt: "Per quanti giorni deve restare valido il preventivo?"
+clarifications:
+  - rule_id: "customer_multiple"
+    prompt: "Più clienti corrispondono a {input.customer}. Quale intendi?"
+corrections:
+  acknowledgement: "Va bene, l'ho cambiato."
+  correctable_fields:
+    - "customer"
+    - "description"
+    - "amount_minor"
+    - "currency"
+    - "valid_days"
+  prepared_action_invalidated: "Questo cambia il preventivo, quindi il riepilogo precedente non vale più. Lo preparo di nuovo."
+cancellations:
+  acknowledgement: "Va bene, ho interrotto. Nessun preventivo è stato redatto."
+success:
+  - outcome: "drafted"
+    text: "Fatto. Il preventivo {quote_number} per {customer_name} di {quote_total} è stato redatto ed è valido fino al {quote_valid_until}."
+failures:
+  - code: "permission_denied"
+    text: "Non hai il permesso di redigere preventivi, quindi non ho cambiato nulla."
+  - code: "scope_violation"
+    text: "Non posso farlo: il cliente non è disponibile per te. Non ho cambiato nulla."
+  - code: "validation_failed"
+    text: "Non ho potuto redigerlo: l'importo, la valuta o la validità non rispettano una regola (la valuta deve essere quella del cliente). Non ho cambiato nulla."
+  - code: "missing_fields"
+    text: "Mi servono ancora il cliente, una descrizione e un importo per redigere il preventivo. Non ho cambiato nulla."
+  - code: "conflict"
+    text: "La richiesta è in conflitto con qualcosa di già registrato, quindi non ho cambiato nulla."
+  - code: "stale"
+    text: "Il cliente è cambiato mentre preparavo la richiesta, quindi non ho redatto il preventivo. Non ho cambiato nulla; posso prepararla di nuovo."
+  - code: "expired"
+    text: "Non è stato confermato in tempo, oppure è stato ritirato, quindi non ho cambiato nulla."
+  - code: "uncertain_outcome"
+    text: "Non sono riuscito a confermare se l'operazione è andata a buon fine. Controllo prima di fare altro, quindi per ora non chiederla di nuovo."
+  - code: "unavailable"
+    text: "Il registro non è raggiungibile in questo momento, quindi non ho cambiato nulla."
+next_actions:
+  - id: "issue_invoice"
+    label: "Emettere una fattura da questo preventivo"

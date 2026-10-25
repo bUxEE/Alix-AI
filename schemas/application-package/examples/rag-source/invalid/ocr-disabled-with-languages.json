@@ -1,0 +1,71 @@
+{
+  "id": "loan-policies",
+  "type": "documentation_package",
+  "title": "Loan policies",
+  "description": "The library's lending rules, shipped with the package so they are versioned and signed with it.",
+  "languages": [
+    "en",
+    "it"
+  ],
+  "owner": {
+    "name": "Library Operations",
+    "contact": "operations@library.example.test"
+  },
+  "scope": {
+    "application_id": "demo-library",
+    "tenant": {
+      "mode": "shared"
+    },
+    "workspace": {
+      "mode": "shared"
+    }
+  },
+  "root": {
+    "kind": "package",
+    "path": "documentation/policies"
+  },
+  "include": [
+    "**/*.md"
+  ],
+  "exclude": [
+    "drafts/**"
+  ],
+  "credential_ref": null,
+  "formats": [
+    "text/markdown"
+  ],
+  "limits": {
+    "max_file_bytes": 1048576,
+    "max_total_bytes": 52428800,
+    "max_files": 500
+  },
+  "sync": {
+    "method": "manual"
+  },
+  "deletion": {
+    "purge_after_hours": 0,
+    "on_source_removed": "purge"
+  },
+  "parser": {
+    "ocr": "disabled",
+    "max_pages_per_file": 200,
+    "timeout_seconds": 30,
+    "ocr_languages": [
+      "en"
+    ]
+  },
+  "citation": {
+    "kind": "alixai_preview"
+  },
+  "egress": {
+    "entries": []
+  },
+  "retention": {
+    "derived_data_days": null,
+    "import_originals": false,
+    "audit": {
+      "record_access": true,
+      "retention_days": 365
+    }
+  }
+}

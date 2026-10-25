@@ -1,0 +1,177 @@
+id: "invoices.issue"
+version: "1.0.0"
+audience: "user"
+title: "Issue an invoice"
+purpose: "Issue an invoice from a draft quote of the caller's team. The invoice takes the quote's exact amount and currency, a number and a due date. The invoice is prepared first, its exact effects are shown, and it is issued only after the user confirms. Issuing marks the quote as invoiced and sends the invoice to the customer."
+scope_level: "workspace"
+permissions:
+  - "invoices.issue"
+fields:
+  - name: "quote"
+    type: "entity_ref"
+    required: true
+    description: "The draft quote to invoice, named by its number, its identifier or the customer's name."
+    entity_type: "quote"
+  - name: "due_days"
+    type: "integer"
+    required: false
+    description: "How many days from today the invoice is due."
+    minimum: 0
+    maximum: 120
+    default:
+      source: "literal"
+      value: 30
+entity_types:
+  quote:
+    description: "A quote of the caller's team, as the caller is allowed to see it."
+    resolve:
+      endpoint: "ledger-bridge"
+      native_method: "resolve_quote"
+      result_schema: "schemas/resolve.result.schema.json"
+ambiguity:
+  - id: "quote_multiple"
+    field: "quote"
+    when: "multiple_matches"
+    action: "ask_user"
+    max_choices: 5
+  - id: "quote_none"
+    field: "quote"
+    when: "no_match"
+    action: "reject"
+validation:
+  - id: "quote_is_draft"
+    fields:
+      - "quote"
+    description: "The quote must still be a draft: a quote that was already invoiced cannot be invoiced again."
+    error_code: "conflict"
+  - id: "quote_still_valid"
+    fields:
+      - "quote"
+    description: "The quote must not have passed its last valid day."
+    error_code: "validation_failed"
+  - id: "due_days_in_range"
+    fields:
+      - "due_days"
+    description: "The due period must be from 0 to 120 days."
+    error_code: "validation_failed"
+failure_states:
+  - code: "permission_denied"
+    description: "The principal's role may not issue an invoice."
+  - code: "scope_violation"
+    description: "The record is outside the principal's reach (another team without manager access, or another organisation), or does not exist. The application does not say which."
+  - code: "validation_failed"
+    description: "A value is malformed or breaks one of the rules above. Nothing was changed."
+  - code: "missing_fields"
+    description: "A required field (quote) was not supplied. Nothing was changed."
+  - code: "conflict"
+    description: "The quote was already invoiced. Nothing was changed."
+  - code: "stale"
+    description: "A record changed after the action was prepared, so the preparation is no longer valid. Nothing was changed; it can be prepared again."
+  - code: "expired"
+    description: "The prepared action was not confirmed in time, or was withdrawn. Nothing was changed."
+  - code: "uncertain_outcome"
+    description: "The commit response was lost. What was recorded is established through the status operation before anything is retried."
+  - code: "unavailable"
+    description: "The ledger cannot be reached. Nothing was changed."
+effect_class: "external"
+risk_level: 2
+operations:
+  validate:
+    endpoint: "ledger-bridge"
+    native_method: "invoices_issue_validate"
+    result_schema: "schemas/invoices.issue.validation.result.schema.json"
+    timeout_ms: 5000
+  prepare:
+    endpoint: "ledger-bridge"
+    native_method: "invoices_issue_prepare"
+    result_schema: "schemas/invoices.issue.prepared.result.schema.json"
+    timeout_ms: 8000
+  commit:
+    endpoint: "ledger-bridge"
+    native_method: "invoices_issue_commit"
+    result_schema: "schemas/invoices.issue.receipt.result.schema.json"
+    timeout_ms: 15000
+  status:
+    endpoint: "ledger-bridge"
+    native_method: "invoices_issue_status"
+    result_schema: "schemas/invoices.issue.receipt.result.schema.json"
+    timeout_ms: 5000
+confirmation:
+  mode: "explicit"
+prepared_action:
+  ttl_seconds: 600
+  invalidated_by:
+    - "record_revision"
+    - "permission_change"
+    - "user_change"
+    - "application_event"
+idempotency:
+  key_source: "prepared_action_id"
+  window_seconds: 86400
+  on_replay: "return_original_receipt"
+response_obligations:
+  - fact: "quote_number"
+    when: "always"
+    description: "The number of the quote that is invoiced."
+  - fact: "customer_name"
+    when: "always"
+    description: "The customer the invoice is for."
+  - fact: "invoice_total"
+    when: "always"
+    description: "The invoice amount with its currency."
+  - fact: "invoice_due_on"
+    when: "always"
+    description: "The date the invoice is due."
+  - fact: "invoice_number"
+    when: "success"
+    description: "The number of the issued invoice."
+next_actions:
+  - id: "record_payment"
+    after: "success"
+    capability_id: "payments.record"
+doc_refs:
+  - "ii-field-quote"
+  - "ii-field-due_days"
+  - "ii-rule-quote_is_draft"
+  - "ii-rule-quote_still_valid"
+  - "ii-rule-due_days_in_range"
+  - "ii-perm-invoices.issue"
+  - "ii-failure-permission_denied"
+  - "ii-failure-scope_violation"
+  - "ii-failure-validation_failed"
+  - "ii-failure-missing_fields"
+  - "ii-failure-conflict"
+  - "ii-failure-stale"
+  - "ii-failure-expired"
+  - "ii-failure-uncertain_outcome"
+  - "ii-failure-unavailable"
+  - "ii-risk"
+  - "ii-confirmation"
+  - "ii-outcome-issued"
+examples:
+  - id: "en-issue-from-quote"
+    language: "en"
+    test_only: true
+    utterance: "Issue an invoice from quote QUO-0001"
+    expected_fields:
+      quote: "QUO-0001"
+  - id: "en-issue-due-14"
+    language: "en"
+    test_only: true
+    utterance: "Invoice the Acme quote, due in 14 days"
+    expected_fields:
+      quote: "Acme"
+      due_days: 14
+  - id: "it-emetti-fattura"
+    language: "it"
+    test_only: true
+    utterance: "Emetti una fattura dal preventivo QUO-0001"
+    expected_fields:
+      quote: "QUO-0001"
+  - id: "it-fattura-scadenza"
+    language: "it"
+    test_only: true
+    utterance: "Fattura il preventivo di Acme con scadenza a 14 giorni"
+    expected_fields:
+      quote: "Acme"
+      due_days: 14

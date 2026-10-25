@@ -1,0 +1,161 @@
+{
+  "name": "ui_tool_capability_named",
+  "description": "The model proposes a UI action that carries the id of a capability of the application (items.create). A UI tool can never be a capability, whatever is declared and registered, so the whole proposal fails: RUN_ERROR with validation_failed, no tool call, nothing prepared. (A client that DECLARES a tool with a capability's name is refused earlier, with a 400 before any stream.)",
+  "protocol": "AG-UI 1.0 (@ag-ui/core 1.0.1)",
+  "source": "engine",
+  "request": {
+    "method": "POST",
+    "path": "/v1/agui",
+    "body": {
+      "context": [],
+      "forwardedProps": {},
+      "messages": [
+        {
+          "content": "create an item named widget with quantity 3",
+          "id": "m1",
+          "role": "user"
+        }
+      ],
+      "runId": "run_ui_capability",
+      "state": {},
+      "threadId": "ses_test_01",
+      "tools": [
+        {
+          "description": "Highlights one row of the table the user is looking at.",
+          "name": "highlightRow",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "rowId": {
+                "type": "string",
+                "maxLength": 16
+              },
+              "color": {
+                "type": "string",
+                "enum": [
+                  "yellow",
+                  "red"
+                ]
+              }
+            },
+            "required": [
+              "rowId"
+            ],
+            "additionalProperties": false
+          }
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 200,
+    "content_type": "text/event-stream",
+    "sse_file": "ui_tool_capability_named.sse",
+    "ids": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "5",
+      "6"
+    ],
+    "event_types": [
+      "RUN_STARTED",
+      "STATE_DELTA",
+      "STEP_STARTED",
+      "STEP_FINISHED",
+      "STEP_STARTED",
+      "STEP_FINISHED",
+      "STEP_STARTED",
+      "STEP_FINISHED",
+      "CUSTOM",
+      "TEXT_MESSAGE_START",
+      "TEXT_MESSAGE_CONTENT",
+      "TEXT_MESSAGE_END",
+      "RUN_ERROR"
+    ],
+    "events": [
+      {
+        "type": "RUN_STARTED",
+        "threadId": "ses_test_01",
+        "runId": "run_ui_capability"
+      },
+      {
+        "type": "STATE_DELTA",
+        "delta": [
+          {
+            "op": "add",
+            "path": "/alixai",
+            "value": {
+              "pending": null
+            }
+          }
+        ]
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "interpreting"
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "interpreting"
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "validating"
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "validating"
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "verifying"
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "verifying"
+      },
+      {
+        "type": "CUSTOM",
+        "name": "alixai.directive",
+        "value": {
+          "turn_id": "trn_01J00000000000000000000001",
+          "capability_id": null,
+          "act": "report_failure",
+          "facts": [],
+          "must_state": [],
+          "missing_fields": [],
+          "invalid_fields": [],
+          "allowed_suggestions": [],
+          "confirmation": {
+            "mode": "none",
+            "bindings": []
+          },
+          "permitted_next_actions": [],
+          "sources": [],
+          "reason_code": "validation_failed"
+        }
+      },
+      {
+        "type": "TEXT_MESSAGE_START",
+        "messageId": "msg_trn_01J00000000000000000000001_1",
+        "role": "assistant"
+      },
+      {
+        "type": "TEXT_MESSAGE_CONTENT",
+        "messageId": "msg_trn_01J00000000000000000000001_1",
+        "delta": "Sorry, this could not be carried out.\nSome of the details are not valid."
+      },
+      {
+        "type": "TEXT_MESSAGE_END",
+        "messageId": "msg_trn_01J00000000000000000000001_1"
+      },
+      {
+        "type": "RUN_ERROR",
+        "message": "Sorry, this could not be carried out.\nSome of the details are not valid.",
+        "code": "validation_failed"
+      }
+    ]
+  }
+}

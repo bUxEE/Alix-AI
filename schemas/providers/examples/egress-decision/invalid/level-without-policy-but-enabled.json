@@ -1,0 +1,56 @@
+{
+  "decision_id": "edec_01J0000000000000000000000H",
+  "decided_at": "2026-10-02T09:00:00Z",
+  "subject": {
+    "application_id": "app_crm",
+    "tenant_id": "ten_42",
+    "workspace_id": "wsp_sales",
+    "principal_id": "usr_77",
+    "session_id": "ses_9"
+  },
+  "provider": {
+    "profile_id": "pprf_01J0000000000000000000000P",
+    "provider_id": "openai",
+    "model_id": "gpt-4.1-mini",
+    "model_version": "2025-04-14"
+  },
+  "role": "conversational_controller",
+  "envelope_id": "envl_01J0000000000000000000000E",
+  "outcome": "deny",
+  "reason": "external_disabled",
+  "levels": [
+    {
+      "level": "deployment",
+      "policy_id": "epol_01J0000000000000000000000A",
+      "enabled": true,
+      "source_mode": "local_only"
+    },
+    {
+      "level": "application",
+      "policy_id": null,
+      "enabled": true,
+      "source_mode": null
+    }
+  ],
+  "checks": [
+    {
+      "name": "kill_switch",
+      "passed": true,
+      "reason": "passed"
+    },
+    {
+      "name": "external_enabled",
+      "passed": false,
+      "reason": "no_policy_at_level"
+    }
+  ],
+  "categories": {
+    "sent": [],
+    "withheld": [],
+    "stripped": []
+  },
+  "sources": [],
+  "rag_excerpts_included": false,
+  "fallback_of": null,
+  "code": "permission_denied"
+}

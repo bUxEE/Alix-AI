@@ -1,0 +1,32 @@
+// The chat panel is CopilotKit's chat. This only maps CopilotKit's own theme variables (the shadcn-style names its
+// stylesheet defines under [data-copilotkit]) onto the AlixAI tokens, so the chat, the sidebar and the popup follow the
+// same theme as the AlixAI parts inside them. Import CopilotKit's stylesheet first (@copilotkit/react-core/v2/styles.css).
+
+.alix-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  background: var(--alixai-surface);
+  color: var(--alixai-text);
+  font-family: var(--alixai-font);
+
+  [data-copilotkit] {
+    --background: var(--alixai-surface);
+    --foreground: var(--alixai-text);
+    --card: var(--alixai-surface-raised);
+    --card-foreground: var(--alixai-text);
+    --muted: var(--alixai-surface-sunken);
+    --muted-foreground: var(--alixai-text-muted);
+    --accent: var(--alixai-accent-soft);
+    --accent-foreground: var(--alixai-text);
+    --primary: var(--alixai-accent);
+    --primary-foreground: var(--alixai-on-accent);
+    --secondary: var(--alixai-surface-sunken);
+    --secondary-foreground: var(--alixai-text);
+    --border: var(--alixai-border);
+    --input: var(--alixai-border-strong);
+    --ring: var(--alixai-focus);
+    --radius: var(--alixai-radius-md);
+  }
+}

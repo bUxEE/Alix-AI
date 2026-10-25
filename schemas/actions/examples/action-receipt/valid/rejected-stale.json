@@ -1,0 +1,16 @@
+{
+  "receipt_id": "rcpt_01J0000000000000000000000A",
+  "preparation_id": "prep_01J0000000000000000000000A",
+  "capability_id": "appointments.book",
+  "status": "rejected",
+  "records": [],
+  "facts": [],
+  "errors": [
+    {
+      "code": "stale",
+      "message": "The slot changed after the preparation was made."
+    }
+  ],
+  "audit_ref": "aud_01J0000000000000000000000A",
+  "issued_at": "2026-10-09T08:03:00Z"
+}

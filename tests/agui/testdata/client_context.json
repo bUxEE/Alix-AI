@@ -1,0 +1,241 @@
+{
+  "name": "client_context",
+  "description": "The page hands the agent its state, a readable context item and a system message, as CopilotKit's useCoAgent and useCopilotReadable do. All of it is untrusted data: the run answers from the application, and the engine received the data as one fenced block of the proposal prompt (asserted while recording), never in the utterance or the system message.",
+  "protocol": "AG-UI 1.0 (@ag-ui/core 1.0.1)",
+  "source": "engine",
+  "request": {
+    "method": "POST",
+    "path": "/v1/agui",
+    "body": {
+      "context": [
+        {
+          "description": "The row the user selected",
+          "value": "item-1 (gadget)"
+        }
+      ],
+      "forwardedProps": {},
+      "messages": [
+        {
+          "content": "You are looking at the items page.",
+          "id": "s1",
+          "role": "system"
+        },
+        {
+          "content": "show item item-1",
+          "id": "m1",
+          "role": "user"
+        }
+      ],
+      "runId": "run_context",
+      "state": {
+        "page": "items",
+        "selectedRow": "item-1"
+      },
+      "threadId": "ses_test_01",
+      "tools": []
+    }
+  },
+  "response": {
+    "status": 200,
+    "content_type": "text/event-stream",
+    "sse_file": "client_context.sse",
+    "ids": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7"
+    ],
+    "event_types": [
+      "RUN_STARTED",
+      "STATE_DELTA",
+      "STEP_STARTED",
+      "STEP_FINISHED",
+      "STEP_STARTED",
+      "STEP_FINISHED",
+      "STEP_STARTED",
+      "ACTIVITY_SNAPSHOT",
+      "STEP_FINISHED",
+      "STEP_STARTED",
+      "STEP_FINISHED",
+      "STEP_STARTED",
+      "STEP_FINISHED",
+      "CUSTOM",
+      "TEXT_MESSAGE_START",
+      "TEXT_MESSAGE_CONTENT",
+      "TEXT_MESSAGE_END",
+      "STATE_DELTA",
+      "CUSTOM",
+      "RUN_FINISHED"
+    ],
+    "events": [
+      {
+        "type": "RUN_STARTED",
+        "threadId": "ses_test_01",
+        "runId": "run_context"
+      },
+      {
+        "type": "STATE_DELTA",
+        "delta": [
+          {
+            "op": "add",
+            "path": "/alixai",
+            "value": {
+              "pending": null
+            }
+          }
+        ]
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "interpreting"
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "interpreting"
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "validating"
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "validating"
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "tool_call"
+      },
+      {
+        "type": "ACTIVITY_SNAPSHOT",
+        "messageId": "act_trn_01J00000000000000000000001_tool_call",
+        "activityType": "alixai.progress",
+        "content": {
+          "capabilityId": "items.get",
+          "stage": "tool_call",
+          "state": "completed"
+        }
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "tool_call"
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "generating"
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "generating"
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "verifying"
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "verifying"
+      },
+      {
+        "type": "CUSTOM",
+        "name": "alixai.directive",
+        "value": {
+          "turn_id": "trn_01J00000000000000000000001",
+          "capability_id": "items.get",
+          "act": "present_result",
+          "facts": [
+            {
+              "field": "name",
+              "value": {
+                "kind": "text",
+                "value": "gadget"
+              }
+            }
+          ],
+          "must_state": [
+            "name"
+          ],
+          "missing_fields": [],
+          "invalid_fields": [],
+          "allowed_suggestions": [],
+          "confirmation": {
+            "mode": "none",
+            "bindings": []
+          },
+          "permitted_next_actions": [
+            {
+              "action": "invoke_capability",
+              "capability_id": "items.create",
+              "label": "Create another item"
+            }
+          ],
+          "sources": []
+        }
+      },
+      {
+        "type": "TEXT_MESSAGE_START",
+        "messageId": "msg_trn_01J00000000000000000000001_1",
+        "role": "assistant"
+      },
+      {
+        "type": "TEXT_MESSAGE_CONTENT",
+        "messageId": "msg_trn_01J00000000000000000000001_1",
+        "delta": "The item is named gadget."
+      },
+      {
+        "type": "TEXT_MESSAGE_END",
+        "messageId": "msg_trn_01J00000000000000000000001_1"
+      },
+      {
+        "type": "STATE_DELTA",
+        "delta": [
+          {
+            "op": "replace",
+            "path": "/alixai/pending",
+            "value": {
+              "capabilityId": "items.get",
+              "collectedFields": [
+                {
+                  "name": "item_id",
+                  "origin": "user_turn"
+                }
+              ],
+              "expiresAt": "2026-10-02T12:30:00Z",
+              "kind": "goal",
+              "missingFields": [],
+              "phase": "success"
+            }
+          }
+        ]
+      },
+      {
+        "type": "CUSTOM",
+        "name": "alixai.suggestions",
+        "value": {
+          "suggestions": [
+            {
+              "title": "Create an item",
+              "message": "Create an item named widget, quantity 3, small",
+              "capabilityId": "items.create"
+            }
+          ]
+        }
+      },
+      {
+        "type": "RUN_FINISHED",
+        "threadId": "ses_test_01",
+        "runId": "run_context",
+        "result": {
+          "finishReason": "completed",
+          "turnId": "trn_01J00000000000000000000001"
+        },
+        "outcome": {
+          "type": "success"
+        }
+      }
+    ]
+  }
+}

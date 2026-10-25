@@ -1,0 +1,41 @@
+{
+  "type": "chart",
+  "description": "Line chart of weekly bookings per clinic.",
+  "mark": "line",
+  "data": [
+    {
+      "week": "2026-W40",
+      "clinic": "North",
+      "bookings": 40
+    },
+    {
+      "week": "2026-W41",
+      "clinic": "North",
+      "bookings": 44
+    },
+    {
+      "week": "2026-W40",
+      "clinic": "South",
+      "bookings": 31
+    },
+    {
+      "week": "2026-W41",
+      "clinic": "South",
+      "bookings": 29
+    }
+  ],
+  "encoding": {
+    "x": {
+      "field": "week",
+      "type": "ordinal"
+    },
+    "y": {
+      "field": "bookings",
+      "type": "quantitative"
+    },
+    "color": {
+      "field": "clinic",
+      "type": "nominal"
+    }
+  }
+}

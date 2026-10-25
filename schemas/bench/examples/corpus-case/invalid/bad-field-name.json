@@ -1,0 +1,77 @@
+{
+  "id": "ex-en-01",
+  "language": "en",
+  "category": "extraction",
+  "today": "2026-10-12",
+  "catalogue": [
+    {
+      "id": "bookings.create",
+      "description": "Book a table",
+      "fields": [
+        {
+          "name": "PartySize",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "date",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "time",
+          "type": "time",
+          "required": true
+        },
+        {
+          "name": "customer_name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "notes",
+          "type": "string",
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "bookings.cancel",
+      "description": "Cancel a booking",
+      "fields": [
+        {
+          "name": "booking_ref",
+          "type": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "menu.search",
+      "description": "Search the menu",
+      "fields": [
+        {
+          "name": "query",
+          "type": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "hours.get",
+      "description": "Opening hours",
+      "fields": []
+    }
+  ],
+  "text": "Table for four tomorrow at 7:30pm under the name Rossi.",
+  "expected": {
+    "capability_id": "bookings.create",
+    "intent": "task",
+    "fields": {
+      "party_size": 4,
+      "date": "2026-10-13",
+      "time": "19:30",
+      "customer_name": "Rossi"
+    }
+  }
+}

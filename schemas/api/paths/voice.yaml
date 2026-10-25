@@ -1,0 +1,141 @@
+# The voice area of the public API (master plan sections 13 and 14.2, "Voice"): one WebSocket per voice conversation,
+# on the conversation session the context token names. Implemented by internal/gateway/routes_v1_voice.go over
+# internal/voice/session; the messages are schemas/voice/client-message and schemas/voice/server-event.
+#
+# Voice is an installable interface to the SAME session as text: audio becomes a finalised transcript, the transcript
+# runs through the normal turn pipeline (the engine, the stream hub, the confirmation and commit path) exactly like a
+# typed message, and the verified response text may then be spoken. Nothing about the session is voice-only, so a
+# deployment without voice, a speech component that is down, or a client that never opens this socket loses nothing of
+# the text API.
+paths:
+  /v1/sessions/{session_id}/voice:
+    parameters:
+      - $ref: '#/components/parameters/VoiceSessionId'
+      - $ref: '#/components/parameters/VoiceLanguage'
+      - $ref: '#/components/parameters/VoiceSpeak'
+    get:
+      operationId: openVoiceSession
+      tags: [sessions]
+      summary: Open a voice conversation on the session (WebSocket)
+      description: |
+        Upgrades to a WebSocket (`Upgrade: websocket`) that carries one voice conversation: the client streams audio
+        or submits a finalised utterance, the core answers with interim and final transcripts, runs the final
+        transcript as the user's message on the token's session, and sends the verified response as text and,
+        when speech is available, as audio. Everything that can be refused is refused with an HTTP status before the
+        upgrade: the token, the session, a quarantined application, and a deployment with no speech recognition
+        (`503 unavailable`, `details.effect: text_input_only` -- type instead; the text API is unaffected).
+
+        **Identity.** The scope is the verified context token, whole, and nothing a message says: no message
+        carries a tenant, a workspace, a principal, a role or a scope. The token is single use and is presented in
+        the `Authorization` header of the upgrade request (never in the URL); the connection lives at most as long as the
+        token (`1001`, reason `credential_expired`) and at most 15 minutes, and a later connection for the same
+        session takes over the earlier one (`1001`, reason `replaced`). A browser's `Origin` must be the request's
+        own host: no CORS header is ever sent. A deployment serves at most four voice connections at a time, at
+        most two of them for one tenant and one for one user, by default (`503 resource_exhausted`, retryable;
+        `details.limit` is `deployment`, `tenant` or `principal`).
+
+        **Messages.** Text messages are JSON: `ClientMessage` from the client, `ServerEvent` from the core (the
+        schemas of this area; every event the core sends validates against `ServerEvent`). Binary messages are audio,
+        raw PCM 16-bit little-endian: from the client while a capture is active (in the format `capture.start`
+        named, at most `max_chunk_bytes` each), from the core between `playback.started` and `playback.done` or
+        `playback.cancelled` (in the format `playback.started` announced). The first message is `session.started`.
+
+        **Audio in.** Stream: `capture.start`, binary audio, `capture.end` (or `capture.cancel`, which discards
+        everything). Or submit a whole utterance with `audio.submit` (base64, at most 8 MiB of audio). Interim
+        transcripts (`transcript.interim`) are for display and never reach the pipeline; the final transcript
+        (`transcript.final`) is visible to the host before the turn runs and then runs as the user's message. A
+        recogniser that fails part way yields no transcript at all (`capture.cancelled`, reason `stt_failed`): partial
+        output is never acted on. The language of a capture is a hint to the recogniser and, when the core supports
+        it, the language of the reply; the language the recogniser reports is only echoed.
+
+        **The turn.** `turn.completed` names the turn, so its events (directive, prepared action, confirmation
+        panel, citations) are the stream of `GET /v1/sessions/{session_id}/turns/{turn_id}/events`. A turn that
+        prepared an action that needs confirmation carries the single-use `confirmation` secret for the client's own
+        confirm control. **Speech never confirms an action:** there is no message that confirms, rejects or
+        chooses, and a spoken "yes" is only text. The only confirmation is the structured input of
+        `POST /v1/sessions/{session_id}/turns`, so a booking started by voice is confirmed on the screen, by text,
+        in the same session. A speaker-recognition hint, when the deployment has that component, is reported beside
+        the transcript as a hint and changes nothing about the scope or the permissions.
+
+        **Correction.** `transcript.correct` replaces the transcript of the latest utterance with the user's text
+        before anything is confirmed: the corrected text runs as a new message on the same session, the pipeline's
+        correction rules void the preparation built on the old transcript (`superseded_preparation_id`), and a
+        correction after a newer utterance is `stale`. A correction can never change a commit: a commit is a receipt.
+
+        **Speech.** The response (`response`) is the model's text that passed the response verifier, or the
+        deterministic template, and the core checks it once more before it is spoken: speech starts only after the
+        material facts are verified (`speech: queued`), otherwise the text is delivered and `speech` is `skipped`
+        with the reason. `playback.cancel` stops the speech at once; a new capture or submission does too (barge-in:
+        `playback.cancelled`, reason `barge_in`), and after `playback.cancelled` no further audio of that playback is
+        sent. A response that a newer utterance made stale is not spoken at all (`superseded`).
+
+        **When a component fails.** The connection stays open and text keeps working: an `error` event carries the
+        typed error and the degradation `effect` (`text_input_only` for speech recognition, `verified_text_only`
+        for speech synthesis, `manual_turn_taking` when no voice-activity detection exists: the client ends each
+        capture itself). The language pack the connection runs on is taken from the deployment; when it is
+        deactivated, live captures and playbacks are cancelled (reason `pack_changed`) and the connection stays.
+
+        **Privacy.** Raw audio is not retained: the core holds an utterance's audio only while it is recognised,
+        never writes it to a log, an event or a store, and zeroes it afterwards. A tenant whose policy says so has the
+        audio of its utterances handed to the deployment's audio store (`retain_raw_audio` in `session.started`);
+        if it cannot be stored the utterance is dropped (`capture.cancelled`, reason `retention_failed`).
+
+        **Close codes.** `1000` the client closed; `1001` the credential expired, the connection was replaced or the
+        service is stopping; `1008` too many malformed messages; `1009` a message over `max_audio_bytes` once encoded.
+      x-alixai-websocket:
+        client_message:
+          $ref: '#/components/schemas/VoiceClientMessage'
+        server_event:
+          $ref: '#/components/schemas/VoiceServerEvent'
+      responses:
+        '101':
+          description: 'The connection is upgraded to a WebSocket (the request carried `Upgrade: websocket`). The first message is `session.started`.'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '426':
+          description: The request did not ask for a WebSocket upgrade (`validation_failed`); this operation has no other transport.
+          content:
+            application/json:
+              schema:
+                $ref: ../openapi.yaml#/components/schemas/Error
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+components:
+  parameters:
+    VoiceSessionId:
+      name: session_id
+      in: path
+      required: true
+      description: The session id the context token carries. Any other value is `scope_violation`.
+      schema:
+        type: string
+        pattern: '^[A-Za-z0-9_.-]{1,128}$'
+    VoiceLanguage:
+      name: language
+      in: query
+      required: false
+      description: |
+        The user's language (BCP 47): the recognition hint of a capture that names none and the language of the reply
+        when the core supports it. Not given: the core chooses.
+      schema:
+        type: string
+        maxLength: 35
+        pattern: '^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$'
+    VoiceSpeak:
+      name: speak
+      in: query
+      required: false
+      description: '`false` turns speech off for this connection: responses arrive as text only. Default `true`.'
+      schema:
+        type: string
+        enum: ['true', 'false']
+  schemas:
+    VoiceClientMessage:
+      $ref: ../../voice/client-message.schema.json
+    VoiceServerEvent:
+      $ref: ../../voice/server-event.schema.json

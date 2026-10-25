@@ -1,0 +1,58 @@
+{
+  "capability_id": "catalog.find_title",
+  "language": "en",
+  "contract_version": "1.0.0",
+  "terminology": ["title"],
+  "field_prompts": [
+    {
+      "field": "query",
+      "label": "Search words",
+      "prompt": "What title, author or subject should I look for?",
+      "examples": ["gardening for beginners", "Calvino"]
+    },
+    {
+      "field": "available_only",
+      "label": "Only titles available now",
+      "prompt": "Should I list only the titles you can borrow right now?"
+    },
+    {
+      "field": "max_results",
+      "label": "Number of results",
+      "prompt": "How many titles should I list?"
+    }
+  ],
+  "clarifications": [],
+  "corrections": {
+    "acknowledgement": "Okay, I will search for {input.query} instead.",
+    "correctable_fields": ["query", "available_only", "max_results"]
+  },
+  "cancellations": {
+    "acknowledgement": "Okay, I stopped that search."
+  },
+  "success": [
+    {
+      "outcome": "found",
+      "text": "I found {search.count} matching titles: {search.titles}."
+    },
+    {
+      "outcome": "none_found",
+      "text": "I found no titles matching {input.query}. That is {search.count} results."
+    }
+  ],
+  "failures": [
+    {
+      "code": "validation_failed",
+      "text": "I could not search because {input.query} is too short. Please give me at least two characters."
+    },
+    {
+      "code": "unavailable",
+      "text": "The catalogue is not reachable right now, so I could not search. Nothing was changed."
+    }
+  ],
+  "next_actions": [
+    {
+      "id": "reserve_found_title",
+      "label": "Reserve one of these titles"
+    }
+  ]
+}

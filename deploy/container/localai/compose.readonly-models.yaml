@@ -1,0 +1,18 @@
+# Optional override: /models read-only. Use it on top of the shipped files, after the models are provisioned:
+#   docker compose -f compose.yaml -f compose.lite.yaml -f compose.readonly-models.yaml up -d
+#
+# What it buys (hardening-live.md section 1 item 2b, checklist HC-24): LocalAI deletes and re-downloads a model file
+# whose sha256 differs from its pin at every start; with /models read-only that cannot happen, and a compromised
+# runtime cannot rewrite a model file. What it costs: nothing can be downloaded into ./data/models by LocalAI, so
+# every model in config/models.yaml must already be on disk and match its pin (README.md "Backend and model pull
+# from the host" for provisioning without the container's network).
+#
+# Both halves are needed, on purpose. The :ro mount makes the directory read-only; ALIXAI_MODELS_READONLY=true tells
+# entrypoint.sh that this is intended. A /models that is read-only without the switch still refuses to start, and the
+# switch on a writable /models refuses too.
+services:
+  localai:
+    environment:
+      ALIXAI_MODELS_READONLY: "true"
+    volumes:
+      - ./data/models:/models:ro

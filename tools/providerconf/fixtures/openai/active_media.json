@@ -1,0 +1,11 @@
+{
+  "id": "resp_0123456789abcdef",
+  "object": "response",
+  "status": "completed",
+  "model": "gpt-5-mini-2025-08-07",
+  "output": [
+    {"type": "image_generation_call", "id": "ig_1", "status": "completed", "result": "PHN2ZyBvbmxvYWQ9YWxlcnQoMSkvPg=="},
+    {"type": "message", "id": "msg_1", "role": "assistant", "content": [{"type": "output_text", "text": {{TEXT}}, "annotations": []}]}
+  ],
+  "usage": {"input_tokens": {{IN}}, "input_tokens_details": {"cached_tokens": 0}, "output_tokens": {{OUT}}, "output_tokens_details": {"reasoning_tokens": 0}, "total_tokens": 0}
+}

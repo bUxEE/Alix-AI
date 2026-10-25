@@ -1,0 +1,18 @@
+data: {"type":"RUN_STARTED","threadId":"ses_test_01","runId":"run_chart"}
+
+id: 0
+data: {"type":"CUSTOM","name":"alixai.directive","value":{"turn_id":"trn_01J00000000000000000000001","capability_id":"appointments.book","act":"present_result","facts":[{"field":"booked_monday","value":{"kind":"integer","value":12}},{"field":"booked_tuesday","value":{"kind":"integer","value":18}},{"field":"booked_wednesday","value":{"kind":"integer","value":9}}],"must_state":[],"missing_fields":[],"invalid_fields":[],"allowed_suggestions":[],"confirmation":{"mode":"none","bindings":[]},"permitted_next_actions":[],"sources":[]}}
+
+id: 1
+data: {"type":"ACTIVITY_SNAPSHOT","messageId":"act_trn_01J00000000000000000000001_b1","activityType":"alixai.block.chart","content":{"type":"chart","title":"Appointments per weekday","description":"Bar chart of booked appointments per weekday: Monday 12, Tuesday 18, Wednesday 9.","mark":"bar","data":[{"booked":12,"weekday":"Mon"},{"booked":18,"weekday":"Tue"},{"booked":9,"weekday":"Wed"}],"encoding":{"x":{"field":"weekday","type":"nominal","title":"Weekday"},"y":{"field":"booked","type":"quantitative","title":"Booked"}}}}
+
+data: {"type":"TEXT_MESSAGE_START","messageId":"msg_trn_01J00000000000000000000001_1","role":"assistant"}
+
+id: 2
+data: {"type":"TEXT_MESSAGE_CONTENT","messageId":"msg_trn_01J00000000000000000000001_1","delta":"Tuesday is the busiest day."}
+
+data: {"type":"TEXT_MESSAGE_END","messageId":"msg_trn_01J00000000000000000000001_1"}
+
+id: 3
+data: {"type":"RUN_FINISHED","threadId":"ses_test_01","runId":"run_chart","result":{"finishReason":"completed","turnId":"trn_01J00000000000000000000001"},"outcome":{"type":"success"}}
+

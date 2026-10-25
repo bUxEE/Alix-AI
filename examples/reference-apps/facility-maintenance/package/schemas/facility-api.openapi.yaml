@@ -1,0 +1,1479 @@
+openapi: 3.0.3
+info:
+  title: Facility Maintenance API
+  version: 1.0.0
+  description: 'The approved operations of the synthetic facility-maintenance application, the second AlixAI reference application. Every reply is a DeterministicResult with the HTTP status a REST host would pick. The identity of the caller travels in X-AlixAI-Identity; the application reauthorises it on every call. A deployment may set FACILITY_API_TOKEN, and the application then also requires Authorization: Bearer on every operation; the package declares no credential reference, so the adapter sends none.'
+servers:
+- url: http://127.0.0.1:8788
+tags:
+- name: work orders
+- name: resolution
+- name: workorders.create
+- name: workorders.assign
+- name: workorders.close
+- name: assets.decommission
+- name: management
+- name: test support
+paths:
+  /v1/work-orders:
+    get:
+      operationId: listWorkOrders
+      summary: List work orders
+      description: 'Read: the work orders the caller may see, most urgent first (level 0). A technician sees the work assigned to them and the work they raised; supervisors and auditors see the whole site.'
+      tags:
+      - work orders
+      parameters:
+      - $ref: '#/components/parameters/Identity'
+      - name: status
+        in: query
+        required: false
+        description: Only this status; any lists all.
+        schema:
+          type: string
+          enum:
+          - open
+          - assigned
+          - closed
+          - any
+      - name: priority
+        in: query
+        required: false
+        description: Only this priority.
+        schema:
+          type: string
+          enum:
+          - low
+          - normal
+          - high
+          - urgent
+      - name: asset
+        in: query
+        required: false
+        description: Only work orders of this asset.
+        schema:
+          type: string
+          maxLength: 128
+      - name: technician
+        in: query
+        required: false
+        description: Only work orders assigned to this technician.
+        schema:
+          type: string
+          maxLength: 128
+      - name: max_results
+        in: query
+        required: false
+        description: How many to list at most.
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 10
+      responses:
+        '200':
+          $ref: '#/components/responses/Result'
+        '401':
+          $ref: '#/components/responses/Result'
+        '403':
+          $ref: '#/components/responses/Result'
+        '409':
+          $ref: '#/components/responses/Result'
+        '422':
+          $ref: '#/components/responses/Result'
+        '429':
+          $ref: '#/components/responses/Result'
+        '503':
+          $ref: '#/components/responses/Result'
+        default:
+          $ref: '#/components/responses/Result'
+  /v1/resolve/assets:
+    post:
+      operationId: resolveAsset
+      summary: Resolve a asset
+      description: 'Read: the asset candidates a mention resolves to, as the caller may see them. An empty mention matches nothing.'
+      tags:
+      - resolution
+      parameters:
+      - $ref: '#/components/parameters/Identity'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Result'
+        '401':
+          $ref: '#/components/responses/Result'
+        '403':
+          $ref: '#/components/responses/Result'
+        '409':
+          $ref: '#/components/responses/Result'
+        '422':
+          $ref: '#/components/responses/Result'
+        '429':
+          $ref: '#/components/responses/Result'
+        '503':
+          $ref: '#/components/responses/Result'
+        default:
+          $ref: '#/components/responses/Result'
+  /v1/resolve/work-orders:
+    post:
+      operationId: resolveWorkOrder
+      summary: Resolve a work order
+      description: 'Read: the work order candidates a mention resolves to, as the caller may see them. An empty mention matches nothing.'
+      tags:
+      - resolution
+      parameters:
+      - $ref: '#/components/parameters/Identity'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Result'
+        '401':
+          $ref: '#/components/responses/Result'
+        '403':
+          $ref: '#/components/responses/Result'
+        '409':
+          $ref: '#/components/responses/Result'
+        '422':
+          $ref: '#/components/responses/Result'
+        '429':
+          $ref: '#/components/responses/Result'
+        '503':
+          $ref: '#/components/responses/Result'
+        default:
+          $ref: '#/components/responses/Result'
+  /v1/resolve/technicians:
+    post:
+      operationId: resolveTechnician
+      summary: Resolve a technician
+      description: 'Read: the technician candidates a mention resolves to, as the caller may see them. An empty mention matches nothing.'
+      tags:
+      - resolution
+      parameters:
+      - $ref: '#/components/parameters/Identity'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Result'
+        '401':
+          $ref: '#/components/responses/Result'
+        '403':
+          $ref: '#/components/responses/Result'
+        '409':
+          $ref: '#/components/responses/Result'
+        '422':
+          $ref: '#/components/responses/Result'
+        '429':
+          $ref: '#/components/responses/Result'
+        '503':
+          $ref: '#/components/responses/Result'
+        default:
+          $ref: '#/components/responses/Result'
+  /v1/work-orders-create/validate:
+    post:
+      operationId: validateCreateWorkOrder
+      summary: 'Validate: workorders.create'
+      description: Raise a work order against an asset of the caller's site (level 1, reversible). Checks candidate values and stages nothing; on unchanged data it reports the snapshot version Prepare reports.
+      tags:
+      - workorders.create
+      parameters:
+      - $ref: '#/components/parameters/Identity'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWorkOrderFields'
+      responses:
+        '200':
+          $ref: '#/components/responses/Result'
+        '401':
+          $ref: '#/components/responses/Result'
+        '403':
+          $ref: '#/components/responses/Result'
+        '409':
+          $ref: '#/components/responses/Result'
+        '422':
+          $ref: '#/components/responses/Result'
+        '429':
+          $ref: '#/components/responses/Result'
+        '503':
+          $ref: '#/components/responses/Result'
+        default:
+          $ref: '#/components/responses/Result'
+  /v1/work-orders-create/prepare:
+    post:
+      operationId: prepareCreateWorkOrder
+      summary: 'Prepare: workorders.create'
+      description: Raise a work order against an asset of the caller's site (level 1, reversible). Checks every rule and returns the exact effects, the data versions relied on and how long the preparation is honoured.
+      tags:
+      - workorders.create
+      parameters:
+      - $ref: '#/components/parameters/Identity'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWorkOrderFields'
+      responses:
+        '200':
+          $ref: '#/components/responses/Result'
+        '401':
+          $ref: '#/components/responses/Result'
+        '403':
+          $ref: '#/components/responses/Result'
+        '409':
+          $ref: '#/components/responses/Result'
+        '422':
+          $ref: '#/components/responses/Result'
+        '429':
+          $ref: '#/components/responses/Result'
+        '503':
+          $ref: '#/components/responses/Result'
+        default:
+          $ref: '#/components/responses/Result'
+  /v1/work-orders-create/commit:
+    post:
+      operationId: commitCreateWorkOrder
+      summary: 'Commit: workorders.create'
+      description: Raise a work order against an asset of the caller's site (level 1, reversible). Applies a prepared action once per idempotency key; a repeat returns the original receipt.
+      tags:
+      - workorders.create
+      parameters:
+      - $ref: '#/components/parameters/Identity'
+      - name: Idempotency-Key
+        in: header
+        required: true
+        description: The idempotency key the core fixed at prepare time; echoed in the reply.
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{16,128}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreparedAction'
+      responses:
+        '200':
+          $ref: '#/components/responses/Result'
+        '401':
+          $ref: '#/components/responses/Result'
+        '403':
+          $ref: '#/components/responses/Result'
+        '409':
+          $ref: '#/components/responses/Result'
+        '422':
+          $ref: '#/components/responses/Result'
+        '429':
+          $ref: '#/components/responses/Result'
+        '503':
+          $ref: '#/components/responses/Result'
+        default:
+          $ref: '#/components/responses/Result'
+  /v1/work-orders-create/status/{idempotency_key}:
+    get:
+      operationId: statusCreateWorkOrder
+      summary: 'Status: workorders.create'
+      description: 'What was recorded for an idempotency key. Exactly one answer proves nothing was applied: rejected, one validation_failed on idempotency_key, no identifiers (HTTP 404).'
+      tags:
+      - workorders.create
+      parameters:
+      - $ref: '#/components/parameters/Identity'
+      - name: idempotency_key
+        in: path
+        required: true
+        description: The idempotency key of the commit whose outcome is asked for.
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{16,128}$
+      responses:
+        '200':
+          $ref: '#/components/responses/Result'
+        '401':
+          $ref: '#/components/responses/Result'
+        '403':
+          $ref: '#/components/responses/Result'
+        '404':
+          $ref: '#/components/responses/Result'
+        '409':
+          $ref: '#/components/responses/Result'
+        '422':
+          $ref: '#/components/responses/Result'
+        '429':
+          $ref: '#/components/responses/Result'
+        '503':
+          $ref: '#/components/responses/Result'
+        default:
+          $ref: '#/components/responses/Result'
+  /v1/work-orders-assign/validate:
+    post:
+      operationId: validateAssignTechnician
+      summary: 'Validate: workorders.assign'
+      description: Assign a technician to a work order; the technician is notified (level 2). Checks candidate values and stages nothing; on unchanged data it reports the snapshot version Prepare reports.
+      tags:
+      - workorders.assign
+      parameters:
+      - $ref: '#/components/parameters/Identity'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignTechnicianFields'
+      responses:
+        '200':
+          $ref: '#/components/responses/Result'
+        '401':
+          $ref: '#/components/responses/Result'
+        '403':
+          $ref: '#/components/responses/Result'
+        '409':
+          $ref: '#/components/responses/Result'
+        '422':
+          $ref: '#/components/responses/Result'
+        '429':
+          $ref: '#/components/responses/Result'
+        '503':
+          $ref: '#/components/responses/Result'
+        default:
+          $ref: '#/components/responses/Result'
+  /v1/work-orders-assign/prepare:
+    post:
+      operationId: prepareAssignTechnician
+      summary: 'Prepare: workorders.assign'
+      description: Assign a technician to a work order; the technician is notified (level 2). Checks every rule and returns the exact effects, the data versions relied on and how long the preparation is honoured.
+      tags:
+      - workorders.assign
+      parameters:
+      - $ref: '#/components/parameters/Identity'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignTechnicianFields'
+      responses:
+        '200':
+          $ref: '#/components/responses/Result'
+        '401':
+          $ref: '#/components/responses/Result'
+        '403':
+          $ref: '#/components/responses/Result'
+        '409':
+          $ref: '#/components/responses/Result'
+        '422':
+          $ref: '#/components/responses/Result'
+        '429':
+          $ref: '#/components/responses/Result'
+        '503':
+          $ref: '#/components/responses/Result'
+        default:
+          $ref: '#/components/responses/Result'
+  /v1/work-orders-assign/commit:
+    post:
+      operationId: commitAssignTechnician
+      summary: 'Commit: workorders.assign'
+      description: Assign a technician to a work order; the technician is notified (level 2). Applies a prepared action once per idempotency key; a repeat returns the original receipt.
+      tags:
+      - workorders.assign
+      parameters:
+      - $ref: '#/components/parameters/Identity'
+      - name: Idempotency-Key
+        in: header
+        required: true
+        description: The idempotency key the core fixed at prepare time; echoed in the reply.
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{16,128}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreparedAction'
+      responses:
+        '200':
+          $ref: '#/components/responses/Result'
+        '401':
+          $ref: '#/components/responses/Result'
+        '403':
+          $ref: '#/components/responses/Result'
+        '409':
+          $ref: '#/components/responses/Result'
+        '422':
+          $ref: '#/components/responses/Result'
+        '429':
+          $ref: '#/components/responses/Result'
+        '503':
+          $ref: '#/components/responses/Result'
+        default:
+          $ref: '#/components/responses/Result'
+  /v1/work-orders-assign/status/{idempotency_key}:
+    get:
+      operationId: statusAssignTechnician
+      summary: 'Status: workorders.assign'
+      description: 'What was recorded for an idempotency key. Exactly one answer proves nothing was applied: rejected, one validation_failed on idempotency_key, no identifiers (HTTP 404).'
+      tags:
+      - workorders.assign
+      parameters:
+      - $ref: '#/components/parameters/Identity'
+      - name: idempotency_key
+        in: path
+        required: true
+        description: The idempotency key of the commit whose outcome is asked for.
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{16,128}$
+      responses:
+        '200':
+          $ref: '#/components/responses/Result'
+        '401':
+          $ref: '#/components/responses/Result'
+        '403':
+          $ref: '#/components/responses/Result'
+        '404':
+          $ref: '#/components/responses/Result'
+        '409':
+          $ref: '#/components/responses/Result'
+        '422':
+          $ref: '#/components/responses/Result'
+        '429':
+          $ref: '#/components/responses/Result'
+        '503':
+          $ref: '#/components/responses/Result'
+        default:
+          $ref: '#/components/responses/Result'
+  /v1/work-orders-close/validate:
+    post:
+      operationId: validateCloseWorkOrder
+      summary: 'Validate: workorders.close'
+      description: Close a work order with the parts used; stock is consumed (level 2). Checks candidate values and stages nothing; on unchanged data it reports the snapshot version Prepare reports.
+      tags:
+      - workorders.close
+      parameters:
+      - $ref: '#/components/parameters/Identity'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CloseWorkOrderFields'
+      responses:
+        '200':
+          $ref: '#/components/responses/Result'
+        '401':
+          $ref: '#/components/responses/Result'
+        '403':
+          $ref: '#/components/responses/Result'
+        '409':
+          $ref: '#/components/responses/Result'
+        '422':
+          $ref: '#/components/responses/Result'
+        '429':
+          $ref: '#/components/responses/Result'
+        '503':
+          $ref: '#/components/responses/Result'
+        default:
+          $ref: '#/components/responses/Result'
+  /v1/work-orders-close/prepare:
+    post:
+      operationId: prepareCloseWorkOrder
+      summary: 'Prepare: workorders.close'
+      description: Close a work order with the parts used; stock is consumed (level 2). Checks every rule and returns the exact effects, the data versions relied on and how long the preparation is honoured.
+      tags:
+      - workorders.close
+      parameters:
+      - $ref: '#/components/parameters/Identity'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CloseWorkOrderFields'
+      responses:
+        '200':
+          $ref: '#/components/responses/Result'
+        '401':
+          $ref: '#/components/responses/Result'
+        '403':
+          $ref: '#/components/responses/Result'
+        '409':
+          $ref: '#/components/responses/Result'
+        '422':
+          $ref: '#/components/responses/Result'
+        '429':
+          $ref: '#/components/responses/Result'
+        '503':
+          $ref: '#/components/responses/Result'
+        default:
+          $ref: '#/components/responses/Result'
+  /v1/work-orders-close/commit:
+    post:
+      operationId: commitCloseWorkOrder
+      summary: 'Commit: workorders.close'
+      description: Close a work order with the parts used; stock is consumed (level 2). Applies a prepared action once per idempotency key; a repeat returns the original receipt.
+      tags:
+      - workorders.close
+      parameters:
+      - $ref: '#/components/parameters/Identity'
+      - name: Idempotency-Key
+        in: header
+        required: true
+        description: The idempotency key the core fixed at prepare time; echoed in the reply.
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{16,128}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreparedAction'
+      responses:
+        '200':
+          $ref: '#/components/responses/Result'
+        '401':
+          $ref: '#/components/responses/Result'
+        '403':
+          $ref: '#/components/responses/Result'
+        '409':
+          $ref: '#/components/responses/Result'
+        '422':
+          $ref: '#/components/responses/Result'
+        '429':
+          $ref: '#/components/responses/Result'
+        '503':
+          $ref: '#/components/responses/Result'
+        default:
+          $ref: '#/components/responses/Result'
+  /v1/work-orders-close/status/{idempotency_key}:
+    get:
+      operationId: statusCloseWorkOrder
+      summary: 'Status: workorders.close'
+      description: 'What was recorded for an idempotency key. Exactly one answer proves nothing was applied: rejected, one validation_failed on idempotency_key, no identifiers (HTTP 404).'
+      tags:
+      - workorders.close
+      parameters:
+      - $ref: '#/components/parameters/Identity'
+      - name: idempotency_key
+        in: path
+        required: true
+        description: The idempotency key of the commit whose outcome is asked for.
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{16,128}$
+      responses:
+        '200':
+          $ref: '#/components/responses/Result'
+        '401':
+          $ref: '#/components/responses/Result'
+        '403':
+          $ref: '#/components/responses/Result'
+        '404':
+          $ref: '#/components/responses/Result'
+        '409':
+          $ref: '#/components/responses/Result'
+        '422':
+          $ref: '#/components/responses/Result'
+        '429':
+          $ref: '#/components/responses/Result'
+        '503':
+          $ref: '#/components/responses/Result'
+        default:
+          $ref: '#/components/responses/Result'
+  /v1/assets-decommission/validate:
+    post:
+      operationId: validateDecommissionAsset
+      summary: 'Validate: assets.decommission'
+      description: Retire an asset (level 3). Prepare stages a step-up request; the change is completed only in the application's own authenticated UI, and commit never applies it. Checks candidate values and stages nothing; on unchanged data it reports the snapshot version Prepare reports.
+      tags:
+      - assets.decommission
+      parameters:
+      - $ref: '#/components/parameters/Identity'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecommissionAssetFields'
+      responses:
+        '200':
+          $ref: '#/components/responses/Result'
+        '401':
+          $ref: '#/components/responses/Result'
+        '403':
+          $ref: '#/components/responses/Result'
+        '409':
+          $ref: '#/components/responses/Result'
+        '422':
+          $ref: '#/components/responses/Result'
+        '429':
+          $ref: '#/components/responses/Result'
+        '503':
+          $ref: '#/components/responses/Result'
+        default:
+          $ref: '#/components/responses/Result'
+  /v1/assets-decommission/prepare:
+    post:
+      operationId: prepareDecommissionAsset
+      summary: 'Prepare: assets.decommission'
+      description: Retire an asset (level 3). Prepare stages a step-up request; the change is completed only in the application's own authenticated UI, and commit never applies it. Checks every rule and returns the exact effects, the data versions relied on and how long the preparation is honoured.
+      tags:
+      - assets.decommission
+      parameters:
+      - $ref: '#/components/parameters/Identity'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecommissionAssetFields'
+      responses:
+        '200':
+          $ref: '#/components/responses/Result'
+        '401':
+          $ref: '#/components/responses/Result'
+        '403':
+          $ref: '#/components/responses/Result'
+        '409':
+          $ref: '#/components/responses/Result'
+        '422':
+          $ref: '#/components/responses/Result'
+        '429':
+          $ref: '#/components/responses/Result'
+        '503':
+          $ref: '#/components/responses/Result'
+        default:
+          $ref: '#/components/responses/Result'
+  /v1/assets-decommission/commit:
+    post:
+      operationId: commitDecommissionAsset
+      summary: 'Commit: assets.decommission'
+      description: Retire an asset (level 3). Prepare stages a step-up request; the change is completed only in the application's own authenticated UI, and commit never applies it. Applies a prepared action once per idempotency key; a repeat returns the original receipt.
+      tags:
+      - assets.decommission
+      parameters:
+      - $ref: '#/components/parameters/Identity'
+      - name: Idempotency-Key
+        in: header
+        required: true
+        description: The idempotency key the core fixed at prepare time; echoed in the reply.
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{16,128}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreparedAction'
+      responses:
+        '200':
+          $ref: '#/components/responses/Result'
+        '401':
+          $ref: '#/components/responses/Result'
+        '403':
+          $ref: '#/components/responses/Result'
+        '409':
+          $ref: '#/components/responses/Result'
+        '422':
+          $ref: '#/components/responses/Result'
+        '429':
+          $ref: '#/components/responses/Result'
+        '503':
+          $ref: '#/components/responses/Result'
+        default:
+          $ref: '#/components/responses/Result'
+  /v1/assets-decommission/status/{idempotency_key}:
+    get:
+      operationId: statusDecommissionAsset
+      summary: 'Status: assets.decommission'
+      description: 'What was recorded for an idempotency key. Exactly one answer proves nothing was applied: rejected, one validation_failed on idempotency_key, no identifiers (HTTP 404).'
+      tags:
+      - assets.decommission
+      parameters:
+      - $ref: '#/components/parameters/Identity'
+      - name: idempotency_key
+        in: path
+        required: true
+        description: The idempotency key of the commit whose outcome is asked for.
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{16,128}$
+      responses:
+        '200':
+          $ref: '#/components/responses/Result'
+        '401':
+          $ref: '#/components/responses/Result'
+        '403':
+          $ref: '#/components/responses/Result'
+        '404':
+          $ref: '#/components/responses/Result'
+        '409':
+          $ref: '#/components/responses/Result'
+        '422':
+          $ref: '#/components/responses/Result'
+        '429':
+          $ref: '#/components/responses/Result'
+        '503':
+          $ref: '#/components/responses/Result'
+        default:
+          $ref: '#/components/responses/Result'
+  /v1/describe:
+    get:
+      operationId: describeApplication
+      summary: Describe
+      description: The contract versions the application speaks. Management operation of the adapter; no capability maps it.
+      tags:
+      - management
+      responses:
+        '200':
+          description: The description.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Description'
+        default:
+          $ref: '#/components/responses/Result'
+  /v1/health:
+    get:
+      operationId: getHealth
+      summary: Health
+      description: Whether the application can serve requests. Management operation of the adapter.
+      tags:
+      - management
+      responses:
+        '200':
+          description: The health report.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+        default:
+          $ref: '#/components/responses/Result'
+  /v1/inspect:
+    get:
+      operationId: inspectApplication
+      summary: Inspect
+      description: Runtime and system facts the application chooses to expose to the integration audit, per aspect (versions, modules, dependencies, health, scopes, credentials, limits, storage, network). Never a secret and never a record.
+      tags:
+      - management
+      parameters:
+      - $ref: '#/components/parameters/Identity'
+      - name: aspects
+        in: query
+        required: false
+        description: Aspects wanted; absent means all.
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - versions
+            - modules
+            - dependencies
+            - health
+            - scopes
+            - credentials
+            - limits
+            - storage
+            - network
+      responses:
+        '200':
+          description: The inspection.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inspection'
+        default:
+          $ref: '#/components/responses/Result'
+  /v1/test/tenants:
+    post:
+      operationId: createTenant
+      summary: Create a disposable tenant
+      description: Test support only (the application must run for an audit). Creates a disposable tenant with its sites, principals and a standard parts catalogue per site. 409 when it exists.
+      tags:
+      - test support
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantRequest'
+      responses:
+        '201':
+          description: The tenant exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantCreated'
+        default:
+          $ref: '#/components/responses/Refusal'
+  /v1/test/tenants/{tenant_id}/seed:
+    post:
+      operationId: seedTenant
+      summary: Seed a disposable tenant
+      description: Test support only. Creates synthetic technicians, assets and work orders and returns the identifier of each by reference.
+      tags:
+      - test support
+      parameters:
+      - name: tenant_id
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeedRequest'
+      responses:
+        '200':
+          description: The records exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Seeded'
+        default:
+          $ref: '#/components/responses/Refusal'
+  /v1/test/tenants/{tenant_id}/step-ups:
+    post:
+      operationId: approveStepUp
+      summary: Complete a prepared step-up of a disposable tenant
+      description: Test support only. Does what the supervisor does in the step-up UI, as the supervisor the request was prepared for. It signs in with the passcode test support generated for them and approves the request, so the passcode, the anti-forgery token, the lock, the expiry and the changed-asset checks all apply. The passcode is never stated. Never touches the production tenant.
+      tags:
+      - test support
+      parameters:
+      - name: tenant_id
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StepUpRequest'
+      responses:
+        '200':
+          description: The step-up is complete.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StepUpApproved'
+        default:
+          $ref: '#/components/responses/Refusal'
+  /v1/test/tenants/{tenant_id}:
+    delete:
+      operationId: cleanupTenant
+      summary: Remove a disposable tenant
+      description: Test support only. Removes the tenant and everything that hangs off it; 404 with existed false when it is already gone. Never touches the production tenant.
+      tags:
+      - test support
+      parameters:
+      - name: tenant_id
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+      responses:
+        '200':
+          description: The tenant is gone.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CleanedUp'
+        '404':
+          description: There was no such tenant.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CleanedUp'
+        default:
+          $ref: '#/components/responses/Refusal'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Required only when the deployment sets FACILITY_API_TOKEN.
+  parameters:
+    Identity:
+      name: X-AlixAI-Identity
+      in: header
+      required: true
+      description: The minimum identity AlixAI sends (application_id, tenant_id, workspace_id, principal_id, roles, session_id) as unpadded base64url of its JSON.
+      schema:
+        type: string
+  responses:
+    Result:
+      description: 'A DeterministicResult as the host states it. The HTTP status carries no meaning of its own: 200 ok, 401 unauthenticated, 403 permission_denied or scope_violation or step_up_required, 404 status of a key never seen, 409 conflict or stale or expired, 422 validation_failed or missing_fields, 429 rate_limited, 503 unavailable.'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Result'
+    Refusal:
+      description: A refusal of a test-support call.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Refusal'
+  schemas:
+    Result:
+      type: object
+      description: The host members of a DeterministicResult. operation and capability_id are the core's and are never stated here.
+      additionalProperties: false
+      required:
+      - status
+      - identifiers
+      - values
+      - errors
+      - allowed_next_actions
+      properties:
+        status:
+          type: string
+          enum:
+          - ok
+          - rejected
+          - queued
+          - partial
+          - uncertain
+          - unavailable
+        identifiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecordRef'
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/Fact'
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/Issue'
+        freshness:
+          $ref: '#/components/schemas/Freshness'
+        allowed_next_actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/NextAction'
+        follow_up:
+          type: object
+          required:
+          - reference
+          - state
+          properties:
+            reference:
+              type: string
+            state:
+              type: string
+              enum:
+              - queued
+              - running
+              - succeeded
+              - failed
+              - unknown
+            as_of:
+              type: string
+        preparation:
+          $ref: '#/components/schemas/Preparation'
+    RecordRef:
+      type: object
+      required:
+      - entity_type
+      - entity_id
+      properties:
+        entity_type:
+          type: string
+        entity_id:
+          type: string
+    Fact:
+      type: object
+      required:
+      - field
+      - value
+      properties:
+        field:
+          type: string
+        value:
+          type: object
+          required:
+          - kind
+          - value
+          properties:
+            kind:
+              type: string
+              enum:
+              - text
+              - integer
+              - decimal
+              - boolean
+              - date
+              - time
+              - datetime
+              - money
+              - identifier
+            value:
+              oneOf:
+              - type: string
+              - type: integer
+              - type: boolean
+            currency:
+              type: string
+            zone:
+              type: string
+        display:
+          type: string
+    Issue:
+      type: object
+      required:
+      - code
+      - message
+      properties:
+        code:
+          type: string
+        field:
+          type: string
+        message:
+          type: string
+    Freshness:
+      type: object
+      required:
+      - as_of
+      - version
+      properties:
+        as_of:
+          type: string
+        version:
+          type: string
+    NextAction:
+      type: object
+      required:
+      - action
+      properties:
+        action:
+          type: string
+          enum:
+          - confirm
+          - reject
+          - cancel
+          - modify
+          - refresh
+          - retry
+          - continue_in_app
+          - invoke_capability
+        capability_id:
+          type: string
+        label:
+          type: string
+    Preparation:
+      type: object
+      required:
+      - summary
+      - effects
+      - data_versions
+      - declared_risk_level
+      properties:
+        summary:
+          type: string
+        effects:
+          type: array
+          items:
+            type: object
+        data_versions:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataVersion'
+        declared_risk_level:
+          type: integer
+          minimum: 0
+          maximum: 3
+        valid_for_seconds:
+          type: integer
+          minimum: 1
+    DataVersion:
+      type: object
+      required:
+      - entity_type
+      - entity_id
+      - version
+      properties:
+        entity_type:
+          type: string
+        entity_id:
+          type: string
+        version:
+          type: string
+    PreparedAction:
+      type: object
+      description: The whole PreparedAction as the core holds it. The application reads effects, data_versions and expires_at, treats all of it as untrusted and re-checks every rule.
+      required:
+      - preparation_id
+      - capability_id
+      - idempotency_key
+      - effects
+      - data_versions
+      properties:
+        preparation_id:
+          type: string
+        capability_id:
+          type: string
+        idempotency_key:
+          type: string
+        state:
+          type: string
+        summary:
+          type: string
+        effects:
+          type: array
+          items:
+            type: object
+        risk_level:
+          type: integer
+        data_versions:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataVersion'
+        prepared_at:
+          type: string
+        expires_at:
+          type: string
+        invalidation_conditions:
+          type: array
+          items:
+            type: string
+        confirmation:
+          type: object
+    ResolveRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        mention:
+          type: string
+          maxLength: 200
+        candidate_id:
+          type: string
+          maxLength: 128
+    CreateWorkOrderFields:
+      type: object
+      additionalProperties: false
+      properties:
+        asset:
+          type: string
+          maxLength: 128
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 1000
+        priority:
+          type: string
+          enum:
+          - low
+          - normal
+          - high
+          - urgent
+    AssignTechnicianFields:
+      type: object
+      additionalProperties: false
+      properties:
+        work_order:
+          type: string
+          maxLength: 128
+        technician:
+          type: string
+          maxLength: 128
+        note:
+          type: string
+          maxLength: 400
+    CloseWorkOrderFields:
+      type: object
+      additionalProperties: false
+      properties:
+        work_order:
+          type: string
+          maxLength: 128
+        resolution:
+          type: string
+          maxLength: 1000
+        parts_used:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            maxLength: 64
+        labor_hours:
+          type: number
+    DecommissionAssetFields:
+      type: object
+      additionalProperties: false
+      properties:
+        asset:
+          type: string
+          maxLength: 128
+        reason:
+          type: string
+          maxLength: 600
+    Description:
+      type: object
+      required:
+      - contract_versions
+      properties:
+        contract_versions:
+          type: array
+          items:
+            type: integer
+        application_version:
+          type: string
+        unmapped:
+          type: array
+          items:
+            type: string
+    Health:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          type: string
+          enum:
+          - ok
+          - degraded
+          - unavailable
+        reason:
+          type: string
+        application_version:
+          type: string
+    Inspection:
+      type: object
+      required:
+      - reports
+      properties:
+        reports:
+          type: array
+          items:
+            type: object
+            required:
+            - aspect
+            - state
+            - facts
+            properties:
+              aspect:
+                type: string
+              state:
+                type: string
+                enum:
+                - reported
+                - unsupported
+              facts:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Fact'
+    Refusal:
+      type: object
+      description: 'A refusal of a test-support call: the status of the call is the HTTP status.'
+      required:
+      - status
+      - errors
+      properties:
+        status:
+          type: string
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/Issue'
+    TenantCreated:
+      type: object
+      required:
+      - status
+      - tenant_id
+      properties:
+        status:
+          type: string
+        tenant_id:
+          type: string
+        workspaces:
+          type: array
+          items:
+            type: string
+        principals:
+          type: array
+          items:
+            type: string
+    TenantRequest:
+      type: object
+      required:
+      - tenant_id
+      - workspaces
+      properties:
+        tenant_id:
+          type: string
+          maxLength: 128
+        workspaces:
+          type: array
+          items:
+            type: object
+            required:
+            - workspace_id
+            properties:
+              workspace_id:
+                type: string
+                maxLength: 128
+              name:
+                type: string
+                maxLength: 200
+        principals:
+          type: array
+          items:
+            type: object
+            required:
+            - principal_id
+            - workspace_id
+            - roles
+            properties:
+              principal_id:
+                type: string
+                maxLength: 128
+              workspace_id:
+                type: string
+                maxLength: 128
+              roles:
+                type: array
+                items:
+                  type: string
+                  maxLength: 64
+              service:
+                type: boolean
+    SeedRequest:
+      type: object
+      required:
+      - records
+      properties:
+        records:
+          type: array
+          items:
+            type: object
+            description: ref, entity_type and workspace_id, plus the members of the seed data entry (names, titles, status, parts).
+            required:
+            - ref
+            - entity_type
+            - workspace_id
+            properties:
+              ref:
+                type: string
+                maxLength: 128
+              entity_type:
+                type: string
+                enum:
+                - technician
+                - asset
+                - work_order
+              workspace_id:
+                type: string
+                maxLength: 128
+              principal_id:
+                type: string
+                maxLength: 128
+            additionalProperties: true
+    Seeded:
+      type: object
+      required:
+      - status
+      - tenant_id
+      - records
+      properties:
+        status:
+          type: string
+        tenant_id:
+          type: string
+        records:
+          type: array
+          items:
+            type: object
+            required:
+            - ref
+            - entity_id
+            properties:
+              ref:
+                type: string
+              entity_type:
+                type: string
+              entity_id:
+                type: string
+    StepUpRequest:
+      type: object
+      required:
+      - workspace_id
+      - principal_id
+      - capability_id
+      - values
+      properties:
+        workspace_id:
+          type: string
+          maxLength: 128
+        principal_id:
+          type: string
+          maxLength: 128
+        capability_id:
+          type: string
+          maxLength: 128
+        idempotency_key:
+          type: string
+          maxLength: 128
+        values:
+          type: object
+          description: The text and identifier facts the prepared action stated, by field; the application takes its own step_up_reference.
+          additionalProperties:
+            type: string
+            maxLength: 2048
+    StepUpApproved:
+      type: object
+      required:
+      - status
+      - tenant_id
+      - approved
+      properties:
+        status:
+          type: string
+        tenant_id:
+          type: string
+        approved:
+          type: boolean
+    CleanedUp:
+      type: object
+      required:
+      - tenant_id
+      - existed
+      - remaining
+      properties:
+        status:
+          type: string
+        tenant_id:
+          type: string
+        existed:
+          type: boolean
+        remaining:
+          type: object
+          additionalProperties:
+            type: integer
+            minimum: 0

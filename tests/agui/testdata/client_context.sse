@@ -1,0 +1,48 @@
+data: {"type":"RUN_STARTED","threadId":"ses_test_01","runId":"run_context"}
+
+data: {"type":"STATE_DELTA","delta":[{"op":"add","path":"/alixai","value":{"pending":null}}]}
+
+data: {"type":"STEP_STARTED","stepName":"interpreting"}
+
+id: 0
+data: {"type":"STEP_FINISHED","stepName":"interpreting"}
+
+data: {"type":"STEP_STARTED","stepName":"validating"}
+
+id: 1
+data: {"type":"STEP_FINISHED","stepName":"validating"}
+
+data: {"type":"STEP_STARTED","stepName":"tool_call"}
+
+data: {"type":"ACTIVITY_SNAPSHOT","messageId":"act_trn_01J00000000000000000000001_tool_call","activityType":"alixai.progress","content":{"capabilityId":"items.get","stage":"tool_call","state":"completed"}}
+
+id: 2
+data: {"type":"STEP_FINISHED","stepName":"tool_call"}
+
+data: {"type":"STEP_STARTED","stepName":"generating"}
+
+id: 3
+data: {"type":"STEP_FINISHED","stepName":"generating"}
+
+data: {"type":"STEP_STARTED","stepName":"verifying"}
+
+id: 4
+data: {"type":"STEP_FINISHED","stepName":"verifying"}
+
+id: 5
+data: {"type":"CUSTOM","name":"alixai.directive","value":{"turn_id":"trn_01J00000000000000000000001","capability_id":"items.get","act":"present_result","facts":[{"field":"name","value":{"kind":"text","value":"gadget"}}],"must_state":["name"],"missing_fields":[],"invalid_fields":[],"allowed_suggestions":[],"confirmation":{"mode":"none","bindings":[]},"permitted_next_actions":[{"action":"invoke_capability","capability_id":"items.create","label":"Create another item"}],"sources":[]}}
+
+data: {"type":"TEXT_MESSAGE_START","messageId":"msg_trn_01J00000000000000000000001_1","role":"assistant"}
+
+id: 6
+data: {"type":"TEXT_MESSAGE_CONTENT","messageId":"msg_trn_01J00000000000000000000001_1","delta":"The item is named gadget."}
+
+data: {"type":"TEXT_MESSAGE_END","messageId":"msg_trn_01J00000000000000000000001_1"}
+
+data: {"type":"STATE_DELTA","delta":[{"op":"replace","path":"/alixai/pending","value":{"capabilityId":"items.get","collectedFields":[{"name":"item_id","origin":"user_turn"}],"expiresAt":"2026-10-02T12:30:00Z","kind":"goal","missingFields":[],"phase":"success"}}]}
+
+data: {"type":"CUSTOM","name":"alixai.suggestions","value":{"suggestions":[{"title":"Create an item","message":"Create an item named widget, quantity 3, small","capabilityId":"items.create"}]}}
+
+id: 7
+data: {"type":"RUN_FINISHED","threadId":"ses_test_01","runId":"run_context","result":{"finishReason":"completed","turnId":"trn_01J00000000000000000000001"},"outcome":{"type":"success"}}
+

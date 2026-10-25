@@ -1,0 +1,614 @@
+# Settings and client preferences (master plan 14.2): typed, versioned, permission-checked settings at user, tenant and
+# deployment level, the approved model and resource profiles, the capabilities enabled for the caller, the integration-audit
+# findings and the provider health. Implemented by internal/gateway/routes_v1_settings.go over internal/settings; the
+# documents are the schemas under schemas/settings.
+#
+# A setting can only select among things the operator approved, switch something off for itself, or ask for MORE
+# confirmation. There is no member and no route that enables an undeclared tool, enlarges a scope, lowers or bypasses a
+# confirmation, exposes LocalAI administration, enables external or hybrid mode, changes data egress, holds a provider
+# credential, raises a budget or changes the decision layer: those are configuration or operator-only APIs. A document that
+# names such a member is refused whole (400, details.guard names the rule) and nothing is stored or recorded.
+paths:
+  /v1/settings/user:
+    get:
+      operationId: getUserSettings
+      tags: [settings]
+      summary: Read the caller's own user settings
+      description: |
+        The preferences of the token's principal in the token's workspace. The token must carry the capability scope
+        `settings.user.read`. A level with no document yet answers version 0 and the empty document, which a first write
+        expects. An application whose package is not active answers `quarantined`.
+      responses:
+        '200':
+          description: The document and its revision.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsUserRecord'
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+    put:
+      operationId: putUserSettings
+      tags: [settings]
+      summary: Replace the caller's own user settings
+      description: |
+        Replaces the whole document (a member left out means inherit). The token must carry `settings.user.write`. The
+        write succeeds only when `expected_version` is still the stored version (0 to create): otherwise 409 `conflict`
+        with `details.current_version` and nothing changes. The new revision is exactly one more. A document identical to
+        the stored one changes nothing and is not recorded. Every change is an audit event appended in the same
+        transaction (`settings.document_written`: level, revisions, changed sections and a digest, never a value).
+        Capabilities named in `capabilities.disabled` must be ones the caller may itself use: an undeclared, admin-only or
+        out-of-scope capability is refused with the same 422 `unknown_capability`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettingsUserUpdate'
+      responses:
+        '200':
+          description: The stored document and its new revision.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsUserRecord'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '409':
+          $ref: ../openapi.yaml#/components/responses/Conflict
+        '413':
+          $ref: ../openapi.yaml#/components/responses/PayloadTooLarge
+        '415':
+          $ref: ../openapi.yaml#/components/responses/UnsupportedMediaType
+        '422':
+          $ref: ../openapi.yaml#/components/responses/Unprocessable
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/settings/tenant:
+    get:
+      operationId: getTenantSettings
+      tags: [settings]
+      summary: Read the settings of the caller's tenant
+      description: |
+        Defaults and policy for every user of the token's tenant. The token must carry `settings.tenant.read`.
+      responses:
+        '200':
+          description: The document and its revision.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsTenantRecord'
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+    put:
+      operationId: putTenantSettings
+      tags: [settings]
+      summary: Replace the settings of the caller's tenant
+      description: |
+        As for the user settings, with the capability scope `settings.tenant.write`. Tenant policy only narrows what
+        the deployment level allows: voice, attachments and history export are off until the deployment level allows
+        them; retention and attachment size are ceilings; capabilities switched off here are off for every user of the
+        tenant; extra confirmation takes the lowest threshold.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettingsTenantUpdate'
+      responses:
+        '200':
+          description: The stored document and its new revision.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsTenantRecord'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '409':
+          $ref: ../openapi.yaml#/components/responses/Conflict
+        '413':
+          $ref: ../openapi.yaml#/components/responses/PayloadTooLarge
+        '415':
+          $ref: ../openapi.yaml#/components/responses/UnsupportedMediaType
+        '422':
+          $ref: ../openapi.yaml#/components/responses/Unprocessable
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/settings/deployment:
+    get:
+      operationId: getDeploymentSettings
+      tags: [settings]
+      summary: Read the settings of the caller's application as a whole
+      description: |
+        The top of the cascade for every tenant and user of the token's application. The deployment level is per
+        application: a token for application A can never read what application B has (ADR 0016). The token must carry
+        `settings.deployment.read`.
+      responses:
+        '200':
+          description: The document and its revision.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsDeploymentRecord'
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+    put:
+      operationId: putDeploymentSettings
+      tags: [settings]
+      summary: Replace the settings of the caller's application as a whole
+      description: |
+        As for the user settings, with the capability scope `settings.deployment.write`. The deployment level is where
+        voice, attachments and history export are first allowed. What the operator controls for the whole installation
+        (approved profiles, ceilings, the runtime, external mode, data egress, credentials, budgets, the decision layer)
+        is configuration and operator-only API and is not a member of this document. The change is recorded on the
+        application's audit chain.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettingsDeploymentUpdate'
+      responses:
+        '200':
+          description: The stored document and its new revision.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsDeploymentRecord'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '409':
+          $ref: ../openapi.yaml#/components/responses/Conflict
+        '413':
+          $ref: ../openapi.yaml#/components/responses/PayloadTooLarge
+        '415':
+          $ref: ../openapi.yaml#/components/responses/UnsupportedMediaType
+        '422':
+          $ref: ../openapi.yaml#/components/responses/Unprocessable
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/settings/effective:
+    get:
+      operationId: getEffectiveSettings
+      tags: [settings]
+      summary: What the three levels add up to for the caller
+      description: |
+        The deployment, tenant and user settings combined with fixed rules (never a model): preferences take the most
+        specific level that states them; a permission that enables a feature is the deployment's and every level below
+        can only switch it off; retention and attachment size are the smallest value any level states, capped by the
+        operator's ceiling; switched-off capabilities add up; extra confirmation takes the lowest threshold.
+        `decided_by` names the level that decided each value more than one level can state. The view is read only and is
+        never an input to the policy gateway. The token must carry `settings.user.read`; the tenant and deployment
+        documents themselves are not revealed.
+      responses:
+        '200':
+          description: The effective settings.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsEffective'
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/settings/profiles:
+    get:
+      operationId: listSettingsProfiles
+      tags: [settings]
+      summary: List the approved model and resource profiles
+      description: |
+        The profiles the operator approved (the `settings.approved_profiles` configuration), the one in force when no
+        level states one (`default`) and the one the caller's effective settings select (`selected`). A setting selects
+        among these; it can neither add one nor name an address. The token must carry `settings.user.read`.
+      responses:
+        '200':
+          description: The approved profiles.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsProfileList'
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/settings/capabilities:
+    get:
+      operationId: getSettingsCapabilities
+      tags: [settings]
+      summary: The capabilities enabled for the caller
+      description: |
+        Exactly the capabilities the policy gateway exposes to this token (the same exposure the model gets), each with
+        its effective risk level, what a commit needs and what settings do to it: `enabled` is false when any level
+        switched it off (`disabled_by` names the levels), and `extra_confirmation` marks a confirmation that is required
+        only because settings asked for it. Settings can switch off and add confirmation; they never add a capability or
+        lower a requirement. `settings_access` says which settings operations the token permits. The token must carry
+        `settings.user.read`.
+      responses:
+        '200':
+          description: The enabled capabilities.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsCapabilityView'
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/settings/integration-audit:
+    get:
+      operationId: getSettingsIntegrationAudit
+      tags: [settings]
+      summary: The latest integration audit of the caller's application
+      description: |
+        The findings of the latest integration audit of the installed package, with the remediation status of each
+        (`open`, `accepted`, `informational`). It is read only: nothing here accepts a warning, activates a package or
+        changes what the application may do. It answers while the application is quarantined, which is when the findings
+        matter most. The token must carry `settings.deployment.read`. 503 when this deployment has no audit read-out.
+      responses:
+        '200':
+          description: The audit status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsAuditStatus'
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/settings/providers:
+    get:
+      operationId: getSettingsProviderHealth
+      tags: [settings]
+      summary: The health of the model roles
+      description: |
+        Role, status and stable degradation effect of each model role (controller, router, embedder, reranker, ...).
+        Nothing about what runs behind a role: no runtime name, address, version or free-text reason. LocalAI's own
+        endpoints are never exposed. The token must carry `settings.deployment.read`.
+      responses:
+        '200':
+          description: The provider health.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsProviderHealth'
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+components:
+  schemas:
+    SettingsUserRecord:
+      description: The user settings document of the caller with its revision.
+      type: object
+      additionalProperties: false
+      required: [level, version, schema, settings]
+      properties:
+        level:
+          const: user
+        version:
+          description: 0 when the level has no document yet, otherwise 1 for the first write and one more for every change.
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        schema:
+          const: 'urn:alixai:schema:settings:user-settings:v1'
+        updated_at:
+          type: string
+          format: date-time
+        updated_by:
+          type: string
+        settings:
+          $ref: ../../settings/user-settings.schema.json
+    SettingsTenantRecord:
+      description: The tenant settings document of the caller's tenant with its revision.
+      type: object
+      additionalProperties: false
+      required: [level, version, schema, settings]
+      properties:
+        level:
+          const: tenant
+        version:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        schema:
+          const: 'urn:alixai:schema:settings:tenant-settings:v1'
+        updated_at:
+          type: string
+          format: date-time
+        updated_by:
+          type: string
+        settings:
+          $ref: ../../settings/tenant-settings.schema.json
+    SettingsDeploymentRecord:
+      description: The deployment settings document of the caller's application with its revision.
+      type: object
+      additionalProperties: false
+      required: [level, version, schema, settings]
+      properties:
+        level:
+          const: deployment
+        version:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        schema:
+          const: 'urn:alixai:schema:settings:deployment-settings:v1'
+        updated_at:
+          type: string
+          format: date-time
+        updated_by:
+          type: string
+        settings:
+          $ref: ../../settings/deployment-settings.schema.json
+    SettingsUserUpdate:
+      description: The request body of PUT /v1/settings/user. Nothing else is accepted; the key of the document comes from the token.
+      type: object
+      additionalProperties: false
+      required: [expected_version, settings]
+      properties:
+        expected_version:
+          description: The version that was read, or 0 to create the document.
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        settings:
+          $ref: ../../settings/user-settings.schema.json
+    SettingsTenantUpdate:
+      description: The request body of PUT /v1/settings/tenant.
+      type: object
+      additionalProperties: false
+      required: [expected_version, settings]
+      properties:
+        expected_version:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        settings:
+          $ref: ../../settings/tenant-settings.schema.json
+    SettingsDeploymentUpdate:
+      description: The request body of PUT /v1/settings/deployment.
+      type: object
+      additionalProperties: false
+      required: [expected_version, settings]
+      properties:
+        expected_version:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        settings:
+          $ref: ../../settings/deployment-settings.schema.json
+    SettingsEffective:
+      $ref: ../../settings/effective-settings.schema.json
+    SettingsProfileList:
+      type: object
+      additionalProperties: false
+      required: [profiles]
+      properties:
+        profiles:
+          type: array
+          items:
+            $ref: '#/components/schemas/SettingsProfile'
+    SettingsProfile:
+      type: object
+      additionalProperties: false
+      required: [id, default, selected]
+      properties:
+        id:
+          type: string
+          pattern: '^[a-z][a-z0-9-]{0,31}$'
+        default:
+          description: The profile in force when no level states one.
+          type: boolean
+        selected:
+          description: The profile the caller's effective settings select.
+          type: boolean
+    SettingsCapabilityView:
+      type: object
+      additionalProperties: false
+      required: [capabilities, settings_access]
+      properties:
+        capabilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/SettingsCapabilityState'
+        settings_access:
+          $ref: '#/components/schemas/SettingsAccess'
+    SettingsCapabilityState:
+      type: object
+      additionalProperties: false
+      required: [id, risk_level, enabled, disabled_by, requires_confirmation, requires_step_up, extra_confirmation, fields]
+      properties:
+        id:
+          type: string
+        risk_level:
+          description: The effective risk level the policy gateway assigns (0 read, 1 reversible, 2 consequential, 3 privileged).
+          type: integer
+          minimum: 0
+          maximum: 3
+        enabled:
+          description: False when any level switched the capability off.
+          type: boolean
+        disabled_by:
+          description: The levels that switched it off, most general first.
+          type: array
+          items:
+            type: string
+            enum: [deployment, tenant, user]
+        requires_confirmation:
+          description: A commit needs an explicit confirmation (the platform floor and host policy, plus any extra confirmation settings asked for).
+          type: boolean
+        requires_step_up:
+          description: A commit needs the host application's own step-up.
+          type: boolean
+        extra_confirmation:
+          description: True when requires_confirmation is true only because settings asked for it.
+          type: boolean
+        fields:
+          description: The fields the caller may supply, in declaration order.
+          type: array
+          items:
+            type: string
+    SettingsAccess:
+      description: What the token permits on the settings themselves, derived from its capability scopes. Informational; every operation checks the token again.
+      type: object
+      additionalProperties: false
+      required: [user, tenant, deployment]
+      properties:
+        user:
+          $ref: '#/components/schemas/SettingsLevelAccess'
+        tenant:
+          $ref: '#/components/schemas/SettingsLevelAccess'
+        deployment:
+          $ref: '#/components/schemas/SettingsLevelAccess'
+    SettingsLevelAccess:
+      type: object
+      additionalProperties: false
+      required: [read, write]
+      properties:
+        read:
+          type: boolean
+        write:
+          type: boolean
+    SettingsAuditStatus:
+      type: object
+      additionalProperties: false
+      required: [application_id, state, audited, counts, findings]
+      properties:
+        application_id:
+          type: string
+        state:
+          type: string
+          enum: [active, quarantined, rejected, superseded, not_installed]
+        package_version:
+          type: string
+        manifest_hash:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+        audited:
+          description: False when the installed package has never been audited.
+          type: boolean
+        run_id:
+          type: string
+        outcome:
+          description: What the report permits. Present when audited.
+          type: string
+          enum: [blocked, needs_acceptance, clear]
+        counts:
+          type: object
+          additionalProperties: false
+          required: [critical, warnings, info, unverified]
+          properties:
+            critical:
+              type: integer
+              minimum: 0
+            warnings:
+              type: integer
+              minimum: 0
+            info:
+              type: integer
+              minimum: 0
+            unverified:
+              type: integer
+              minimum: 0
+        findings:
+          type: array
+          items:
+            $ref: '#/components/schemas/SettingsAuditFinding'
+    SettingsAuditFinding:
+      type: object
+      additionalProperties: false
+      required: [key, check_id, severity, message, remediation, status]
+      properties:
+        key:
+          type: string
+        check_id:
+          type: string
+        severity:
+          type: string
+          enum: [critical, warning, info]
+        capability:
+          type: string
+        path:
+          type: string
+        message:
+          type: string
+        remediation:
+          type: string
+        status:
+          description: open (a critical finding must be fixed; a warning must be fixed or accepted), accepted (a warning an authorised operator accepted) or informational.
+          type: string
+          enum: [open, accepted, informational]
+    SettingsProviderHealth:
+      type: object
+      additionalProperties: false
+      required: [status, roles]
+      properties:
+        status:
+          description: The worst status of any role.
+          type: string
+          enum: [ok, degraded, unavailable]
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/SettingsProviderRole'
+    SettingsProviderRole:
+      description: One model role. It names no runtime, address, version or free-text reason.
+      type: object
+      additionalProperties: false
+      required: [role, configured, status]
+      properties:
+        role:
+          type: string
+          pattern: '^[a-z][a-z0-9_]{0,15}$'
+        configured:
+          type: boolean
+        status:
+          type: string
+          enum: [ok, degraded, unavailable]
+        effect:
+          description: The stable degradation code when status is not ok.
+          type: string
+          pattern: '^[a-z][a-z0-9_]{0,47}$'

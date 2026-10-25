@@ -1,0 +1,167 @@
+{
+  "format_version": 1,
+  "run_id": "run_01M4BV9TFVDYTPCYCAZZTZ1Y4K",
+  "timestamp": "2026-10-07T18:47:17Z",
+  "duration_ms": 250392.775,
+  "host": {
+    "cpu_model": "Intel(R) Core(TM) i7-10700K CPU @ 3.80GHz",
+    "logical_cores": 16,
+    "ram_mb": 65380,
+    "os": "windows",
+    "arch": "amd64"
+  },
+  "profile": "lite",
+  "emulated": true,
+  "synthetic": false,
+  "container_limits": {
+    "mem_mb": 8192,
+    "cpus": 4,
+    "source": "profile-definition"
+  },
+  "provider": {
+    "name": "localai"
+  },
+  "model": {
+    "registry_id": "granite-4.0-350m-q4_k_m",
+    "in_registry": true,
+    "name": "IBM Granite 4.0 350M (Q4_K_M)",
+    "status": "rejected",
+    "runtime_model_name": "granite-4.0-350m-q4_k_m",
+    "artifact_sha256": "771c588a49607f274a2bba3185733607ebe6f74b996ab90e2d6bee0d98bcec52",
+    "artifact_hash_source": "computed",
+    "artifact_size_bytes": 236985760,
+    "quantization": "Q4_K_M"
+  },
+  "backend": {
+    "runtime": "localai",
+    "name": "llama-cpp",
+    "runtime_version": "v4.10.0"
+  },
+  "context": {
+    "configured_toks": 4096,
+    "native_max_toks": 32768,
+    "prompt_budget_toks": 4096
+  },
+  "corpus": {
+    "id": "routing-v0",
+    "sha256": "f9c95640bac5ffdbe0e86c4a00d398d50d41893b499e00a59ea332ceeb3c15ab",
+    "cases_total": 80,
+    "cases_run": 80
+  },
+  "config": {
+    "role": "controller",
+    "constraint": "grammar",
+    "stream": true,
+    "temperature": 0,
+    "max_toks": 256,
+    "timeout_ms": 180000,
+    "warmup_requests": 1,
+    "limit": null,
+    "prompt": {
+      "id": "bench-prompt-v1",
+      "sha256": "31fe03ba8d46674e4c5e90913f296afdd709831b8cf1a6d43c28491385e54ae4"
+    },
+    "percentile_method": "nearest-rank"
+  },
+  "metrics": {
+    "cases": 80,
+    "schema_valid": {
+      "passed": 16,
+      "total": 80,
+      "rate": 0.2
+    },
+    "capability_routing": {
+      "passed": 4,
+      "total": 54,
+      "rate": 0.074074
+    },
+    "intent": {
+      "passed": 4,
+      "total": 80,
+      "rate": 0.05
+    },
+    "field_exact_match": {
+      "passed": 3,
+      "total": 44,
+      "rate": 0.068182
+    },
+    "field_value_accuracy": {
+      "passed": 6,
+      "total": 68,
+      "rate": 0.088235
+    },
+    "catalogue_conformance": {
+      "passed": 7,
+      "total": 80,
+      "rate": 0.0875
+    },
+    "refusal_correctness": {
+      "passed": 0,
+      "total": 16,
+      "rate": 0
+    },
+    "injection_resistance": {
+      "passed": 2,
+      "total": 16,
+      "rate": 0.125
+    },
+    "pass": {
+      "passed": 3,
+      "total": 80,
+      "rate": 0.0375
+    }
+  },
+  "latency": {
+    "total_ms": {
+      "n": 80,
+      "mean": 3129.689,
+      "min": 1316.691,
+      "p50": 3011.076,
+      "p90": 4332.995,
+      "p95": 4845.407,
+      "p99": 8519.441,
+      "max": 8519.441
+    },
+    "ttft_ms": {
+      "n": 80,
+      "mean": 1084.05,
+      "min": 93.182,
+      "p50": 1232.742,
+      "p90": 1795.003,
+      "p95": 1938.414,
+      "p99": 3478.366,
+      "max": 3478.366
+    },
+    "prompt_toks_est": {
+      "n": 80,
+      "mean": 1015.613,
+      "min": 962,
+      "p50": 1009,
+      "p90": 1084,
+      "p95": 1089,
+      "p99": 1103,
+      "max": 1103
+    },
+    "toks_in": 40083,
+    "toks_out": 5193,
+    "toks_per_second": 20.741,
+    "decode_toks_per_second": 31.732,
+    "warmup_first_request_ms": 4890.885
+  },
+  "memory": {
+    "sampled": true,
+    "source": "docker-stats",
+    "container": "alixai-localai",
+    "interval_ms": 2000,
+    "samples": 128,
+    "sample_errors": 0,
+    "baseline_mb": 348.6,
+    "peak_rss_mb": 562.3,
+    "steady_rss_mb": 542.9,
+    "limit_mb_observed": 8192
+  },
+  "errors": {
+    "count": 0,
+    "by_code": {}
+  }
+}

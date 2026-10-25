@@ -1,0 +1,39 @@
+{
+  "receipt_id": "rcpt_01J0000000000000000000000A",
+  "preparation_id": "prep_01J0000000000000000000000A",
+  "capability_id": "appointments.book",
+  "status": "committed",
+  "records": [
+    {
+      "entity_type": "appointment",
+      "entity_id": "apt_20991"
+    }
+  ],
+  "facts": [
+    {
+      "field": "slot_date",
+      "value": {
+        "kind": "date",
+        "value": "2026-10-14"
+      },
+      "display": "Tuesday 14 October 2026"
+    },
+    {
+      "field": "slot_start",
+      "value": {
+        "kind": "time",
+        "value": "10:30"
+      }
+    },
+    {
+      "field": "doctor",
+      "value": {
+        "kind": "text",
+        "value": "Dr. Rossi"
+      }
+    }
+  ],
+  "errors": [],
+  "audit_ref": "aud_01J0000000000000000000000A",
+  "issued_at": "2026-10-09T08:03:00Z"
+}

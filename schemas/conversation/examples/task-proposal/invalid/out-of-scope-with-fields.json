@@ -1,0 +1,13 @@
+{
+  "capability_id": null,
+  "fields": {
+    "slot_date": "2026-10-14",
+    "reason": "check-up"
+  },
+  "entity_refs": [],
+  "intent": "out_of_scope",
+  "uncertainty": {
+    "overall": 0.8
+  },
+  "trace_id": "trc_01J0000000000000000000000M"
+}

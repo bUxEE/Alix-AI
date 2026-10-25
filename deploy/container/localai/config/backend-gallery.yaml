@@ -1,0 +1,24 @@
+# Pinned backend catalogue. LocalAI reads it through LOCALAI_BACKEND_GALLERIES (file:// URL) and
+# installs the names listed in LOCALAI_EXTERNAL_BACKENDS at first boot into /backends. It is the
+# only backend gallery configured, so nothing else can be resolved or installed.
+#
+# Backends are OCI images referenced by digest: content-addressed, immutable, and independent of
+# the mutable "latest-*" tags the upstream index uses. LocalAI's tag-fallback rewrite only
+# triggers on a "latest-" tag, so a digest reference is never silently replaced.
+#
+# cpu-llama-cpp: tag v4.10.0-cpu-llama-cpp (== latest-cpu-llama-cpp on 2026-10-02), multi-arch
+# index d7b0d9c6...; amd64 9d6b85ce..., arm64 c01fdd73.... Same digest on quay.io and Docker Hub.
+#
+# To add a backend: resolve its digest from the registry (README.md "Adding a model or backend"),
+# add an entry here, append its name to LOCALAI_EXTERNAL_BACKENDS in .env.
+- name: "cpu-llama-cpp"
+  alias: "llama-cpp"
+  version: "v4.10.0"
+  license: mit
+  description: "llama.cpp CPU backend (GGUF text generation and embeddings), pinned to the LocalAI v4.10.0 release build"
+  tags:
+    - llm
+    - cpu
+  uri: "quay.io/go-skynet/local-ai-backends@sha256:d7b0d9c69ecce93c2e7f7500ac3d99aba28648dab1ab29b698e0cc4538662579"
+  mirrors:
+    - "docker.io/localai/localai-backends@sha256:d7b0d9c69ecce93c2e7f7500ac3d99aba28648dab1ab29b698e0cc4538662579"

@@ -1,0 +1,58 @@
+capability_id: appointments.cancel
+language: it
+contract_version: 1.0.0
+terminology:
+  - appointment
+  - appointment_reference
+  - patient
+  - doctor
+field_prompts:
+  - field: appointment
+    label: Appuntamento
+    prompt: "Quale appuntamento devo annullare? Dammi il riferimento, oppure il nome del paziente e la data."
+    examples:
+      - APT-7K3Q9X
+      - Maria Rossi 2026-10-14
+  - field: reason
+    label: Motivo
+    prompt: "Perché viene annullato? L'ha chiesto il paziente, il medico non è disponibile, un errore di pianificazione, o altro. Puoi anche saltare questa domanda."
+clarifications:
+  - rule_id: appointment_multiple
+    prompt: "Più di un appuntamento corrisponde a {input.appointment}. Quale intendi?"
+corrections:
+  acknowledgement: "Va bene, ho cambiato."
+  correctable_fields:
+    - appointment
+    - reason
+  prepared_action_invalidated: "Questo cambia quale appuntamento viene annullato, quindi il riepilogo precedente non vale più. Preparo di nuovo l'annullamento e ti chiedo di confermare."
+cancellations:
+  acknowledgement: "Va bene, mi fermo. Non è stato annullato nulla."
+confirmations:
+  request: "Conferma questo annullamento: appuntamento {appointment_reference} di {patient_name} con {doctor_name} il {appointment_starts_at}. L'orario tornerà libero e il paziente sarà avvisato. Procedo con l'annullamento?"
+  declined: "Va bene, non ho annullato nulla."
+  expired: "Questo annullamento non è più valido, quindi non è stato annullato nulla. Posso prepararlo di nuovo se vuoi."
+success:
+  - outcome: cancelled
+    text: "Fatto. L'appuntamento {appointment_reference} di {patient_name} del {appointment_starts_at} è annullato e il suo orario è di nuovo libero."
+failures:
+  - code: permission_denied
+    text: "Non hai il permesso di annullare appuntamenti, quindi non è stato annullato nulla."
+  - code: scope_violation
+    text: "Non posso annullarlo: l'appuntamento non è disponibile per te. Non è stato annullato nulla."
+  - code: validation_failed
+    text: "Non ho potuto annullarlo: un appuntamento già iniziato o passato non si può annullare. Non è stato annullato nulla."
+  - code: conflict
+    text: "Quell'appuntamento è già annullato. Non è stato modificato nulla."
+  - code: stale
+    text: "L'appuntamento è cambiato dopo che avevo preparato questo annullamento, quindi non l'ho effettuato. Non è stato annullato nulla; posso prepararlo di nuovo."
+  - code: expired
+    text: "L'annullamento non è stato confermato in tempo, oppure è stato ritirato, quindi non è stato annullato nulla."
+  - code: missing_fields
+    text: "Devo ancora sapere quale appuntamento annullare. Non è stato annullato nulla."
+  - code: uncertain_outcome
+    text: "Non sono riuscito a verificare se l'appuntamento è stato annullato. Controllo prima di fare altro, quindi per ora non richiederlo."
+  - code: unavailable
+    text: "Il sistema degli appuntamenti non è raggiungibile in questo momento, quindi non è stato annullato nulla."
+next_actions:
+  - id: book_new_appointment
+    label: "Prenota un nuovo appuntamento"

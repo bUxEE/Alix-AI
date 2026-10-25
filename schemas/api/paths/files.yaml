@@ -1,0 +1,267 @@
+# Files (master plan 14.1): upload, inspect, download, preview and delete scoped file references. Implemented by
+# internal/gateway/routes_v1_files.go over internal/files (task M3-06).
+#
+# A file is known to a client, an SDK and a model only by its FileRef: an opaque id, a sanitised name, the sniffed
+# media type, the size, the owner, the origin, the treatment, the permissions the caller holds, whether a safe previewer
+# exists and when the reference expires. It carries no path, no URL and no storage key. Every use of a reference
+# resolves it again, re-checking the scope, the principal, the session, the expiry and the permission. A reference
+# that does not resolve in the caller's scope (another tenant, workspace, principal or session, a deleted file, an id
+# that never existed) is always the same `scope_violation`, so a reference cannot be used to probe for files.
+paths:
+  /v1/files:
+    post:
+      operationId: uploadFile
+      tags: [files]
+      summary: Upload a file
+      description: |
+        Stores one file for the caller and returns its reference. The request is `multipart/form-data` with an
+        optional `treatment` field, which must come before the file, and exactly one `file` part. The part's
+        `Content-Type` is the media type the sender declares; it must be one the host's attachment policy allows
+        and it must be what the bytes are (the core sniffs them), or nothing is stored (`validation_failed`, with
+        `details.reason` `mime_mismatch`, `mime_not_allowed`, `mime_declared`, `empty` or `too_large`). HTML, SVG, XML
+        and script types are never stored.
+
+        How the file is treated is the host's declared attachment policy: ephemeral turn context, an explicitly
+        registered RAG source or an application object. Without a `treatment` the policy's default applies; one the
+        policy does not accept is `permission_denied` (`details.reason` `treatment_not_allowed`). The default is
+        `ephemeral_context`: readable by the model and previewable by its uploader, inside the session that
+        uploaded it, for a short time.
+
+        The size is bounded by the policy, by the deployment's attachment ceiling (`settings.max_attachment_mb`) and
+        by `files.max_file_bytes`. The request body has a limit of its own, not the gateway's `max_body_bytes`
+        (64 KiB by default, which every other route keeps): `files.max_file_bytes` plus a fixed allowance for the
+        multipart framing, never above the gateway's 16 MiB ceiling. It applies before this operation runs: a
+        declared `Content-Length` over it is a 413 before a byte of the body is read, and a body that goes over
+        it is cut off (413). A tenant has a quota of live files and bytes, across its workspaces (507).
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FileUploadForm'
+            encoding:
+              file:
+                contentType: image/png, image/jpeg, image/gif, image/webp, application/pdf, text/plain, text/markdown, text/csv, application/json
+      responses:
+        '201':
+          description: The file was stored.
+          headers:
+            Location:
+              description: The path of the new reference.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileRef'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '413':
+          $ref: ../openapi.yaml#/components/responses/PayloadTooLarge
+        '415':
+          $ref: ../openapi.yaml#/components/responses/UnsupportedMediaType
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+        '507':
+          description: |
+            The tenant is over its quota of live files or bytes (`resource_exhausted`, `details.reason`
+            `quota_files` or `quota_bytes`). Deleting a file frees its room at once.
+          content:
+            application/json:
+              schema:
+                $ref: ../openapi.yaml#/components/schemas/Error
+
+  /v1/files/{file_id}:
+    parameters:
+      - $ref: '#/components/parameters/FileIdPath'
+    get:
+      operationId: getFile
+      tags: [files]
+      summary: Read a file reference
+      description: |
+        The reference as the caller holds it: size, media type, owner, origin, treatment, permissions, whether it
+        can be previewed and when it expires. A reference of another scope, another principal's private file, a
+        file of another session's ephemeral context and a deleted file are all `scope_violation`.
+      responses:
+        '200':
+          description: The reference.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileRef'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '410':
+          description: The reference has expired (`expired`). It is no longer resolvable and its bytes are removed in the background.
+          content:
+            application/json:
+              schema:
+                $ref: ../openapi.yaml#/components/schemas/Error
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+    delete:
+      operationId: deleteFile
+      tags: [files]
+      summary: Delete a file
+      description: |
+        Only the owner can delete a file. The reference stops resolving at once; the bytes are removed by background
+        compaction once no other reference of the same scope uses them. A file registered as a RAG source is withdrawn
+        from the RAG pipeline first; if that fails the file stays and the call fails (`unavailable`).
+      responses:
+        '204':
+          description: The file is deleted.
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '410':
+          description: The reference has expired (`expired`).
+          content:
+            application/json:
+              schema:
+                $ref: ../openapi.yaml#/components/schemas/Error
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/files/{file_id}/content:
+    parameters:
+      - $ref: '#/components/parameters/FileIdPath'
+    get:
+      operationId: downloadFile
+      tags: [files]
+      summary: Download a file
+      description: |
+        The file's bytes, always as an attachment (`Content-Disposition: attachment`), with the sniffed media type,
+        `X-Content-Type-Options: nosniff` and a `Content-Security-Policy` that sandboxes everything, so it can never
+        run in the browser that fetches it. Needs the `download` permission, which the host's policy grants per
+        treatment (an ephemeral context does not have it by default: `permission_denied`).
+      responses:
+        '200':
+          description: The file.
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+            Content-Length:
+              schema:
+                type: integer
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '410':
+          description: The reference has expired (`expired`).
+          content:
+            application/json:
+              schema:
+                $ref: ../openapi.yaml#/components/schemas/Error
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/files/{file_id}/preview:
+    parameters:
+      - $ref: '#/components/parameters/FileIdPath'
+    get:
+      operationId: previewFile
+      tags: [files]
+      summary: Preview a file
+      description: |
+        A safe rendering, for the types that have a safe previewer: raster images (served as themselves) and text
+        (served as `text/plain`, cut to `files.preview_text_bytes`; `X-Alixai-Preview-Truncated: true` says it was).
+        PDF, Office files and anything scriptable have none (`415`, `details.reason` `not_previewable`). Served inline
+        with `nosniff` and a sandboxing `Content-Security-Policy`. Needs the `preview` permission.
+      responses:
+        '200':
+          description: The preview.
+          headers:
+            X-Alixai-Preview-Truncated:
+              description: "`true` when a text preview was cut to its limit."
+              schema:
+                type: string
+                enum: ['true']
+            Content-Length:
+              schema:
+                type: integer
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/gif:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+            text/plain:
+              schema:
+                type: string
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '410':
+          description: The reference has expired (`expired`).
+          content:
+            application/json:
+              schema:
+                $ref: ../openapi.yaml#/components/schemas/Error
+        '415':
+          description: There is no safe previewer for this file type (`validation_failed`, `details.reason` `not_previewable`).
+          content:
+            application/json:
+              schema:
+                $ref: ../openapi.yaml#/components/schemas/Error
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+components:
+  parameters:
+    FileIdPath:
+      name: file_id
+      in: path
+      required: true
+      description: The opaque id of a file reference, `fil_` followed by a ULID.
+      schema:
+        type: string
+        pattern: '^fil_[0-9A-HJKMNP-TV-Z]{26}$'
+  schemas:
+    FileRef:
+      $ref: ../../conversation/file-ref.schema.json
+    FileUploadForm:
+      description: The fields of an upload. `treatment` must come before `file`.
+      type: object
+      additionalProperties: false
+      required: [file]
+      properties:
+        treatment:
+          type: string
+          enum: [ephemeral_context, rag_source, application_object]
+        file:
+          type: string
+          format: binary

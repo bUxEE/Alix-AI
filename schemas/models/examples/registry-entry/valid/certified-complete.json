@@ -1,0 +1,128 @@
+{
+  "id": "granite-4.0-350m-q4_k_m",
+  "name": "IBM Granite 4.0 350M (Q4_K_M)",
+  "version": "4.0",
+  "status": "certified",
+  "roles": [
+    "conversational-controller",
+    "typed-routing"
+  ],
+  "capabilities": [
+    "chat",
+    "tool-calling",
+    "rag-grounding"
+  ],
+  "upstream": {
+    "repo_url": "https://huggingface.co/ibm-granite/granite-4.0-350m",
+    "revision": "bd8a1497065c0d6ba1ef19af6b0d2b14bacf71c2"
+  },
+  "artifact": {
+    "format": "gguf",
+    "repo_url": "https://huggingface.co/ibm-granite/granite-4.0-350m-GGUF",
+    "filename": "granite-4.0-350m-Q4_K_M.gguf",
+    "revision": "b8208a86a58427e1739265318028eb5895b74bf2",
+    "size_bytes": 236985760,
+    "sha256": "771c588a49607f274a2bba3185733607ebe6f74b996ab90e2d6bee0d98bcec52",
+    "quantized_by": "ibm-granite",
+    "first_party": true,
+    "checked_on": "2026-10-02"
+  },
+  "licence": {
+    "spdx": "Apache-2.0",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    "redistribution_notes": "Apache-2.0: ship the licence text and notices with any redistributed copy."
+  },
+  "quantization": {
+    "scheme": "Q4_K_M",
+    "nominal_bits": 4
+  },
+  "backend": {
+    "runtime": "localai",
+    "name": "llama-cpp",
+    "allowed_runtime_versions": [
+      "v4.10.0"
+    ]
+  },
+  "hardware": {
+    "minimum": {
+      "cpu_cores": 4,
+      "ram_mb": 8192,
+      "accelerator": "none"
+    },
+    "recommended": {
+      "cpu_cores": 8,
+      "ram_mb": 16384,
+      "accelerator": "none"
+    }
+  },
+  "memory": {
+    "peak_rss_mb": 612.5,
+    "steady_rss_mb": 498.0
+  },
+  "context": {
+    "native_max_tokens": 32768,
+    "budget_tokens": 2048,
+    "kv_cache_mb": 48.0
+  },
+  "load_time": {
+    "cold_ms": 1900,
+    "warm_ms": 410
+  },
+  "performance": {
+    "latency_ms_p50": 820.0,
+    "latency_ms_p95": 1450.0,
+    "ttft_ms_p50": 190.0,
+    "tokens_per_second": 31.5
+  },
+  "languages": {
+    "declared": [
+      "en",
+      "de",
+      "es",
+      "fr",
+      "ja",
+      "pt",
+      "ar",
+      "cs",
+      "it",
+      "ko",
+      "nl",
+      "zh"
+    ],
+    "claimed_count": null,
+    "qualified": [
+      "en",
+      "it"
+    ]
+  },
+  "scores": {
+    "task": 0.82,
+    "tool": 0.91,
+    "rag": 0.74,
+    "safety": 0.88
+  },
+  "measurement": {
+    "profile": "lite",
+    "emulated": false,
+    "results_path": "benchmarks/results/m0/",
+    "measured_on": "2026-10-04"
+  },
+  "fallback": {
+    "model_id": "granite-4.0-1b-q4_k_m",
+    "degraded_mode": "deterministic-routing",
+    "notes": null
+  },
+  "last_efficiency_review": {
+    "date": "2026-10-04",
+    "evidence_path": "docs/efficiency/M0-13.md"
+  },
+  "default_for": [
+    {
+      "role": "conversational-controller",
+      "profile": "lite"
+    }
+  ],
+  "notes": [
+    "Example entry derived from a registry file; see models/registry for the real notes."
+  ]
+}

@@ -1,0 +1,38 @@
+# AlixAI configuration for the native systemd install, read from /etc/alixai/alixai.yaml.
+# Every key can also be set by an ALIXAI_<SECTION>_<FIELD> environment variable. Nothing secret lives here.
+
+# StateDirectory=alixai of the unit: owned by the service's transient user, mode 0700.
+data_dir: /var/lib/alixai
+
+server:
+  # Loopback only. The gateway refuses any other address without TLS (SEC-093); a remote listener is a
+  # reverse proxy on the host that terminates TLS and forwards here.
+  listen: 127.0.0.1:7470
+
+log:
+  level: info
+
+# Context budgets and limits of the deployment profile: lite, balanced or performance.
+profile: lite
+
+localai:
+  # A container published on the host loopback, or the process supervised by the native LocalAI supervisor.
+  endpoint: http://127.0.0.1:8080
+  # LoadCredential= of the unit puts the key here; the file is owner-only inside the service's credential store.
+  api_key_ref: file:/run/credentials/alixai.service/localai-api-key
+  # A LocalAI version AlixAI was not qualified against is reported unavailable (SEC-072).
+  qualified_versions: ["v4.10.0"]
+
+inference:
+  # Provisioned by the operator, root-owned and read-only to both services. AlixAI verifies every listed model
+  # file against the pinned hash of its registry entry before it serves a request (SEC-063).
+  models_dir: /var/lib/alixai-models
+  # Empty keeps the inference path off: the service starts, /healthz answers and /readyz says why.
+  models: []
+
+# The LocalAI supervisor of this service (M5-21): it ATTACHES to the LocalAI that runs as localai.service (or as a container on the
+# same address), health-checks it, backs off while it is unhealthy and settles the actions in flight when it dies. It starts no
+# process: this unit cannot (SEC-080). Set enabled: false to run the bare adapter, for example with a LocalAI managed by something else.
+supervisor:
+  enabled: true
+  runtime: unit

@@ -1,0 +1,51 @@
+id: equipment-manuals
+type: mounted_volume
+title: Equipment manuals
+description: 'The synthetic equipment manuals of the facilities (air handling unit, chiller, pump, generator), as PDF and Markdown files in the application''s manuals folder. Shared by every site of the tenant: a manual describes a model of equipment, not a site.'
+languages:
+- en
+- it
+owner:
+  name: Maintenance Engineering (synthetic)
+  contact: maintenance@facility-maintenance.example.test
+scope:
+  application_id: facility-maintenance
+  tenant:
+    mode: request
+  workspace:
+    mode: shared
+root:
+  kind: mount
+  mount_id: facility-manuals
+include:
+- '**/*.md'
+- '**/*.pdf'
+exclude:
+- drafts/**
+credential_ref: null
+formats:
+- application/pdf
+- text/markdown
+limits:
+  max_file_bytes: 10485760
+  max_total_bytes: 524288000
+  max_files: 500
+sync:
+  method: manual
+deletion:
+  purge_after_hours: 0
+  on_source_removed: purge
+parser:
+  ocr: disabled
+  max_pages_per_file: 200
+  timeout_seconds: 60
+citation:
+  kind: alixai_preview
+egress:
+  entries: []
+retention:
+  derived_data_days: null
+  import_originals: false
+  audit:
+    record_access: true
+    retention_days: 365

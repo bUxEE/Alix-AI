@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:common:error:v1",
+  "title": "Error",
+  "description": "The typed error carried across API, SDK and package boundaries. The code enum and the retryable classification mirror pkg/contracts (testdata/errcodes.golden); a Go test keeps them in step.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["code", "message", "retryable"],
+  "properties": {
+    "code": {
+      "description": "Stable machine-readable failure classification.",
+      "type": "string",
+      "enum": [
+        "scope_missing",
+        "unauthenticated",
+        "permission_denied",
+        "scope_violation",
+        "schema_invalid",
+        "unknown_capability",
+        "ambiguous",
+        "missing_fields",
+        "validation_failed",
+        "stale",
+        "expired",
+        "replayed",
+        "confirmation_required",
+        "step_up_required",
+        "conflict",
+        "unavailable",
+        "degraded",
+        "timeout",
+        "rate_limited",
+        "resource_exhausted",
+        "no_supported_evidence",
+        "uncertain_outcome",
+        "partial_failure",
+        "quarantined",
+        "internal"
+      ]
+    },
+    "message": {
+      "description": "Human-readable, non-sensitive description.",
+      "type": "string",
+      "maxLength": 2048
+    },
+    "retryable": {
+      "description": "True only when re-sending the identical request unchanged, after a delay, can reasonably produce a different outcome.",
+      "type": "boolean"
+    },
+    "details": {
+      "description": "Optional structured, non-sensitive context. The keys depend on the code (for example levels for scope_missing); it is an open map by design.",
+      "type": "object"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "code": {
+            "enum": ["unavailable", "degraded", "timeout", "rate_limited", "resource_exhausted"]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "retryable": { "const": true }
+        }
+      },
+      "else": {
+        "properties": {
+          "retryable": { "const": false }
+        }
+      }
+    }
+  ]
+}

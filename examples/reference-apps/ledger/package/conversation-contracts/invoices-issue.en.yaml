@@ -1,0 +1,57 @@
+capability_id: "invoices.issue"
+language: "en"
+contract_version: "1.0.0"
+terminology:
+  - "invoice"
+  - "quote"
+  - "customer"
+field_prompts:
+  - field: "quote"
+    label: "Quote"
+    prompt: "Which quote should I invoice? Give me its number or the customer's name."
+    examples:
+      - "QUO-0001"
+      - "Acme Srl"
+  - field: "due_days"
+    label: "Days until due"
+    prompt: "In how many days is the invoice due? You can skip this."
+clarifications:
+  - rule_id: "quote_multiple"
+    prompt: "More than one quote matches {input.quote}. Which one do you mean?"
+corrections:
+  acknowledgement: "Okay, I have changed that."
+  correctable_fields:
+    - "quote"
+    - "due_days"
+  prepared_action_invalidated: "That changes the invoice, so the earlier summary no longer applies. I will prepare it again and ask you to confirm."
+cancellations:
+  acknowledgement: "Okay, I stopped. Nothing was issued."
+confirmations:
+  request: "Please confirm this invoice: {invoice_total} for {customer_name} from quote {quote_number}, due on {invoice_due_on}. The customer will be sent the invoice and the quote will be closed. Shall I issue it?"
+  declined: "Okay, I did not issue anything."
+  expired: "That invoice is no longer valid, so nothing was issued. I can prepare it again if you like."
+success:
+  - outcome: "issued"
+    text: "Done. Invoice {invoice_number} for {customer_name} of {invoice_total} is issued from quote {quote_number} and due on {invoice_due_on}."
+failures:
+  - code: "permission_denied"
+    text: "You are not allowed to issue invoices, so nothing was issued."
+  - code: "scope_violation"
+    text: "I cannot issue that: the quote is not available to you. Nothing was issued."
+  - code: "validation_failed"
+    text: "I could not issue that: the quote is past its last valid day or the due period is out of range. Nothing was issued."
+  - code: "missing_fields"
+    text: "I still need to know which quote to invoice. Nothing was issued."
+  - code: "conflict"
+    text: "That quote was already invoiced, so nothing was issued."
+  - code: "stale"
+    text: "The quote changed after I prepared this invoice, so I did not issue it. Nothing was issued; I can prepare it again."
+  - code: "expired"
+    text: "That was not confirmed in time, or it was withdrawn, so nothing was issued."
+  - code: "uncertain_outcome"
+    text: "I could not confirm whether it went through. I will check before doing anything else, so please do not ask for it again yet."
+  - code: "unavailable"
+    text: "The ledger is not reachable right now, so nothing was issued."
+next_actions:
+  - id: "record_payment"
+    label: "Record a payment on this invoice"

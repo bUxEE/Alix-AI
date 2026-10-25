@@ -1,0 +1,15 @@
+{
+  "ack_id": "ack_01J0000000000000000000000A",
+  "profile_id": "pprf_01J0000000000000000000000P",
+  "provider_id": "openai",
+  "notice_version": "2026-10-02.1",
+  "notice_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "scope": {
+    "deployment_id": "dep_main",
+    "application_id": "app_crm",
+    "tenant_id": "ten_42"
+  },
+  "confirmations": { "consumer_subscription_is_not_api_access": true, "separate_api_billing_understood": true },
+  "acknowledged_by": "usr_admin",
+  "acknowledged_at": "2026-10-02T08:10:00Z"
+}

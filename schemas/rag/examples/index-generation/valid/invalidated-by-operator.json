@@ -1,0 +1,28 @@
+{
+  "generation_id": "gen_01J0000000000000000000000A",
+  "source_id": "src_01J0000000000000000000000A",
+  "state": "invalidated",
+  "components": {
+    "parser": {
+      "name": "alixai-parser",
+      "version": "1.0.0"
+    },
+    "ocr": null,
+    "chunker": {
+      "name": "structure-chunker",
+      "version": "2"
+    },
+    "embedder": {
+      "name": "bge-small-en",
+      "version": "v1.5"
+    }
+  },
+  "counts": {
+    "documents": 40,
+    "chunks": 812,
+    "embedded_chunks": 812
+  },
+  "created_at": "2026-10-02T09:30:00Z",
+  "activated_at": "2026-10-02T11:45:12.250Z",
+  "retired_at": "2026-10-06T09:15:00Z"
+}

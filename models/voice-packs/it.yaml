@@ -1,0 +1,76 @@
+# Voice language pack manifest (schema: pack-manifest.schema.json, urn:alixai:schema:voice:language-pack:v1).
+# One file per pack; the file name is the pack id. Every file is pinned by size and sha256. Quality and
+# resource figures were measured by M4-06 (emulated lite profile); status stays candidate because no Lite voice stack passes every gate.
+id: it
+name: "Italiano (Whisper small, Piper paola, Silero VAD)"
+version: "1"
+language: it
+status: candidate
+models:
+  stt:
+    name: "Whisper small, multilingual, Q5_1 (whisper.cpp ggml)"
+    engine: whisper.cpp
+    registry_id: null
+    files:
+      - name: ggml-small-q5_1.bin
+        url: https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small-q5_1.bin
+        revision: 5359861c739e955e79d9a303bcbc70fb988958b1
+        size_bytes: 190085487
+        sha256: ae85e4a935d7a567bd102fe55afc16bb595bdb618e11b2fc7591bc08120411bb
+    licence:
+      spdx: MIT
+      url: https://huggingface.co/ggerganov/whisper.cpp/blob/5359861c739e955e79d9a303bcbc70fb988958b1/README.md
+      redistribution_notes: "MIT, declared by the whisper.cpp model repository card; the upstream OpenAI Whisper weights are MIT as well. The ggml file is a third-party conversion by the whisper.cpp project. AlixAI does not bundle weights: the operator fetches the pinned file. Recorded as found by M4-06 (the file was downloaded and its sha256 verified locally); the sign-off is the M5-H02 human licence review."
+  tts:
+    name: "Piper it_IT paola medium"
+    engine: piper
+    registry_id: null
+    files:
+      - name: it_IT-paola-medium.onnx
+        url: https://huggingface.co/rhasspy/piper-voices/resolve/c10ece1aade47bb51c153c893d14e5bf8e5b7117/it/it_IT/paola/medium/it_IT-paola-medium.onnx
+        revision: c10ece1aade47bb51c153c893d14e5bf8e5b7117
+        size_bytes: 63511038
+        sha256: 6fc918b5a0ea6137382833dddfa567bffbe6a5060c02043c87192ee59c04210c
+      - name: it_IT-paola-medium.onnx.json
+        url: https://huggingface.co/rhasspy/piper-voices/resolve/c10ece1aade47bb51c153c893d14e5bf8e5b7117/it/it_IT/paola/medium/it_IT-paola-medium.onnx.json
+        revision: c10ece1aade47bb51c153c893d14e5bf8e5b7117
+        size_bytes: 7099
+        sha256: aea19c0a7fce29fbc359b93f10e7902854401e4c95ae2ea328ae516b15d296cf
+    licence:
+      spdx: MIT
+      url: https://huggingface.co/rhasspy/piper-voices/blob/c10ece1aade47bb51c153c893d14e5bf8e5b7117/it/it_IT/paola/medium/MODEL_CARD
+      redistribution_notes: "The piper-voices repository declares MIT and the voice's training dataset (paolapersico1/Voice-Dataset-Italian) is CC0-1.0, but the model card says the voice was fine-tuned from the U.S. English lessac voice, whose dataset is under the Blizzard 2013 licence (https://www.cstr.ed.ac.uk/projects/blizzard/2013/lessac_blizzard2013/license.html), which was not reviewed here. Whether that lineage limits redistribution is open for the M5-H02 human licence review. The Piper ENGINE is GPL-3.0 (ADR 0015): a separate backend process, not part of this pack."
+  vad:
+    name: "Silero VAD v5.1.2 (ggml, served by the whisper.cpp backend with vad_only)"
+    engine: whisper.cpp
+    registry_id: null
+    files:
+      - name: ggml-silero-v5.1.2.bin
+        url: https://huggingface.co/ggml-org/whisper-vad/resolve/9ffd54a1e1ee413ddf265af9913beaf518d1639b/ggml-silero-v5.1.2.bin
+        revision: 9ffd54a1e1ee413ddf265af9913beaf518d1639b
+        size_bytes: 885098
+        sha256: 29940d98d42b91fbd05ce489f3ecf7c72f0a42f027e4875919a28fb4c04ea2cf
+    licence:
+      spdx: MIT
+      url: https://huggingface.co/ggml-org/whisper-vad/blob/9ffd54a1e1ee413ddf265af9913beaf518d1639b/README.md
+      redistribution_notes: "MIT, declared by the ggml-org/whisper-vad repository card (a conversion of the MIT-licensed Silero VAD). AlixAI does not bundle weights. Final sign-off is the M5-H02 human licence review."
+quality:
+  stt_wer: 0.0834
+  tts_time_to_first_audio_ms: 2029
+  tts_real_time_factor: 0.659
+  measurement:
+    profile: lite
+    emulated: true
+    measured_on: "2026-10-04"
+    results_path: docs/evidence/m4-voice/report.md
+resources:
+  disk_bytes: 254488722
+  steady_rss_mb: 857
+  peak_rss_mb: 1167
+  cpu_cores: 4
+notes:
+  - "Candidate pack named by ADR 0015, measured by M4-06 (docs/evidence/m4-voice/report.md, pre-registered gates in protocol.md, emulated lite profile: 8 GiB, 4 CPU, LocalAI v4.10.0, three cold-start runs per candidate). Status stays candidate: Italian voice is Balanced-only."
+  - "STT: on FLEURS Italian whisper tiny gives WER 0.299 and base 0.197, both over the 0.15 bar; whisper small gives 0.083 and real-time factor 0.47 but its worker peaks at 550 MiB against the 500 MiB Lite budget (steady 394 MiB), so Italian speech to text needs the Balanced profile (budget 1000 MiB). The pack therefore carries small. Whisper alone transcribes silence and noise into text (4 of 4 non-speech clips, every size): the VAD in front of it is mandatory and passed 8 of 8."
+  - "TTS: Piper paola medium fails three Lite gates: round-trip WER 0.153 against 0.10 (many of the edits are the judge writing digits for spelled-out numbers, which the pre-registered normaliser counts as errors; the failure does not depend on that), time to first audio median 2029 ms against 1500 (complete file, no streaming) and worker peak 576 MiB against 300. The smaller it_IT riccardo x_low voice meets the latency gate (1422 ms) but misses intelligibility (WER 0.164, real mishearings) and memory (354 MiB). Italian TTS at Lite size is not available; the Italian shelf is shallow."
+  - "The paola voice was fine-tuned from the U.S. English lessac voice, whose dataset is under the Blizzard 2013 licence (not reviewed or decided by M4-06): listed for M5-H02, together with the GPL-3.0 Piper engine."
+  - "resources.* are the sums of the three workers measured one at a time (largest peak of three runs, median steady): an upper bound for the pack active. Pins re-verified 2026-10-04: every file was downloaded host-side and its sha256 matches the pin; the VAD file is served through the whisper.cpp backend (vad_only), see the en pack."

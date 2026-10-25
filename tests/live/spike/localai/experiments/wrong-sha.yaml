@@ -1,0 +1,8 @@
+# Preload sha256 experiment: a COPY of the model file in its own models directory (data/models-wrongsha, made by
+# hardening-experiments.sh) so a LocalAI that deletes or replaces a file whose hash differs cannot touch the real models, and
+# the smoke model entry carrying a wrong sha256.
+services:
+  localai:
+    volumes:
+      - ./data/models-wrongsha:/models
+      - ../../../tests/live/spike/localai/experiments/models-wrong-sha.yaml:/configuration/models.yaml:ro

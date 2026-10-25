@@ -1,0 +1,143 @@
+id: availability.list
+version: 1.0.0
+audience: user
+title: List availability
+purpose: List the free appointments of the caller's clinic site, optionally for one doctor and a number of days, so that one of them can be booked. Read-only.
+scope_level: workspace
+permissions:
+  - availability.read
+fields:
+  - name: date
+    type: date
+    required: false
+    description: The first day to search, in the clinic site's local time. Defaults to today.
+    default:
+      source: context
+      key: today
+  - name: days
+    type: integer
+    required: false
+    description: How many consecutive days to search, counting from the first day.
+    minimum: 1
+    maximum: 14
+    default:
+      source: literal
+      value: 1
+  - name: doctor
+    type: entity_ref
+    entity_type: doctor
+    required: false
+    description: Only list appointments with this doctor.
+  - name: max_results
+    type: integer
+    required: false
+    description: How many free appointments to list at most.
+    minimum: 1
+    maximum: 10
+    default:
+      source: literal
+      value: 5
+entity_types:
+  doctor:
+    description: A doctor who sees patients at the clinic site.
+    resolve:
+      endpoint: clinic-mcp
+      mcp_tool: resolve_doctor
+      result_schema: schemas/resolve.result.schema.json
+ambiguity:
+  - id: doctor_multiple
+    field: doctor
+    when: multiple_matches
+    action: ask_user
+    max_choices: 5
+  - id: doctor_none
+    field: doctor
+    when: no_match
+    action: reject
+validation:
+  - id: date_in_window
+    fields:
+      - date
+    description: The first day must be today or later and at most 90 days ahead, in the clinic site's local time.
+    error_code: validation_failed
+  - id: days_in_range
+    fields:
+      - days
+    description: The number of days must be a whole number from 1 to 14.
+    error_code: validation_failed
+failure_states:
+  - code: permission_denied
+    description: The principal's role may not list availability.
+  - code: scope_violation
+    description: The doctor named is not a doctor of the principal's clinic site, or does not exist. The application does not say which.
+  - code: validation_failed
+    description: The date is in the past or too far ahead, or a number is out of range. Nothing was searched.
+  - code: unavailable
+    description: The clinic database cannot be reached. No result is available and none is guessed.
+effect_class: none
+risk_level: 0
+operations:
+  read:
+    endpoint: clinic-mcp
+    mcp_tool: availability_list
+    result_schema: schemas/availability.list.result.schema.json
+    timeout_ms: 5000
+confirmation:
+  mode: none
+response_obligations:
+  - fact: search_from
+    when: success
+    description: The first day that was searched.
+  - fact: slot_count
+    when: success
+    description: How many free appointments are listed.
+  - fact: slot_summary
+    when: success
+    description: The free appointments, each with its local date and time and the doctor.
+next_actions:
+  - id: book_listed_slot
+    after: success
+    capability_id: appointments.book
+doc_refs:
+  - al-field-date
+  - al-field-days
+  - al-field-doctor
+  - al-field-max_results
+  - al-rule-date_in_window
+  - al-rule-days_in_range
+  - al-perm-availability.read
+  - al-failure-permission_denied
+  - al-failure-scope_violation
+  - al-failure-validation_failed
+  - al-failure-unavailable
+  - al-risk
+  - al-confirmation
+  - al-outcome-slots_found
+  - al-outcome-none_available
+examples:
+  - id: en-free-on-date
+    language: en
+    test_only: true
+    utterance: Which appointments are free on 2026-10-14?
+    expected_fields:
+      date: '2026-10-14'
+  - id: en-next-week-with-doctor
+    language: en
+    test_only: true
+    utterance: Show me the free appointments with Dr Verdi over the next 7 days
+    expected_fields:
+      doctor: Dr Verdi
+      days: 7
+  - id: it-libere-il-giorno
+    language: it
+    test_only: true
+    utterance: Quali visite sono libere il 2026-10-14?
+    expected_fields:
+      date: '2026-10-14'
+  - id: it-con-medico
+    language: it
+    test_only: true
+    utterance: Mostrami le disponibilità del dottor Verdi per i prossimi 7 giorni
+    expected_fields:
+      doctor: dottor Verdi
+      days: 7

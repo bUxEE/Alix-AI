@@ -1,0 +1,3 @@
+event: content_block_start
+data: {"type": "content_block_start", "index": 0, "content_block": {"type": "server_tool_use", "id": "srvtoolu_01Fixture", "name": "web_search", "input": {}}}
+

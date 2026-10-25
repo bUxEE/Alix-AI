@@ -1,0 +1,190 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:voice:server-event:v1",
+  "title": "ServerEvent",
+  "description": "One JSON (text) message the core sends on the voice socket GET /v1/sessions/{session_id}/voice, discriminated by type. Binary messages are not JSON: between playback.started and playback.done or playback.cancelled each binary message is one chunk of the verified speech, raw PCM in the format playback.started announced; after playback.cancelled no further chunk of that playback is sent. The transcripts are the host application's to show; the response text is verified before it is shown or spoken (master plan 13). Events are emitted only by the core.",
+  "oneOf": [
+    { "$ref": "#/$defs/sessionStarted" },
+    { "$ref": "#/$defs/captureStarted" },
+    { "$ref": "#/$defs/captureCancelled" },
+    { "$ref": "#/$defs/transcriptInterim" },
+    { "$ref": "#/$defs/transcriptFinal" },
+    { "$ref": "#/$defs/transcriptCorrected" },
+    { "$ref": "#/$defs/turnCompleted" },
+    { "$ref": "#/$defs/response" },
+    { "$ref": "#/$defs/playbackStarted" },
+    { "$ref": "#/$defs/playbackDone" },
+    { "$ref": "#/$defs/playbackCancelled" },
+    { "$ref": "#/$defs/error" }
+  ],
+  "$defs": {
+    "sessionStarted": {
+      "description": "The first message: the voice connection is open on the token's conversation session. It says what this connection can do, so a client can show the right controls.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "voice_session_id", "session_id", "speech", "retain_raw_audio", "max_chunk_bytes", "max_audio_bytes"],
+      "properties": {
+        "type": { "const": "session.started" },
+        "voice_session_id": { "$ref": "urn:alixai:schema:voice:shared:v1#/$defs/voiceSessionId" },
+        "session_id": { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier" },
+        "speech": { "description": "Whether verified responses are spoken on this connection (a speech synthesis component is available and the client did not turn speech off). When false the responses arrive as text only.", "type": "boolean" },
+        "retain_raw_audio": { "description": "Whether the deployment keeps the raw audio of this tenant's utterances. False unless the tenant's policy says so.", "type": "boolean" },
+        "max_chunk_bytes": { "description": "The largest binary message accepted while a capture is active.", "type": "integer", "minimum": 1 },
+        "max_audio_bytes": { "description": "The most audio one capture, or one audio.submit, may carry.", "type": "integer", "minimum": 1 },
+        "language": { "$ref": "urn:alixai:schema:voice:shared:v1#/$defs/language" },
+        "pack_id": { "description": "The active language pack, when the deployment reports it.", "type": "string", "minLength": 1, "maxLength": 48 }
+      }
+    },
+    "captureStarted": {
+      "description": "A capture or a submission was accepted and the utterance has its id.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "utterance_id"],
+      "properties": {
+        "type": { "const": "capture.started" },
+        "utterance_id": { "$ref": "urn:alixai:schema:voice:shared:v1#/$defs/utteranceId" }
+      }
+    },
+    "captureCancelled": {
+      "description": "The utterance ends without a transcript entering the pipeline: the client cancelled, nothing was heard, the speech recogniser failed or the audio was refused, the audio could not be retained as the tenant's policy requires, the pipeline had too many utterances waiting, the language pack changed under it, or the session closed.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "utterance_id", "reason"],
+      "properties": {
+        "type": { "const": "capture.cancelled" },
+        "utterance_id": { "$ref": "urn:alixai:schema:voice:shared:v1#/$defs/utteranceId" },
+        "reason": { "type": "string", "enum": ["client", "no_speech", "stt_failed", "invalid_audio", "retention_failed", "overloaded", "pack_changed", "session_closed"] }
+      }
+    },
+    "transcriptInterim": {
+      "description": "The recogniser's current best hypothesis for the utterance in progress. Each interim replaces the previous one. It is for display only and may change: nothing acts on it and it never enters the turn pipeline.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "utterance_id", "seq", "text"],
+      "properties": {
+        "type": { "const": "transcript.interim" },
+        "utterance_id": { "$ref": "urn:alixai:schema:voice:shared:v1#/$defs/utteranceId" },
+        "seq": { "type": "integer", "minimum": 1 },
+        "text": { "type": "string", "maxLength": 4096 }
+      }
+    },
+    "transcriptFinal": {
+      "description": "The finalised transcript of the utterance, visible to the host application before the turn runs. It is untrusted input like typed text: it grants nothing. It now enters the normal turn pipeline on the conversation session, and the user may still correct it (transcript.correct) before confirming anything.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "utterance_id", "text"],
+      "properties": {
+        "type": { "const": "transcript.final" },
+        "utterance_id": { "$ref": "urn:alixai:schema:voice:shared:v1#/$defs/utteranceId" },
+        "text": { "type": "string", "minLength": 1, "maxLength": 4096 },
+        "language": { "$ref": "urn:alixai:schema:voice:shared:v1#/$defs/language" },
+        "speaker_hint": { "$ref": "urn:alixai:schema:voice:shared:v1#/$defs/speakerHint" }
+      }
+    },
+    "transcriptCorrected": {
+      "description": "The transcript of the utterance was corrected by the user. The corrected text runs through the turn pipeline next; previous_text is what the recogniser had heard.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "utterance_id", "text", "previous_text"],
+      "properties": {
+        "type": { "const": "transcript.corrected" },
+        "utterance_id": { "$ref": "urn:alixai:schema:voice:shared:v1#/$defs/utteranceId" },
+        "text": { "type": "string", "minLength": 1, "maxLength": 4096 },
+        "previous_text": { "type": "string", "minLength": 1, "maxLength": 4096 }
+      }
+    },
+    "turnCompleted": {
+      "description": "The turn the transcript started has run. Its events (directive, prepared action, confirmation panel, citations) are the stream of GET /v1/sessions/{session_id}/turns/{turn_id}/events. When the turn prepared an action that needs confirmation, confirmation carries the single-use secret for the client's own confirm control: it is for the interface, never spoken, never logged, and the only way to confirm is the structured input of POST /v1/sessions/{session_id}/turns.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "utterance_id", "turn_id", "act", "failed"],
+      "properties": {
+        "type": { "const": "turn.completed" },
+        "utterance_id": { "$ref": "urn:alixai:schema:voice:shared:v1#/$defs/utteranceId" },
+        "turn_id": { "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/turnId" },
+        "act": { "description": "The dialogue act the response performs (schemas/conversation/dialogue-directive).", "type": "string", "minLength": 1, "maxLength": 64 },
+        "failed": { "description": "The turn ended in a refusal or a failure; code says why.", "type": "boolean" },
+        "code": { "$ref": "urn:alixai:schema:common:error:v1#/properties/code" },
+        "preparation_id": { "description": "The prepared action that now awaits the user's confirmation, if any.", "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/preparationId" },
+        "confirmation": {
+          "description": "The single-use confirmation secret of preparation_id, present only with it.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["preparation_id", "token"],
+          "properties": {
+            "preparation_id": { "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/preparationId" },
+            "token": { "type": "string", "minLength": 1, "maxLength": 512 }
+          }
+        },
+        "corrects_turn_id": { "description": "Set when this turn ran a corrected transcript: the turn the correction replaces.", "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/turnId" },
+        "superseded_preparation_id": { "description": "Set when this turn ran a corrected transcript and the turn it replaces had prepared an action: that preparation is no longer the one the user confirms.", "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/preparationId" }
+      }
+    },
+    "response": {
+      "description": "The verified response text of the turn: the model's text when it passed the response verifier, otherwise the deterministic template. It is never unverified model text. speech says whether it is spoken: speech starts only after this verification, and a client always has the text.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "utterance_id", "turn_id", "text", "source", "speech"],
+      "properties": {
+        "type": { "const": "response" },
+        "utterance_id": { "$ref": "urn:alixai:schema:voice:shared:v1#/$defs/utteranceId" },
+        "turn_id": { "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/turnId" },
+        "text": { "type": "string", "minLength": 1, "maxLength": 4096 },
+        "source": { "type": "string", "enum": ["model", "template"] },
+        "speech": { "description": "queued: playback follows (playback.started). skipped: nothing is spoken; speech_reason says why.", "type": "string", "enum": ["queued", "skipped"] },
+        "speech_reason": { "type": "string", "enum": ["speech_disabled", "tts_unavailable", "verification_failed", "superseded", "pack_changed"] }
+      },
+      "if": { "properties": { "speech": { "const": "skipped" } }, "required": ["speech"] },
+      "then": { "required": ["speech_reason"] },
+      "else": { "not": { "required": ["speech_reason"] } }
+    },
+    "playbackStarted": {
+      "description": "Binary messages follow: the verified speech, raw PCM in format.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "playback_id", "turn_id", "format"],
+      "properties": {
+        "type": { "const": "playback.started" },
+        "playback_id": { "$ref": "urn:alixai:schema:voice:shared:v1#/$defs/playbackId" },
+        "turn_id": { "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/turnId" },
+        "format": { "$ref": "urn:alixai:schema:voice:shared:v1#/$defs/audioFormat" }
+      }
+    },
+    "playbackDone": {
+      "description": "All the speech of the response was sent.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "playback_id", "turn_id"],
+      "properties": {
+        "type": { "const": "playback.done" },
+        "playback_id": { "$ref": "urn:alixai:schema:voice:shared:v1#/$defs/playbackId" },
+        "turn_id": { "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/turnId" }
+      }
+    },
+    "playbackCancelled": {
+      "description": "The playback ended before its end and no further audio of it is sent: the client cancelled it, a new utterance began (barge-in), synthesis failed, the language pack changed under it, or the session closed.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "playback_id", "turn_id", "reason"],
+      "properties": {
+        "type": { "const": "playback.cancelled" },
+        "playback_id": { "$ref": "urn:alixai:schema:voice:shared:v1#/$defs/playbackId" },
+        "turn_id": { "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/turnId" },
+        "reason": { "type": "string", "enum": ["client", "barge_in", "error", "pack_changed", "session_closed"] }
+      }
+    },
+    "error": {
+      "description": "A typed failure of one message, utterance or turn. The connection stays open and text keeps working: effect says which degradation applies when a voice component is unavailable. Never replaced by a success-looking message.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "error"],
+      "properties": {
+        "type": { "const": "error" },
+        "error": { "$ref": "urn:alixai:schema:common:error:v1" },
+        "effect": { "$ref": "urn:alixai:schema:voice:shared:v1#/$defs/effect" },
+        "utterance_id": { "$ref": "urn:alixai:schema:voice:shared:v1#/$defs/utteranceId" },
+        "turn_id": { "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/turnId" }
+      }
+    }
+  }
+}

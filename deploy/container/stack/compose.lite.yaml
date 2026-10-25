@@ -1,0 +1,18 @@
+# Lite profile (master plan 7.1): the same caps as deploy/container/localai/compose.lite.yaml, on the LocalAI
+# container; the AlixAI core (96 to 160 MB measured, resource-budgets.md) has its own 512 MB cap in compose.yaml.
+# Anything measured under this file is labelled emulated, never certified.
+#   docker compose -f compose.yaml -f compose.lite.yaml up -d
+services:
+  localai:
+    mem_limit: 8g
+    memswap_limit: 8g
+    cpus: 4
+    environment:
+      LOCALAI_THREADS: "4"
+      LOCALAI_MAX_ACTIVE_BACKENDS: ${LOCALAI_MAX_ACTIVE_BACKENDS:-2}
+    labels:
+      ai.alixai.profile: lite
+      ai.alixai.evidence: emulated
+  alixai:
+    environment:
+      ALIXAI_PROFILE: lite

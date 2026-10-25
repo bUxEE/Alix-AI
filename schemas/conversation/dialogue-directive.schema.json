@@ -1,0 +1,251 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:conversation:dialogue-directive:v1",
+  "title": "DialogueDirective",
+  "description": "What the core tells the model, and the response verifier, to say this turn (master plan 11.2): the dialogue act, the authoritative facts, the facts that must be stated, missing or invalid fields, the next permitted question, allowed suggestions, the confirmation requirement, permitted next actions and source references. Built by deterministic code from validated state and adapter results. The model verbalises it; the verifier rejects any response that states a fact not in facts, omits a must_state fact or claims more than the directive permits. No property is 'model': the model has no say in a directive. Arrays relayed verbatim from adapter results (facts, allowed_suggestions) are 'host'; arrays and objects the core assembles (invalid_fields, next_question) are 'alixai' and their entries keep the authority they came with.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "turn_id",
+    "capability_id",
+    "act",
+    "facts",
+    "must_state",
+    "missing_fields",
+    "invalid_fields",
+    "allowed_suggestions",
+    "confirmation",
+    "permitted_next_actions",
+    "sources"
+  ],
+  "properties": {
+    "turn_id": {
+      "description": "The turn this directive belongs to.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/turnId"
+    },
+    "capability_id": {
+      "description": "The capability the active goal concerns, or null when there is none (greeting, help, refusal before any capability was chosen).",
+      "x-alixai-authority": "alixai",
+      "anyOf": [
+        { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/capabilityId" },
+        { "type": "null" }
+      ]
+    },
+    "act": {
+      "description": "The dialogue act the response must perform. ask_missing: request absent required fields. ask_invalid: a supplied value failed validation. disambiguate: several candidates match. request_confirmation: show the prepared action and ask for confirmation. request_step_up: send the user to the host application's own authenticated UI. present_result: state the result of a read. report_outcome: state the outcome of a commit from its receipt. report_failure: state a typed failure. refuse: decline (permission, scope or capability). offer_help: explain what the application can do. acknowledge_cancel: confirm the goal was dropped. report_no_evidence: no authorised source supports an answer.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "enum": [
+        "ask_missing",
+        "ask_invalid",
+        "disambiguate",
+        "request_confirmation",
+        "request_step_up",
+        "present_result",
+        "report_outcome",
+        "report_failure",
+        "refuse",
+        "offer_help",
+        "acknowledge_cancel",
+        "report_no_evidence"
+      ]
+    },
+    "facts": {
+      "description": "The authoritative facts the response may state, from adapter results. Anything numeric, dated, timed, priced or identified that is not here must not appear in the response.",
+      "x-alixai-authority": "host",
+      "type": "array",
+      "maxItems": 128,
+      "items": { "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/fact" }
+    },
+    "must_state": {
+      "description": "Names of the facts (their field) the response must state. Each must name an entry of facts; the verifier checks both.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "maxItems": 128,
+      "uniqueItems": true,
+      "items": { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName" }
+    },
+    "missing_fields": {
+      "description": "Required fields the user has not supplied yet, from the capability contract.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName" }
+    },
+    "invalid_fields": {
+      "description": "Supplied values that failed deterministic validation, with the typed reason.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "maxItems": 64,
+      "items": { "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/issue" }
+    },
+    "next_question": {
+      "description": "The one question the response may ask next. Absent when the act asks nothing.",
+      "x-alixai-authority": "alixai",
+      "$ref": "#/$defs/question"
+    },
+    "allowed_suggestions": {
+      "description": "Suggestions the response may offer, taken from host data (for example alternative slots). The model may offer these and nothing else.",
+      "x-alixai-authority": "host",
+      "type": "array",
+      "maxItems": 16,
+      "items": { "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/choice" }
+    },
+    "confirmation": {
+      "description": "Whether the response must ask for confirmation, and how.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/confirmationRequirement"
+    },
+    "permitted_next_actions": {
+      "description": "What the user may do next. The response may mention these and no others.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "maxItems": 16,
+      "items": { "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/permittedNextAction" }
+    },
+    "sources": {
+      "description": "Sources the response may cite, where the act is grounded in them. The verifier rejects a citation to a source not listed here.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "maxItems": 32,
+      "items": { "$ref": "urn:alixai:schema:conversation:citation:v1" }
+    },
+    "preparation_id": {
+      "description": "The PreparedAction a request_confirmation or request_step_up concerns.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/preparationId"
+    },
+    "receipt_id": {
+      "description": "The ActionReceipt a report_outcome states.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/receiptId"
+    },
+    "reason_code": {
+      "description": "The typed reason behind a refuse, report_failure, request_step_up or report_no_evidence: an ErrCode.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:error:v1#/properties/code"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "act": { "const": "ask_missing" } },
+        "required": ["act"]
+      },
+      "then": {
+        "required": ["next_question"],
+        "properties": { "missing_fields": { "minItems": 1 } }
+      }
+    },
+    {
+      "if": {
+        "properties": { "act": { "const": "ask_invalid" } },
+        "required": ["act"]
+      },
+      "then": {
+        "required": ["next_question"],
+        "properties": { "invalid_fields": { "minItems": 1 } }
+      }
+    },
+    {
+      "if": {
+        "properties": { "act": { "const": "disambiguate" } },
+        "required": ["act"]
+      },
+      "then": {
+        "required": ["next_question"],
+        "properties": {
+          "next_question": {
+            "properties": {
+              "answer_kind": { "const": "choice" },
+              "choices": { "minItems": 2 }
+            },
+            "required": ["choices"]
+          }
+        }
+      }
+    },
+    {
+      "description": "A confirmation request names the preparation and needs explicit or step-up confirmation.",
+      "if": {
+        "properties": { "act": { "const": "request_confirmation" } },
+        "required": ["act"]
+      },
+      "then": {
+        "required": ["preparation_id"],
+        "properties": {
+          "confirmation": {
+            "properties": { "mode": { "const": "explicit" } }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "act": { "const": "request_step_up" } },
+        "required": ["act"]
+      },
+      "then": {
+        "required": ["preparation_id", "reason_code"],
+        "properties": {
+          "confirmation": {
+            "properties": { "mode": { "const": "step_up" } }
+          }
+        }
+      }
+    },
+    {
+      "description": "An outcome is stated only from a receipt.",
+      "if": {
+        "properties": { "act": { "const": "report_outcome" } },
+        "required": ["act"]
+      },
+      "then": { "required": ["receipt_id"] }
+    },
+    {
+      "if": {
+        "properties": { "act": { "enum": ["refuse", "report_failure", "report_no_evidence"] } },
+        "required": ["act"]
+      },
+      "then": { "required": ["reason_code"] }
+    }
+  ],
+  "$defs": {
+    "question": {
+      "description": "The next permitted question: which field it asks for and what kind of answer is accepted.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["field", "answer_kind"],
+      "properties": {
+        "field": {
+          "description": "The capability field the question asks for.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+        },
+        "answer_kind": {
+          "description": "text: free text. choice: one of choices. entity: a record to be resolved by the host. confirmation: yes or no to a prepared action.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "enum": ["text", "choice", "entity", "confirmation"]
+        },
+        "choices": {
+          "description": "The selectable answers, from the capability contract or the host's candidates. Required when answer_kind is choice.",
+          "x-alixai-authority": "alixai",
+          "type": "array",
+          "maxItems": 32,
+          "items": { "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/choice" }
+        }
+      },
+      "if": {
+        "properties": { "answer_kind": { "const": "choice" } },
+        "required": ["answer_kind"]
+      },
+      "then": {
+        "required": ["choices"],
+        "properties": { "choices": { "minItems": 1 } }
+      }
+    }
+  }
+}

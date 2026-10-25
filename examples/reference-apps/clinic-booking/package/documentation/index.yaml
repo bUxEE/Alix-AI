@@ -1,0 +1,831 @@
+entries:
+  - id: al-field-date
+    capability_id: availability.list
+    facet: field
+    language: en
+    title: Field date
+    summary: "Type date, optional, default from the context: today. The first day to search, in the clinic site's local time. Defaults to today."
+    location:
+      path: documentation/availability/list.md
+      anchor: field-date
+    field: date
+  - id: al-field-days
+    capability_id: availability.list
+    facet: field
+    language: en
+    title: Field days
+    summary: Type integer, optional, from 1 to 14, default 1. How many consecutive days to search, counting from the first day.
+    location:
+      path: documentation/availability/list.md
+      anchor: field-days
+    field: days
+  - id: al-field-doctor
+    capability_id: availability.list
+    facet: field
+    language: en
+    title: Field doctor
+    summary: Type entity_ref of doctor, optional. Only list appointments with this doctor.
+    location:
+      path: documentation/availability/list.md
+      anchor: field-doctor
+    field: doctor
+  - id: al-field-max_results
+    capability_id: availability.list
+    facet: field
+    language: en
+    title: Field max_results
+    summary: Type integer, optional, from 1 to 10, default 5. How many free appointments to list at most.
+    location:
+      path: documentation/availability/list.md
+      anchor: field-max_results
+    field: max_results
+  - id: al-rule-date_in_window
+    capability_id: availability.list
+    facet: validation_rule
+    language: en
+    title: Rule date_in_window
+    summary: The first day must be today or later and at most 90 days ahead, in the clinic site's local time. Reported as validation_failed.
+    location:
+      path: documentation/availability/list.md
+      anchor: rule-date_in_window
+    rule_id: date_in_window
+  - id: al-rule-days_in_range
+    capability_id: availability.list
+    facet: validation_rule
+    language: en
+    title: Rule days_in_range
+    summary: The number of days must be a whole number from 1 to 14. Reported as validation_failed.
+    location:
+      path: documentation/availability/list.md
+      anchor: rule-days_in_range
+    rule_id: days_in_range
+  - id: al-perm-availability.read
+    capability_id: availability.list
+    facet: permission
+    language: en
+    title: Permission availability.read
+    summary: Allows listing the free appointments of the caller's clinic site and resolving doctors and slots. Granted to receptionist, doctor, patient; checked by the host on every call.
+    location:
+      path: documentation/availability/list.md
+      anchor: permission-availabilityread
+    permission: availability.read
+  - id: al-failure-permission_denied
+    capability_id: availability.list
+    facet: failure_state
+    language: en
+    title: Failure permission_denied
+    summary: The principal's role may not list availability.
+    location:
+      path: documentation/availability/list.md
+      anchor: failure-permission_denied
+    error_code: permission_denied
+  - id: al-failure-scope_violation
+    capability_id: availability.list
+    facet: failure_state
+    language: en
+    title: Failure scope_violation
+    summary: The doctor named is not a doctor of the principal's clinic site, or does not exist. The application does not say which.
+    location:
+      path: documentation/availability/list.md
+      anchor: failure-scope_violation
+    error_code: scope_violation
+  - id: al-failure-validation_failed
+    capability_id: availability.list
+    facet: failure_state
+    language: en
+    title: Failure validation_failed
+    summary: The date is in the past or too far ahead, or a number is out of range. Nothing was searched.
+    location:
+      path: documentation/availability/list.md
+      anchor: failure-validation_failed
+    error_code: validation_failed
+  - id: al-failure-unavailable
+    capability_id: availability.list
+    facet: failure_state
+    language: en
+    title: Failure unavailable
+    summary: The clinic database cannot be reached. No result is available and none is guessed.
+    location:
+      path: documentation/availability/list.md
+      anchor: failure-unavailable
+    error_code: unavailable
+  - id: al-risk
+    capability_id: availability.list
+    facet: risk_level
+    language: en
+    title: Risk level 0
+    summary: "Level 0 (read-only, low sensitivity): executed after authorisation, nothing is prepared and nothing is committed. Effect class none."
+    location:
+      path: documentation/availability/list.md
+      anchor: level-0
+  - id: al-confirmation
+    capability_id: availability.list
+    facet: confirmation_rule
+    language: en
+    title: Confirmation rule (none)
+    summary: "No confirmation is asked: the capability only reads. The host still reauthorises the call and limits the answer to the caller's own clinic site."
+    location:
+      path: documentation/availability/list.md
+      anchor: confirmation-none
+  - id: al-outcome-slots_found
+    capability_id: availability.list
+    facet: user_visible_outcome
+    language: en
+    title: Outcome slots_found
+    summary: "What the user is told when the outcome is slots_found: I found {slot_count} free appointments from {search_from}: {slot_summary}."
+    location:
+      path: documentation/availability/list.md
+      anchor: outcome-slots_found
+    outcome: slots_found
+  - id: al-outcome-none_available
+    capability_id: availability.list
+    facet: user_visible_outcome
+    language: en
+    title: Outcome none_available
+    summary: "What the user is told when the outcome is none_available: I found no free appointments from {search_from}. That is {slot_count} results."
+    location:
+      path: documentation/availability/list.md
+      anchor: outcome-none_available
+    outcome: none_available
+  - id: pf-field-query
+    capability_id: patients.find
+    facet: field
+    language: en
+    title: Field query
+    summary: Type string, required, length 2 to 100. Part of the patient's name, or the patient's identifier.
+    location:
+      path: documentation/patients/find.md
+      anchor: field-query
+    field: query
+  - id: pf-field-date_of_birth
+    capability_id: patients.find
+    facet: field
+    language: en
+    title: Field date_of_birth
+    summary: "Type date, optional, sensitive: withheld from logs and from the model unless the task needs it. The patient's date of birth, to narrow the search."
+    location:
+      path: documentation/patients/find.md
+      anchor: field-date_of_birth
+    field: date_of_birth
+  - id: pf-field-max_results
+    capability_id: patients.find
+    facet: field
+    language: en
+    title: Field max_results
+    summary: Type integer, optional, from 1 to 10, default 5. How many patients to list at most.
+    location:
+      path: documentation/patients/find.md
+      anchor: field-max_results
+    field: max_results
+  - id: pf-rule-query_not_blank
+    capability_id: patients.find
+    facet: validation_rule
+    language: en
+    title: Rule query_not_blank
+    summary: The query must contain at least two characters that are not spaces. Reported as validation_failed.
+    location:
+      path: documentation/patients/find.md
+      anchor: rule-query_not_blank
+    rule_id: query_not_blank
+  - id: pf-rule-birth_date_not_future
+    capability_id: patients.find
+    facet: validation_rule
+    language: en
+    title: Rule birth_date_not_future
+    summary: The date of birth cannot be after today. Reported as validation_failed.
+    location:
+      path: documentation/patients/find.md
+      anchor: rule-birth_date_not_future
+    rule_id: birth_date_not_future
+  - id: pf-perm-patients.read
+    capability_id: patients.find
+    facet: permission
+    language: en
+    title: Permission patients.read
+    summary: Allows finding and resolving patients that the caller's role may see (a receptionist the whole site, a doctor their own patients, a patient only themselves). Granted to receptionist, doctor, patient; checked by the host on every call.
+    location:
+      path: documentation/patients/find.md
+      anchor: permission-patientsread
+    permission: patients.read
+  - id: pf-failure-permission_denied
+    capability_id: patients.find
+    facet: failure_state
+    language: en
+    title: Failure permission_denied
+    summary: The principal's role may not look up patients.
+    location:
+      path: documentation/patients/find.md
+      anchor: failure-permission_denied
+    error_code: permission_denied
+  - id: pf-failure-scope_violation
+    capability_id: patients.find
+    facet: failure_state
+    language: en
+    title: Failure scope_violation
+    summary: The query is a patient identifier of a record the principal may not see, or one that does not exist. The application does not say which.
+    location:
+      path: documentation/patients/find.md
+      anchor: failure-scope_violation
+    error_code: scope_violation
+  - id: pf-failure-validation_failed
+    capability_id: patients.find
+    facet: failure_state
+    language: en
+    title: Failure validation_failed
+    summary: The query is too short or the date of birth is invalid. Nothing was searched.
+    location:
+      path: documentation/patients/find.md
+      anchor: failure-validation_failed
+    error_code: validation_failed
+  - id: pf-failure-missing_fields
+    capability_id: patients.find
+    facet: failure_state
+    language: en
+    title: Failure missing_fields
+    summary: A required field (query) was not supplied. Nothing was searched.
+    location:
+      path: documentation/patients/find.md
+      anchor: failure-missing_fields
+    error_code: missing_fields
+  - id: pf-failure-unavailable
+    capability_id: patients.find
+    facet: failure_state
+    language: en
+    title: Failure unavailable
+    summary: The clinic database cannot be reached. No result is available and none is guessed.
+    location:
+      path: documentation/patients/find.md
+      anchor: failure-unavailable
+    error_code: unavailable
+  - id: pf-risk
+    capability_id: patients.find
+    facet: risk_level
+    language: en
+    title: Risk level 0
+    summary: "Level 0 (read-only, low sensitivity): executed after authorisation, nothing is prepared and nothing is committed. Effect class none."
+    location:
+      path: documentation/patients/find.md
+      anchor: level-0
+  - id: pf-confirmation
+    capability_id: patients.find
+    facet: confirmation_rule
+    language: en
+    title: Confirmation rule (none)
+    summary: "No confirmation is asked: the capability only reads. Which patients appear is decided by the host from the caller's role and clinic site, never by the model."
+    location:
+      path: documentation/patients/find.md
+      anchor: confirmation-none
+  - id: pf-outcome-patients_found
+    capability_id: patients.find
+    facet: user_visible_outcome
+    language: en
+    title: Outcome patients_found
+    summary: "What the user is told when the outcome is patients_found: I found {patient_count} matching patients: {patient_summary}."
+    location:
+      path: documentation/patients/find.md
+      anchor: outcome-patients_found
+    outcome: patients_found
+  - id: pf-outcome-none_found
+    capability_id: patients.find
+    facet: user_visible_outcome
+    language: en
+    title: Outcome none_found
+    summary: "What the user is told when the outcome is none_found: No patient at your clinic site matches {input.query}. That is {patient_count} results: {patient_summary}."
+    location:
+      path: documentation/patients/find.md
+      anchor: outcome-none_found
+    outcome: none_found
+  - id: ab-field-patient
+    capability_id: appointments.book
+    facet: field
+    language: en
+    title: Field patient
+    summary: Type entity_ref of patient, required. The patient the appointment is for.
+    location:
+      path: documentation/appointments/book.md
+      anchor: field-patient
+    field: patient
+  - id: ab-field-slot
+    capability_id: appointments.book
+    facet: field
+    language: en
+    title: Field slot
+    summary: Type entity_ref of slot, required. The free appointment slot to book, named by its identifier, by its local date and time, or as the next available one (the application decides which that is).
+    location:
+      path: documentation/appointments/book.md
+      anchor: field-slot
+    field: slot
+  - id: ab-field-reason
+    capability_id: appointments.book
+    facet: field
+    language: en
+    title: Field reason
+    summary: "Type string, optional, length 0 to 200, sensitive: withheld from logs and from the model unless the task needs it. The reason for the visit, in the patient's words. Optional free text."
+    location:
+      path: documentation/appointments/book.md
+      anchor: field-reason
+    field: reason
+  - id: ab-rule-slot_in_window
+    capability_id: appointments.book
+    facet: validation_rule
+    language: en
+    title: Rule slot_in_window
+    summary: The slot must start at least 60 minutes from now and at most 90 days ahead. Reported as validation_failed.
+    location:
+      path: documentation/appointments/book.md
+      anchor: rule-slot_in_window
+    rule_id: slot_in_window
+  - id: ab-rule-slot_free
+    capability_id: appointments.book
+    facet: validation_rule
+    language: en
+    title: Rule slot_free
+    summary: The slot must still be free. A slot another booking took is a conflict. Reported as conflict.
+    location:
+      path: documentation/appointments/book.md
+      anchor: rule-slot_free
+    rule_id: slot_free
+  - id: ab-rule-patient_free
+    capability_id: appointments.book
+    facet: validation_rule
+    language: en
+    title: Rule patient_free
+    summary: The patient must not already have an appointment that overlaps the slot. Reported as conflict.
+    location:
+      path: documentation/appointments/book.md
+      anchor: rule-patient_free
+    rule_id: patient_free
+  - id: ab-perm-appointments.book
+    capability_id: appointments.book
+    facet: permission
+    language: en
+    title: Permission appointments.book
+    summary: Allows booking an appointment for a patient the caller may see, in a slot of the caller's clinic site. Granted to receptionist, patient; checked by the host on every call.
+    location:
+      path: documentation/appointments/book.md
+      anchor: permission-appointmentsbook
+    permission: appointments.book
+  - id: ab-failure-permission_denied
+    capability_id: appointments.book
+    facet: failure_state
+    language: en
+    title: Failure permission_denied
+    summary: The principal's role may not book appointments.
+    location:
+      path: documentation/appointments/book.md
+      anchor: failure-permission_denied
+    error_code: permission_denied
+  - id: ab-failure-scope_violation
+    capability_id: appointments.book
+    facet: failure_state
+    language: en
+    title: Failure scope_violation
+    summary: The patient or the slot is outside the principal's access (another site, another clinic group, or a patient the role may not see), or does not exist. The application does not say which.
+    location:
+      path: documentation/appointments/book.md
+      anchor: failure-scope_violation
+    error_code: scope_violation
+  - id: ab-failure-validation_failed
+    capability_id: appointments.book
+    facet: failure_state
+    language: en
+    title: Failure validation_failed
+    summary: The slot is too soon or too far ahead, or a value is malformed. Nothing was booked.
+    location:
+      path: documentation/appointments/book.md
+      anchor: failure-validation_failed
+    error_code: validation_failed
+  - id: ab-failure-conflict
+    capability_id: appointments.book
+    facet: failure_state
+    language: en
+    title: Failure conflict
+    summary: The slot is no longer free, or the patient already has an appointment at that time. Nothing was booked.
+    location:
+      path: documentation/appointments/book.md
+      anchor: failure-conflict
+    error_code: conflict
+  - id: ab-failure-stale
+    capability_id: appointments.book
+    facet: failure_state
+    language: en
+    title: Failure stale
+    summary: The slot or the patient record changed after the booking was prepared, so the preparation is no longer valid. Nothing was booked; it can be prepared again.
+    location:
+      path: documentation/appointments/book.md
+      anchor: failure-stale
+    error_code: stale
+  - id: ab-failure-expired
+    capability_id: appointments.book
+    facet: failure_state
+    language: en
+    title: Failure expired
+    summary: The prepared booking was not confirmed in time, or was cancelled. Nothing was booked.
+    location:
+      path: documentation/appointments/book.md
+      anchor: failure-expired
+    error_code: expired
+  - id: ab-failure-uncertain_outcome
+    capability_id: appointments.book
+    facet: failure_state
+    language: en
+    title: Failure uncertain_outcome
+    summary: The commit response was lost. Whether the appointment exists is established through the status operation before anything is retried.
+    location:
+      path: documentation/appointments/book.md
+      anchor: failure-uncertain_outcome
+    error_code: uncertain_outcome
+  - id: ab-failure-missing_fields
+    capability_id: appointments.book
+    facet: failure_state
+    language: en
+    title: Failure missing_fields
+    summary: A required field (patient or slot) was not supplied. Nothing was booked.
+    location:
+      path: documentation/appointments/book.md
+      anchor: failure-missing_fields
+    error_code: missing_fields
+  - id: ab-failure-unavailable
+    capability_id: appointments.book
+    facet: failure_state
+    language: en
+    title: Failure unavailable
+    summary: The clinic database cannot be reached. Nothing was booked.
+    location:
+      path: documentation/appointments/book.md
+      anchor: failure-unavailable
+    error_code: unavailable
+  - id: ab-risk
+    capability_id: appointments.book
+    facet: risk_level
+    language: en
+    title: Risk level 2
+    summary: "Level 2 (consequential or external side effect): the action is prepared, its exact effects are shown, and it is committed only after explicit confirmation. Effect class external."
+    location:
+      path: documentation/appointments/book.md
+      anchor: level-2
+  - id: ab-confirmation
+    capability_id: appointments.book
+    facet: confirmation_rule
+    language: en
+    title: Confirmation rule (explicit)
+    summary: The user must confirm the exact prepared booking (patient, doctor, date and time, clinic site) before it is committed. A prepared booking is valid for 10 minutes and is invalidated early if the slot or the patient record changes, or if the permissions or the user change.
+    location:
+      path: documentation/appointments/book.md
+      anchor: confirmation-explicit
+  - id: ab-outcome-booked
+    capability_id: appointments.book
+    facet: user_visible_outcome
+    language: en
+    title: Outcome booked
+    summary: "What the user is told when the outcome is booked: Done. {patient_name} is booked with {doctor_name} on {appointment_starts_at} at {site_name}. The appointment reference is {appointment_reference}."
+    location:
+      path: documentation/appointments/book.md
+      anchor: outcome-booked
+    outcome: booked
+  - id: ac-field-appointment
+    capability_id: appointments.cancel
+    facet: field
+    language: en
+    title: Field appointment
+    summary: Type entity_ref of appointment, required. The upcoming appointment to cancel, named by its reference, its identifier, its local date or the patient's name.
+    location:
+      path: documentation/appointments/cancel.md
+      anchor: field-appointment
+    field: appointment
+  - id: ac-field-reason
+    capability_id: appointments.cancel
+    facet: field
+    language: en
+    title: Field reason
+    summary: Type enum, optional, one of patient_request, provider_unavailable, scheduling_error, other. Why the appointment is cancelled.
+    location:
+      path: documentation/appointments/cancel.md
+      anchor: field-reason
+    field: reason
+  - id: ac-rule-appointment_active
+    capability_id: appointments.cancel
+    facet: validation_rule
+    language: en
+    title: Rule appointment_active
+    summary: The appointment must not already be cancelled. Reported as conflict.
+    location:
+      path: documentation/appointments/cancel.md
+      anchor: rule-appointment_active
+    rule_id: appointment_active
+  - id: ac-rule-appointment_not_started
+    capability_id: appointments.cancel
+    facet: validation_rule
+    language: en
+    title: Rule appointment_not_started
+    summary: An appointment that has started or passed cannot be cancelled. Reported as validation_failed.
+    location:
+      path: documentation/appointments/cancel.md
+      anchor: rule-appointment_not_started
+    rule_id: appointment_not_started
+  - id: ac-perm-appointments.cancel
+    capability_id: appointments.cancel
+    facet: permission
+    language: en
+    title: Permission appointments.cancel
+    summary: Allows cancelling an upcoming appointment the caller may see and resolving appointments. Granted to receptionist, doctor, patient; checked by the host on every call.
+    location:
+      path: documentation/appointments/cancel.md
+      anchor: permission-appointmentscancel
+    permission: appointments.cancel
+  - id: ac-failure-permission_denied
+    capability_id: appointments.cancel
+    facet: failure_state
+    language: en
+    title: Failure permission_denied
+    summary: The principal's role may not cancel appointments.
+    location:
+      path: documentation/appointments/cancel.md
+      anchor: failure-permission_denied
+    error_code: permission_denied
+  - id: ac-failure-scope_violation
+    capability_id: appointments.cancel
+    facet: failure_state
+    language: en
+    title: Failure scope_violation
+    summary: The appointment is outside the principal's access (another site, another clinic group, another patient's or doctor's), or does not exist. The application does not say which.
+    location:
+      path: documentation/appointments/cancel.md
+      anchor: failure-scope_violation
+    error_code: scope_violation
+  - id: ac-failure-validation_failed
+    capability_id: appointments.cancel
+    facet: failure_state
+    language: en
+    title: Failure validation_failed
+    summary: The appointment has started or passed, or a value is malformed. Nothing was cancelled.
+    location:
+      path: documentation/appointments/cancel.md
+      anchor: failure-validation_failed
+    error_code: validation_failed
+  - id: ac-failure-conflict
+    capability_id: appointments.cancel
+    facet: failure_state
+    language: en
+    title: Failure conflict
+    summary: The appointment is already cancelled. Nothing was changed.
+    location:
+      path: documentation/appointments/cancel.md
+      anchor: failure-conflict
+    error_code: conflict
+  - id: ac-failure-stale
+    capability_id: appointments.cancel
+    facet: failure_state
+    language: en
+    title: Failure stale
+    summary: The appointment changed after the cancellation was prepared, so the preparation is no longer valid. Nothing was cancelled; it can be prepared again.
+    location:
+      path: documentation/appointments/cancel.md
+      anchor: failure-stale
+    error_code: stale
+  - id: ac-failure-expired
+    capability_id: appointments.cancel
+    facet: failure_state
+    language: en
+    title: Failure expired
+    summary: The prepared cancellation was not confirmed in time, or was withdrawn. Nothing was cancelled.
+    location:
+      path: documentation/appointments/cancel.md
+      anchor: failure-expired
+    error_code: expired
+  - id: ac-failure-uncertain_outcome
+    capability_id: appointments.cancel
+    facet: failure_state
+    language: en
+    title: Failure uncertain_outcome
+    summary: The commit response was lost. Whether the appointment was cancelled is established through the status operation before anything is retried.
+    location:
+      path: documentation/appointments/cancel.md
+      anchor: failure-uncertain_outcome
+    error_code: uncertain_outcome
+  - id: ac-failure-missing_fields
+    capability_id: appointments.cancel
+    facet: failure_state
+    language: en
+    title: Failure missing_fields
+    summary: A required field (appointment) was not supplied. Nothing was cancelled.
+    location:
+      path: documentation/appointments/cancel.md
+      anchor: failure-missing_fields
+    error_code: missing_fields
+  - id: ac-failure-unavailable
+    capability_id: appointments.cancel
+    facet: failure_state
+    language: en
+    title: Failure unavailable
+    summary: The clinic database cannot be reached. Nothing was cancelled.
+    location:
+      path: documentation/appointments/cancel.md
+      anchor: failure-unavailable
+    error_code: unavailable
+  - id: ac-risk
+    capability_id: appointments.cancel
+    facet: risk_level
+    language: en
+    title: Risk level 2
+    summary: "Level 2 (consequential or external side effect): the action is prepared, its exact effects are shown, and it is committed only after explicit confirmation. Effect class external."
+    location:
+      path: documentation/appointments/cancel.md
+      anchor: level-2
+  - id: ac-confirmation
+    capability_id: appointments.cancel
+    facet: confirmation_rule
+    language: en
+    title: Confirmation rule (explicit)
+    summary: The user must confirm the exact prepared cancellation (appointment reference, patient, doctor, date and time) before it is committed. A prepared cancellation is valid for 10 minutes and is invalidated early if the appointment changes, or if the permissions or the user change.
+    location:
+      path: documentation/appointments/cancel.md
+      anchor: confirmation-explicit
+  - id: ac-outcome-cancelled
+    capability_id: appointments.cancel
+    facet: user_visible_outcome
+    language: en
+    title: Outcome cancelled
+    summary: "What the user is told when the outcome is cancelled: Done. Appointment {appointment_reference} for {patient_name} on {appointment_starts_at} is cancelled and its time is free again."
+    location:
+      path: documentation/appointments/cancel.md
+      anchor: outcome-cancelled
+    outcome: cancelled
+  - id: uc-field-patient
+    capability_id: patients.update_contact
+    facet: field
+    language: en
+    title: Field patient
+    summary: Type entity_ref of patient, required. The patient whose contact details change.
+    location:
+      path: documentation/patients/update-contact.md
+      anchor: field-patient
+    field: patient
+  - id: uc-field-phone
+    capability_id: patients.update_contact
+    facet: field
+    language: en
+    title: Field phone
+    summary: "Type string, optional, length 5 to 32, sensitive: withheld from logs and from the model unless the task needs it. The new phone number."
+    location:
+      path: documentation/patients/update-contact.md
+      anchor: field-phone
+    field: phone
+  - id: uc-field-email
+    capability_id: patients.update_contact
+    facet: field
+    language: en
+    title: Field email
+    summary: "Type string, optional, length 0 to 254, sensitive: withheld from logs and from the model unless the task needs it. The new email address."
+    location:
+      path: documentation/patients/update-contact.md
+      anchor: field-email
+    field: email
+  - id: uc-rule-contact_change_present
+    capability_id: patients.update_contact
+    facet: validation_rule
+    language: en
+    title: Rule contact_change_present
+    summary: At least one of the phone number and the email address must be given. Reported as validation_failed.
+    location:
+      path: documentation/patients/update-contact.md
+      anchor: rule-contact_change_present
+    rule_id: contact_change_present
+  - id: uc-rule-phone_format
+    capability_id: patients.update_contact
+    facet: validation_rule
+    language: en
+    title: Rule phone_format
+    summary: A phone number holds at least 5 digits and only digits, spaces and + - ( ) . characters. Reported as validation_failed.
+    location:
+      path: documentation/patients/update-contact.md
+      anchor: rule-phone_format
+    rule_id: phone_format
+  - id: uc-rule-email_format
+    capability_id: patients.update_contact
+    facet: validation_rule
+    language: en
+    title: Rule email_format
+    summary: An email address has the form name@domain.tld and at most 254 characters. Reported as validation_failed.
+    location:
+      path: documentation/patients/update-contact.md
+      anchor: rule-email_format
+    rule_id: email_format
+  - id: uc-perm-patients.update_contact
+    capability_id: patients.update_contact
+    facet: permission
+    language: en
+    title: Permission patients.update_contact
+    summary: Allows changing the phone number and the email address on a patient record the caller may change. Granted to receptionist, patient; checked by the host on every call.
+    location:
+      path: documentation/patients/update-contact.md
+      anchor: permission-patientsupdate_contact
+    permission: patients.update_contact
+  - id: uc-failure-permission_denied
+    capability_id: patients.update_contact
+    facet: failure_state
+    language: en
+    title: Failure permission_denied
+    summary: The principal's role may not change contact details.
+    location:
+      path: documentation/patients/update-contact.md
+      anchor: failure-permission_denied
+    error_code: permission_denied
+  - id: uc-failure-scope_violation
+    capability_id: patients.update_contact
+    facet: failure_state
+    language: en
+    title: Failure scope_violation
+    summary: The patient record is outside the principal's access (another site, another clinic group, or another patient for a patient), or does not exist. The application does not say which.
+    location:
+      path: documentation/patients/update-contact.md
+      anchor: failure-scope_violation
+    error_code: scope_violation
+  - id: uc-failure-validation_failed
+    capability_id: patients.update_contact
+    facet: failure_state
+    language: en
+    title: Failure validation_failed
+    summary: Nothing to change was given, or the phone number or email address is malformed. Nothing was updated.
+    location:
+      path: documentation/patients/update-contact.md
+      anchor: failure-validation_failed
+    error_code: validation_failed
+  - id: uc-failure-stale
+    capability_id: patients.update_contact
+    facet: failure_state
+    language: en
+    title: Failure stale
+    summary: The patient record changed after the update was prepared, so the preparation is no longer valid. Nothing was updated; it can be prepared again.
+    location:
+      path: documentation/patients/update-contact.md
+      anchor: failure-stale
+    error_code: stale
+  - id: uc-failure-expired
+    capability_id: patients.update_contact
+    facet: failure_state
+    language: en
+    title: Failure expired
+    summary: The prepared update was not committed in time, or was withdrawn. Nothing was updated.
+    location:
+      path: documentation/patients/update-contact.md
+      anchor: failure-expired
+    error_code: expired
+  - id: uc-failure-uncertain_outcome
+    capability_id: patients.update_contact
+    facet: failure_state
+    language: en
+    title: Failure uncertain_outcome
+    summary: The commit response was lost. Whether the details were updated is established through the status operation before anything is retried.
+    location:
+      path: documentation/patients/update-contact.md
+      anchor: failure-uncertain_outcome
+    error_code: uncertain_outcome
+  - id: uc-failure-missing_fields
+    capability_id: patients.update_contact
+    facet: failure_state
+    language: en
+    title: Failure missing_fields
+    summary: A required field (patient) was not supplied. Nothing was updated.
+    location:
+      path: documentation/patients/update-contact.md
+      anchor: failure-missing_fields
+    error_code: missing_fields
+  - id: uc-failure-unavailable
+    capability_id: patients.update_contact
+    facet: failure_state
+    language: en
+    title: Failure unavailable
+    summary: The clinic database cannot be reached. Nothing was updated.
+    location:
+      path: documentation/patients/update-contact.md
+      anchor: failure-unavailable
+    error_code: unavailable
+  - id: uc-risk
+    capability_id: patients.update_contact
+    facet: risk_level
+    language: en
+    title: Risk level 1
+    summary: "Level 1 (reversible, low-impact change): a concise summary is shown and the application allows the change to commit immediately. Effect class reversible."
+    location:
+      path: documentation/patients/update-contact.md
+      anchor: level-1
+  - id: uc-confirmation
+    capability_id: patients.update_contact
+    facet: confirmation_rule
+    language: en
+    title: Confirmation rule (none)
+    summary: "No separate confirmation is asked (confirmation mode none): the application allows a level 1 change to commit immediately after a concise summary. A prepared update is valid for 2 minutes and is invalidated early if the patient record changes."
+    location:
+      path: documentation/patients/update-contact.md
+      anchor: confirmation-none
+  - id: uc-outcome-contact_updated
+    capability_id: patients.update_contact
+    facet: user_visible_outcome
+    language: en
+    title: Outcome contact_updated
+    summary: "What the user is told when the outcome is contact_updated: Done. The contact details on file for {patient_name} were updated: {contact_fields_updated}."
+    location:
+      path: documentation/patients/update-contact.md
+      anchor: outcome-contact_updated
+    outcome: contact_updated

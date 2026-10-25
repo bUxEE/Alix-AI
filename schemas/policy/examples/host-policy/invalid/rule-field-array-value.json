@@ -1,0 +1,35 @@
+{
+  "policy_id": "p",
+  "role_grants": [
+    {
+      "role": "member",
+      "capabilities": [
+        "catalog.find_title"
+      ]
+    }
+  ],
+  "risk_overrides": [],
+  "field_projection": [],
+  "rules": [
+    {
+      "id": "r1",
+      "capabilities": [
+        "catalog.find_title"
+      ],
+      "when": {
+        "fields": {
+          "amount": {
+            "eq": [
+              1,
+              2
+            ]
+          }
+        }
+      },
+      "then": {
+        "deny": true
+      },
+      "reason": "test"
+    }
+  ]
+}

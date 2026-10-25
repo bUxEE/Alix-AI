@@ -1,0 +1,38 @@
+# The published port (compose service: relay). Forwards bytes to the anchor and decides nothing: TLS,
+# authentication and every policy are AlixAI's. Starts last, so the host port opens only when AlixAI answers.
+[Unit]
+Description=AlixAI relay (host loopback port)
+Requires=alixai.service
+After=alixai.service
+
+[Container]
+ContainerName=alixai-relay
+Image=alixai-netctl.build
+User=65534
+Group=65534
+ReadOnly=true
+DropCapability=ALL
+NoNewPrivileges=true
+PidsLimit=64
+PodmanArgs=--memory=64m --memory-swap=64m --cpus=0.5
+Network=alixai-front.network
+Network=alixai-edge.network
+# Host loopback only. A remote listener is a reverse proxy with TLS in front of this port (README.md).
+PublishPort=127.0.0.1:7470:7470
+Exec=forward 0.0.0.0:7470=anchor:7471
+HealthCmd=/usr/local/bin/alixai-netctl probe http://127.0.0.1:7470/healthz
+HealthInterval=10s
+HealthTimeout=6s
+HealthRetries=6
+HealthStartPeriod=15s
+Notify=healthy
+LogDriver=journald
+Label=ai.alixai.component=relay
+
+[Service]
+Restart=on-failure
+RestartSec=5s
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

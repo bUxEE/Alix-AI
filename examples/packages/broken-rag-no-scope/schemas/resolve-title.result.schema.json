@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Result of resolving a title reference",
+  "type": "object",
+  "required": ["status", "matches"],
+  "additionalProperties": false,
+  "properties": {
+    "status": { "enum": ["ok", "unavailable"] },
+    "matches": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "required": ["title_id", "name"],
+        "additionalProperties": false,
+        "properties": {
+          "title_id": { "type": "string", "maxLength": 64 },
+          "name": { "type": "string", "maxLength": 300 }
+        }
+      }
+    }
+  }
+}

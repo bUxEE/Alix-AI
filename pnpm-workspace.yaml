@@ -1,0 +1,14 @@
+packages:
+  - sdk/typescript
+  - sdk/copilotkit-adapter
+  - tests/copilotkit
+  - examples/reference-apps/clinic-booking
+  - ui/voice-orb
+  - ui/vue
+  - ui/react
+  - ui/demo-mock
+# CopilotKit pulls in @scarf/scarf, an analytics package whose postinstall script phones home. It is denied explicitly
+# (sdk/copilotkit-adapter, ADR 0035: no telemetry); pnpm 12 refuses to finish an install that leaves a build undecided.
+allowBuilds:
+  '@scarf/scarf': false
+  '@parcel/watcher': false

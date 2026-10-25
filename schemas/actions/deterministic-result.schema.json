@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:actions:deterministic-result:v1",
+  "title": "DeterministicResult",
+  "description": "The normalised form of every application adapter result (master plan 4.5 check 2): status, identifiers, canonical values, errors, freshness and allowed next actions. No critical decision may depend on model prose, so an adapter result that does not normalise into this object is a schema_invalid error, never a partially trusted result. The adapter supplies every 'host' property; the core fills the 'alixai' ones (operation, capability_id) because it knows which call it made. Failures the core itself detects (adapter unreachable, timeout, malformed reply) are typed errors (common/error), not DeterministicResults: a DeterministicResult always records something the host reported.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["operation", "capability_id", "status", "identifiers", "values", "errors", "allowed_next_actions"],
+  "properties": {
+    "operation": {
+      "description": "The adapter operation that produced this result. Set by the core from the call it made, never read from the adapter's reply.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "enum": ["read", "validate", "prepare", "commit", "status", "cancel"]
+    },
+    "capability_id": {
+      "description": "The capability the call was made for. Set by the core.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/capabilityId"
+    },
+    "status": {
+      "description": "The outcome as the host reports it. ok: done as asked. rejected: the host refused (see errors). queued: accepted for asynchronous completion (see follow_up). partial: some of it happened (see errors). uncertain: the host cannot say whether it happened. unavailable: a host dependency is down. Only ok means success; every other value needs at least one error, except queued.",
+      "x-alixai-authority": "host",
+      "type": "string",
+      "enum": ["ok", "rejected", "queued", "partial", "uncertain", "unavailable"]
+    },
+    "identifiers": {
+      "description": "Stable IDs of the records the result concerns (read, created, changed or cancelled).",
+      "x-alixai-authority": "host",
+      "type": "array",
+      "maxItems": 256,
+      "items": { "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/recordRef" }
+    },
+    "values": {
+      "description": "Canonical values: the typed facts the host reports. Together with identifiers these are the only facts a verified response may state.",
+      "x-alixai-authority": "host",
+      "type": "array",
+      "maxItems": 256,
+      "items": { "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/fact" }
+    },
+    "errors": {
+      "description": "Typed issues (ErrCode plus the field concerned). Empty exactly when status is ok or queued.",
+      "x-alixai-authority": "host",
+      "type": "array",
+      "maxItems": 64,
+      "items": { "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/issue" }
+    },
+    "freshness": {
+      "description": "When and against which data version the result was produced. Required for ok, queued and partial; optional when the host could not read its data.",
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/freshness"
+    },
+    "allowed_next_actions": {
+      "description": "The next steps the host will accept for this object. An empty list means none.",
+      "x-alixai-authority": "host",
+      "type": "array",
+      "maxItems": 16,
+      "items": { "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/allowedNextAction" }
+    },
+    "follow_up": {
+      "description": "Queued or deferred work the host reports. Required when status is queued.",
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/followUp"
+    },
+    "preparation": {
+      "description": "What the host validated and would do, present exactly when operation is prepare and status is ok. The core builds the PreparedAction from it; the host proposes a risk level, the core decides the effective one.",
+      "x-alixai-authority": "host",
+      "$ref": "#/$defs/preparation"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "status": { "enum": ["ok", "queued"] } },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": { "errors": { "maxItems": 0 } }
+      },
+      "else": {
+        "properties": { "errors": { "minItems": 1 } }
+      }
+    },
+    {
+      "if": {
+        "properties": { "status": { "enum": ["ok", "queued", "partial"] } },
+        "required": ["status"]
+      },
+      "then": { "required": ["freshness"] }
+    },
+    {
+      "if": {
+        "properties": { "status": { "const": "queued" } },
+        "required": ["status"]
+      },
+      "then": { "required": ["follow_up"] }
+    },
+    {
+      "if": {
+        "properties": {
+          "operation": { "const": "prepare" },
+          "status": { "const": "ok" }
+        },
+        "required": ["operation", "status"]
+      },
+      "then": { "required": ["preparation"] },
+      "else": { "not": { "required": ["preparation"] } }
+    }
+  ],
+  "$defs": {
+    "preparation": {
+      "description": "The host's answer to Prepare: a canonical summary, the exact effects, the data versions the validation used, the risk level the host assigns and how long it will honour the preparation.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["summary", "effects", "data_versions", "declared_risk_level"],
+      "properties": {
+        "summary": {
+          "description": "Canonical one-sentence summary of the action.",
+          "x-alixai-authority": "host",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "effects": {
+          "description": "The exact effects and their targets. At least one: a preparation that changes nothing is a read.",
+          "x-alixai-authority": "host",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": { "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/effect" }
+        },
+        "data_versions": {
+          "description": "The versions of everything the validation relied on. At least one, so staleness is always detectable.",
+          "x-alixai-authority": "host",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": { "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/dataVersion" }
+        },
+        "declared_risk_level": {
+          "description": "The risk level the host application assigns. The core may only raise it: the effective level is never below the platform minimum.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/riskLevel"
+        },
+        "valid_for_seconds": {
+          "description": "How long the host will honour the preparation. The core never extends it.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/ttlSeconds"
+        }
+      }
+    }
+  }
+}

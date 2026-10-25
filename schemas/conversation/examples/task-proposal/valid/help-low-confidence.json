@@ -1,0 +1,19 @@
+{
+  "capability_id": "tasks.create",
+  "fields": {
+    "date_range": {
+      "from": "2026-10-12",
+      "to": "2026-10-16"
+    },
+    "note": null
+  },
+  "entity_refs": [],
+  "intent": "help",
+  "uncertainty": {
+    "overall": 0,
+    "fields": {
+      "note": "Nothing in the turn supplied a note."
+    }
+  },
+  "trace_id": "trc_01J0000000000000000000000C"
+}

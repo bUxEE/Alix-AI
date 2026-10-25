@@ -1,0 +1,637 @@
+# RAG (master plan 14.2 "RAG", 12.4, 12.5, rule 9): register, inspect and remove sources, request and monitor
+# indexing, search with an explicit scope, answer with citations, and invalidate or rebuild an index generation.
+# Implemented by internal/gateway/routes_v1_rag.go (task M2-11) over the source registry (RAGSources), the
+# retrieval pipeline with the grounded answerer (RAGQueries) and the indexing service (RAGIndexing).
+#
+# Scope. The application, tenant, workspace and principal are the verified context token and nothing a path or a
+# body says: every request body is a closed object, so a body that names a tenant, a workspace, a principal or a
+# folder is `validation_failed`. Results never contain anything outside the verified scope.
+#
+# Sources. A source is registered by the name the application's active package declares it under, and by nothing
+# else: the root, rules, limits and deletion behaviour come from the signed, audited package and the tenant and
+# workspace from the scope. A name the package does not declare is `validation_failed` (`details.reason`
+# `not_declared`); a client can never create a source the package does not declare. The id of the source is minted
+# by the core, and registering the same declaration again is the same registration. Registering, re-auditing,
+# removing, requesting a sync, rebuilding and invalidating are operator acts: they need the action `manage_sources`
+# in the deployment's own `rag.operators` configuration, never a role or a capability scope, and a deployment with
+# no such entry lets none of them through (`permission_denied`). Reading a status needs only the verified scope.
+#
+# Answers. An answer has a citation for every claim, or it is the typed `no_supported_evidence` result: there is no
+# uncited answer, and "nothing found" is a 200 whose `outcome` says so, never an error. The data-egress mode and
+# classification of a source are internal and are never part of anything on this API.
+paths:
+  /v1/rag/sources:
+    post:
+      operationId: registerRagSource
+      tags: [rag]
+      summary: Register a source the package declares
+      description: |
+        Registers the source the application's active package declares under `declaration`, for the verified tenant
+        and workspace, and has ingestion compare it with what was last scanned (queueing a sync when it is new or its
+        rules changed). Idempotent per scope and declaration: registering it again returns the existing registration,
+        re-bound to the active package. Needs the operator action `manage_sources`.
+
+        A name the package does not declare is `validation_failed` with `details.reason` `not_declared`. A source
+        whose removal began is `conflict` until the removal is finished (remove it again). A registration read back
+        after a restart is not served until the process has re-bound it to the package; until then the answer is a
+        retryable `unavailable` (503), not `not_found`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RagSourceRegistration'
+      responses:
+        '200':
+          description: The registration.
+          headers:
+            Location:
+              description: The path of the source.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RagSource'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '409':
+          $ref: ../openapi.yaml#/components/responses/Conflict
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+    get:
+      operationId: listRagSources
+      tags: [rag]
+      summary: List the sources of the caller's scope
+      description: |
+        Every source registered for the verified tenant and workspace, ordered by id, with its status. A source of
+        another tenant or workspace is never listed. Needs nothing but the verified scope.
+      responses:
+        '200':
+          description: The sources.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RagSourceList'
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/rag/sources/reaudit:
+    post:
+      operationId: reauditRagSources
+      tags: [rag]
+      summary: Re-bind the caller's sources to the active package
+      description: |
+        Updates the registrations of the verified scope after the package was replaced or re-audited: each source is
+        rebuilt from the package and ingestion rescans it when its rules changed. A source the package no longer
+        declares is removed, with its declared deletion behaviour. It touches the caller's scope only. Needs the
+        operator action `manage_sources`. The body is empty or `{}`.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+      responses:
+        '200':
+          description: What the re-audit did.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RagReaudit'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '409':
+          $ref: ../openapi.yaml#/components/responses/Conflict
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/rag/sources/{source_id}:
+    parameters:
+      - $ref: '#/components/parameters/RagSourceId'
+    get:
+      operationId: getRagSource
+      tags: [rag]
+      summary: Inspect a source and its indexing status
+      description: |
+        The source with its status: lifecycle state, availability, staleness, when the last sync attempt started and
+        when one really completed, the counts by outcome and the index generation that serves it. This is how
+        indexing is monitored. A source of another scope is reported exactly like one that does not exist
+        (`not_found`). Needs nothing but the verified scope.
+      responses:
+        '200':
+          description: The source.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RagSource'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: '#/components/responses/RagNotFound'
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+    delete:
+      operationId: removeRagSource
+      tags: [rag]
+      summary: Remove a source
+      description: |
+        The source stops being served at once and ingestion applies its declared deletion behaviour (audited). If that
+        fails the source stays unserved and the call can be repeated. Needs the operator action `manage_sources`.
+      responses:
+        '204':
+          description: The source is removed.
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: '#/components/responses/RagNotFound'
+        '409':
+          $ref: ../openapi.yaml#/components/responses/Conflict
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/rag/sources/{source_id}/sync:
+    parameters:
+      - $ref: '#/components/parameters/RagSourceId'
+    post:
+      operationId: syncRagSource
+      tags: [rag]
+      summary: Request indexing of a source
+      description: |
+        Queues a sync of the source: ingestion scans it again and indexes what changed. Requests that arrive while a
+        sync is queued or running are the same job. The work is a durable background job; read the source's status to
+        monitor it. Needs the operator action `manage_sources`. Mounted only when the deployment provides the indexing
+        service. The body is empty or `{}`.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+      responses:
+        '202':
+          description: The sync is queued.
+          headers:
+            Location:
+              description: The path of the source, where its progress is read.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RagSyncAccepted'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: '#/components/responses/RagNotFound'
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/rag/sources/{source_id}/rebuild:
+    parameters:
+      - $ref: '#/components/parameters/RagSourceId'
+    post:
+      operationId: rebuildRagSource
+      tags: [rag]
+      summary: Build a replacement index generation
+      description: |
+        Builds a replacement for the source's index generation from the source itself. The generation that serves keeps
+        serving until the replacement has been validated and is activated, so there is never a moment without a serving
+        generation once one existed (unless it was invalidated meanwhile). Needs the operator action `manage_sources`.
+        Mounted only when the deployment provides the indexing service. The body is empty or `{}`.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+      responses:
+        '202':
+          description: The rebuild is queued.
+          headers:
+            Location:
+              description: The path of the source, where its progress is read.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RagSyncAccepted'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: '#/components/responses/RagNotFound'
+        '409':
+          $ref: ../openapi.yaml#/components/responses/Conflict
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/rag/sources/{source_id}/generations:
+    parameters:
+      - $ref: '#/components/parameters/RagSourceId'
+    get:
+      operationId: listRagGenerations
+      tags: [rag]
+      summary: List the index generations of a source
+      description: |
+        The generations of the source, newest first, each with the component versions it was built with, its counts and
+        its lifecycle times. A generation is `active` (at most one), `building`, `validating`, `superseded` (kept for
+        rollback), `failed` or `invalidated`. Needs nothing but the verified scope. Mounted only when the deployment
+        provides the indexing service.
+      responses:
+        '200':
+          description: The generations.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RagGenerationList'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: '#/components/responses/RagNotFound'
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/rag/sources/{source_id}/generations/{generation_id}/invalidate:
+    parameters:
+      - $ref: '#/components/parameters/RagSourceId'
+      - $ref: '#/components/parameters/RagGenerationId'
+    post:
+      operationId: invalidateRagGeneration
+      tags: [rag]
+      summary: Withdraw an index generation
+      description: |
+        The generation is never retrievable again. Invalidating the generation that serves leaves the source without one
+        until a rebuild activates a replacement, so searches over it return nothing in the meantime. Needs the operator
+        action `manage_sources`. Mounted only when the deployment provides the indexing service. The body is empty or
+        `{}`.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+      responses:
+        '200':
+          description: The generation as it now stands.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RagIndexGeneration'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: '#/components/responses/RagNotFound'
+        '409':
+          $ref: ../openapi.yaml#/components/responses/Conflict
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/rag/search:
+    post:
+      operationId: searchRag
+      tags: [rag]
+      summary: Search the authorised sources
+      description: |
+        Passages of the sources the principal may read, best first, each with its source, version, location, state, a
+        permission-checked open reference and the matching text. The body can only narrow a search (`source_ids` is
+        intersected with the authorised sources and an id outside them is dropped without saying whether it exists).
+        An empty `results` is a successful search that matched nothing; it is not an answer and not an error. A search
+        that could not run is a typed error (`unavailable`, `timeout`), never an empty result. `notices` label a degraded
+        search, for example `reduced_semantic_recall` when only full-text search ran. Mounted only when the deployment
+        provides the retrieval service.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RagSearchRequest'
+      responses:
+        '200':
+          description: The hits.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RagSearchResponse'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '429':
+          $ref: ../openapi.yaml#/components/responses/TooManyRequests
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+        '504':
+          description: The search ran out of time (`timeout`); nothing is returned.
+          content:
+            application/json:
+              schema:
+                $ref: ../openapi.yaml#/components/schemas/Error
+
+  /v1/rag/answer:
+    post:
+      operationId: answerRag
+      tags: [rag]
+      summary: Answer a question with citations
+      description: |
+        A grounded answer: the claims, each tied to the citations that support it, and the citations themselves, one per
+        original source, with its authorised name, version, location, availability, staleness and a permission-checked
+        open reference. If no authorised evidence supports an answer the result is the typed `no_supported_evidence`
+        outcome (a 200), with a reason; the model's own knowledge is never turned into an uncited answer. A request that
+        could not run (the model or the source store unavailable, a timeout) is a typed error and never a
+        `no_supported_evidence` result. Mounted only when the deployment provides the retrieval service.
+
+        The open reference of a citation is resolved with `GET /v1/rag/citations/{file_id}`; it is held in memory, valid
+        for `rag_answer.ref_ttl` (15 minutes by default) and invalid after a restart.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RagAnswerRequest'
+      responses:
+        '200':
+          description: The answer or the typed absence of one.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RagAnswerResult'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '429':
+          $ref: ../openapi.yaml#/components/responses/TooManyRequests
+        '502':
+          description: The model's output could not be used (`schema_invalid`); nothing is returned.
+          content:
+            application/json:
+              schema:
+                $ref: ../openapi.yaml#/components/schemas/Error
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+        '504':
+          description: The answer ran out of time (`timeout`); nothing is returned.
+          content:
+            application/json:
+              schema:
+                $ref: ../openapi.yaml#/components/schemas/Error
+
+  /v1/rag/citations/{file_id}:
+    parameters:
+      - $ref: '#/components/parameters/RagFileId'
+    get:
+      operationId: resolveRagCitation
+      tags: [rag]
+      summary: Resolve the reference of a citation
+      description: |
+        What the `file` open reference of a citation resolves to, read now: the source's name, version, location and
+        state, the passage that was cited and the way to open the source itself (the host's own record or file reference,
+        or the source resolved by id). The reference is bound to the application, tenant, workspace and principal the
+        answer was written for; resolving it checks the scope, then the expiry, then asks the source catalog, fresh,
+        whether the principal may still read the source. Every reference that does not resolve for the caller (unknown,
+        another scope's, a source no longer readable) is one and the same `permission_denied`, so a reference cannot be
+        used to probe for sources. An expired reference is `expired` (410). Never served by the files service.
+      responses:
+        '200':
+          description: The resolution.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RagCitationResolution'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '410':
+          description: The reference has expired (`expired`). Ask the question again for a new one.
+          content:
+            application/json:
+              schema:
+                $ref: ../openapi.yaml#/components/schemas/Error
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+components:
+  parameters:
+    RagSourceId:
+      name: source_id
+      in: path
+      required: true
+      description: The id of a registered source, `src_` followed by a ULID, minted by the core.
+      schema:
+        type: string
+        pattern: '^src_[0-9A-HJKMNP-TV-Z]{26}$'
+    RagGenerationId:
+      name: generation_id
+      in: path
+      required: true
+      description: The id of an index generation, `gen_` followed by a ULID, minted by the core.
+      schema:
+        type: string
+        pattern: '^gen_[0-9A-HJKMNP-TV-Z]{26}$'
+    RagFileId:
+      name: file_id
+      in: path
+      required: true
+      description: The `file_id` of the `file` open reference of a citation, `fil_` followed by a ULID.
+      schema:
+        type: string
+        pattern: '^fil_[0-9A-HJKMNP-TV-Z]{26}$'
+  responses:
+    RagNotFound:
+      description: |
+        No such source, or generation, in the caller's scope (`validation_failed`, `details.reason` `not_found`). A
+        source of another scope is reported exactly like one that does not exist.
+      content:
+        application/json:
+          schema:
+            $ref: ../openapi.yaml#/components/schemas/Error
+  schemas:
+    RagSearchRequest:
+      $ref: ../../rag/search-request.schema.json
+    RagSearchResponse:
+      $ref: ../../rag/search-response.schema.json
+    RagAnswerRequest:
+      $ref: ../../rag/answer-request.schema.json
+    RagAnswerResult:
+      $ref: ../../rag/answer-result.schema.json
+    RagSourceStatus:
+      $ref: ../../rag/source-status.schema.json
+    RagIndexGeneration:
+      $ref: ../../rag/index-generation.schema.json
+    RagSourceRegistration:
+      description: |
+        What a caller may say when it registers a source: the name the application's active package declares it under.
+        The object is closed; nothing else (a root, a path, a tenant, a workspace) can be named.
+      type: object
+      additionalProperties: false
+      required: [declaration]
+      properties:
+        declaration:
+          description: The name the active package declares the source under.
+          type: string
+          minLength: 1
+          maxLength: 128
+          pattern: '^\S(.*\S)?$'
+    RagSource:
+      description: A registered source as the API reports it.
+      type: object
+      additionalProperties: false
+      required: [declaration, package_version, serving, status]
+      properties:
+        declaration:
+          description: The name the package declares the source under.
+          type: string
+        package_version:
+          description: The version of the package the registration was last bound to.
+          type: string
+        serving:
+          description: |
+            True while the source is bound to the application's active package and may be read. A source registered
+            under a package that was replaced is false until it is re-bound, and so is one whose removal began.
+          type: boolean
+        status:
+          $ref: '#/components/schemas/RagSourceStatus'
+    RagSourceList:
+      type: object
+      additionalProperties: false
+      required: [sources]
+      properties:
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/RagSource'
+    RagReaudit:
+      description: What a re-audit did, counted.
+      type: object
+      additionalProperties: false
+      required: [checked, rebound, queued, removed, failed]
+      properties:
+        checked:
+          description: Registrations of the scope that were looked at.
+          type: integer
+          minimum: 0
+        rebound:
+          description: Registrations re-bound to the active package.
+          type: integer
+          minimum: 0
+        queued:
+          description: Registrations whose rules changed and for which a sync was queued.
+          type: integer
+          minimum: 0
+        removed:
+          description: Registrations removed because the package no longer declares them.
+          type: integer
+          minimum: 0
+        failed:
+          description: Registrations that could not be rebuilt or checked. They stay unserved and the process tries again.
+          type: integer
+          minimum: 0
+    RagSyncAccepted:
+      type: object
+      additionalProperties: false
+      required: [source_id, job_id]
+      properties:
+        source_id:
+          type: string
+          pattern: '^src_[0-9A-HJKMNP-TV-Z]{26}$'
+        job_id:
+          description: The durable background job. Its progress is the status of the source.
+          type: string
+          pattern: '^job_[0-9A-HJKMNP-TV-Z]{26}$'
+    RagGenerationList:
+      type: object
+      additionalProperties: false
+      required: [generations]
+      properties:
+        generations:
+          type: array
+          items:
+            $ref: '#/components/schemas/RagIndexGeneration'
+    RagCitationResolution:
+      description: |
+        What the reference of a citation resolves to, read at the moment it is resolved.
+      type: object
+      additionalProperties: false
+      required: [source_id, display_name, version, availability, staleness, open_ref, expires_at]
+      properties:
+        source_id:
+          type: string
+          pattern: '^src_[0-9A-HJKMNP-TV-Z]{26}$'
+        display_name:
+          description: The source's name as the requesting principal is authorised to see it.
+          type: string
+          minLength: 1
+          maxLength: 256
+        version:
+          description: The source version or content hash the citation was grounded on.
+          type: string
+          minLength: 1
+          maxLength: 256
+        locator:
+          description: Where in the source the cited passage sits, when known.
+          $ref: ../../conversation/citation.schema.json#/$defs/locator
+        availability:
+          description: Whether the source can be opened now, not at retrieval.
+          $ref: ../../conversation/citation.schema.json#/properties/availability
+        staleness:
+          description: Whether the cited version is the latest, now.
+          $ref: ../../conversation/citation.schema.json#/properties/staleness
+        open_ref:
+          description: |
+            The way to open the source itself: the host's own record or file reference when the source has one, else
+            the source resolved by id. Opaque, never a URL or a path.
+          $ref: ../../conversation/citation.schema.json#/$defs/openRef
+        preview:
+          description: The passage the citation was grounded on, as it was cited. It may be older than the source. Absent when previews are off.
+          type: string
+        expires_at:
+          description: When the reference stops resolving.
+          $ref: ../../common/timestamps.schema.json#/$defs/timestamp

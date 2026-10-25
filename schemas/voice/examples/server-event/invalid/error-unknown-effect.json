@@ -1,0 +1,9 @@
+{
+  "type": "error",
+  "error": {
+    "code": "unavailable",
+    "message": "no stt",
+    "retryable": true
+  },
+  "effect": "no_audio"
+}

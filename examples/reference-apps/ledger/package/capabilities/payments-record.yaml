@@ -1,0 +1,227 @@
+id: "payments.record"
+version: "1.0.0"
+audience: "user"
+title: "Record a payment"
+purpose: "Record a payment received on an invoice of the caller's team, in exact minor units of the invoice's currency. A payment can never exceed the balance. The payment is prepared first, its exact effects are shown, and it is recorded only after the user confirms. Recording reduces the balance and sends a receipt to the customer."
+scope_level: "workspace"
+permissions:
+  - "payments.record"
+fields:
+  - name: "invoice"
+    type: "entity_ref"
+    required: true
+    description: "The invoice that was paid, named by its number, its identifier or the customer's name."
+    entity_type: "invoice"
+  - name: "amount_minor"
+    type: "integer"
+    required: true
+    description: "The amount received as a whole number of minor units of the invoice's currency: 100.00 EUR is 10000, 5000 JPY is 5000."
+    minimum: 1
+    maximum: 100000000000000
+  - name: "currency"
+    type: "enum"
+    required: false
+    description: "The ISO 4217 currency. It must be the invoice's currency; when omitted the invoice's currency applies."
+    values:
+      - "CHF"
+      - "EUR"
+      - "GBP"
+      - "JPY"
+      - "KWD"
+      - "USD"
+  - name: "paid_on"
+    type: "date"
+    required: false
+    description: "The date the money was received, from the invoice date to today. When omitted it is today."
+  - name: "method"
+    type: "enum"
+    required: false
+    description: "How the money was received."
+    values:
+      - "bank_transfer"
+      - "card"
+      - "cash"
+    default:
+      source: "literal"
+      value: "bank_transfer"
+entity_types:
+  invoice:
+    description: "An invoice of the caller's team, as the caller is allowed to see it."
+    resolve:
+      endpoint: "ledger-bridge"
+      native_method: "resolve_invoice"
+      result_schema: "schemas/resolve.result.schema.json"
+ambiguity:
+  - id: "invoice_multiple"
+    field: "invoice"
+    when: "multiple_matches"
+    action: "ask_user"
+    max_choices: 5
+  - id: "invoice_none"
+    field: "invoice"
+    when: "no_match"
+    action: "reject"
+validation:
+  - id: "invoice_open"
+    fields:
+      - "invoice"
+    description: "The invoice must be issued or partially paid: a paid or void invoice takes no payment."
+    error_code: "conflict"
+  - id: "amount_in_range"
+    fields:
+      - "amount_minor"
+    description: "The amount must be a whole number of minor units from 1 to 100000000000000."
+    error_code: "validation_failed"
+  - id: "currency_matches_invoice"
+    fields:
+      - "currency"
+      - "invoice"
+    description: "The currency must be the invoice's currency."
+    error_code: "validation_failed"
+  - id: "amount_within_balance"
+    fields:
+      - "amount_minor"
+      - "invoice"
+    description: "The payment cannot be more than the balance still to pay."
+    error_code: "validation_failed"
+  - id: "paid_on_valid"
+    fields:
+      - "paid_on"
+    description: "The date must be a valid date from the invoice date to today."
+    error_code: "validation_failed"
+failure_states:
+  - code: "permission_denied"
+    description: "The principal's role may not record a payment."
+  - code: "scope_violation"
+    description: "The record is outside the principal's reach (another team without manager access, or another organisation), or does not exist. The application does not say which."
+  - code: "validation_failed"
+    description: "A value is malformed or breaks one of the rules above. Nothing was changed."
+  - code: "missing_fields"
+    description: "A required field (invoice, amount_minor) was not supplied. Nothing was changed."
+  - code: "conflict"
+    description: "The invoice is paid or void and takes no payment, or the idempotency key was used for a different action. Nothing was changed."
+  - code: "stale"
+    description: "A record changed after the action was prepared, so the preparation is no longer valid. Nothing was changed; it can be prepared again."
+  - code: "expired"
+    description: "The prepared action was not confirmed in time, or was withdrawn. Nothing was changed."
+  - code: "uncertain_outcome"
+    description: "The commit response was lost. What was recorded is established through the status operation before anything is retried."
+  - code: "unavailable"
+    description: "The ledger cannot be reached. Nothing was changed."
+effect_class: "external"
+risk_level: 2
+operations:
+  validate:
+    endpoint: "ledger-bridge"
+    native_method: "payments_record_validate"
+    result_schema: "schemas/payments.record.validation.result.schema.json"
+    timeout_ms: 5000
+  prepare:
+    endpoint: "ledger-bridge"
+    native_method: "payments_record_prepare"
+    result_schema: "schemas/payments.record.prepared.result.schema.json"
+    timeout_ms: 8000
+  commit:
+    endpoint: "ledger-bridge"
+    native_method: "payments_record_commit"
+    result_schema: "schemas/payments.record.receipt.result.schema.json"
+    timeout_ms: 15000
+  status:
+    endpoint: "ledger-bridge"
+    native_method: "payments_record_status"
+    result_schema: "schemas/payments.record.receipt.result.schema.json"
+    timeout_ms: 5000
+confirmation:
+  mode: "explicit"
+prepared_action:
+  ttl_seconds: 600
+  invalidated_by:
+    - "record_revision"
+    - "permission_change"
+    - "user_change"
+    - "application_event"
+idempotency:
+  key_source: "prepared_action_id"
+  window_seconds: 86400
+  on_replay: "return_original_receipt"
+response_obligations:
+  - fact: "invoice_number"
+    when: "always"
+    description: "The number of the invoice."
+  - fact: "payment_amount"
+    when: "always"
+    description: "The amount of the payment with its currency."
+  - fact: "balance_after"
+    when: "prepared"
+    description: "The balance left on the invoice after this payment."
+  - fact: "invoice_status_after"
+    when: "prepared"
+    description: "The state the invoice will be in after this payment."
+  - fact: "payment_reference"
+    when: "success"
+    description: "The reference of the recorded payment."
+  - fact: "balance_remaining"
+    when: "success"
+    description: "The balance left on the invoice."
+  - fact: "invoice_status"
+    when: "success"
+    description: "The state of the invoice after the payment."
+next_actions: []
+doc_refs:
+  - "pr-field-invoice"
+  - "pr-field-amount_minor"
+  - "pr-field-currency"
+  - "pr-field-paid_on"
+  - "pr-field-method"
+  - "pr-rule-invoice_open"
+  - "pr-rule-amount_in_range"
+  - "pr-rule-currency_matches_invoice"
+  - "pr-rule-amount_within_balance"
+  - "pr-rule-paid_on_valid"
+  - "pr-perm-payments.record"
+  - "pr-failure-permission_denied"
+  - "pr-failure-scope_violation"
+  - "pr-failure-validation_failed"
+  - "pr-failure-missing_fields"
+  - "pr-failure-conflict"
+  - "pr-failure-stale"
+  - "pr-failure-expired"
+  - "pr-failure-uncertain_outcome"
+  - "pr-failure-unavailable"
+  - "pr-risk"
+  - "pr-confirmation"
+  - "pr-outcome-recorded"
+examples:
+  - id: "en-record-payment"
+    language: "en"
+    test_only: true
+    utterance: "Record a payment of 100.00 euro on invoice INV-0001"
+    expected_fields:
+      invoice: "INV-0001"
+      amount_minor: 10000
+      currency: "EUR"
+  - id: "en-record-card"
+    language: "en"
+    test_only: true
+    utterance: "Acme paid 5.00 euro by card for INV-0001"
+    expected_fields:
+      invoice: "INV-0001"
+      amount_minor: 500
+      currency: "EUR"
+      method: "card"
+  - id: "it-registra-pagamento"
+    language: "it"
+    test_only: true
+    utterance: "Registra un pagamento di 100,00 euro sulla fattura INV-0001"
+    expected_fields:
+      invoice: "INV-0001"
+      amount_minor: 10000
+      currency: "EUR"
+  - id: "it-pagamento-bonifico"
+    language: "it"
+    test_only: true
+    utterance: "Acme ha pagato 25000 con bonifico sulla INV-0001"
+    expected_fields:
+      invoice: "INV-0001"
+      amount_minor: 25000
+      method: "bank_transfer"

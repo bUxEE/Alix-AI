@@ -1,0 +1,106 @@
+format: "alixai.application-package/v1"
+application:
+  id: "ledger"
+  name: "Synthetic Ledger"
+  version: "1.0.0"
+  vendor: "AlixAI reference applications"
+  description: "A synthetic multi-tenant accounting application (Go, embedded native bridge, signed events, a contracts document API) used as the third neutral AlixAI reference application. Every record is made up."
+package:
+  version: "1.0.0"
+  description: "Initial integration package: invoice search, quote drafting, invoice issuing, payment recording and invoice voiding, in English and Italian, with a contracts document source."
+compatibility:
+  alixai_core:
+    min: "0.1.0"
+    max_exclusive: "1.0.0"
+endpoints:
+  ledger-bridge:
+    transport: "native"
+    bridge: "go"
+    ipc:
+      kind: "loopback_tcp"
+      address: "127.0.0.1:7421"
+    adapter_config: "schemas/adapters/ledger-bridge.yaml"
+  ledger-events:
+    transport: "events"
+    delivery: "webhook"
+    key_id: "ledger-events-2026"
+    event_types:
+      invoice.paid:
+        effect: "invalidate_state"
+        description: "An invoice was paid in full, so any prepared action that used it is stale."
+      invoice.payment_recorded:
+        effect: "invalidate_state"
+        description: "A payment was recorded on an invoice that is still open, so its balance changed and any prepared action that used it is stale."
+      invoice.voided:
+        effect: "invalidate_state"
+        description: "An invoice was voided, so any prepared action that used it is stale."
+      contract.updated:
+        effect: "refresh_projection"
+        description: "A contract of a team was added or changed, so the contracts source is read again."
+    adapter_config: "schemas/adapters/ledger-events.yaml"
+context_exchange:
+  mode: "local_ipc"
+  issuer: "ledger"
+  audience: "alixai-local"
+  key_ids:
+    - "ledger-bridge-1"
+tenancy:
+  tenant:
+    label: "organisation"
+    description: "An organisation is one customer company that owns several teams. Customers, quotes, invoices, payments and contracts never cross organisations."
+  workspace:
+    label: "team"
+    description: "A team is one accounting unit of an organisation. An accountant or a viewer reaches the records of their own team only; a manager also reaches the invoices of the other teams of the same organisation."
+  principal_kinds:
+    - "human"
+  roles:
+    accountant:
+      description: "Accounting staff of one team. Finds invoices, drafts quotes, issues invoices and records payments for the team's own customers and invoices, but never voids."
+    manager:
+      description: "A manager of one team. Does everything an accountant does for the team, finds and voids invoices of every team of the organisation, and finishes a void in the ledger application."
+    viewer:
+      description: "A read-only member of one team. Finds the team's invoices and nothing else."
+languages:
+  default: "en"
+  supported:
+    - "en"
+    - "it"
+capabilities:
+  invoices.find: "capabilities/invoices-find.yaml"
+  quotes.draft: "capabilities/quotes-draft.yaml"
+  invoices.issue: "capabilities/invoices-issue.yaml"
+  payments.record: "capabilities/payments-record.yaml"
+  invoices.void: "capabilities/invoices-void.yaml"
+rag_sources:
+  ledger-contracts: "rag-sources/ledger-contracts.yaml"
+model_requirements:
+  minimum_profile: "lite"
+  controller:
+    need: "required"
+    languages:
+      - "en"
+      - "it"
+    min_context_tokens: 4096
+  embedding:
+    need: "optional"
+retention:
+  session_state_days: 7
+  transcript_days: 30
+  action_receipt_days: 2555
+  audit_days: 2555
+  log_days: 14
+network:
+  default: "deny"
+  egress:
+    ledger-docs-loopback:
+      host: "127.0.0.1"
+      ports:
+        - 7422
+      scheme: "http"
+      purpose: "The ledger's contracts document API on the same machine (loopback only; a test fixture)"
+integrity:
+  signature_manifest: "signatures/signature-manifest.json"
+  hash_algorithm: "sha256"
+  signature_algorithm: "ed25519"
+  publisher_key_ids:
+    - "alixai-test-only-publisher"

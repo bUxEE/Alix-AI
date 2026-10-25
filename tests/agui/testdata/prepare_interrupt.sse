@@ -1,0 +1,56 @@
+data: {"type":"RUN_STARTED","threadId":"ses_test_01","runId":"run_prepare"}
+
+data: {"type":"STATE_DELTA","delta":[{"op":"add","path":"/alixai","value":{"pending":null}}]}
+
+data: {"type":"STEP_STARTED","stepName":"interpreting"}
+
+id: 0
+data: {"type":"STEP_FINISHED","stepName":"interpreting"}
+
+data: {"type":"STEP_STARTED","stepName":"validating"}
+
+id: 1
+data: {"type":"STEP_FINISHED","stepName":"validating"}
+
+data: {"type":"STEP_STARTED","stepName":"tool_call"}
+
+data: {"type":"ACTIVITY_SNAPSHOT","messageId":"act_trn_01J00000000000000000000001_tool_call","activityType":"alixai.progress","content":{"capabilityId":"items.create","stage":"tool_call","state":"completed"}}
+
+id: 2
+data: {"type":"STEP_FINISHED","stepName":"tool_call"}
+
+data: {"type":"STEP_STARTED","stepName":"generating"}
+
+id: 3
+data: {"type":"STEP_FINISHED","stepName":"generating"}
+
+data: {"type":"STEP_STARTED","stepName":"verifying"}
+
+id: 4
+data: {"type":"STEP_FINISHED","stepName":"verifying"}
+
+id: 5
+data: {"type":"CUSTOM","name":"alixai.directive","value":{"turn_id":"trn_01J00000000000000000000001","capability_id":"items.create","act":"request_confirmation","facts":[{"field":"summary","value":{"kind":"text","value":"Create an item named \"widget\""}},{"field":"name","value":{"kind":"text","value":"widget"}}],"must_state":["summary","name"],"missing_fields":[],"invalid_fields":[],"allowed_suggestions":[],"confirmation":{"mode":"explicit","bindings":["preparation_id","principal","session","data_versions"]},"permitted_next_actions":[{"action":"confirm"},{"action":"modify"},{"action":"reject"}],"sources":[],"preparation_id":"prep_01J00000000000000000000001"}}
+
+data: {"type":"TOOL_CALL_START","toolCallId":"alixai_confirm_prep_01J00000000000000000000001","toolCallName":"alixai_confirm_action"}
+
+data: {"type":"TOOL_CALL_ARGS","toolCallId":"alixai_confirm_prep_01J00000000000000000000001","delta":"{\"preparationId\":\"prep_01J00000000000000000000001\",\"capabilityId\":\"items.create\",\"summary\":\"Create an item named \\\"widget\\\"\",\"effects\":[{\"operation\":\"create\",\"entity_type\":\"item\",\"description\":\"Create an item named \\\"widget\\\".\",\"changes\":[{\"field\":\"name\",\"value\":{\"kind\":\"text\",\"value\":\"widget\"}}],\"external\":false}],\"riskLevel\":2,\"expiresAt\":\"2026-10-02T12:05:00.000Z\",\"confirmation\":{\"mode\":\"explicit\",\"bindings\":[\"preparation_id\",\"principal\",\"session\",\"data_versions\"]}}"}
+
+id: 6
+data: {"type":"TOOL_CALL_END","toolCallId":"alixai_confirm_prep_01J00000000000000000000001"}
+
+id: 7
+data: {"type":"ACTIVITY_SNAPSHOT","messageId":"act_trn_01J00000000000000000000001_b1","activityType":"alixai.block.confirmation_panel","content":{"type":"confirmation_panel","preparation_id":"prep_01J00000000000000000000001","summary":"Create an item named \"widget\"","effects":[{"operation":"create","entity_type":"item","description":"Create an item named \"widget\".","changes":[{"field":"name","value":{"kind":"text","value":"widget"}}],"external":false}],"risk_level":2,"expires_at":"2026-10-02T12:05:00.000Z","confirmation":{"mode":"explicit","bindings":["preparation_id","principal","session","data_versions"]}}}
+
+data: {"type":"TEXT_MESSAGE_START","messageId":"msg_trn_01J00000000000000000000001_1","role":"assistant"}
+
+id: 8
+data: {"type":"TEXT_MESSAGE_CONTENT","messageId":"msg_trn_01J00000000000000000000001_1","delta":"Please confirm: create an item named widget."}
+
+data: {"type":"TEXT_MESSAGE_END","messageId":"msg_trn_01J00000000000000000000001_1"}
+
+data: {"type":"STATE_DELTA","delta":[{"op":"replace","path":"/alixai/pending","value":{"capabilityId":"items.create","collectedFields":[{"name":"name","origin":"user_turn"},{"name":"quantity","origin":"user_turn"},{"name":"size","origin":"user_turn"}],"expiresAt":"2026-10-02T12:05:00Z","kind":"confirmation","missingFields":[],"phase":"prepared","preparationId":"prep_01J00000000000000000000001"}}]}
+
+id: 9
+data: {"type":"RUN_FINISHED","threadId":"ses_test_01","runId":"run_prepare","result":{"finishReason":"awaiting_confirmation","turnId":"trn_01J00000000000000000000001"},"outcome":{"type":"interrupt","interrupts":[{"id":"prep_01J00000000000000000000001","reason":"confirmation_required","message":"Create an item named \"widget\"","toolCallId":"alixai_confirm_prep_01J00000000000000000000001","responseSchema":{"additionalProperties":false,"properties":{"approved":{"type":"boolean"}},"required":["approved"],"type":"object"},"expiresAt":"2026-10-02T12:05:00.000Z","metadata":{"preparationId":"prep_01J00000000000000000000001","capabilityId":"items.create","summary":"Create an item named \"widget\"","effects":[{"operation":"create","entity_type":"item","description":"Create an item named \"widget\".","changes":[{"field":"name","value":{"kind":"text","value":"widget"}}],"external":false}],"riskLevel":2,"expiresAt":"2026-10-02T12:05:00.000Z","confirmation":{"mode":"explicit","bindings":["preparation_id","principal","session","data_versions"]}}}]}}
+

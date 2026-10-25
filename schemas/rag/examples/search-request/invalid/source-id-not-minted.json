@@ -1,0 +1,7 @@
+{
+  "query": "late cancellation fee",
+  "source_ids": [
+    "all"
+  ],
+  "limit": 10
+}

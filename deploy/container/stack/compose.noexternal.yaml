@@ -1,0 +1,12 @@
+# Image variant with no external-provider code: AlixAI built with -tags noexternal (the registration file
+# internal/cli/providers_external.go is not compiled in, so nothing of milestone X is linked). Local mode
+# only; External mode cannot be enabled in this build whatever the configuration says.
+#   docker compose -f compose.yaml -f compose.lite.yaml -f compose.noexternal.yaml up -d --build
+# Do not combine it with compose.external.yaml: a build without external code has nothing to send out.
+services:
+  alixai:
+    build:
+      args:
+        GO_TAGS: noexternal
+    labels:
+      ai.alixai.variant: noexternal

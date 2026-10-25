@@ -1,0 +1,40 @@
+{
+  "name": "@alixai/demo-mock",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A scripted, offline stand-in for the AlixAI gateway that the demo apps of the Vue and React kits run against: AG-UI over SSE, files, settings, source health, integration audit and the voice WebSocket, as a Vite dev-server plugin. No model, no network, no telemetry.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "packageManager": "pnpm@12.3.4",
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./vite": "./src/plugin.ts",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "ws": "8.22.0"
+  },
+  "devDependencies": {
+    "@ag-ui/client": "1.0.1",
+    "@ag-ui/core": "1.0.1",
+    "@alixai/copilotkit-adapter": "workspace:*",
+    "@alixai/sdk": "workspace:*",
+    "@types/node": "^26.6.5",
+    "@types/ws": "8.18.2",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "rxjs": "7.8.1",
+    "typescript": "^7.0.2",
+    "vite": "8.3.5",
+    "vitest": "^5.0.5",
+    "yaml": "2.9.1",
+    "zod": "3.25.76"
+  }
+}

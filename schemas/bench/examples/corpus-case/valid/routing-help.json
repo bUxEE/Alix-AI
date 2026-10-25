@@ -1,0 +1,72 @@
+{
+  "id": "rt-en-12",
+  "language": "en",
+  "category": "routing",
+  "today": "2026-10-12",
+  "catalogue": [
+    {
+      "id": "expenses.submit",
+      "description": "Submit an expense",
+      "fields": [
+        {
+          "name": "amount",
+          "type": "number",
+          "required": true
+        },
+        {
+          "name": "currency",
+          "type": "enum",
+          "required": true,
+          "enum": [
+            "EUR",
+            "USD",
+            "GBP"
+          ]
+        },
+        {
+          "name": "category",
+          "type": "enum",
+          "required": true,
+          "enum": [
+            "travel",
+            "meals",
+            "lodging",
+            "other"
+          ]
+        },
+        {
+          "name": "date",
+          "type": "date",
+          "required": false
+        },
+        {
+          "name": "note",
+          "type": "string",
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "expenses.status",
+      "description": "Check an expense report",
+      "fields": [
+        {
+          "name": "report_ref",
+          "type": "string",
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "expenses.list",
+      "description": "List my expenses",
+      "fields": []
+    }
+  ],
+  "text": "What can you do?",
+  "expected": {
+    "capability_id": null,
+    "intent": "help",
+    "fields": {}
+  }
+}

@@ -1,0 +1,923 @@
+{
+  "results": [
+    {
+      "evidence_id": "e1",
+      "rank": 1,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e2",
+      "rank": 2,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e3",
+      "rank": 3,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e4",
+      "rank": 4,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e5",
+      "rank": 5,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e6",
+      "rank": 6,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e7",
+      "rank": 7,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e8",
+      "rank": 8,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e9",
+      "rank": 9,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e10",
+      "rank": 10,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e11",
+      "rank": 11,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e12",
+      "rank": 12,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e13",
+      "rank": 13,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e14",
+      "rank": 14,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e15",
+      "rank": 15,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e16",
+      "rank": 16,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e17",
+      "rank": 17,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e18",
+      "rank": 18,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e19",
+      "rank": 19,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e20",
+      "rank": 20,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e21",
+      "rank": 21,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e22",
+      "rank": 22,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e23",
+      "rank": 23,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e24",
+      "rank": 24,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e25",
+      "rank": 25,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e26",
+      "rank": 26,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e27",
+      "rank": 27,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e28",
+      "rank": 28,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e29",
+      "rank": 29,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e30",
+      "rank": 30,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e31",
+      "rank": 31,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e32",
+      "rank": 32,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e33",
+      "rank": 33,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e34",
+      "rank": 34,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e35",
+      "rank": 35,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e36",
+      "rank": 36,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e37",
+      "rank": 37,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e38",
+      "rank": 38,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e39",
+      "rank": 39,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e40",
+      "rank": 40,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e41",
+      "rank": 41,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e42",
+      "rank": 42,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e43",
+      "rank": 43,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e44",
+      "rank": 44,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e45",
+      "rank": 45,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e46",
+      "rank": 46,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e47",
+      "rank": 47,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e48",
+      "rank": 48,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e49",
+      "rank": 49,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e50",
+      "rank": 50,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    },
+    {
+      "evidence_id": "e51",
+      "rank": 51,
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+    }
+  ],
+  "notices": []
+}

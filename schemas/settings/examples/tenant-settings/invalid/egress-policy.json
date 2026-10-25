@@ -1,0 +1,7 @@
+{
+  "egress_policy": {
+    "classes": [
+      "restricted"
+    ]
+  }
+}

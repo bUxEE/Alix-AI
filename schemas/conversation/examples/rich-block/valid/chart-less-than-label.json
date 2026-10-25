@@ -1,0 +1,25 @@
+{
+  "type": "chart",
+  "description": "Patients by age band: under 18 four, 18 to 64 thirty.",
+  "mark": "bar",
+  "data": [
+    {
+      "age": "<18",
+      "n": 4
+    },
+    {
+      "age": "18-64",
+      "n": 30
+    }
+  ],
+  "encoding": {
+    "x": {
+      "field": "age",
+      "type": "ordinal"
+    },
+    "y": {
+      "field": "n",
+      "type": "quantitative"
+    }
+  }
+}

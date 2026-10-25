@@ -1,0 +1,652 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:rageval:rag-result:v2",
+  "title": "RAG evaluation result",
+  "description": "One run of tools/rageval (master plan 17.3, 22.4): recall@k, MRR, nDCG, citation precision, unsupported-answer rate, ingestion throughput, index size, p50/p95 latency and peak memory over a labelled corpus, plus retrieval latency by scope size. It is the full result; a result in the envelope of schemas/bench/result.schema.json, carrying the questions that must be declined, goes with it (companion) so that 'tools/bench check' validates the part of it that fits. The envelope fields (run_id, timestamp, git, host, profile, emulated, synthetic, container_limits, provider, model, backend) have the names and the rules of the bench schema. Every key is present in every result: a value that is unknown or does not apply is an explicit null. Rates are {passed, total, rate}; rate is null when total is 0. Results measured under lite, balanced or experimental-4g are emulated (the profile the run stands for; no cap is applied by this tool), never certified. Results from the fake embedder are synthetic: the retrieval and answer numbers measure the pipeline and the harness, never a model. Rules that need arithmetic (every metric equal to what the per-question records say) are enforced by 'rageval check', not here.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version", "kind", "run_id", "timestamp", "duration_ms", "git", "host", "profile", "emulated",
+    "synthetic", "container_limits", "isolation", "provider", "model", "backend", "components", "corpus",
+    "config", "companion", "metrics", "by_kind", "by_language", "retrieval_modes", "latency", "ingestion",
+    "index", "memory", "container_memory", "quantization", "scale", "questions"
+  ],
+  "properties": {
+    "format_version": { "const": 2 },
+    "kind": { "const": "alixai.rageval.result" },
+    "run_id": { "type": "string", "pattern": "^run_[0-9A-HJKMNP-TV-Z]{26}$" },
+    "timestamp": { "type": "string", "format": "date-time", "pattern": "Z$" },
+    "duration_ms": { "type": "number", "minimum": 0 },
+    "git": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sha", "dirty"],
+      "properties": {
+        "sha": { "anyOf": [{ "type": "string", "pattern": "^[0-9a-f]{40}$" }, { "type": "null" }] },
+        "dirty": { "type": ["boolean", "null"] }
+      }
+    },
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cpu_model", "logical_cores", "ram_mb", "os", "arch"],
+      "properties": {
+        "cpu_model": { "type": ["string", "null"], "maxLength": 200 },
+        "logical_cores": { "type": "integer", "minimum": 1 },
+        "ram_mb": { "type": ["integer", "null"], "minimum": 1 },
+        "os": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "arch": { "type": "string", "minLength": 1, "maxLength": 32 }
+      }
+    },
+    "profile": { "type": "string", "enum": ["lite", "balanced", "experimental-4g"] },
+    "emulated": { "type": "boolean" },
+    "synthetic": { "type": "boolean" },
+    "container_limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mem_mb", "cpus", "source"],
+      "properties": {
+        "mem_mb": { "type": "integer", "minimum": 1 },
+        "cpus": { "type": "number", "exclusiveMinimum": 0 },
+        "source": { "const": "profile-definition" }
+      }
+    },
+    "isolation": {
+      "description": "What the run actually ran under. The profile is the one the result stands for; this tool applies no cgroup cap.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cgroup_limits_applied", "note"],
+      "properties": {
+        "cgroup_limits_applied": { "type": "boolean" },
+        "note": { "type": "string", "minLength": 1, "maxLength": 500 }
+      }
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": { "name": { "type": "string", "enum": ["fake", "localai"] } }
+    },
+    "model": {
+      "description": "The embedding model, as in the bench schema.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "registry_id", "in_registry", "name", "status", "runtime_model_name", "artifact_sha256",
+        "artifact_hash_source", "artifact_size_bytes", "quantization"
+      ],
+      "properties": {
+        "registry_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "in_registry": { "type": "boolean" },
+        "name": { "type": ["string", "null"], "maxLength": 200 },
+        "status": { "type": ["string", "null"], "enum": ["candidate", "qualified-emulated", "certified", "rejected", "retired", null] },
+        "runtime_model_name": { "type": ["string", "null"], "maxLength": 200 },
+        "artifact_sha256": { "anyOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
+        "artifact_hash_source": { "type": "string", "enum": ["computed", "registry", "none"] },
+        "artifact_size_bytes": { "type": ["integer", "null"], "minimum": 0 },
+        "quantization": { "type": ["string", "null"], "maxLength": 64 }
+      }
+    },
+    "backend": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runtime", "name", "runtime_version"],
+      "properties": {
+        "runtime": { "type": ["string", "null"], "maxLength": 64 },
+        "name": { "type": ["string", "null"], "maxLength": 64 },
+        "runtime_version": { "type": ["string", "null"], "maxLength": 64 }
+      }
+    },
+    "components": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["embedder", "generator", "reranker"],
+      "properties": {
+        "embedder": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "model", "dimensions", "reported_model"],
+          "properties": {
+            "kind": { "type": "string", "enum": ["fake", "localai", "none"] },
+            "model": { "type": ["string", "null"], "maxLength": 128 },
+            "dimensions": { "type": ["integer", "null"], "minimum": 1 },
+            "reported_model": { "type": ["string", "null"], "maxLength": 200 }
+          }
+        },
+        "generator": {
+          "description": "The answer generator. 'extractive' is the no-model baseline: it picks sentences of the passages and is blind to the labels.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "label_blind", "min_ratio", "prompt_id", "prompt_sha256"],
+          "properties": {
+            "kind": { "type": "string", "enum": ["extractive"] },
+            "label_blind": { "const": true },
+            "min_ratio": { "type": "number", "minimum": 0, "maximum": 1 },
+            "prompt_id": { "type": "string", "minLength": 1, "maxLength": 64 },
+            "prompt_sha256": { "$ref": "#/$defs/sha256" }
+          }
+        },
+        "reranker": {
+          "description": "'lexical' is the harness's word-overlap reranker: no model, so synthetic. No adapter serves the Reranker role and the model registry holds no reranker.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "synthetic"],
+          "properties": {
+            "kind": { "type": "string", "enum": ["none", "lexical"] },
+            "synthetic": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "corpus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "sha256", "files", "bytes", "sources", "documents", "tenants", "questions", "answerable",
+        "to_decline", "languages", "kinds"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "files": { "type": "integer", "minimum": 1 },
+        "bytes": { "type": "integer", "minimum": 1 },
+        "sources": { "type": "integer", "minimum": 1 },
+        "documents": { "type": "integer", "minimum": 1 },
+        "tenants": { "type": "integer", "minimum": 1 },
+        "questions": { "type": "integer", "minimum": 1 },
+        "answerable": { "type": "integer", "minimum": 0 },
+        "to_decline": { "type": "integer", "minimum": 0 },
+        "languages": { "$ref": "#/$defs/countMap" },
+        "kinds": { "$ref": "#/$defs/countMap" }
+      }
+    },
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "rag_caps", "k", "query", "answer", "chunker", "warmup_requests", "timeout_ms", "percentile_method"],
+      "properties": {
+        "mode": { "type": "string", "enum": ["fts", "hybrid", "rerank"] },
+        "rag_caps": {
+          "description": "The profile whose evidence and candidate caps (docs/operations/resource-budgets.md 6.3) the run used; default is the pipeline's own (8 items, 3,000 estimated tokens), which is not Lite's package.",
+          "type": "string",
+          "enum": ["default", "experimental-4g", "lite", "balanced"]
+        },
+        "k": { "type": "array", "minItems": 1, "items": { "type": "integer", "minimum": 1 } },
+        "query": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "rrf_k", "max_query_terms", "fts_candidates", "vector_candidates", "vector_min_score", "shortlist",
+            "max_items", "max_toks", "parent_expansion", "max_parent_lookups", "max_parent_toks", "rerank"
+          ],
+          "properties": {
+            "rrf_k": { "type": "integer", "minimum": 1 },
+            "max_query_terms": { "type": "integer", "minimum": 1 },
+            "fts_candidates": { "type": "integer", "minimum": 1 },
+            "vector_candidates": { "type": "integer", "minimum": 1 },
+            "vector_min_score": { "type": "number", "minimum": -1, "maximum": 1 },
+            "shortlist": { "type": "integer", "minimum": 1 },
+            "max_items": { "type": "integer", "minimum": 1 },
+            "max_toks": { "type": "integer", "minimum": 1 },
+            "parent_expansion": { "type": "boolean" },
+            "max_parent_lookups": { "type": "integer", "minimum": 0 },
+            "max_parent_toks": { "type": "integer", "minimum": 0 },
+            "rerank": { "type": "boolean" }
+          }
+        },
+        "answer": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["max_output_toks", "max_claims", "max_citations", "min_coverage", "window_sentences", "min_claim_terms"],
+          "properties": {
+            "max_output_toks": { "type": "integer", "minimum": 1 },
+            "max_claims": { "type": "integer", "minimum": 1 },
+            "max_citations": { "type": "integer", "minimum": 1 },
+            "min_coverage": { "type": "number", "minimum": 0, "maximum": 1 },
+            "window_sentences": { "type": "integer", "minimum": 1 },
+            "min_claim_terms": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "chunker": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["child_min_toks", "child_max_toks", "parent_max_toks"],
+          "properties": {
+            "child_min_toks": { "type": "integer", "minimum": 0 },
+            "child_max_toks": { "type": "integer", "minimum": 1 },
+            "parent_max_toks": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "warmup_requests": { "type": "integer", "minimum": 0 },
+        "timeout_ms": { "type": "integer", "minimum": 1 },
+        "percentile_method": { "const": "nearest-rank" }
+      }
+    },
+    "companion": {
+      "description": "The result in the bench envelope that goes with this one: the questions that must be declined, as bench refusal cases.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "sha256", "cases"],
+      "properties": {
+        "file": { "type": "string", "pattern": "^[a-z0-9._-]+\\.json$" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "cases": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "metrics": { "$ref": "#/$defs/metrics" },
+    "by_kind": { "type": "object", "minProperties": 1, "additionalProperties": { "$ref": "#/$defs/metrics" } },
+    "by_language": { "type": "object", "minProperties": 1, "additionalProperties": { "$ref": "#/$defs/metrics" } },
+    "retrieval_modes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["served", "degraded"],
+      "properties": {
+        "served": { "$ref": "#/$defs/countMap" },
+        "degraded": { "$ref": "#/$defs/countMap" }
+      }
+    },
+    "latency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["end_to_end_ms", "retrieval_ms", "answer_ms", "stages_ms", "warmup_first_ms", "toks_in", "toks_out"],
+      "properties": {
+        "end_to_end_ms": { "$ref": "#/$defs/stats" },
+        "retrieval_ms": { "$ref": "#/$defs/stats" },
+        "answer_ms": { "$ref": "#/$defs/stats" },
+        "stages_ms": {
+          "description": "Latency of each stage of the retrieval pipeline over the questions (the pipeline's own timing). stages_ms.embed is the query-embedding latency: what a model adds to every query.",
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/stats" }
+        },
+        "warmup_first_ms": { "type": ["number", "null"], "minimum": 0 },
+        "toks_in": { "type": "integer", "minimum": 0 },
+        "toks_out": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "ingestion": {
+      "description": "chunk + index + embed + validate + activate of the labelled corpus. The sandboxed parser and the job queue of the real ingestion pipeline are not in it.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "covers", "documents", "builds", "parents", "chunks", "bytes_in", "chunking_ms", "indexing_ms",
+        "embedding_ms", "finalizing_ms", "elapsed_ms", "chunks_per_second", "documents_per_second",
+        "mib_per_second", "embedded", "reused", "embed_calls"
+      ],
+      "properties": {
+        "covers": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "documents": { "type": "integer", "minimum": 0 },
+        "builds": { "type": "integer", "minimum": 0 },
+        "parents": { "type": "integer", "minimum": 0 },
+        "chunks": { "type": "integer", "minimum": 0 },
+        "bytes_in": { "type": "integer", "minimum": 0 },
+        "chunking_ms": { "type": "number", "minimum": 0 },
+        "indexing_ms": { "type": "number", "minimum": 0 },
+        "embedding_ms": { "type": "number", "minimum": 0 },
+        "finalizing_ms": { "type": "number", "minimum": 0 },
+        "elapsed_ms": { "type": "number", "minimum": 0 },
+        "chunks_per_second": { "type": ["number", "null"], "minimum": 0 },
+        "documents_per_second": { "type": ["number", "null"], "minimum": 0 },
+        "mib_per_second": { "type": ["number", "null"], "minimum": 0 },
+        "embedded": { "type": "integer", "minimum": 0 },
+        "reused": { "type": "integer", "minimum": 0 },
+        "embed_calls": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "index": {
+      "description": "The size of the labelled corpus's index: pages in use (text, full-text index, parents, vectors, bookkeeping) and the files on disk.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["store_used_bytes", "store_disk_bytes", "chunks", "vectors", "bytes_per_chunk"],
+      "properties": {
+        "store_used_bytes": { "type": "integer", "minimum": 0 },
+        "store_disk_bytes": { "type": "integer", "minimum": 0 },
+        "chunks": { "type": "integer", "minimum": 0 },
+        "vectors": { "type": "integer", "minimum": 0 },
+        "bytes_per_chunk": { "type": ["number", "null"], "minimum": 0 }
+      }
+    },
+    "memory": {
+      "description": "Operating-system memory of the process that ingested the labelled corpus and answered every question (resident set and its high-water mark). Not a container's figure; the scale phases report their own.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["measured", "source", "rss_mb", "peak_rss_mb", "covers"],
+      "properties": {
+        "measured": { "type": "boolean" },
+        "source": { "const": "os-process" },
+        "rss_mb": { "type": ["number", "null"], "minimum": 0 },
+        "peak_rss_mb": { "type": ["number", "null"], "minimum": 0 },
+        "covers": { "type": "string", "minLength": 1, "maxLength": 300 }
+      }
+    },
+    "container_memory": {
+      "description": "Memory of the LocalAI container, sampled with 'docker stats' for the whole run (--docker-container), in the form of the bench envelope's memory block. It is the container's cgroup usage as Docker computes it (usage minus inactive page cache), not VmRSS: file-backed model pages the kernel counts as active cache stay in it, and pages it counts as inactive do not, so it is smaller than the resident set of the same processes. limit_mb_observed is the cap the container ran under; it must be the profile's. The 'none' form means no container was sampled.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sampled", "source", "container", "interval_ms", "samples", "sample_errors", "baseline_mb", "peak_rss_mb",
+        "steady_rss_mb", "limit_mb_observed"
+      ],
+      "properties": {
+        "sampled": { "type": "boolean" },
+        "source": { "type": "string", "enum": ["docker-stats", "none"] },
+        "container": { "type": ["string", "null"], "maxLength": 128 },
+        "interval_ms": { "type": ["integer", "null"], "minimum": 1 },
+        "samples": { "type": "integer", "minimum": 0 },
+        "sample_errors": { "type": "integer", "minimum": 0 },
+        "baseline_mb": { "type": ["number", "null"], "minimum": 0 },
+        "peak_rss_mb": { "type": ["number", "null"], "minimum": 0 },
+        "steady_rss_mb": { "type": ["number", "null"], "minimum": 0 },
+        "limit_mb_observed": { "type": ["number", "null"], "minimum": 0 }
+      }
+    },
+    "quantization": {
+      "description": "ADR 0011's quantisation check on the embedder's own vectors (--quant-check): for each question the share of its exact (float32 cosine) top ten that the quantised scan (one signed byte per dimension, the index's own Quantise and Score) also returns, against the ADR's bar of 0.95. Null when it was not run.",
+      "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/quantization" }]
+    },
+    "scale": {
+      "description": "Retrieval latency by scope size and for the corpus as a whole. Null when the sweep was turned off.",
+      "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/scale" }]
+    },
+    "questions": {
+      "description": "The raw outcome of every labelled question, in corpus order.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/question" }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "countMap": {
+      "type": "object",
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
+    "ratio": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["passed", "total", "rate"],
+      "properties": {
+        "passed": { "type": "integer", "minimum": 0 },
+        "total": { "type": "integer", "minimum": 0 },
+        "rate": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
+      }
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["n", "mean", "min", "p50", "p90", "p95", "p99", "max"],
+      "properties": {
+        "n": { "type": "integer", "minimum": 0 },
+        "mean": { "type": ["number", "null"], "minimum": 0 },
+        "min": { "type": ["number", "null"], "minimum": 0 },
+        "p50": { "type": ["number", "null"], "minimum": 0 },
+        "p90": { "type": ["number", "null"], "minimum": 0 },
+        "p95": { "type": ["number", "null"], "minimum": 0 },
+        "p99": { "type": ["number", "null"], "minimum": 0 },
+        "max": { "type": ["number", "null"], "minimum": 0 }
+      }
+    },
+    "unit": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+    "metrics": {
+      "description": "Every metric over some set of questions. Retrieval metrics are means over the answerable questions with at least one evidence entry (an item is novel when it hits an entry no earlier item hit; recall@k counts entries; MRR is 1 over the rank of the first novel item; nDCG is binary with a log2 discount and an ideal list of min(k, entries) items). Answer metrics are rates; unsupported_answer_rate is the share of the questions that must be declined that got an answer (lower is better).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["questions", "errors", "correct", "leaks", "retrieval", "answers"],
+      "properties": {
+        "questions": { "type": "integer", "minimum": 0 },
+        "errors": { "type": "integer", "minimum": 0 },
+        "correct": { "$ref": "#/$defs/ratio" },
+        "leaks": { "type": "integer", "minimum": 0 },
+        "retrieval": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["questions", "k", "recall_at_k", "mrr", "ndcg_at_k"],
+          "properties": {
+            "questions": { "type": "integer", "minimum": 0 },
+            "k": { "type": "array", "minItems": 1, "items": { "type": "integer", "minimum": 1 } },
+            "recall_at_k": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/unit" } },
+            "mrr": { "$ref": "#/$defs/unit" },
+            "ndcg_at_k": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/unit" } }
+          }
+        },
+        "answers": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "answerable_answered", "answerable_correct", "fact_accuracy", "citation_precision",
+            "citation_label_accuracy", "decline_correct", "unsupported_answer_rate"
+          ],
+          "properties": {
+            "answerable_answered": { "$ref": "#/$defs/ratio" },
+            "answerable_correct": { "$ref": "#/$defs/ratio" },
+            "fact_accuracy": { "$ref": "#/$defs/ratio" },
+            "citation_precision": { "$ref": "#/$defs/ratio" },
+            "citation_label_accuracy": { "$ref": "#/$defs/ratio" },
+            "decline_correct": { "$ref": "#/$defs/ratio" },
+            "unsupported_answer_rate": { "$ref": "#/$defs/ratio" }
+          }
+        }
+      }
+    },
+    "question": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "language", "kind", "outcome", "status", "error_code", "expected", "ranked", "mode", "degraded",
+        "declined", "reason", "claims", "facts_hit", "facts_total", "forbidden_hits", "forbidden_source_hits",
+        "leak", "citations", "label_ok", "correct", "latency_ms", "retrieval_latency_ms", "answer_latency_ms",
+        "package_toks_est", "toks_in", "toks_out", "stages_ms"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$", "maxLength": 48 },
+        "language": { "type": "string", "enum": ["en", "it"] },
+        "kind": { "type": "string", "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$" },
+        "outcome": { "type": "string", "enum": ["answer", "decline"] },
+        "status": { "type": "string", "enum": ["ok", "error"] },
+        "error_code": { "type": ["string", "null"], "pattern": "^[a-z][a-z_]{0,31}$" },
+        "expected": { "type": "integer", "minimum": 0 },
+        "ranked": { "type": "array", "items": { "type": "array", "items": { "type": "integer", "minimum": 0 } } },
+        "mode": { "type": "string", "enum": ["", "hybrid", "fts_only"] },
+        "degraded": { "type": "array", "items": { "type": "string", "maxLength": 64 } },
+        "declined": { "type": "boolean" },
+        "reason": { "type": "string", "maxLength": 64 },
+        "claims": { "type": "integer", "minimum": 0 },
+        "facts_hit": { "type": "integer", "minimum": 0 },
+        "facts_total": { "type": "integer", "minimum": 0 },
+        "forbidden_hits": { "type": "integer", "minimum": 0 },
+        "forbidden_source_hits": { "type": "integer", "minimum": 0 },
+        "leak": { "type": "boolean" },
+        "citations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["source", "version", "availability", "staleness", "correct"],
+            "properties": {
+              "source": { "type": "string", "maxLength": 64 },
+              "version": { "type": "string", "maxLength": 64 },
+              "availability": { "type": "string", "enum": ["available", "unavailable", "removed"] },
+              "staleness": { "type": "string", "enum": ["current", "stale", "unknown"] },
+              "correct": { "type": "boolean" }
+            }
+          }
+        },
+        "label_ok": { "type": ["boolean", "null"] },
+        "correct": { "type": "boolean" },
+        "latency_ms": { "type": ["number", "null"], "minimum": 0 },
+        "retrieval_latency_ms": { "type": ["number", "null"], "minimum": 0 },
+        "answer_latency_ms": { "type": ["number", "null"], "minimum": 0 },
+        "stages_ms": {
+          "description": "The retrieval pipeline's timing of the question per stage, in ms; empty on an error.",
+          "type": "object",
+          "additionalProperties": { "type": "number", "minimum": 0 }
+        },
+        "package_toks_est": { "type": "integer", "minimum": 0 },
+        "toks_in": { "type": "integer", "minimum": 0 },
+        "toks_out": { "type": "integer", "minimum": 0 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "status": { "const": "error" } }, "required": ["status"] },
+          "then": {
+            "properties": {
+              "error_code": { "type": "string" },
+              "latency_ms": { "type": "null" },
+              "retrieval_latency_ms": { "type": "null" },
+              "answer_latency_ms": { "type": "null" },
+              "correct": { "const": false }
+            }
+          },
+          "else": {
+            "properties": {
+              "error_code": { "type": "null" },
+              "latency_ms": { "type": "number" },
+              "retrieval_latency_ms": { "type": "number" },
+              "answer_latency_ms": { "type": "number" }
+            }
+          }
+        }
+      ]
+    },
+    "scale": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode", "isolated", "embedder", "reader_cache_kib", "pin_scopes", "seed", "shape", "build", "buckets", "pooled",
+        "tail_hidden"
+      ],
+      "properties": {
+        "mode": { "type": "string", "enum": ["fts", "hybrid", "rerank"] },
+        "isolated": { "type": "boolean" },
+        "embedder": {
+          "description": "Who made the vectors and embedded the queries of the sweep: the fake (the sweep measures the index, not a model), localai (the build's embedding stage and the embed stage of every query are the model's), or none (a full-text sweep). It is the run's embedder.",
+          "type": "string",
+          "enum": ["fake", "localai", "none"]
+        },
+        "reader_cache_kib": { "description": "Page cache of each reader connection in the query phases (2000 is the Lite configuration).", "type": "integer", "minimum": 1 },
+        "pin_scopes": { "description": "How many scopes of a size its bucket asked, in the first N scopes only (0: all of them, in rotation).", "type": "integer", "minimum": 0 },
+        "seed": { "type": "integer", "minimum": 0 },
+        "shape": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "scope_sizes", "small_scopes", "scopes", "corpus_chunks", "chunks_per_scope", "chunks_per_parent",
+            "words_per_chunk", "vocabulary", "text", "embedding_dim"
+          ],
+          "properties": {
+            "scope_sizes": { "type": "array", "minItems": 1, "items": { "type": "integer", "minimum": 1 } },
+            "small_scopes": { "type": "integer", "minimum": 0 },
+            "scopes": { "type": "integer", "minimum": 1 },
+            "corpus_chunks": { "type": "integer", "minimum": 1 },
+            "chunks_per_scope": { "type": "array", "minItems": 1, "items": { "type": "integer", "minimum": 1 } },
+            "chunks_per_parent": { "type": "integer", "minimum": 1 },
+            "words_per_chunk": { "type": "integer", "minimum": 1 },
+            "vocabulary": { "type": "integer", "minimum": 1 },
+            "text": { "type": "string", "minLength": 1, "maxLength": 300 },
+            "embedding_dim": { "type": ["integer", "null"], "minimum": 1 }
+          }
+        },
+        "build": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "chunks", "vectors", "elapsed_ms", "indexing_ms", "embedding_ms", "finalizing_ms", "chunks_per_second",
+            "store_used_bytes", "store_disk_bytes", "bytes_per_chunk", "rss_measured", "peak_rss_mb"
+          ],
+          "properties": {
+            "chunks": { "type": "integer", "minimum": 1 },
+            "vectors": { "type": "integer", "minimum": 0 },
+            "elapsed_ms": { "type": "number", "minimum": 0 },
+            "indexing_ms": { "type": "number", "minimum": 0 },
+            "embedding_ms": { "type": "number", "minimum": 0 },
+            "finalizing_ms": { "type": "number", "minimum": 0 },
+            "chunks_per_second": { "type": ["number", "null"], "minimum": 0 },
+            "store_used_bytes": { "type": "integer", "minimum": 0 },
+            "store_disk_bytes": { "type": "integer", "minimum": 0 },
+            "bytes_per_chunk": { "type": ["number", "null"], "minimum": 0 },
+            "rss_measured": { "type": "boolean" },
+            "peak_rss_mb": { "type": ["number", "null"], "minimum": 0 }
+          }
+        },
+        "buckets": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/scaleQuery" } },
+        "pooled": { "$ref": "#/$defs/scaleQuery" },
+        "tail_hidden": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["pooled_p95_ms", "largest_scope_chunks", "largest_scope_p95_ms", "ratio"],
+          "properties": {
+            "pooled_p95_ms": { "type": ["number", "null"], "minimum": 0 },
+            "largest_scope_chunks": { "type": "integer", "minimum": 0 },
+            "largest_scope_p95_ms": { "type": ["number", "null"], "minimum": 0 },
+            "ratio": { "type": ["number", "null"], "minimum": 0 }
+          }
+        }
+      }
+    },
+    "quantization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["embedder", "scheme", "k", "bar", "sets"],
+      "properties": {
+        "embedder": { "type": "string", "enum": ["fake", "localai"] },
+        "scheme": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "k": { "type": "integer", "minimum": 1 },
+        "bar": { "type": "number", "minimum": 0, "maximum": 1 },
+        "sets": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/quantSet" } }
+      }
+    },
+    "quantSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name", "text", "dim", "vectors", "queries", "k", "recall_at_k", "mean", "min", "perfect",
+        "mean_abs_score_err", "max_abs_score_err", "meets_bar"
+      ],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,63}$" },
+        "text": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "dim": { "type": "integer", "minimum": 1 },
+        "vectors": { "type": "integer", "minimum": 1 },
+        "queries": { "type": "integer", "minimum": 1 },
+        "k": { "type": "integer", "minimum": 1 },
+        "recall_at_k": { "type": "array", "minItems": 1, "items": { "type": "number", "minimum": 0, "maximum": 1 } },
+        "mean": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "min": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "perfect": { "type": "integer", "minimum": 0 },
+        "mean_abs_score_err": { "type": "number", "minimum": 0 },
+        "max_abs_score_err": { "type": "number", "minimum": 0 },
+        "meets_bar": { "type": "boolean" }
+      }
+    },
+    "scaleQuery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name", "scope_chunks", "scopes", "corpus_chunks", "samples_ms", "latency_ms", "by_kind", "first_query_ms",
+        "stage_mean_ms", "avg_items", "errors", "timeouts", "degraded", "rss_measured", "rss_start_mb",
+        "rss_after_mb", "peak_rss_mb"
+      ],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,63}$" },
+        "scope_chunks": { "type": ["integer", "null"], "minimum": 1 },
+        "scopes": { "type": "integer", "minimum": 1 },
+        "corpus_chunks": { "type": "integer", "minimum": 1 },
+        "samples_ms": {
+          "type": "object",
+          "additionalProperties": { "type": "array", "items": { "type": "number", "minimum": 0 } }
+        },
+        "latency_ms": { "$ref": "#/$defs/stats" },
+        "by_kind": { "type": "object", "additionalProperties": { "$ref": "#/$defs/stats" } },
+        "first_query_ms": { "type": "number", "minimum": 0 },
+        "stage_mean_ms": { "type": "object", "additionalProperties": { "type": "number", "minimum": 0 } },
+        "avg_items": { "type": "number", "minimum": 0 },
+        "errors": { "type": "integer", "minimum": 0 },
+        "timeouts": { "type": "integer", "minimum": 0 },
+        "degraded": { "$ref": "#/$defs/countMap" },
+        "rss_measured": { "type": "boolean" },
+        "rss_start_mb": { "type": ["number", "null"], "minimum": 0 },
+        "rss_after_mb": { "type": ["number", "null"], "minimum": 0 },
+        "peak_rss_mb": { "type": ["number", "null"], "minimum": 0 }
+      }
+    }
+  }
+}

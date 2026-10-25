@@ -1,0 +1,34 @@
+# AlixAI configuration for the container stack, mounted read-only at /etc/alixai/alixai.yaml.
+# Every key can also be set by an ALIXAI_<SECTION>_<FIELD> environment variable; the profile files do that
+# for `profile`. Nothing secret lives here: the LocalAI key is read from the environment (api_key_ref).
+
+data_dir: /var/lib/alixai
+
+server:
+  # Loopback inside the anchor's network namespace. The gateway refuses any other address without TLS (SEC-093);
+  # the relay carries the published host port to this listener.
+  listen: 127.0.0.1:7470
+
+log:
+  level: info
+
+# Context budgets and limits of the deployment profile: lite, balanced or performance.
+# The profile override files of the stack set ALIXAI_PROFILE.
+profile: lite
+
+localai:
+  # The anchor forwards this loopback address to the private LocalAI container (compose.yaml).
+  endpoint: http://127.0.0.1:8080
+  api_key_ref: env:LOCALAI_API_KEY
+  # A LocalAI version AlixAI was not qualified against is reported unavailable (SEC-072).
+  qualified_versions: ["v4.10.0"]
+
+inference:
+  # The models directory LocalAI loads from, read-only here. AlixAI verifies every listed model file against
+  # the pinned hash of its registry entry before it serves a request (SEC-063).
+  models_dir: /models
+  # Registry ids of the models this deployment uses. Empty keeps the inference path off: the service starts,
+  # /healthz answers, /readyz says why the model path is unavailable, and nothing reaches LocalAI.
+  # Set it once a model is provisioned and its registry entry is activatable, for example:
+  #   models: [<registry id from models/registry>]
+  models: []

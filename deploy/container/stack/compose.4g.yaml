@@ -1,0 +1,19 @@
+# Experimental 4 GB profile (master plan 7.1): the same caps as deploy/container/localai/compose.4g.yaml, on the
+# LocalAI container. One resident backend, the controller; retrieval is lexical. The AlixAI core runs the lite
+# context budgets (there is no separate 4 GB context profile). An aspiration until the full workload passes its
+# gates: anything measured under this file is labelled emulated, never certified.
+#   docker compose -f compose.yaml -f compose.4g.yaml up -d
+services:
+  localai:
+    mem_limit: 4g
+    memswap_limit: 4g
+    cpus: 4
+    environment:
+      LOCALAI_THREADS: "4"
+      LOCALAI_MAX_ACTIVE_BACKENDS: ${LOCALAI_MAX_ACTIVE_BACKENDS:-1}
+    labels:
+      ai.alixai.profile: 4g
+      ai.alixai.evidence: emulated
+  alixai:
+    environment:
+      ALIXAI_PROFILE: lite

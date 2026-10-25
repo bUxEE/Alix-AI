@@ -1,0 +1,181 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:readiness:shared:v1",
+  "title": "Shared readiness-discovery building blocks",
+  "description": "Definitions shared by the integration readiness contracts (master plan 9.5, ADR 0037), referenced as urn:alixai:schema:readiness:shared:v1#/$defs/<name>. This file is a definitions library: it constrains nothing on its own. Readiness discovery is advisory, operator-launched and evidence-bound: nothing defined here describes a certification, an authorisation, a permission grant, an approval, a signature or an activation, and nothing may be added that does.",
+  "$defs": {
+    "category": {
+      "title": "Requirement category",
+      "description": "What kind of thing a requirement or finding is about. mcp: an MCP server and its tool list. openapi: an OpenAPI or other API description. native_adapter: a native adapter and its declared operations. model_runtime: model and runtime needs and the data that could leave through an external model. deterministic_data: deterministic read, validate, prepare and commit surfaces with typed results. documentation: documentation per capability. conversation_contract: conversation-contract material and terminology. rag_source: RAG source candidates (folders, volumes, document providers). scope_and_auth: identity and scope signals (tenants, workspaces, roles, principals). permissions: the permission model. deployment: deployment facts (package files and signatures, compose files, migrations, ports, inspection). A value outside this list is rejected on decode.",
+      "type": "string",
+      "enum": [
+        "mcp",
+        "openapi",
+        "native_adapter",
+        "model_runtime",
+        "deterministic_data",
+        "documentation",
+        "conversation_contract",
+        "rag_source",
+        "scope_and_auth",
+        "permissions",
+        "deployment"
+      ]
+    },
+    "status": {
+      "title": "Readiness status",
+      "description": "Whether the project covers a requirement. found: covered, with evidence a deterministic verifier confirmed. partial: some of it is covered. missing: nothing was found. unverified: something may be there but the evidence did not confirm, or it could not be determined; it never counts as covered. contradicted: two pieces of evidence disagree. not_applicable: only on a checklist or status-view item, never on a finding: nothing was found for a requirement of one control-surface transport (mcp, openapi, native_adapter) while a requirement of another transport is found, so the project uses that one instead; it never counts as covered or as missing. A value outside this list is rejected on decode.",
+      "type": "string",
+      "enum": ["found", "partial", "missing", "unverified", "contradicted", "not_applicable"]
+    },
+    "source": {
+      "title": "Finding source",
+      "description": "Who produced a finding. deterministic: a rule found it. model_verified: a model proposed it and the deterministic verifier re-read and confirmed its evidence. model_unverified: a model proposed it and the evidence did not confirm; it never counts as covered. A value outside this list is rejected on decode.",
+      "type": "string",
+      "enum": ["deterministic", "model_verified", "model_unverified"]
+    },
+    "level": {
+      "title": "Requirement level",
+      "description": "mandatory: the audit check this feeds cannot pass without it. recommended: the audit reports a warning without it.",
+      "type": "string",
+      "enum": ["mandatory", "recommended"]
+    },
+    "satisfiedBy": {
+      "title": "How a requirement can be satisfied",
+      "description": "The finding sources that can cover a requirement. deterministic: a rule finds it. model_verified: a model finding whose evidence the verifier confirmed. model_unverified is never a way to satisfy a requirement and is not in this list.",
+      "type": "string",
+      "enum": ["deterministic", "model_verified"]
+    },
+    "schemaVersion": {
+      "title": "Readiness schema version",
+      "description": "Exactly 1 in this release; any other value is rejected on decode, so a document from a different contract generation fails closed.",
+      "type": "integer",
+      "const": 1
+    },
+    "requirementId": {
+      "title": "Requirement ID",
+      "description": "The stable ID of a catalog requirement: dotted lower-case segments starting with req, for example req.package.manifest. At most 64 characters. Renaming one is an API change.",
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^req(\\.[a-z][a-z0-9_]*){1,4}$"
+    },
+    "checkId": {
+      "title": "Audit check ID",
+      "description": "The ID of the integration audit check a requirement or finding feeds, for example package.authenticity. Dotted lower-case identifier, at most 64 characters, the grammar of internal/integrationaudit.",
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+    },
+    "findingId": {
+      "title": "Finding ID",
+      "description": "The stable ID of a finding: fnd_ and 16 lower-case hexadecimal characters, derived from the requirement and the evidence so the same finding keeps its ID across scans.",
+      "type": "string",
+      "pattern": "^fnd_[0-9a-f]{16}$"
+    },
+    "sha256": {
+      "title": "SHA-256 digest",
+      "description": "A SHA-256 digest as 64 lower-case hexadecimal characters.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "relativePath": {
+      "title": "Path relative to the scanned root",
+      "description": "A slash-separated path below the directory the operator named: 1 to 512 characters, never absolute, no drive letter, no backslash, no control character and no empty, . or .. segment.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^[^/\\\\:\\x00-\\x1f][^\\\\:\\x00-\\x1f]*$",
+      "not": { "pattern": "(^|/)(\\.\\.?)?(/|$)" }
+    },
+    "text": {
+      "title": "Short text",
+      "description": "A human-readable sentence or two: 1 to 1000 characters.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "localizedText": {
+      "title": "English and Italian text",
+      "description": "The same text in English and in Italian. Both are mandatory in the catalog.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["en", "it"],
+      "properties": {
+        "en": {
+          "description": "English text.",
+          "x-alixai-authority": "alixai",
+          "$ref": "#/$defs/text"
+        },
+        "it": {
+          "description": "Italian text.",
+          "x-alixai-authority": "alixai",
+          "$ref": "#/$defs/text"
+        }
+      }
+    },
+    "remediationText": {
+      "title": "Remediation text",
+      "description": "What to do to cover the requirement. English is always present; Italian is present when the text comes from the catalog and may be absent on a model-proposed remediation, in which case the report shows the catalog Italian instead.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["en"],
+      "properties": {
+        "en": {
+          "description": "English remediation text.",
+          "x-alixai-authority": "alixai",
+          "$ref": "#/$defs/text"
+        },
+        "it": {
+          "description": "Italian remediation text.",
+          "x-alixai-authority": "alixai",
+          "$ref": "#/$defs/text"
+        }
+      }
+    },
+    "summary": {
+      "title": "Status counts",
+      "description": "How many requirements are in each status. The counts add up to the number of requirements in the checklist; not_applicable is absent when it would be zero.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["found", "partial", "missing", "unverified", "contradicted"],
+      "properties": {
+        "found": {
+          "description": "Requirements that are found.",
+          "x-alixai-authority": "alixai",
+          "type": "integer",
+          "minimum": 0
+        },
+        "partial": {
+          "description": "Requirements that are partial.",
+          "x-alixai-authority": "alixai",
+          "type": "integer",
+          "minimum": 0
+        },
+        "missing": {
+          "description": "Requirements that are missing.",
+          "x-alixai-authority": "alixai",
+          "type": "integer",
+          "minimum": 0
+        },
+        "unverified": {
+          "description": "Requirements that are unverified.",
+          "x-alixai-authority": "alixai",
+          "type": "integer",
+          "minimum": 0
+        },
+        "contradicted": {
+          "description": "Requirements that are contradicted.",
+          "x-alixai-authority": "alixai",
+          "type": "integer",
+          "minimum": 0
+        },
+        "not_applicable": {
+          "description": "Requirements of a control-surface transport the project does not use, because a requirement of another transport is found. Absent when zero.",
+          "x-alixai-authority": "alixai",
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

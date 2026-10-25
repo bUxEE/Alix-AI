@@ -1,0 +1,12 @@
+# M4-06 co-residency override, layered after compose.voice.yaml: adds the text backend and the two GGUF files of the Lite controller
+# (Granite 4.0 1B Q4_K_M) and embedder (Granite Embedding 97M Q4_K_M) FROM the deployment's existing model store, read-only. Nothing is
+# copied, moved or deleted there. LLM_DATA is the Windows-form path of deploy/container/localai/data of the main checkout. Docker creates
+# empty mount-point entries inside VOICE_DATA (never inside LLM_DATA) for these nested mounts; they are ignored by git.
+services:
+  localai:
+    environment:
+      LOCALAI_EXTERNAL_BACKENDS: whisper,piper,kokoros,cpu-llama-cpp
+    volumes:
+      - ${LLM_DATA:?set LLM_DATA to the deployment data directory}/backends/cpu-llama-cpp:/backends/cpu-llama-cpp:ro
+      - ${LLM_DATA}/models/granite-4.0-1b-Q4_K_M.gguf:/models/granite-4.0-1b-Q4_K_M.gguf:ro
+      - ${LLM_DATA}/models/granite-embedding-97M-multilingual-r2-Q4_K_M.gguf:/models/granite-embedding-97M-multilingual-r2-Q4_K_M.gguf:ro

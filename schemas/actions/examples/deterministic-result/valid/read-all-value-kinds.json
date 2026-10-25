@@ -1,0 +1,95 @@
+{
+  "operation": "read",
+  "capability_id": "appointments.list_availability",
+  "status": "ok",
+  "identifiers": [
+    {
+      "entity_type": "slot",
+      "entity_id": "slot_0412"
+    },
+    {
+      "entity_type": "slot",
+      "entity_id": "slot_0413"
+    }
+  ],
+  "values": [
+    {
+      "field": "note",
+      "value": {
+        "kind": "text",
+        "value": "Bring the previous scan."
+      }
+    },
+    {
+      "field": "free_slots",
+      "value": {
+        "kind": "integer",
+        "value": 2
+      }
+    },
+    {
+      "field": "deposit_rate",
+      "value": {
+        "kind": "decimal",
+        "value": "12.5"
+      }
+    },
+    {
+      "field": "accepting_patients",
+      "value": {
+        "kind": "boolean",
+        "value": true
+      }
+    },
+    {
+      "field": "slot_date",
+      "value": {
+        "kind": "date",
+        "value": "2026-10-14"
+      }
+    },
+    {
+      "field": "slot_start",
+      "value": {
+        "kind": "time",
+        "value": "10:30"
+      }
+    },
+    {
+      "field": "slot_instant",
+      "value": {
+        "kind": "datetime",
+        "value": "2026-10-14T08:30:00Z",
+        "zone": "Europe/Rome"
+      },
+      "display": "Tuesday 14 October, 10:30"
+    },
+    {
+      "field": "fee",
+      "value": {
+        "kind": "money",
+        "value": "45.00",
+        "currency": "EUR"
+      }
+    },
+    {
+      "field": "doctor_id",
+      "value": {
+        "kind": "identifier",
+        "value": "doc_17"
+      }
+    }
+  ],
+  "errors": [],
+  "freshness": {
+    "as_of": "2026-10-09T08:00:00Z",
+    "version": "v42"
+  },
+  "allowed_next_actions": [
+    {
+      "action": "invoke_capability",
+      "capability_id": "appointments.book",
+      "label": "Book this slot"
+    }
+  ]
+}

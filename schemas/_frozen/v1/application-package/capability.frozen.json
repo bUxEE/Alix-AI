@@ -1,0 +1,659 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:application-package:capability:v1",
+  "title": "Capability contract",
+  "description": "One user-facing capability (master plan 9.2): its stable ID, purpose and scope, typed fields, entity-reference types, deterministic defaults, ambiguity rules, validation and error codes, risk level, operations mapped to adapter calls, confirmation rule, idempotency, response obligations, permitted next actions, documentation references and test-only multilingual examples. One file per capability under capabilities/, listed in the manifest. Authored as YAML; this schema validates the parsed JSON form. The model never decides any of this: the contract is the deterministic authority that AlixAI enforces (master plan 3 rule 5). The rules that tie risk level, operations, confirmation and idempotency together are in the allOf at the bottom, so a contract that violates them is invalid rather than merely suspicious.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "version",
+    "audience",
+    "title",
+    "purpose",
+    "scope_level",
+    "permissions",
+    "fields",
+    "entity_types",
+    "ambiguity",
+    "validation",
+    "failure_states",
+    "effect_class",
+    "risk_level",
+    "operations",
+    "confirmation",
+    "response_obligations",
+    "next_actions",
+    "doc_refs",
+    "examples"
+  ],
+  "properties": {
+    "id": {
+      "description": "The stable capability ID, exact match, no wildcards. Must equal the key under which the manifest lists this file. Never reused for a different meaning: change the ID and the old one is retired.",
+      "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/capabilityId"
+    },
+    "version": {
+      "description": "The version of this capability contract (semver). A change to fields, operations, risk or confirmation is a version change and a re-audit trigger.",
+      "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/semver"
+    },
+    "audience": {
+      "description": "user: an ordinary capability a user asks for in conversation; it needs a conversation contract in every supported language. admin: an operator or administrative capability that is never offered to the model in user conversations and has no conversation contract. Required, no default: an unlabelled capability is not assumed to be either.",
+      "type": "string",
+      "enum": ["user", "admin"]
+    },
+    "title": {
+      "description": "Short human-readable name.",
+      "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/label"
+    },
+    "purpose": {
+      "description": "What the capability is for, in one or two sentences. Documentation, not model instruction: the model's tool description is built by AlixAI from the typed contract.",
+      "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/text"
+    },
+    "scope_level": {
+      "description": "The widest data scope one call can touch: principal (only the caller's own records), workspace (records of the current workspace) or tenant (records across the workspaces of the current tenant). Nothing wider exists: a capability can never cross tenants. The audit probes this boundary with cross-scope tests.",
+      "type": "string",
+      "enum": ["principal", "workspace", "tenant"]
+    },
+    "permissions": {
+      "description": "The application permissions the host checks before it runs any operation of this capability. At least one: a capability with no permission is not allowed (deny by default). Each is documented under the permission facet.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": { "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/permissionId" }
+    },
+    "fields": {
+      "description": "The typed fields of the capability, required and optional, in the order AlixAI asks for missing ones. Field names are unique within the capability (checked by the loader). The model may only propose candidate values for these fields; the application validates them.",
+      "type": "array",
+      "maxItems": 64,
+      "items": { "$ref": "#/$defs/field" }
+    },
+    "entity_types": {
+      "description": "Entity-reference types the fields can point at, keyed by entity type name (master plan 9.2). A field of type entity_ref names one of them. May be empty.",
+      "type": "object",
+      "maxProperties": 32,
+      "propertyNames": { "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug" },
+      "additionalProperties": { "$ref": "#/$defs/entityType" }
+    },
+    "ambiguity": {
+      "description": "Ambiguity and clarification rules: when a field cannot be resolved to one value, what AlixAI does. Deterministic policy; the wording of the question lives in the conversation contract under the same rule id. May be empty.",
+      "type": "array",
+      "maxItems": 64,
+      "items": { "$ref": "#/$defs/ambiguityRule" }
+    },
+    "validation": {
+      "description": "The validation rules the application applies deterministically, each with the error code it returns. May be empty for a capability that validates nothing beyond field types. Each rule is documented under the validation_rule facet.",
+      "type": "array",
+      "maxItems": 64,
+      "items": { "$ref": "#/$defs/validationRule" }
+    },
+    "failure_states": {
+      "description": "Every typed failure the capability can report. At least one. Each is documented under the failure_state facet and has a failure response in each conversation contract. An outcome that is not listed here is reported as an undeclared failure by the audit.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": { "$ref": "#/$defs/failureState" }
+    },
+    "effect_class": {
+      "description": "What the capability does to the world, declared by the application, from which the platform risk floor is derived deterministically (master plan 11.4): none (read-only, floor 0), reversible (changes application data in a way the user can undo and has no effect outside the application, floor 1), external (a consequential change, or a side effect outside the application such as a payment, a message or a third-party call, floor 2) or privileged (privileged, legally sensitive or irreversible, floor 3). risk_level can never be lower than the floor of the effect class, so a host cannot silently declare a lower level than the platform minimum; the host may declare a higher one. Required, no default.",
+      "type": "string",
+      "enum": ["none", "reversible", "external", "privileged"]
+    },
+    "risk_level": {
+      "description": "The action safety level (master plan 11.4), required and never defaulted. It can never be lower than the floor of effect_class; the platform applies its own floors at runtime as well, and a host policy may raise the level but never lower the platform minimum.",
+      "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/riskLevel"
+    },
+    "operations": {
+      "description": "The operations that implement the capability, each mapped to an adapter call (an MCP tool name, an OpenAPI operationId or a native method). read: a deterministic read. validate: optional dry-run validation. prepare: validate and stage a consequential action, returning exact effects and data versions. commit: execute a prepared action idempotently. status: look up an action by idempotency key, used to recover from an uncertain commit response.",
+      "$ref": "#/$defs/operations"
+    },
+    "confirmation": {
+      "description": "The confirmation rule (master plan 11.4).",
+      "$ref": "#/$defs/confirmation"
+    },
+    "prepared_action": {
+      "description": "How long a prepared action stays confirmable and what invalidates it. Required when the capability has prepare and commit; not allowed for a read-only capability.",
+      "$ref": "#/$defs/preparedAction"
+    },
+    "idempotency": {
+      "description": "Idempotency behaviour of commit. Required when the capability has a commit operation; not allowed for a read-only capability.",
+      "$ref": "#/$defs/idempotency"
+    },
+    "response_obligations": {
+      "description": "The facts every response about this capability must state (master plan 9.2: response obligations), as paths into the deterministic result. At least one. The model verbalises them; the response verifier rejects a response that omits one or states a different value.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": { "$ref": "#/$defs/responseObligation" }
+    },
+    "next_actions": {
+      "description": "The follow-up capabilities AlixAI may suggest, by situation (master plan 9.2: permitted next actions). Anything not listed is not suggested. Confirm, cancel and correct are part of the action protocol and are not listed. May be empty: the capability is a dead end.",
+      "type": "array",
+      "maxItems": 16,
+      "items": { "$ref": "#/$defs/nextAction" }
+    },
+    "doc_refs": {
+      "description": "IDs of the documentation index entries that document this capability. At least one. Every ID must exist in documentation/index.yaml and name this capability.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "uniqueItems": true,
+      "items": { "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/docId" }
+    },
+    "examples": {
+      "description": "Multilingual examples used to test the capability, never as the sole runtime policy. Every example is marked test_only. At least one.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "items": { "$ref": "#/$defs/example" }
+    }
+  },
+  "$defs": {
+    "field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type", "required", "description"],
+      "properties": {
+        "name": {
+          "description": "The field name: lower snake_case, at most 64 characters.",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+        },
+        "type": {
+          "description": "The value type. string, integer, number, boolean, date (YYYY-MM-DD), datetime (RFC 3339 UTC), duration (ISO 8601), enum (needs values), entity_ref (needs entity_type) or list (needs item_type).",
+          "type": "string",
+          "enum": ["string", "integer", "number", "boolean", "date", "datetime", "duration", "enum", "entity_ref", "list"]
+        },
+        "required": {
+          "description": "true: AlixAI asks for the field when it is missing and never prepares without it. false: optional.",
+          "type": "boolean"
+        },
+        "description": {
+          "description": "What the field means.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/text"
+        },
+        "sensitive": {
+          "description": "Optional, default false. true marks personal or confidential data: the value is redacted from logs and is withheld from model context unless the current task needs it.",
+          "type": "boolean"
+        },
+        "classification": {
+          "description": "Optional. How sensitive the value of this field is: public, internal (the default when the member is absent), confidential or restricted. A field above internal is listed by the integration audit as data that could leave the deployment in external mode. It never widens what may be sent: the egress policy decides that.",
+          "$ref": "urn:alixai:schema:rag:shared:v1#/$defs/sourceClassification"
+        },
+        "local_only": {
+          "description": "Optional, default false. true: the value of this field never leaves the deployment, whatever the policy says, so it can never be placed in a prompt template (an {input.<field>} placeholder of a conversation contract is refused). Use it for values that must stay local even when the field is not otherwise sensitive.",
+          "type": "boolean"
+        },
+        "values": {
+          "description": "The allowed values of an enum field, exact and case-sensitive. At least one. Only for type enum.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 128 }
+        },
+        "entity_type": {
+          "description": "The entity type of an entity_ref field: a key of entity_types. Only for type entity_ref.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "item_type": {
+          "description": "The element type of a list field. Lists are flat: elements are scalars. Only for type list.",
+          "type": "string",
+          "enum": ["string", "integer", "number", "boolean", "date", "datetime", "enum", "entity_ref"]
+        },
+        "min_length": {
+          "description": "Minimum string length. For type string.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4096
+        },
+        "max_length": {
+          "description": "Maximum string length. For type string.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4096
+        },
+        "minimum": {
+          "description": "Smallest allowed number. For type integer or number.",
+          "type": "number"
+        },
+        "maximum": {
+          "description": "Largest allowed number. For type integer or number.",
+          "type": "number"
+        },
+        "max_items": {
+          "description": "Maximum list length. For type list.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 256
+        },
+        "default": {
+          "description": "The deterministic default applied when an optional field is absent. Never a model guess. A field with a default is not asked for.",
+          "$ref": "#/$defs/fieldDefault"
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "enum" } }, "required": ["type"] },
+          "then": { "required": ["values"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "entity_ref" } }, "required": ["type"] },
+          "then": { "required": ["entity_type"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "list" } }, "required": ["type"] },
+          "then": { "required": ["item_type"] }
+        }
+      ]
+    },
+    "fieldDefault": {
+      "description": "A literal value, or a value taken from the verified request context. Operation-computed defaults do not exist: a default must be knowable without calling the application.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["source", "value"],
+          "properties": {
+            "source": { "const": "literal" },
+            "value": { "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/scalar" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["source", "key"],
+          "properties": {
+            "source": { "const": "context" },
+            "key": {
+              "description": "today: the current date in the application's time zone as decided by the application. principal_id, tenant_id and workspace_id: the verified Scope values.",
+              "type": "string",
+              "enum": ["today", "principal_id", "tenant_id", "workspace_id"]
+            }
+          }
+        }
+      ]
+    },
+    "entityType": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["description"],
+      "properties": {
+        "description": {
+          "description": "What the entity is.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/text"
+        },
+        "resolve": {
+          "description": "Optional operation that resolves a mention to candidate entity IDs. Absent means mentions must be exact entity IDs. The application reauthorizes every resolved entity.",
+          "$ref": "#/$defs/operationBinding"
+        }
+      }
+    },
+    "ambiguityRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "field", "when", "action"],
+      "properties": {
+        "id": {
+          "description": "Rule ID, unique in the capability. The conversation contract's clarification prompt refers to it.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "field": {
+          "description": "The field the rule applies to.",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+        },
+        "when": {
+          "description": "multiple_matches: more than one candidate. no_match: none. low_confidence: the proposed value is uncertain. conflicting_values: the turn gives two different values.",
+          "type": "string",
+          "enum": ["multiple_matches", "no_match", "low_confidence", "conflicting_values"]
+        },
+        "action": {
+          "description": "ask_user: ask a clarification question. use_default: apply the field's deterministic default (the field must declare one). reject: fail with an ambiguous error.",
+          "type": "string",
+          "enum": ["ask_user", "use_default", "reject"]
+        },
+        "max_choices": {
+          "description": "Optional. For ask_user: the most candidates presented as choices, 2 to 10.",
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 10
+        }
+      }
+    },
+    "validationRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fields", "description", "error_code"],
+      "properties": {
+        "id": {
+          "description": "Rule ID, unique in the capability. The documentation index covers it under the validation_rule facet.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "fields": {
+          "description": "The fields the rule checks. Empty for a rule over the whole request.",
+          "type": "array",
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName" }
+        },
+        "description": {
+          "description": "What the rule requires.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/text"
+        },
+        "error_code": {
+          "description": "The platform error code returned when the rule fails. It must also appear in failure_states.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/errorCode"
+        },
+        "application_code": {
+          "description": "Optional stable application-specific code for the same failure, for the host's own support tooling.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        }
+      }
+    },
+    "failureState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "description"],
+      "properties": {
+        "code": {
+          "description": "The platform error code of the failure.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/errorCode"
+        },
+        "application_code": {
+          "description": "Optional stable application-specific code distinguishing several failures that share a platform code.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "description": {
+          "description": "When the failure happens and what it means for the user.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/text"
+        }
+      }
+    },
+    "operationBinding": {
+      "description": "One operation: the adapter call that implements it plus the contract of what it returns. Exactly one of mcp_tool, openapi_operation_id or native_method names the call, matching the transport of the endpoint. The endpoint must be an mcp, openapi or native endpoint of the manifest: events endpoints cannot implement operations.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["endpoint", "result_schema"],
+      "properties": {
+        "endpoint": {
+          "description": "ID of the endpoint declared in the manifest that owns this operation.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "mcp_tool": {
+          "description": "MCP tool name, for an mcp endpoint.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/operationName"
+        },
+        "openapi_operation_id": {
+          "description": "OpenAPI operationId, for an openapi endpoint.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/operationName"
+        },
+        "native_method": {
+          "description": "Native bridge method name, for a native endpoint.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/operationName"
+        },
+        "result_schema": {
+          "description": "The package schema (below schemas/) that the canonical values of this operation's result must satisfy. The audit's deterministic-result probes validate real results against it.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/schemaRef"
+        },
+        "arguments": {
+          "description": "Optional mapping from capability field name to the adapter argument name when they differ. Fields not listed are passed under their own name.",
+          "type": "object",
+          "maxProperties": 64,
+          "propertyNames": { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName" },
+          "additionalProperties": { "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/operationName" }
+        },
+        "timeout_ms": {
+          "description": "Optional per-call timeout in milliseconds, 100 to 120000. When absent the adapter default applies. A timeout never counts as success.",
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 120000
+        }
+      },
+      "oneOf": [
+        { "required": ["mcp_tool"] },
+        { "required": ["openapi_operation_id"] },
+        { "required": ["native_method"] }
+      ]
+    },
+    "operations": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "read": {
+          "description": "Deterministic read. Required for a read-only capability (risk level 0).",
+          "$ref": "#/$defs/operationBinding"
+        },
+        "validate": {
+          "description": "Optional dry-run validation of candidate field values without staging anything.",
+          "$ref": "#/$defs/operationBinding"
+        },
+        "prepare": {
+          "description": "Validate and stage the action; returns the canonical summary, exact effects and targets, the data versions used and an expiry. Required with commit.",
+          "$ref": "#/$defs/operationBinding"
+        },
+        "commit": {
+          "description": "Execute a prepared action, idempotently, after the confirmation the rule demands. Requires prepare and status.",
+          "$ref": "#/$defs/operationBinding"
+        },
+        "status": {
+          "description": "Look up the state of an action by idempotency key. AlixAI calls it before retrying a commit whose response was lost or uncertain (master plan 18).",
+          "$ref": "#/$defs/operationBinding"
+        }
+      },
+      "dependentRequired": {
+        "commit": ["prepare", "status"],
+        "prepare": ["commit"]
+      }
+    },
+    "confirmation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": {
+        "mode": {
+          "description": "none: no user confirmation before commit (a read, or a level 1 action the application allows to commit immediately after a concise summary). explicit: the user must confirm the exact prepared effects. step_up: the user must complete authenticated application UI or stronger step-up; the AI cannot complete the action alone. The risk level sets the weakest allowed mode (see the rules at the end of this schema).",
+          "type": "string",
+          "enum": ["none", "explicit", "step_up"]
+        },
+        "step_up_channel": {
+          "description": "How the step-up is completed: application_ui (the host's authenticated UI) or step_up_credential (a stronger credential presented to the host). Required for step_up, not allowed otherwise.",
+          "type": "string",
+          "enum": ["application_ui", "step_up_credential"]
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "mode": { "const": "step_up" } }, "required": ["mode"] },
+          "then": { "required": ["step_up_channel"] },
+          "else": { "properties": { "step_up_channel": false } }
+        }
+      ]
+    },
+    "preparedAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ttl_seconds", "invalidated_by"],
+      "properties": {
+        "ttl_seconds": {
+          "description": "How long a prepared action can be confirmed, 1 to 86400. After that it is expired and must be prepared again.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 86400
+        },
+        "invalidated_by": {
+          "description": "What invalidates a prepared action before it expires: record_revision (a record it used changed), permission_change, user_change (the principal or session changed) or application_event (an event of an events endpoint). At least one.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": ["record_revision", "permission_change", "user_change", "application_event"]
+          }
+        }
+      }
+    },
+    "idempotency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key_source", "window_seconds", "on_replay"],
+      "properties": {
+        "key_source": {
+          "description": "prepared_action_id: AlixAI derives the key from the opaque preparation ID. host_assigned: the application returns the key from prepare. In both cases the key is fixed at prepare time and reused by every retry.",
+          "type": "string",
+          "enum": ["prepared_action_id", "host_assigned"]
+        },
+        "window_seconds": {
+          "description": "How long the application remembers a key and answers a repeat with the original result, 1 to 31536000 (a year). It must be at least prepared_action.ttl_seconds.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 31536000
+        },
+        "on_replay": {
+          "description": "return_original_receipt: a repeated commit returns the first receipt and changes nothing. reject: a repeated commit fails with replayed.",
+          "type": "string",
+          "enum": ["return_original_receipt", "reject"]
+        }
+      }
+    },
+    "responseObligation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fact", "when", "description"],
+      "properties": {
+        "fact": {
+          "description": "The path of the canonical value that must be stated, for example reservation.pickup_date.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/factPath"
+        },
+        "when": {
+          "description": "success: in a response reporting a read result or a committed action. prepared: when presenting a prepared action for confirmation. failure: in a failure response. always: in every response.",
+          "type": "string",
+          "enum": ["success", "prepared", "failure", "always"]
+        },
+        "description": {
+          "description": "What the fact is.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/text"
+        }
+      }
+    },
+    "nextAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "after", "capability_id"],
+      "properties": {
+        "id": {
+          "description": "Next-action ID, unique in the capability. The conversation contract supplies its label per language.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "after": {
+          "description": "When it may be suggested: success (after a read or a commit), prepared (while an action awaits confirmation) or failure.",
+          "type": "string",
+          "enum": ["success", "prepared", "failure"]
+        },
+        "capability_id": {
+          "description": "The capability that would be started. It must be declared in the manifest and be an audience user capability.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/capabilityId"
+        }
+      }
+    },
+    "example": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "language", "test_only", "utterance", "expected_fields"],
+      "properties": {
+        "id": {
+          "description": "Example ID, unique in the capability.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "language": {
+          "description": "The language of the utterance. Should be one of the manifest's supported languages.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/languageTag"
+        },
+        "test_only": {
+          "description": "Always true. Examples exist to test the capability in each language; they are never a runtime policy, a prompt or a routing rule, and AlixAI does not use them to decide anything.",
+          "const": true
+        },
+        "utterance": {
+          "description": "What a user might say.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "expected_fields": {
+          "description": "The candidate field values a correct reading of the utterance contains, keyed by field name. Only fields the utterance states; defaults and missing fields are not listed.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/exampleFields"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "description": "Risk 0: read-only, effect class none. A read operation is required; prepare, commit, idempotency and prepared_action do not exist; no confirmation.",
+      "if": { "properties": { "risk_level": { "const": 0 } }, "required": ["risk_level"] },
+      "then": {
+        "properties": {
+          "effect_class": { "const": "none" },
+          "operations": {
+            "required": ["read"],
+            "properties": { "prepare": false, "commit": false }
+          },
+          "confirmation": { "properties": { "mode": { "const": "none" } } },
+          "idempotency": false,
+          "prepared_action": false
+        }
+      }
+    },
+    {
+      "description": "Risk 1: reversible low-impact change. Prepare, commit and status are required; the application may allow immediate commit (mode none) or demand any stronger confirmation.",
+      "if": { "properties": { "risk_level": { "const": 1 } }, "required": ["risk_level"] },
+      "then": {
+        "required": ["idempotency", "prepared_action"],
+        "properties": {
+          "operations": { "required": ["prepare", "commit", "status"] }
+        }
+      }
+    },
+    {
+      "description": "Risk 2: consequential or external side effect. Prepare, commit and status are required; the user must confirm explicitly or step up. Mode none is not allowed.",
+      "if": { "properties": { "risk_level": { "const": 2 } }, "required": ["risk_level"] },
+      "then": {
+        "required": ["idempotency", "prepared_action"],
+        "properties": {
+          "operations": { "required": ["prepare", "commit", "status"] },
+          "confirmation": { "properties": { "mode": { "enum": ["explicit", "step_up"] } } }
+        }
+      }
+    },
+    {
+      "description": "Risk 3: high-risk, privileged or legally sensitive. The AI cannot complete the action alone: authenticated application UI or stronger step-up is required.",
+      "if": { "properties": { "risk_level": { "const": 3 } }, "required": ["risk_level"] },
+      "then": {
+        "required": ["idempotency", "prepared_action"],
+        "properties": {
+          "operations": { "required": ["prepare", "commit", "status"] },
+          "confirmation": { "properties": { "mode": { "const": "step_up" } } }
+        }
+      }
+    },
+    {
+      "description": "Effect class none means read-only, so it is only valid at risk level 0.",
+      "if": { "properties": { "effect_class": { "const": "none" } }, "required": ["effect_class"] },
+      "then": { "properties": { "risk_level": { "const": 0 } } }
+    },
+    {
+      "description": "Platform floor 1: a reversible state change cannot be declared at level 0.",
+      "if": { "properties": { "effect_class": { "const": "reversible" } }, "required": ["effect_class"] },
+      "then": { "properties": { "risk_level": { "minimum": 1 } } }
+    },
+    {
+      "description": "Platform floor 2: an external or consequential effect cannot be declared below level 2.",
+      "if": { "properties": { "effect_class": { "const": "external" } }, "required": ["effect_class"] },
+      "then": { "properties": { "risk_level": { "minimum": 2 } } }
+    },
+    {
+      "description": "Platform floor 3: a privileged or legally sensitive effect is level 3.",
+      "if": { "properties": { "effect_class": { "const": "privileged" } }, "required": ["effect_class"] },
+      "then": { "properties": { "risk_level": { "const": 3 } } }
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "synthetic": true,
+  "note": "Every name and amount is made up. Amounts are whole numbers of minor units (125050 is 1250.50 EUR). A customer link names an earlier customer record of the same file; the application invents the rest.",
+  "records": [
+    {
+      "ref": "cust-a-north",
+      "entity_type": "customer",
+      "workspace": "north-a",
+      "name": "Acme Srl",
+      "currency": "EUR"
+    },
+    {
+      "ref": "cust-a-south",
+      "entity_type": "customer",
+      "workspace": "south-a",
+      "name": "Tokyo Parts",
+      "currency": "JPY"
+    },
+    {
+      "ref": "cust-b",
+      "entity_type": "customer",
+      "workspace": "main-b",
+      "name": "Gulf Trading",
+      "currency": "KWD"
+    },
+    {
+      "ref": "quote-a-north",
+      "entity_type": "quote",
+      "workspace": "north-a",
+      "customer": "cust-a-north",
+      "description": "Annual support contract",
+      "amount_minor": 125050,
+      "number": "QUO-0001"
+    },
+    {
+      "ref": "quote-a-south",
+      "entity_type": "quote",
+      "workspace": "south-a",
+      "customer": "cust-a-south",
+      "description": "Spare parts",
+      "amount_minor": 480000
+    },
+    {
+      "ref": "quote-b",
+      "entity_type": "quote",
+      "workspace": "main-b",
+      "customer": "cust-b",
+      "description": "Consulting",
+      "amount_minor": 1234567
+    },
+    {
+      "ref": "inv-a-north",
+      "entity_type": "invoice",
+      "workspace": "north-a",
+      "customer": "cust-a-north",
+      "amount_minor": 125050,
+      "number": "INV-0001"
+    },
+    {
+      "ref": "inv-a-south",
+      "entity_type": "invoice",
+      "workspace": "south-a",
+      "customer": "cust-a-south",
+      "amount_minor": 480000,
+      "number": "INV-0002"
+    },
+    {
+      "ref": "inv-b",
+      "entity_type": "invoice",
+      "workspace": "main-b",
+      "customer": "cust-b",
+      "amount_minor": 1234567,
+      "number": "INV-0001"
+    }
+  ]
+}

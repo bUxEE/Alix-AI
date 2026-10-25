@@ -1,0 +1,89 @@
+{
+  "capability_id": "reservations.create",
+  "language": "en",
+  "contract_version": "1.0.0",
+  "terminology": [
+    "title",
+    "reservation"
+  ],
+  "field_prompts": [
+    {
+      "field": "title",
+      "label": "Title",
+      "prompt": "Which title would you like to reserve?"
+    },
+    {
+      "field": "pickup_date",
+      "label": "Pickup date",
+      "prompt": "On which date will you collect it?",
+      "examples": [
+        "2026-11-13"
+      ]
+    },
+    {
+      "field": "notes",
+      "label": "Note for the desk",
+      "prompt": "Is there anything the desk should know?"
+    }
+  ],
+  "clarifications": [
+    {
+      "rule_id": "title_multiple",
+      "prompt": "I found more than one match for {input.title}. Which one do you mean?"
+    }
+  ],
+  "corrections": {
+    "acknowledgement": "Got it, I updated the reservation details.",
+    "correctable_fields": [
+      "title",
+      "pickup_date",
+      "notes"
+    ],
+    "prepared_action_invalidated": "I changed the details, so the earlier summary no longer applies. Here is the new one."
+  },
+  "cancellations": {
+    "acknowledgement": "Okay, I did not reserve anything."
+  },
+  "confirmations": {
+    "request": "Please confirm: reserve {reservation.title} at {reservation.branch} for pickup on {reservation.pickup_date}. Shall I go ahead?",
+    "expired": "That summary has expired, so nothing was reserved. Tell me again if you still want it."
+  },
+  "success": [
+    {
+      "outcome": "reserved",
+      "text": "Reserved: {reservation.title}, to collect on {reservation.pickup_date}. Your reference is {reservation.reference}."
+    }
+  ],
+  "failures": [
+    {
+      "code": "permission_denied",
+      "text": "You are not allowed to reserve at this branch, so nothing was reserved."
+    },
+    {
+      "code": "validation_failed",
+      "text": "That pickup date is not possible: it must be between today and 60 days ahead. Nothing was reserved."
+    },
+    {
+      "code": "conflict",
+      "text": "No copy of {reservation.title} is free on {reservation.pickup_date}, so nothing was reserved."
+    },
+    {
+      "code": "stale",
+      "text": "{reservation.title} changed while we were talking, so nothing was reserved. I can prepare it again."
+    },
+    {
+      "code": "expired",
+      "text": "That reservation was not confirmed in time, so nothing was reserved."
+    },
+    {
+      "code": "uncertain_outcome",
+      "text": "I could not confirm whether the reservation was made. I will check its status before doing anything else, so it cannot be made twice."
+    }
+  ],
+  "next_actions": [
+    {
+      "id": "find_another",
+      "label": "Look for another title"
+    }
+  ]
+}

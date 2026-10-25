@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:providers:price-table:v1",
+  "title": "Provider price table",
+  "description": "The pricing metadata of one provider model profile (additive plan section 5, ADR-0025): a currency and, per billed unit, a price in integer micro-units per N units. The cost of using u units is ceil(u * micro_units / per_units), computed in integers and rounded up, so a pre-call estimate is always an upper bound and drives the hard stop; the actual cost reconciles after the call. There are no floats anywhere. The operator supplies the table (host).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["currency", "effective_on", "source_url", "prices"],
+  "properties": {
+    "currency": {
+      "description": "The operator currency every micro-unit amount below is in.",
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/currency"
+    },
+    "effective_on": {
+      "description": "The date the prices were read from the provider price list. A provider may change pricing: the table is re-read at the profile review interval.",
+      "x-alixai-authority": "host",
+      "type": "string",
+      "format": "date"
+    },
+    "source_url": {
+      "description": "The https page the prices were read from, or null.",
+      "x-alixai-authority": "host",
+      "oneOf": [
+        {
+          "type": "string",
+          "maxLength": 300,
+          "pattern": "^https://[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+(:[0-9]{1,5})?(/[A-Za-z0-9._~%!$&'()*+,;=:-]*)*$"
+        },
+        { "type": "null" }
+      ]
+    },
+    "prices": {
+      "description": "The price of each unit the provider bills. A unit with no entry has no known price: a request that uses it cannot be estimated and is not sent. A key can appear only once, so one unit cannot carry two prices.",
+      "x-alixai-authority": "host",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "toks_in": {
+          "description": "Price of toks_in.",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/price"
+        },
+        "toks_out": {
+          "description": "Price of toks_out.",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/price"
+        },
+        "toks_in_cached": {
+          "description": "Price of toks_in_cached.",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/price"
+        },
+        "images_in": {
+          "description": "Price of images_in.",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/price"
+        },
+        "images_out": {
+          "description": "Price of images_out.",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/price"
+        },
+        "audio_seconds_in": {
+          "description": "Price of audio_seconds_in.",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/price"
+        },
+        "audio_seconds_out": {
+          "description": "Price of audio_seconds_out.",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/price"
+        },
+        "file_bytes_in": {
+          "description": "Price of file_bytes_in.",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/price"
+        },
+        "requests": {
+          "description": "Price of requests.",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/price"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "price": {
+      "description": "micro_units of the operator currency per per_units units, for example 150000 micro-units per 1000000 toks_in. A price of 0 is a free unit.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["per_units", "micro_units"],
+      "properties": {
+        "per_units": {
+          "description": "How many units one price covers. At least 1.",
+          "x-alixai-authority": "host",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "micro_units": {
+          "description": "The price of per_units units, in micro-units of the currency.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/microUnits"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,359 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:providers:egress-policy:v1",
+  "title": "Data-egress policy",
+  "description": "One data-egress policy at one level (additive plan section 6): deployment, application, tenant, workspace or source. It states whether external processing is enabled at that level, the source mode, the provider and model allowlists, the data classes and the regions allowed. The effective policy for a request is the most restrictive along the chain deployment, application, tenant, workspace, source; a level with no policy is disabled (external mode is off by default) and a source with no policy is local_only. An empty allowlist allows nothing: there is no wildcard value anywhere. The operator supplies the content (host); the core mints the ID, revision and timestamps (alixai). Section 6.1 defaults enforced here: restricted data is never egress-eligible (it cannot be listed in allowed_classes) and a restricted source can only be local_only or deny; confidential can be allowed only at source level and only with an approval; allowing internal, or any internal or confidential source to contribute content or metadata, needs the approval of an authorised operator; credentials and raw application database content have no class and cannot be allowed at all.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "policy_id",
+    "revision",
+    "level",
+    "target",
+    "enabled",
+    "source_mode",
+    "allowed_providers",
+    "allowed_models",
+    "allowed_classes",
+    "allowed_regions",
+    "updated_at",
+    "updated_by"
+  ],
+  "properties": {
+    "policy_id": {
+      "description": "Policy ID.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/egressPolicyId"
+    },
+    "revision": {
+      "description": "Starts at 1 and increases with every change; a writer must present the revision it read.",
+      "x-alixai-authority": "alixai",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "level": {
+      "description": "The level this policy applies at.",
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/egressLevel"
+    },
+    "target": {
+      "description": "What the policy is about. deployment_id is always present. Narrower levels add application_id, tenant_id, workspace_id and, for source, source_id, each requiring the wider ones; a level never names anything narrower than itself.",
+      "x-alixai-authority": "host",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["deployment_id"],
+      "properties": {
+        "deployment_id": {
+          "description": "The AlixAI installation.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "application_id": {
+          "description": "The host application.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "tenant_id": {
+          "description": "The tenant.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "workspace_id": {
+          "description": "The workspace.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "source_id": {
+          "description": "The RAG source.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/sourceId"
+        }
+      }
+    },
+    "enabled": {
+      "description": "Whether external processing is allowed at this level. A level with no policy is disabled. false here blocks every request under this level whatever the lower levels say.",
+      "x-alixai-authority": "host",
+      "type": "boolean"
+    },
+    "source_mode": {
+      "description": "The most permissive mode a RAG source under this level may use; at source level, the mode of that source. The effective mode is the most restrictive along the chain: deny, then local_only, then allow_metadata, then allow_excerpt.",
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/egressMode"
+    },
+    "source_class": {
+      "description": "The classification of the source. Present exactly at source level, never defaulted: an unclassified source is not representable.",
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:providers:data-classification:v1"
+    },
+    "allowed_providers": {
+      "description": "Providers that may receive requests under this level. Empty allows none.",
+      "x-alixai-authority": "host",
+      "type": "array",
+      "items": { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/providerId" },
+      "maxItems": 32,
+      "uniqueItems": true
+    },
+    "allowed_models": {
+      "description": "Provider and model pairs that may receive requests under this level. Empty allows none. A model is also allowed only if its provider is in allowed_providers.",
+      "x-alixai-authority": "host",
+      "type": "array",
+      "items": { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/modelRef" },
+      "maxItems": 128,
+      "uniqueItems": true
+    },
+    "allowed_classes": {
+      "description": "Data classes that may leave under this level. Empty allows none. restricted is not a possible value. Above source level only public and internal can be listed; confidential is a per-source decision.",
+      "x-alixai-authority": "host",
+      "type": "array",
+      "items": { "$ref": "urn:alixai:schema:providers:data-classification:v1#/$defs/egressEligibleClass" },
+      "maxItems": 3,
+      "uniqueItems": true
+    },
+    "allowed_regions": {
+      "description": "Regions the provider may process in. A provider whose regions are not all listed, or whose residency is unknown, is denied. Empty allows none.",
+      "x-alixai-authority": "host",
+      "type": "array",
+      "items": { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/regionCode" },
+      "maxItems": 32,
+      "uniqueItems": true
+    },
+    "files": {
+      "description": "Uploaded files: whether an excerpt of a file a user uploaded (category file_content) may leave under this level, and up to which class. Absent, or enabled false, keeps every excerpt local: this is the default. An upload has no RAG source, so this setting is the only way its content can leave, and it widens nothing else: the excerpt goes only to the providers, models and regions the chain allows, only when every level of the chain enables it, only up to the lowest max_class along the chain and, for public and internal, only when allowed_classes lists the class as well. Restricted data and credentials never leave. Enabling internal or confidential needs the approval of an authorised operator. Not at source level.",
+      "x-alixai-authority": "host",
+      "$ref": "#/$defs/contentEgress"
+    },
+    "audio": {
+      "description": "Raw audio: whether the audio of an utterance (category audio_content, for an external speech recogniser) may leave under this level, and up to which class. Absent, or enabled false, keeps all audio local: this is the default, and a policy that lets text leave does not let audio leave. The class of the audio is the one its session states; audio with no stated class is unclassified and never leaves. Like files, it widens nothing else: the audio goes only to the providers, models and regions the chain allows, only when every level enables it, only up to the lowest max_class along the chain and, for public and internal, only when allowed_classes lists the class as well. Enabling internal or confidential needs the approval of an authorised operator. Not at source level.",
+      "x-alixai-authority": "host",
+      "$ref": "#/$defs/contentEgress"
+    },
+    "approval": {
+      "description": "The authorised operator who approved the allowance. Required wherever the policy lets internal or confidential data leave.",
+      "x-alixai-authority": "alixai",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approved_by", "approved_at"],
+      "properties": {
+        "approved_by": {
+          "description": "The principal who approved, from the verified Scope.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "approved_at": {
+          "description": "When the approval was recorded.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+        }
+      }
+    },
+    "updated_at": {
+      "description": "When the policy last changed.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    },
+    "updated_by": {
+      "description": "The operator principal who last changed it, from the verified Scope.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+    }
+  },
+  "allOf": [
+    {
+      "description": "level deployment: the target names deployment_id and none of application_id, tenant_id, workspace_id, source_id.",
+      "if": {
+        "required": ["level"],
+        "properties": {
+          "level": { "const": "deployment" }
+        }
+      },
+      "then": {
+        "properties": {
+          "target": {
+            "required": ["deployment_id"],
+            "properties": {
+              "application_id": false,
+              "tenant_id": false,
+              "workspace_id": false,
+              "source_id": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "level application: the target names deployment_id, application_id and none of tenant_id, workspace_id, source_id.",
+      "if": {
+        "required": ["level"],
+        "properties": {
+          "level": { "const": "application" }
+        }
+      },
+      "then": {
+        "properties": {
+          "target": {
+            "required": ["deployment_id", "application_id"],
+            "properties": {
+              "tenant_id": false,
+              "workspace_id": false,
+              "source_id": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "level tenant: the target names deployment_id, application_id, tenant_id and none of workspace_id, source_id.",
+      "if": {
+        "required": ["level"],
+        "properties": {
+          "level": { "const": "tenant" }
+        }
+      },
+      "then": {
+        "properties": {
+          "target": {
+            "required": ["deployment_id", "application_id", "tenant_id"],
+            "properties": { "workspace_id": false, "source_id": false }
+          }
+        }
+      }
+    },
+    {
+      "description": "level workspace: the target names deployment_id, application_id, tenant_id, workspace_id and none of source_id.",
+      "if": {
+        "required": ["level"],
+        "properties": {
+          "level": { "const": "workspace" }
+        }
+      },
+      "then": {
+        "properties": {
+          "target": {
+            "required": ["deployment_id", "application_id", "tenant_id", "workspace_id"],
+            "properties": { "source_id": false }
+          }
+        }
+      }
+    },
+    {
+      "description": "level source: the target names deployment_id, application_id, tenant_id, workspace_id, source_id.",
+      "if": {
+        "required": ["level"],
+        "properties": {
+          "level": { "const": "source" }
+        }
+      },
+      "then": {
+        "properties": {
+          "target": {
+            "required": ["deployment_id", "application_id", "tenant_id", "workspace_id", "source_id"],
+            "properties": {}
+          }
+        }
+      }
+    },
+    {
+      "description": "A source policy states the source classification; the other levels have no source class. Uploaded files and raw audio have no source, so a source policy has no files or audio setting.",
+      "if": {
+        "required": ["level"],
+        "properties": {
+          "level": { "const": "source" }
+        }
+      },
+      "then": {
+        "required": ["source_class"],
+        "properties": { "files": false, "audio": false }
+      },
+      "else": {
+        "properties": { "source_class": false }
+      }
+    },
+    {
+      "description": "Restricted data is local-only (additive plan section 6.1): a restricted source can never allow_excerpt or allow_metadata.",
+      "if": {
+        "required": ["source_class"],
+        "properties": {
+          "source_class": { "const": "restricted" }
+        }
+      },
+      "then": {
+        "properties": {
+          "source_mode": { "enum": ["local_only", "deny"] }
+        }
+      }
+    },
+    {
+      "description": "Above source level only public and internal can be listed: confidential is blocked by default and needs per-source approval.",
+      "if": {
+        "required": ["level"],
+        "properties": {
+          "level": { "enum": ["deployment", "application", "tenant", "workspace"] }
+        }
+      },
+      "then": {
+        "properties": {
+          "allowed_classes": {
+            "items": { "enum": ["public", "internal"] }
+          }
+        }
+      }
+    },
+    {
+      "description": "Internal data is blocked unless an authorised operator explicitly allows it: listing internal needs the approval.",
+      "if": {
+        "required": ["allowed_classes"],
+        "properties": {
+          "allowed_classes": {
+            "contains": { "const": "internal" }
+          }
+        }
+      },
+      "then": { "required": ["approval"] }
+    },
+    {
+      "description": "Per-source approval for confidential: a source policy that lets confidential data leave needs the approval.",
+      "if": {
+        "required": ["level", "allowed_classes"],
+        "properties": {
+          "level": { "const": "source" },
+          "allowed_classes": {
+            "contains": { "const": "confidential" }
+          }
+        }
+      },
+      "then": { "required": ["approval"] }
+    },
+    {
+      "description": "A non-public source that may contribute content or metadata needs the approval of an authorised operator.",
+      "if": {
+        "required": ["source_class", "source_mode"],
+        "properties": {
+          "source_class": { "enum": ["internal", "confidential"] },
+          "source_mode": { "enum": ["allow_excerpt", "allow_metadata"] }
+        }
+      },
+      "then": { "required": ["approval"] }
+    }
+  ],
+  "$defs": {
+    "contentEgress": {
+      "description": "Whether one kind of content that no RAG source policy covers may leave under this level, and the highest class it may have. Every level of the chain must enable it; the effective class ceiling is the lowest max_class along the chain.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "max_class"],
+      "properties": {
+        "enabled": {
+          "description": "Whether this kind of content may leave under this level. false keeps it local whatever the other levels say.",
+          "x-alixai-authority": "host",
+          "type": "boolean"
+        },
+        "max_class": {
+          "description": "The highest data class of this kind of content that may leave. restricted is not a possible value. internal and confidential need the approval of an authorised operator.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:providers:data-classification:v1#/$defs/egressEligibleClass"
+        }
+      }
+    }
+  }
+}

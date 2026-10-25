@@ -1,0 +1,17 @@
+{
+  "type": "action_card",
+  "title": "What would you like to do?",
+  "facts": [],
+  "actions": [
+    {
+      "action": "invoke_capability",
+      "capability_id": "appointments.book",
+      "label": "Book"
+    },
+    {
+      "action": "invoke_capability",
+      "capability_id": "appointments.cancel",
+      "label": "Cancel"
+    }
+  ]
+}

@@ -1,0 +1,192 @@
+id: workorders.create
+version: 1.0.0
+audience: user
+title: Create a work order
+purpose: 'Raise a new work order against an active asset of the caller''s site. The work order starts open and unassigned. It is a reversible change that needs no separate confirmation: the application shows a concise summary and the order can be closed or reassigned afterwards.'
+scope_level: workspace
+permissions:
+- workorders.create
+fields:
+- name: asset
+  type: entity_ref
+  entity_type: asset
+  required: true
+  description: The asset the work is for.
+- name: title
+  type: string
+  required: true
+  description: A short statement of the problem or the job.
+  min_length: 5
+  max_length: 120
+- name: description
+  type: string
+  required: false
+  description: More detail about the problem, in the reporter's words. Optional free text.
+  max_length: 500
+- name: priority
+  type: enum
+  required: false
+  description: How soon it must be dealt with. Defaults to normal.
+  values:
+  - low
+  - normal
+  - high
+  - urgent
+  default:
+    source: literal
+    value: normal
+entity_types:
+  asset:
+    description: An asset of the site.
+    resolve:
+      endpoint: facility-api
+      openapi_operation_id: resolveAsset
+      result_schema: schemas/resolve.result.schema.json
+ambiguity:
+- id: asset_multiple
+  field: asset
+  when: multiple_matches
+  action: ask_user
+  max_choices: 5
+- id: asset_none
+  field: asset
+  when: no_match
+  action: reject
+validation:
+- id: title_length
+  fields:
+  - title
+  description: The title must be 5 to 120 characters of plain text.
+  error_code: validation_failed
+- id: asset_active
+  fields:
+  - asset
+  description: 'The asset must still be active: a decommissioned asset takes no new work.'
+  error_code: conflict
+- id: no_duplicate_open
+  fields:
+  - asset
+  - title
+  description: The asset must not already have an open work order with the same title.
+  error_code: conflict
+failure_states:
+- code: permission_denied
+  description: The principal's role may not use this capability.
+- code: scope_violation
+  description: A record named is outside the principal's access (another site, another tenant, or work the role may not see), or does not exist. The application does not say which.
+- code: validation_failed
+  description: A value is missing, malformed or out of bounds. Nothing was changed.
+- code: conflict
+  description: A business rule is violated by the current state of the records. Nothing was changed.
+- code: stale
+  description: A record changed after the action was prepared, so the preparation is no longer valid. Nothing was changed; it can be prepared again.
+- code: expired
+  description: The prepared action was not confirmed in time, or was withdrawn. Nothing was changed.
+- code: uncertain_outcome
+  description: The commit response was lost. Whether the change was applied is established through the status operation before anything is retried.
+- code: missing_fields
+  description: A required field was not supplied. Nothing was changed.
+- code: unavailable
+  description: The application's data store cannot be reached. Nothing was changed.
+effect_class: reversible
+risk_level: 1
+operations:
+  validate:
+    endpoint: facility-api
+    openapi_operation_id: validateCreateWorkOrder
+    result_schema: schemas/workorders.create.validation.result.schema.json
+    timeout_ms: 5000
+  prepare:
+    endpoint: facility-api
+    openapi_operation_id: prepareCreateWorkOrder
+    result_schema: schemas/workorders.create.prepared.result.schema.json
+    timeout_ms: 8000
+  commit:
+    endpoint: facility-api
+    openapi_operation_id: commitCreateWorkOrder
+    result_schema: schemas/workorders.create.receipt.result.schema.json
+    timeout_ms: 15000
+  status:
+    endpoint: facility-api
+    openapi_operation_id: statusCreateWorkOrder
+    result_schema: schemas/workorders.create.receipt.result.schema.json
+    timeout_ms: 5000
+confirmation:
+  mode: none
+prepared_action:
+  ttl_seconds: 120
+  invalidated_by:
+  - record_revision
+idempotency:
+  key_source: prepared_action_id
+  window_seconds: 86400
+  on_replay: return_original_receipt
+response_obligations:
+- fact: work_order_id
+  when: success
+  description: The reference of the new work order.
+- fact: work_order_title
+  when: success
+  description: The title of the work order.
+- fact: asset_name
+  when: success
+  description: The asset the work order is for.
+- fact: priority
+  when: success
+  description: The priority of the work order.
+next_actions:
+- id: assign_new_order
+  after: success
+  capability_id: workorders.assign
+doc_refs:
+- wc-field-asset
+- wc-field-title
+- wc-field-description
+- wc-field-priority
+- wc-rule-title_length
+- wc-rule-asset_active
+- wc-rule-no_duplicate_open
+- wc-perm-workorders.create
+- wc-failure-permission_denied
+- wc-failure-scope_violation
+- wc-failure-validation_failed
+- wc-failure-conflict
+- wc-failure-stale
+- wc-failure-expired
+- wc-failure-uncertain_outcome
+- wc-failure-missing_fields
+- wc-failure-unavailable
+- wc-risk
+- wc-confirmation
+- wc-outcome-created
+examples:
+- id: en-chiller-drift
+  language: en
+  test_only: true
+  utterance: 'Raise a work order for the chiller: chilled water temperature is drifting upward'
+  expected_fields:
+    asset: chiller
+    title: Chilled water temperature is drifting upward
+- id: en-urgent-belt
+  language: en
+  test_only: true
+  utterance: Create an urgent work order on AHU-200, the supply fan belt squeals at start-up
+  expected_fields:
+    asset: AHU-200
+    title: Supply fan belt squeals at start-up
+    priority: urgent
+- id: it-refrigeratore
+  language: it
+  test_only: true
+  utterance: 'Apri un ordine di lavoro per CHL-500: la temperatura dell''acqua refrigerata sale'
+  expected_fields:
+    asset: CHL-500
+    title: La temperatura dell'acqua refrigerata sale
+- id: it-cinghia-urgente
+  language: it
+  test_only: true
+  utterance: Crea un ordine urgente su AHU-200, la cinghia del ventilatore stride all'avvio
+  expected_fields:
+    asset: AHU-200
+    title: La cinghia del ventilatore stride all'avvio
+    priority: urgent

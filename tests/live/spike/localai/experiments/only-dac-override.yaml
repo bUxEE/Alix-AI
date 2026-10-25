@@ -1,0 +1,3 @@
+services:
+  localai:
+    cap_add: !override [DAC_OVERRIDE]

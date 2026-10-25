@@ -1,0 +1,94 @@
+{
+  "id": "members.delete_account",
+  "version": "1.0.0",
+  "audience": "user",
+  "title": "Delete my membership",
+  "purpose": "Permanently delete the signed-in member's account and loan history. Legally sensitive and irreversible: AlixAI can only start it, the member completes it in the library's authenticated application.",
+  "scope_level": "principal",
+  "permissions": [
+    "members.delete_own"
+  ],
+  "fields": [
+    {
+      "name": "reason",
+      "type": "enum",
+      "values": [
+        "moving_away",
+        "no_longer_needed",
+        "privacy",
+        "other"
+      ],
+      "required": false,
+      "description": "Why the member is leaving."
+    }
+  ],
+  "entity_types": {},
+  "ambiguity": [],
+  "validation": [],
+  "failure_states": [
+    {
+      "code": "step_up_required",
+      "description": "The deletion can only be completed in the authenticated application."
+    },
+    {
+      "code": "conflict",
+      "description": "The member still has unreturned loans."
+    }
+  ],
+  "effect_class": "privileged",
+  "risk_level": 3,
+  "operations": {
+    "prepare": {
+      "endpoint": "library-mcp",
+      "mcp_tool": "prepare_account_deletion",
+      "result_schema": "schemas/account-deletion.prepared.schema.json"
+    },
+    "commit": {
+      "endpoint": "library-mcp",
+      "mcp_tool": "commit_account_deletion",
+      "result_schema": "schemas/account-deletion.receipt.schema.json"
+    },
+    "status": {
+      "endpoint": "library-mcp",
+      "mcp_tool": "account_deletion_status",
+      "result_schema": "schemas/account-deletion.receipt.schema.json"
+    }
+  },
+  "confirmation": {
+    "mode": "explicit"
+  },
+  "prepared_action": {
+    "ttl_seconds": 900,
+    "invalidated_by": [
+      "record_revision",
+      "permission_change",
+      "user_change",
+      "application_event"
+    ]
+  },
+  "idempotency": {
+    "key_source": "prepared_action_id",
+    "window_seconds": 2592000,
+    "on_replay": "reject"
+  },
+  "response_obligations": [
+    {
+      "fact": "deletion.reference",
+      "when": "prepared",
+      "description": "The reference the member quotes in the application to finish the deletion."
+    }
+  ],
+  "next_actions": [],
+  "doc_refs": [
+    "mda-risk"
+  ],
+  "examples": [
+    {
+      "id": "en-delete-me",
+      "language": "en",
+      "test_only": true,
+      "utterance": "I want to delete my library account",
+      "expected_fields": {}
+    }
+  ]
+}

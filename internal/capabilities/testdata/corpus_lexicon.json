@@ -1,0 +1,70 @@
+{
+  "about": "Terminology a package author would write for the 25 capabilities of tests/performance/corpus/routing-v0.jsonl. The corpus catalogue gives only an id, a one-line description (in Italian) and field names, so the English and Italian labels below are the author's. The author had read the corpus before writing them: treat accuracy measured with this lexicon as what a well-authored package can reach, not as a blind test. 'terms' is the first pass, written from the catalogue and everyday vocabulary and run once. 'tuning' is what was added afterwards for the words the first pass missed; the test measures both and reports the tuned figure as an upper bound.",
+  "terms": {
+    "act_create": {"en": ["new", "create", "make", "open", "book a", "book an", "schedule", "request", "add", "submit", "register", "record", "set up", "place"], "it": ["nuovo", "nuova", "crea", "creare", "apri", "aprire", "fissa", "fissare", "richiedi", "richiedere", "aggiungi", "aggiungere", "invia", "inviare", "registra", "registrare", "prenotare un", "prenotare una", "prenota un", "prenota una"]},
+    "act_cancel": {"en": ["cancel", "cancellation", "call off", "withdraw"], "it": ["annulla", "annullare", "disdire", "cancella", "cancellare"]},
+    "act_status": {"en": ["status", "progress", "update", "news", "where is", "track", "tracking", "delivery", "shipped"], "it": ["stato", "novità", "aggiornamento", "aggiornamenti", "dove", "dov e", "traccia", "consegna", "spedito"]},
+    "act_move": {"en": ["move", "reschedule", "postpone", "change", "another day"], "it": ["sposta", "spostare", "riprogramma", "rimanda", "cambia", "un altro giorno"]},
+    "act_search": {"en": ["search", "find", "look for", "see", "show"], "it": ["cerca", "cercare", "vedere", "mostra", "mostrami"]},
+    "act_check": {"en": ["check", "how many", "verify", "available", "look up"], "it": ["controlla", "verifica", "quanti", "quante", "disponibile"]},
+    "act_adjust": {"en": ["adjust", "correct", "amend", "modify", "write off"], "it": ["rettifica", "rettificare", "correggi", "modifica", "aggiusta"]},
+    "act_balance": {"en": ["balance", "left", "remaining", "how many"], "it": ["saldo", "residui", "residuo", "restano", "rimasti", "quanti"]},
+    "act_comment": {"en": ["comment", "note", "reply"], "it": ["commento", "commenta", "nota", "rispondi"]},
+    "act_close": {"en": ["close", "resolve", "finish"], "it": ["chiudi", "chiudere", "risolvi", "risolvere"]},
+    "act_list": {"en": ["list", "show all", "all my"], "it": ["elenca", "elenco", "lista", "tutte le mie"]},
+    "act_refill": {"en": ["refill", "renew", "renewal"], "it": ["rinnova", "rinnovare", "rinnovo"]},
+
+    "booking": {"en": ["booking", "reservation", "reserve"], "it": ["prenotazione", "prenotazioni"]},
+    "table": {"en": ["table", "restaurant", "dinner"], "it": ["tavolo", "ristorante", "cena"]},
+    "menu": {"en": ["menu", "dish", "dishes", "food"], "it": ["menu", "piatto", "piatti", "cibo"]},
+    "hours": {"en": ["hours", "opening hours", "open", "opening", "closing time"], "it": ["orari", "orario", "apertura", "apre", "aperto"]},
+
+    "appointment": {"en": ["appointment", "visit", "consultation", "doctor", "check-up"], "it": ["appuntamento", "visita", "medico", "dottore", "controllo"]},
+    "prescription": {"en": ["prescription", "medication", "medicine", "pharmacy"], "it": ["ricetta", "farmaco", "medicina", "farmacia"]},
+
+    "ticket": {"en": ["ticket", "support request", "issue"], "it": ["ticket", "assistenza", "problema"]},
+
+    "leave": {"en": ["leave", "vacation", "holiday", "time off", "days off", "sick leave", "absence"], "it": ["ferie", "permesso", "assenza", "vacanza", "malattia", "giorni di riposo"]},
+    "payslip": {"en": ["payslip", "pay slip", "payroll", "salary", "wage"], "it": ["busta paga", "cedolino", "stipendio", "paga"]},
+
+    "stock": {"en": ["stock", "inventory", "sku", "warehouse", "item"], "it": ["giacenza", "scorta", "scorte", "magazzino", "articolo", "sku"]},
+    "order": {"en": ["order", "purchase", "supplier"], "it": ["ordine", "ordini", "acquisto", "fornitore"]},
+
+    "room": {"en": ["room", "suite", "stay", "night", "guests", "hotel"], "it": ["camera", "camere", "stanza", "soggiorno", "notte", "ospiti", "albergo", "hotel"]},
+    "amenity": {"en": ["amenities", "parking", "breakfast", "spa", "wifi", "wi-fi"], "it": ["servizi", "parcheggio", "colazione", "spa", "wifi", "wi-fi"]},
+
+    "expense": {"en": ["expense", "expenses", "receipt", "reimbursement", "claim"], "it": ["spesa", "spese", "nota spese", "rimborso", "scontrino"]}
+  },
+  "capabilities": {
+    "bookings.create": ["booking", "table", "act_create"],
+    "bookings.cancel": ["booking", "act_cancel"],
+    "menu.search": ["menu", "act_search"],
+    "hours.get": ["hours"],
+    "appointments.book": ["appointment", "act_create"],
+    "appointments.reschedule": ["appointment", "act_move"],
+    "appointments.cancel": ["appointment", "act_cancel"],
+    "prescriptions.refill": ["prescription", "act_refill"],
+    "tickets.create": ["ticket", "act_create"],
+    "tickets.status": ["ticket", "act_status"],
+    "tickets.comment": ["ticket", "act_comment"],
+    "tickets.close": ["ticket", "act_close"],
+    "leave.request": ["leave", "act_create"],
+    "leave.balance": ["leave", "act_balance"],
+    "payslip.get": ["payslip"],
+    "stock.check": ["stock", "act_check"],
+    "stock.adjust": ["stock", "act_adjust"],
+    "orders.create": ["order", "act_create"],
+    "orders.status": ["order", "act_status"],
+    "reservations.create": ["booking", "room", "act_create"],
+    "reservations.cancel": ["booking", "act_cancel"],
+    "amenities.info": ["amenity"],
+    "expenses.submit": ["expense", "act_create"],
+    "expenses.status": ["expense", "act_status"],
+    "expenses.list": ["expense", "act_list"]
+  },
+  "tuning": {
+    "hours": {"en": ["what time", "when do you"], "it": ["che ora", "a che ora", "aprite", "chiudete"]},
+    "menu": {"en": ["serve", "do you have"], "it": ["avete", "servite"]},
+    "act_create": {"it": ["prenotate", "prenotate per"]}
+  }
+}

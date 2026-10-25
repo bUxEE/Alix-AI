@@ -1,0 +1,138 @@
+{
+  "candidates": [
+    {
+      "candidate_id": "item_0",
+      "label": "Item 0"
+    },
+    {
+      "candidate_id": "item_1",
+      "label": "Item 1"
+    },
+    {
+      "candidate_id": "item_2",
+      "label": "Item 2"
+    },
+    {
+      "candidate_id": "item_3",
+      "label": "Item 3"
+    },
+    {
+      "candidate_id": "item_4",
+      "label": "Item 4"
+    },
+    {
+      "candidate_id": "item_5",
+      "label": "Item 5"
+    },
+    {
+      "candidate_id": "item_6",
+      "label": "Item 6"
+    },
+    {
+      "candidate_id": "item_7",
+      "label": "Item 7"
+    },
+    {
+      "candidate_id": "item_8",
+      "label": "Item 8"
+    },
+    {
+      "candidate_id": "item_9",
+      "label": "Item 9"
+    },
+    {
+      "candidate_id": "item_10",
+      "label": "Item 10"
+    },
+    {
+      "candidate_id": "item_11",
+      "label": "Item 11"
+    },
+    {
+      "candidate_id": "item_12",
+      "label": "Item 12"
+    },
+    {
+      "candidate_id": "item_13",
+      "label": "Item 13"
+    },
+    {
+      "candidate_id": "item_14",
+      "label": "Item 14"
+    },
+    {
+      "candidate_id": "item_15",
+      "label": "Item 15"
+    },
+    {
+      "candidate_id": "item_16",
+      "label": "Item 16"
+    },
+    {
+      "candidate_id": "item_17",
+      "label": "Item 17"
+    },
+    {
+      "candidate_id": "item_18",
+      "label": "Item 18"
+    },
+    {
+      "candidate_id": "item_19",
+      "label": "Item 19"
+    },
+    {
+      "candidate_id": "item_20",
+      "label": "Item 20"
+    },
+    {
+      "candidate_id": "item_21",
+      "label": "Item 21"
+    },
+    {
+      "candidate_id": "item_22",
+      "label": "Item 22"
+    },
+    {
+      "candidate_id": "item_23",
+      "label": "Item 23"
+    },
+    {
+      "candidate_id": "item_24",
+      "label": "Item 24"
+    },
+    {
+      "candidate_id": "item_25",
+      "label": "Item 25"
+    },
+    {
+      "candidate_id": "item_26",
+      "label": "Item 26"
+    },
+    {
+      "candidate_id": "item_27",
+      "label": "Item 27"
+    },
+    {
+      "candidate_id": "item_28",
+      "label": "Item 28"
+    },
+    {
+      "candidate_id": "item_29",
+      "label": "Item 29"
+    },
+    {
+      "candidate_id": "item_30",
+      "label": "Item 30"
+    },
+    {
+      "candidate_id": "item_31",
+      "label": "Item 31"
+    },
+    {
+      "candidate_id": "item_32",
+      "label": "Item 32"
+    }
+  ],
+  "max_selections": 1,
+  "built_at": "2026-10-07T09:30:00Z"
+}

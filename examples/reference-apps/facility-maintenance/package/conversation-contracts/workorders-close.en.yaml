@@ -1,0 +1,71 @@
+capability_id: workorders.close
+language: en
+contract_version: 1.0.0
+terminology:
+- work_order
+- part
+- technician
+- closure
+field_prompts:
+- field: work_order
+  label: Work order
+  prompt: Which work order are you closing? Give its reference, such as WO-1001, or describe it.
+  examples:
+  - WO-1001
+- field: resolution
+  label: Resolution
+  prompt: What was done to resolve it?
+  examples:
+  - Replaced the supply fan belt
+- field: parts_used
+  label: Parts used
+  prompt: Which parts did you use? Write each as PART-NUMBER:QUANTITY, for example FLT-204:2. You can skip this if none.
+  examples:
+  - FLT-204:2
+- field: labor_hours
+  label: Labour hours
+  prompt: How many hours of labour? You can skip this.
+  examples:
+  - '1.5'
+clarifications:
+- rule_id: work_order_multiple
+  prompt: More than one work order matches {input.work_order}. Which one do you mean?
+corrections:
+  acknowledgement: Okay, I have changed that.
+  correctable_fields:
+  - work_order
+  - resolution
+  - parts_used
+  - labor_hours
+  prepared_action_invalidated: That changes the closure, so the earlier summary no longer applies. I will prepare it again and ask you to confirm the new details.
+cancellations:
+  acknowledgement: Okay, I stopped. Nothing was closed.
+confirmations:
+  request: 'Please confirm: close work order {work_order_id} ({work_order_title}) with the resolution "{input.resolution}". Parts used: {parts_summary}, total cost {parts_cost}. The stock will be reduced accordingly. Shall I close it?'
+  declined: Okay, I did not close anything.
+  expired: That closure is no longer valid, so nothing was closed. I can prepare it again if you like.
+success:
+- outcome: closed
+  text: 'Done. Work order {work_order_id} is closed ({closed_at}). Parts cost: {parts_cost}.'
+failures:
+- code: permission_denied
+  text: You are not allowed to do that, so nothing was changed.
+- code: scope_violation
+  text: 'I cannot do that: the record is not available to you. Nothing was changed.'
+- code: validation_failed
+  text: 'I could not close that: check the resolution, write each part as PART-NUMBER:QUANTITY with parts from this site''s catalogue, and give 0 to 24 labour hours. Nothing was closed.'
+- code: conflict
+  text: 'I could not close that: the work order is already closed, or a part is not in stock in that quantity. Nothing was closed.'
+- code: stale
+  text: A record changed after I prepared this, so I did not apply it. Nothing was changed; I can prepare it again.
+- code: expired
+  text: This was not confirmed in time, or it was withdrawn, so nothing was changed.
+- code: uncertain_outcome
+  text: I could not confirm whether this was applied. I will check before doing anything else, so please do not ask for it again yet.
+- code: missing_fields
+  text: I still need a few details before I can do that. Nothing was changed.
+- code: unavailable
+  text: The maintenance system is not reachable right now, so nothing was changed.
+next_actions:
+- id: show_remaining_orders
+  label: Show the open work orders

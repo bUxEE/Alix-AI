@@ -1,0 +1,6 @@
+data: {"type":"RUN_STARTED","threadId":"ses_test_01","runId":"run_ui_result"}
+
+data: {"type":"STATE_DELTA","delta":[{"op":"add","path":"/alixai","value":{"pending":{"capabilityId":"items.get","collectedFields":[{"name":"item_id","origin":"user_turn"}],"expiresAt":"2026-10-02T12:30:00Z","kind":"goal","missingFields":[],"phase":"success"}}}]}
+
+data: {"type":"RUN_FINISHED","threadId":"ses_test_01","runId":"run_ui_result","result":{"uiResult":true},"outcome":{"type":"success"}}
+

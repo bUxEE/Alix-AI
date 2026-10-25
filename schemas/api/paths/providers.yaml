@@ -1,0 +1,724 @@
+# Providers (additive plan 6.3, 11 and 16; milestone X): the operator-facing surface of External Provider Mode.
+# Implemented by internal/gateway/routes_v1_providers.go over the ProvidersService the composition root provides
+# when external mode is built and enabled (it is off by default, and the local-only build has none: every route then
+# answers `unavailable`).
+#
+# Who may call. Every route needs an OPERATOR, decided from the deployment's own configuration, never from a role or a
+# capability scope a token asserts. A tenant administrator manages the caller's own tenant; a deployment operator also
+# manages what concerns more than one tenant (the kill switch, the application and deployment egress policy and mode,
+# provider-wide budgets). The decision is made before the body is read; with nobody configured nobody passes.
+#
+# Scope. The application, tenant, workspace and principal are the verified single-use context token and nothing a path,
+# a query or a body says. A path names the provider only, a query is `validation_failed` except where listed, and every
+# body is a closed object.
+#
+# Secrets. A manual credential is write-only: it is never returned, logged or put in an error. The host application
+# receives only a connection status and a safe account identifier. Money is integer micro-units.
+paths:
+  /v1/providers:
+    get:
+      operationId: listProviders
+      tags: [providers]
+      summary: List provider profiles and their connection status
+      description: |
+        The provider profiles of the caller's application with the connection status of the caller's tenant: the state, how it is connected (`oauth` or `api_key`), a safe account identifier, times, warnings, health, budget state and whether the billing notice was acknowledged. Never a credential reference, a fingerprint or a secret. Operator only (a tenant administrator of the deployment's own configuration unless said otherwise); `permission_denied` for everybody else, before the body is read.
+      responses:
+        '200':
+          description: The providers.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderList'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/providers/{provider}/credential:
+    put:
+      operationId: putProviderCredential
+      tags: [providers]
+      summary: Submit a manual credential (write-only)
+      description: |
+        The one place a secret enters the system over HTTP, for providers without a suitable OAuth flow. The key goes straight to the credential service, is validated with a minimally scoped provider request and stored in the secret backend; it is never returned, logged or put in an error (every failure carries a fixed message). The connection status afterwards shows only the state and a safe account identifier. A key the provider reports as broader than needed is stored quarantined. Operator only (a tenant administrator of the deployment's own configuration unless said otherwise); `permission_denied` for everybody else, before the body is read.
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          description: The provider id (for example `openai`).
+          schema:
+            type: string
+            pattern: '^[a-z][a-z0-9_-]{0,31}$'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProviderCredentialSubmit'
+      responses:
+        '200':
+          description: The connection status. The value is never returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderConnectionStatus'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '409':
+          $ref: ../openapi.yaml#/components/responses/Conflict
+        '413':
+          $ref: ../openapi.yaml#/components/responses/PayloadTooLarge
+        '415':
+          $ref: ../openapi.yaml#/components/responses/UnsupportedMediaType
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/providers/{provider}/connection:
+    delete:
+      operationId: deleteProviderConnection
+      tags: [providers]
+      summary: Disconnect a provider
+      description: |
+        Revokes the tenant's credential for the provider immediately. Calls that need it fail closed and never fall back by themselves. Operator only (a tenant administrator of the deployment's own configuration unless said otherwise); `permission_denied` for everybody else, before the body is read.
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          description: The provider id (for example `openai`).
+          schema:
+            type: string
+            pattern: '^[a-z][a-z0-9_-]{0,31}$'
+      responses:
+        '200':
+          description: The connection status after the credential was revoked (revocation at the provider is attempted first where the provider offers it).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderConnectionStatus'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/providers/{provider}/billing-notice/ack:
+    post:
+      operationId: ackProviderBillingNotice
+      tags: [providers]
+      summary: Acknowledge the billing notice
+      description: |
+        Records that the operator has seen the provider's billing notice (a consumer chat subscription is not API access; API usage is billed separately) and confirms both statements. The operator and the time are the token's and the clock's. The notice version must be the profile's current one. Operator only (a tenant administrator of the deployment's own configuration unless said otherwise); `permission_denied` for everybody else, before the body is read.
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          description: The provider id (for example `openai`).
+          schema:
+            type: string
+            pattern: '^[a-z][a-z0-9_-]{0,31}$'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BillingNoticeAckRequest'
+      responses:
+        '200':
+          description: The recorded acknowledgement.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillingNoticeAck'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '409':
+          $ref: ../openapi.yaml#/components/responses/Conflict
+        '413':
+          $ref: ../openapi.yaml#/components/responses/PayloadTooLarge
+        '415':
+          $ref: ../openapi.yaml#/components/responses/UnsupportedMediaType
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/providers/{provider}/disclosure:
+    get:
+      operationId: getProviderDisclosure
+      tags: [providers]
+      summary: Egress disclosure
+      description: |
+        Which provider and model would process a request, which data classes and categories may leave, whether RAG excerpts are included, the provider's stated retention and training terms, an upper-bound cost and what happens when the provider is unavailable. When any request-independent check fails (kill switch, policy, profile, allowlist, region) nothing is listed as leaving. It records nothing. Operator only (a tenant administrator of the deployment's own configuration unless said otherwise); `permission_denied` for everybody else, before the body is read.
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          description: The provider id (for example `openai`).
+          schema:
+            type: string
+            pattern: '^[a-z][a-z0-9_-]{0,31}$'
+        - name: role
+          in: query
+          required: false
+          description: The model role the request is for; default `conversational_controller`.
+          schema:
+            type: string
+        - name: source
+          in: query
+          required: false
+          description: A RAG source the request would draw on; repeatable.
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+        - name: estimated_toks_in
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+        - name: max_output_toks
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        '200':
+          description: The disclosure.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EgressDisclosure'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/providers/mode:
+    get:
+      operationId: getProviderMode
+      tags: [providers]
+      summary: Read the mode of the caller's scope
+      description: |
+        The mode configured at each level (deployment, application, tenant), the effective mode (the most restrictive level; `local` under the kill switch) and what decided it. Local is the default everywhere. Operator only (a tenant administrator of the deployment's own configuration unless said otherwise); `permission_denied` for everybody else, before the body is read.
+      responses:
+        '200':
+          description: The modes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderMode'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+    put:
+      operationId: putProviderMode
+      tags: [providers]
+      summary: Set the mode of one level
+      description: |
+        Sets `local`, `hybrid` or `external` at one level of the caller's own scope. The tenant level needs a tenant administrator; the application and deployment levels need a deployment operator. The change is audited with the operator, the level and the previous and new mode. The M3 settings API cannot do this. Operator only (a tenant administrator of the deployment's own configuration unless said otherwise); `permission_denied` for everybody else, before the body is read.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProviderModeUpdate'
+      responses:
+        '200':
+          description: The modes after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderMode'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '413':
+          $ref: ../openapi.yaml#/components/responses/PayloadTooLarge
+        '415':
+          $ref: ../openapi.yaml#/components/responses/UnsupportedMediaType
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/providers/egress-policy:
+    get:
+      operationId: getProviderEgressPolicy
+      tags: [providers]
+      summary: Read the egress policy of one level
+      description: |
+        The data-egress policy (what may leave) at one level of the caller's scope. A level with no policy is disabled. Operator only (a tenant administrator of the deployment's own configuration unless said otherwise); `permission_denied` for everybody else, before the body is read.
+      parameters:
+        - name: level
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [deployment, application, tenant, workspace, source]
+        - name: source_id
+          in: query
+          required: false
+          description: The RAG source of a source-level policy, and only then.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The policy, or null when the level has none (external processing is disabled there).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EgressPolicyView'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+    put:
+      operationId: putProviderEgressPolicy
+      tags: [providers]
+      summary: Create or replace the egress policy of one level
+      description: |
+        Creates or replaces the policy of one level. The tenant, workspace and source levels need a tenant administrator; the application and deployment levels need a deployment operator. The token must also carry the policy capability of the level (`dataegress.<level>.write`, and `dataegress.approve` for a policy that lets internal data leave). A stale `expected_revision` is `conflict`. Operator only (a tenant administrator of the deployment's own configuration unless said otherwise); `permission_denied` for everybody else, before the body is read.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EgressPolicyUpdate'
+      responses:
+        '200':
+          description: The policy as stored.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EgressPolicy'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '409':
+          $ref: ../openapi.yaml#/components/responses/Conflict
+        '413':
+          $ref: ../openapi.yaml#/components/responses/PayloadTooLarge
+        '415':
+          $ref: ../openapi.yaml#/components/responses/UnsupportedMediaType
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/providers/budgets:
+    get:
+      operationId: getProviderBudgets
+      tags: [providers]
+      summary: Budgets and their states
+      description: |
+        Per-provider, tenant, workspace and principal budgets (integer micro-units) with their current state: spent, remaining, warnings and hard stops. Operator only (a tenant administrator of the deployment's own configuration unless said otherwise); `permission_denied` for everybody else, before the body is read.
+      responses:
+        '200':
+          description: The budgets of the scope with the state of each.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderBudgets'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+    put:
+      operationId: putProviderBudget
+      tags: [providers]
+      summary: Create or change a budget
+      description: |
+        An empty `budget_id` creates a budget; a given one must carry its current `revision`. A provider-wide budget needs a deployment operator; a tenant, workspace or principal budget needs a tenant administrator. Operator only (a tenant administrator of the deployment's own configuration unless said otherwise); `permission_denied` for everybody else, before the body is read.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProviderBudgetUpdate'
+      responses:
+        '200':
+          description: The budget as stored.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderBudget'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '409':
+          $ref: ../openapi.yaml#/components/responses/Conflict
+        '413':
+          $ref: ../openapi.yaml#/components/responses/PayloadTooLarge
+        '415':
+          $ref: ../openapi.yaml#/components/responses/UnsupportedMediaType
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/providers/usage/export:
+    get:
+      operationId: exportProviderUsage
+      tags: [providers]
+      summary: Export usage
+      description: |
+        The usage records (no prompt and no response) with totals per provider, channel and currency, for reconciliation with the provider's invoice. Operator only (a tenant administrator of the deployment's own configuration unless said otherwise); `permission_denied` for everybody else, before the body is read.
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: provider
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: channel
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [interactive, background]
+        - name: scope
+          in: query
+          required: false
+          description: 'The tenant (default) or the whole application (a deployment operator).'
+          schema:
+            type: string
+            enum: [tenant, application]
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [json, csv]
+      responses:
+        '200':
+          description: The usage records with totals, as JSON or CSV.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/providers/kill-switch:
+    get:
+      operationId: getProviderKillSwitch
+      tags: [providers]
+      summary: Read the global kill switch
+      description: |
+        Whether the global external-disable switch is engaged. A deployment operator only (`permission_denied` for everybody else, before the body is read).
+      responses:
+        '200':
+          description: The switch.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderKillSwitch'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+    put:
+      operationId: putProviderKillSwitch
+      tags: [providers]
+      summary: Engage or release the global kill switch
+      description: |
+        Engaging stops every external provider request of the deployment at once, whatever any policy says, and survives a restart. Releasing it enables nothing by itself. The change is audited with the operator and a fixed reason code. A deployment operator only (`permission_denied` for everybody else, before the body is read).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProviderKillSwitchUpdate'
+      responses:
+        '200':
+          description: The switch after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderKillSwitch'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '413':
+          $ref: ../openapi.yaml#/components/responses/PayloadTooLarge
+        '415':
+          $ref: ../openapi.yaml#/components/responses/UnsupportedMediaType
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+components:
+  schemas:
+    ProviderConnectionStatus:
+      $ref: ../../providers/connection-status.schema.json
+    BillingNoticeAck:
+      $ref: ../../providers/billing-notice-ack.schema.json
+    EgressDisclosure:
+      $ref: ../../providers/egress-disclosure.schema.json
+    EgressPolicy:
+      $ref: ../../providers/egress-policy.schema.json
+    ProviderBudget:
+      $ref: ../../providers/budget.schema.json
+    ProviderBudgetState:
+      $ref: ../../providers/budget-state.schema.json
+    ProviderList:
+      type: object
+      additionalProperties: false
+      required: [providers]
+      properties:
+        providers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProviderConnectionStatus'
+    ProviderCredentialSubmit:
+      type: object
+      additionalProperties: false
+      required: [key]
+      description: The secret is in `key`. It is write-only.
+      properties:
+        key:
+          type: string
+          minLength: 1
+          maxLength: 4096
+          writeOnly: true
+          description: The API key or token. Never returned, logged or put in an error.
+        label:
+          type: string
+          maxLength: 128
+        expires_at:
+          type: string
+          format: date-time
+        scopes:
+          type: array
+          maxItems: 64
+          items:
+            type: string
+          description: The provider scopes the capability needs; the validation probe asks for no more.
+    BillingNoticeAckRequest:
+      type: object
+      additionalProperties: false
+      required: [notice_version, consumer_subscription_is_not_api_access, separate_api_billing_understood]
+      properties:
+        notice_version:
+          type: string
+          maxLength: 64
+        consumer_subscription_is_not_api_access:
+          const: true
+        separate_api_billing_understood:
+          const: true
+    ProviderMode:
+      type: object
+      additionalProperties: false
+      required: [effective, configured, decided_by, kill_switch, levels]
+      properties:
+        effective:
+          type: string
+          enum: [local, hybrid, external]
+        configured:
+          type: string
+          enum: [local, hybrid, external]
+        decided_by:
+          type: string
+          description: The level that set the effective mode, `default` or `kill_switch`.
+        kill_switch:
+          type: boolean
+        levels:
+          type: object
+          description: The mode of each level that has a setting.
+          additionalProperties:
+            type: string
+            enum: [local, hybrid, external]
+          propertyNames:
+            enum: [deployment, application, tenant]
+    ProviderModeUpdate:
+      type: object
+      additionalProperties: false
+      required: [level, mode]
+      properties:
+        level:
+          type: string
+          enum: [deployment, application, tenant]
+        mode:
+          type: string
+          enum: [local, hybrid, external]
+    EgressPolicyView:
+      type: object
+      additionalProperties: false
+      required: [policy]
+      properties:
+        policy:
+          oneOf:
+            - $ref: '#/components/schemas/EgressPolicy'
+            - type: 'null'
+    EgressPolicyUpdate:
+      type: object
+      additionalProperties: false
+      required: [level, expected_revision, enabled, source_mode]
+      description: The operator-supplied members of an egress policy. The target, id, approval and timestamps are minted by the core.
+      properties:
+        level:
+          type: string
+          enum: [deployment, application, tenant, workspace, source]
+        source_id:
+          type: string
+          description: The RAG source of a source-level policy, and only then.
+        expected_revision:
+          type: integer
+          minimum: 0
+          description: The revision the writer read; 0 to create.
+        enabled:
+          type: boolean
+        source_mode:
+          type: string
+        source_class:
+          type: string
+        allowed_providers:
+          type: array
+          items:
+            type: string
+        allowed_models:
+          type: array
+          maxItems: 128
+          description: Provider and model pairs that may receive requests under this level. Empty allows none.
+          items:
+            type: object
+            additionalProperties: false
+            required: [provider_id, model_id]
+            properties:
+              provider_id:
+                type: string
+                pattern: '^[a-z][a-z0-9_-]{0,31}$'
+              model_id:
+                type: string
+                pattern: '^[A-Za-z0-9][A-Za-z0-9._:+-]{0,127}$'
+        allowed_classes:
+          type: array
+          items:
+            type: string
+        allowed_regions:
+          type: array
+          items:
+            type: string
+        files:
+          type: object
+          additionalProperties: false
+          required: [enabled, max_class]
+          description: Whether an excerpt of an uploaded file may leave under this level, and up to which class. Absent keeps every excerpt local. Not at source level; internal and confidential need the approval capability.
+          properties:
+            enabled:
+              type: boolean
+            max_class:
+              type: string
+              enum: [public, internal, confidential]
+        audio:
+          type: object
+          additionalProperties: false
+          required: [enabled, max_class]
+          description: Whether the raw audio of an utterance may leave under this level (for an external speech recogniser), and up to which class. Absent keeps all audio local. Not at source level; internal and confidential need the approval capability.
+          properties:
+            enabled:
+              type: boolean
+            max_class:
+              type: string
+              enum: [public, internal, confidential]
+    ProviderBudgets:
+      type: object
+      additionalProperties: false
+      required: [budgets, states]
+      properties:
+        budgets:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProviderBudget'
+        states:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProviderBudgetState'
+    ProviderBudgetUpdate:
+      $ref: '#/components/schemas/ProviderBudget'
+    ProviderKillSwitch:
+      type: object
+      additionalProperties: false
+      required: [engaged]
+      properties:
+        engaged:
+          type: boolean
+        reason:
+          type: string
+        changed_by:
+          type: string
+        changed_at:
+          type: string
+          format: date-time
+    ProviderKillSwitchUpdate:
+      type: object
+      additionalProperties: false
+      required: [engaged]
+      properties:
+        engaged:
+          type: boolean
+        reason:
+          type: string
+          pattern: '^[a-z][a-z0-9_]{0,63}$'
+          description: A fixed code, never free text.

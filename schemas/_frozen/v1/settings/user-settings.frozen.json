@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:settings:user-settings:v1",
+  "title": "User settings",
+  "description": "The preferences of one principal in one workspace (master plan 14.2): language, model profile, voice and audio behaviour, history retention and cleanup, privacy, attachment and source handling, notifications, streaming and accessibility, and what the user switches off or asks to confirm. Every member is optional and an absent member means inherit: the document is a sparse overlay on the tenant and deployment settings. It is closed: a member that is not listed here does not exist. In particular there is no member that enables a tool, names a scope or role, lowers or skips a confirmation, reaches LocalAI or any runtime, selects an external or hybrid mode, changes data egress, holds a credential or raises a budget; a document that names one is refused whole and nothing is stored. The key of the document (application, tenant, workspace, principal) comes from the verified token, never from the body.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "language": {
+      "description": "The language of the user's interface and of answers. Must be one the application's active package supports.",
+      "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/languageTag"
+    },
+    "model_profile": {
+      "description": "The approved model and resource profile the user prefers. Refused unless the operator approved it.",
+      "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/profileId"
+    },
+    "voice": {
+      "description": "Voice and audio behaviour. Takes effect only where the deployment and tenant allow voice.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "description": "Use voice when it is allowed.", "type": "boolean" },
+        "voice_id": { "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/voiceId" },
+        "speech_rate_pct": {
+          "description": "Speaking rate as a whole percentage of normal: 50 to 200.",
+          "type": "integer",
+          "minimum": 50,
+          "maximum": 200
+        },
+        "auto_play": { "description": "Play spoken replies without being asked.", "type": "boolean" },
+        "barge_in": { "description": "Let the user interrupt a spoken reply.", "type": "boolean" }
+      }
+    },
+    "history": {
+      "description": "How long the user's conversation history is kept and whether it is tidied automatically.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "retention_days": { "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/retentionDays" },
+        "auto_cleanup": { "description": "Remove history past its retention automatically.", "type": "boolean" }
+      }
+    },
+    "privacy": {
+      "description": "Privacy preferences.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "store_transcript": { "description": "False asks that the transcript of the user's conversations is not kept. A tenant or deployment policy that forbids transcripts overrides a true.", "type": "boolean" }
+      }
+    },
+    "attachments": {
+      "description": "Attachment handling.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "accept_uploads": { "description": "False stops the user's own uploads. Never enables attachments the deployment or tenant has not allowed.", "type": "boolean" },
+        "max_file_mb": { "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/fileMegabytes" }
+      }
+    },
+    "sources": {
+      "description": "Source handling in answers.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "include_attachments": { "description": "Let the user's own attachments be used as sources for the user's questions.", "type": "boolean" },
+        "citation_display": { "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/citationDisplay" }
+      }
+    },
+    "notifications": {
+      "description": "Notification preferences.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "description": "Receive notifications where they are allowed.", "type": "boolean" },
+        "events": {
+          "description": "The events to be notified about; absent means all of them.",
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": { "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/notificationEvent" }
+        }
+      }
+    },
+    "streaming": {
+      "description": "Streaming preferences.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "description": "Stream answers as they are verified.", "type": "boolean" },
+        "unit": { "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/streamUnit" }
+      }
+    },
+    "accessibility": {
+      "description": "Accessibility preferences. They shape how a client presents answers and change nothing the core decides.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reduced_motion": { "type": "boolean" },
+        "high_contrast": { "type": "boolean" },
+        "text_scale_pct": {
+          "description": "Text size as a whole percentage of normal: 100 to 300.",
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 300
+        },
+        "screen_reader": { "description": "Prefer output that reads well through a screen reader.", "type": "boolean" },
+        "captions": { "description": "Show a text caption for every spoken reply.", "type": "boolean" }
+      }
+    },
+    "capabilities": {
+      "description": "Capabilities the user switches off for themselves. Narrowing only.",
+      "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/capabilitySwitches"
+    },
+    "confirmation": {
+      "description": "Confirmation the user asks for in addition to the platform's. Raising only.",
+      "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/confirmationRaise"
+    }
+  }
+}

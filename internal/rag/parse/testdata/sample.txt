@@ -1,0 +1,10 @@
+Quarterly operations note
+
+The warehouse in Lyon shipped 1,284 parcels in March, up 6% on February.
+Two carriers account for most of the volume; the third is being phased out.
+
+Open issues
+- Returns from Spain take 11 days on average.
+- The Lisbon scanner firmware is a version behind.
+
+Résumé of decisions: keep the Lyon night shift, review Madrid in June.

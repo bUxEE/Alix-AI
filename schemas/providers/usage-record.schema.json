@@ -1,0 +1,294 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:providers:usage-record:v1",
+  "title": "Usage record",
+  "description": "The record of what one external call consumed and cost (additive plan section 11.2): the verified subject, the exact provider, model and version, the role, the channel (interactive or background), the metered units, the cost in integer micro-units and the latency. All counters are non-negative integers and all money is integer micro-units of the operator currency: there are no floats anywhere. The input and output counters are named toks_in and toks_out (never tokens: the log redactor matches the substring token in key names). The cost carries the amount reserved before the call (an upper bound from the price table) and the actual amount after it, with the basis: a price-table estimate, a provider-reported cost or none. A record carries no content, no prompt and no response: it is an ID, counters and enums, so it can be exported and reconciled unredacted. Every member is recorded by the core.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "usage_id",
+    "recorded_at",
+    "subject",
+    "provider",
+    "role",
+    "channel",
+    "envelope_id",
+    "decision_id",
+    "reservation_id",
+    "outcome",
+    "error_kind",
+    "metering",
+    "metering_basis",
+    "cost",
+    "latency",
+    "fallback_from"
+  ],
+  "properties": {
+    "usage_id": {
+      "description": "Usage record ID.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/usageId"
+    },
+    "recorded_at": {
+      "description": "When the call finished, from the injected clock.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    },
+    "subject": {
+      "description": "The verified context the call ran in. Usage is recorded per tenant and workspace and never mixed.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/subject"
+    },
+    "provider": {
+      "description": "The exact provider, model and version that served the call.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/providerRef"
+    },
+    "role": {
+      "description": "The role the call served.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/role"
+    },
+    "channel": {
+      "description": "interactive or background. Background usage draws on its own budget.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/channel"
+    },
+    "envelope_id": {
+      "description": "The request envelope of the call.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/envelopeId"
+    },
+    "decision_id": {
+      "description": "The egress decision that allowed the call.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/egressDecisionId"
+    },
+    "reservation_id": {
+      "description": "The budget reservation the call settled, or null when none was taken.",
+      "x-alixai-authority": "alixai",
+      "oneOf": [
+        { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/reservationId" },
+        { "type": "null" }
+      ]
+    },
+    "outcome": {
+      "description": "succeeded: a complete response. failed: a provider error, see error_kind. cancelled: the caller cancelled. uncertain: the request may have reached the provider (connection_lost or timeout) and usage and cost are not known.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "enum": ["succeeded", "failed", "cancelled", "uncertain"]
+    },
+    "error_kind": {
+      "description": "The provider-error kind of a failed or uncertain call, else null.",
+      "x-alixai-authority": "alixai",
+      "oneOf": [
+        { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/providerErrorKind" },
+        { "type": "null" }
+      ]
+    },
+    "metering": {
+      "description": "What the call consumed, in the units of the price table. All members are present; an unused unit is 0.",
+      "x-alixai-authority": "alixai",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "toks_in",
+        "toks_out",
+        "toks_in_cached",
+        "images_in",
+        "images_out",
+        "audio_seconds_in",
+        "audio_seconds_out",
+        "file_bytes_in",
+        "requests"
+      ],
+      "properties": {
+        "toks_in": {
+          "description": "Units of toks_in consumed.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/counter"
+        },
+        "toks_out": {
+          "description": "Units of toks_out consumed.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/counter"
+        },
+        "toks_in_cached": {
+          "description": "Units of toks_in_cached consumed.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/counter"
+        },
+        "images_in": {
+          "description": "Units of images_in consumed.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/counter"
+        },
+        "images_out": {
+          "description": "Units of images_out consumed.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/counter"
+        },
+        "audio_seconds_in": {
+          "description": "Units of audio_seconds_in consumed.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/counter"
+        },
+        "audio_seconds_out": {
+          "description": "Units of audio_seconds_out consumed.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/counter"
+        },
+        "file_bytes_in": {
+          "description": "Units of file_bytes_in consumed.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/counter"
+        },
+        "requests": {
+          "description": "Units of requests consumed.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/counter"
+        }
+      }
+    },
+    "metering_basis": {
+      "description": "provider_reported: usage as the provider reported it. estimated: the provider did not report usage and AlixAI estimated it, so it is marked.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "enum": ["provider_reported", "estimated"]
+    },
+    "cost": {
+      "description": "The money: reserved before the call (an upper bound) and actual after it.",
+      "x-alixai-authority": "alixai",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["currency", "reserved_micro_units", "actual_micro_units", "basis"],
+      "properties": {
+        "currency": {
+          "description": "The operator currency.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/currency"
+        },
+        "reserved_micro_units": {
+          "description": "The upper-bound estimate held before the call, ceil(units * micro_units / per_units) summed over the units. 0 when no reservation was taken.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/microUnits"
+        },
+        "actual_micro_units": {
+          "description": "The cost after the call in integer micro-units, or null when it is not known.",
+          "x-alixai-authority": "alixai",
+          "oneOf": [
+            { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/microUnits" },
+            { "type": "null" }
+          ]
+        },
+        "basis": {
+          "description": "price_table: metered units priced from the profile price table. provider_reported: the provider reported the cost. none: no actual cost is known.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "enum": ["price_table", "provider_reported", "none"]
+        }
+      },
+      "allOf": [
+        {
+          "description": "The actual cost is null exactly when its basis is none.",
+          "if": {
+            "required": ["basis"],
+            "properties": {
+              "basis": { "const": "none" }
+            }
+          },
+          "then": {
+            "properties": {
+              "actual_micro_units": { "type": "null" }
+            }
+          },
+          "else": {
+            "properties": {
+              "actual_micro_units": {
+                "not": { "type": "null" }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "latency": {
+      "description": "How long the call took.",
+      "x-alixai-authority": "alixai",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total_ms", "first_delta_ms"],
+      "properties": {
+        "total_ms": {
+          "description": "Total time in milliseconds.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/counter"
+        },
+        "first_delta_ms": {
+          "description": "Time to the first streamed delta in milliseconds, or null when not streamed.",
+          "x-alixai-authority": "alixai",
+          "oneOf": [
+            { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/counter" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "fallback_from": {
+      "description": "The profile this call was a recorded fallback for, or null. A fallback happens only when policy names one and is always recorded.",
+      "x-alixai-authority": "alixai",
+      "oneOf": [
+        { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/profileId" },
+        { "type": "null" }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "description": "A succeeded or cancelled call has no error kind.",
+      "if": {
+        "required": ["outcome"],
+        "properties": {
+          "outcome": { "enum": ["succeeded", "cancelled"] }
+        }
+      },
+      "then": {
+        "properties": {
+          "error_kind": { "type": "null" }
+        }
+      }
+    },
+    {
+      "description": "A failed or uncertain call names the error kind.",
+      "if": {
+        "required": ["outcome"],
+        "properties": {
+          "outcome": { "enum": ["failed", "uncertain"] }
+        }
+      },
+      "then": {
+        "properties": {
+          "error_kind": { "type": "string" }
+        }
+      }
+    },
+    {
+      "description": "An uncertain call has no known cost: it was neither metered nor priced.",
+      "if": {
+        "required": ["outcome"],
+        "properties": {
+          "outcome": { "const": "uncertain" }
+        }
+      },
+      "then": {
+        "properties": {
+          "cost": {
+            "properties": {
+              "basis": { "const": "none" }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

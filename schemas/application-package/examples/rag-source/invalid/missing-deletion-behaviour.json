@@ -1,0 +1,66 @@
+{
+  "id": "branch-handbook",
+  "type": "local_folder",
+  "title": "Branch handbook scans",
+  "owner": {
+    "name": "Branch managers"
+  },
+  "scope": {
+    "application_id": "demo-library",
+    "tenant": {
+      "mode": "request"
+    },
+    "workspace": {
+      "mode": "request"
+    }
+  },
+  "root": {
+    "kind": "folder",
+    "path": "/srv/demo-library/handbooks"
+  },
+  "include": [
+    "current/**/*.pdf",
+    "current/**/*.md"
+  ],
+  "exclude": [
+    "**/draft-*",
+    "**/private/**"
+  ],
+  "credential_ref": null,
+  "formats": [
+    "application/pdf",
+    "text/markdown"
+  ],
+  "limits": {
+    "max_file_bytes": 52428800,
+    "max_total_bytes": 5368709120,
+    "max_files": 20000
+  },
+  "sync": {
+    "method": "poll",
+    "interval_seconds": 3600
+  },
+  "parser": {
+    "ocr": "when_no_text_layer",
+    "ocr_languages": [
+      "en",
+      "it"
+    ],
+    "max_pages_per_file": 500,
+    "timeout_seconds": 120
+  },
+  "citation": {
+    "kind": "alixai_preview"
+  },
+  "egress": {
+    "entries": []
+  },
+  "retention": {
+    "derived_data_days": 365,
+    "import_originals": true,
+    "audit": {
+      "record_access": true,
+      "retention_days": 730
+    }
+  }
+}

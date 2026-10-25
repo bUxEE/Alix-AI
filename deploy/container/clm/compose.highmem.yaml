@@ -1,0 +1,33 @@
+# Resource profile "higher-memory": 32g RAM / 16 CPU for the whole sidecar (master plan 7.3). Override on top of
+# compose.yaml:
+#   docker compose --env-file .env -f compose.yaml -f compose.highmem.yaml up -d
+#
+# EMULATED: these are cgroup caps on the containers, not a certified machine. Every number measured under this
+# file is labelled "emulated", never "certified" (master plan 7.4). mem_limit == memswap_limit disables swap per
+# container. The thread settings equal the CPU share of the container (a CPU quota does not shrink the visible cores).
+#
+# Split: encoder 26g / 12 CPU, CLM service 4g / 4 CPU (sum 30g / 16 CPU, leaving the rest of a 32 GB host for
+# AlixAI, LocalAI and the operating system, which is itself a hypothesis until D-08 measures it). The weights are
+# ~15.3 GiB, so the encoder has ~10 GiB of room; whether that is enough for the CPU bf16 path is untested.
+
+services:
+  vllm:
+    mem_limit: 26g
+    memswap_limit: 26g
+    cpus: 12
+    environment:
+      OMP_NUM_THREADS: "12"
+      VLLM_CPU_KVCACHE_SPACE: ${CLM_VLLM_KV_GIB:-2}
+    labels:
+      ai.alixai.profile: highmem
+      ai.alixai.evidence: emulated
+  clm:
+    mem_limit: 4g
+    memswap_limit: 4g
+    cpus: 4
+    environment:
+      OMP_NUM_THREADS: "4"
+      MKL_NUM_THREADS: "4"
+    labels:
+      ai.alixai.profile: highmem
+      ai.alixai.evidence: emulated

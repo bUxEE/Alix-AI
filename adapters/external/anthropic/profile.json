@@ -1,0 +1,120 @@
+{
+  "profile_id": "pprf_01J0000000000000000000FXTA",
+  "provider_id": "anthropic",
+  "endpoint": "https://api.anthropic.com/v1",
+  "model_id": "claude-haiku-4-5",
+  "model_version": "20251001",
+  "roles": [
+    "conversational_controller",
+    "language_realization"
+  ],
+  "cred_ref": null,
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "streaming": true,
+  "structured_output": "strict_schema",
+  "tool_calling": {
+    "supported": true,
+    "strict_arguments": true,
+    "parallel_calls": true,
+    "max_tools": 20
+  },
+  "remote_mcp": {
+    "supported": true
+  },
+  "native_features": {
+    "available": [
+      "agents",
+      "hosted_memory",
+      "server_tool_loops"
+    ]
+  },
+  "limits": {
+    "max_context_toks": 200000,
+    "max_output_toks": 32000,
+    "max_request_bytes": 33554432
+  },
+  "image_generation": {
+    "supported": false,
+    "max_images_per_request": null,
+    "output_retention": "unknown"
+  },
+  "voice": {
+    "stt": false,
+    "tts": false,
+    "realtime": false,
+    "audio_retention": "unknown"
+  },
+  "terms": {
+    "retention": "unknown",
+    "retention_days": null,
+    "training_use": "unknown",
+    "terms_url": "https://www.anthropic.com/legal/commercial-terms",
+    "terms_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "recorded_on": "2026-10-07"
+  },
+  "region": {
+    "residency": "unknown",
+    "processing_regions": [],
+    "compliance": []
+  },
+  "rate_limits": {
+    "requests_per_min": 1000,
+    "toks_per_min": 2000000,
+    "concurrent_requests": null,
+    "retry": {
+      "max_attempts": 2,
+      "initial_backoff_ms": 500,
+      "max_backoff_ms": 8000,
+      "honors_retry_after": true
+    }
+  },
+  "pricing": {
+    "currency": "USD",
+    "effective_on": "2026-10-07",
+    "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+    "prices": {
+      "toks_in": {
+        "per_units": 1000000,
+        "micro_units": 1000000
+      },
+      "toks_out": {
+        "per_units": 1000000,
+        "micro_units": 5000000
+      }
+    }
+  },
+  "usage_metering": "per_response",
+  "permitted_scopes": [
+    {
+      "application_id": "app_conf"
+    }
+  ],
+  "allowed_data_classes": [
+    "public",
+    "internal"
+  ],
+  "fallback": {
+    "profile_id": null,
+    "on": []
+  },
+  "last_policy_review": "2026-10-07",
+  "review_interval_days": 30,
+  "billing_notice": {
+    "version": "2026-10-08.1",
+    "text": "A Claude subscription (Free, Pro, Max, Team or Enterprise seats on claude.ai) does not include API access. Anthropic API usage is billed separately through the Claude Console, with its own account, credit and spend limits.",
+    "url": "https://platform.claude.com/settings/billing",
+    "subscription_grants_api_access": false
+  },
+  "billing_notice_ack": null,
+  "last_conformance": null,
+  "lifecycle": "candidate",
+  "created_at": "2026-10-07T08:00:00Z",
+  "updated_at": "2026-10-07T08:00:00Z"
+}

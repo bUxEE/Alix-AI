@@ -1,0 +1,6 @@
+AlixAI
+Copyright 2026 The AlixAI Authors
+
+Third-party material vendored in this repository (kept as published, under its own licence):
+- CycloneDX 1.6 JSON schemas (Apache-2.0) in tools/release/schemas/, used offline to validate software bills of materials.
+- AG-UI protocol JSON Schemas derived from @ag-ui/core (MIT) in schemas/agui/, with the exact version and hash in schemas/agui/VERSION.

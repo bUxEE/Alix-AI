@@ -1,0 +1,99 @@
+# Model registry entry (schemas/models/registry-entry.schema.json). One file per model; the file name is the id.
+# Every key is present; null means not yet known or not yet measured. Measurements stay null until M0-13.
+id: qwen3.5-2b-q4_k_m
+name: "Qwen3.5-2B (Q4_K_M)"
+version: "3.5"
+status: rejected
+roles:
+  - "conversational-controller"
+  - "typed-routing"
+capabilities:
+  - "chat"
+  - "tool-calling"
+upstream:
+  repo_url: https://huggingface.co/Qwen/Qwen3.5-2B
+  revision: 15852e8c16360a2fea060d615a32b45270f8a8fc
+artifact:
+  format: gguf
+  repo_url: https://huggingface.co/unsloth/Qwen3.5-2B-GGUF
+  filename: Qwen3.5-2B-Q4_K_M.gguf
+  revision: f6d5376be1edb4d416d56da11e5397a961aca8ae
+  size_bytes: 1280835840
+  sha256: aaf42c8b7c3cab2bf3d69c355048d4a0ee9973d48f16c731c0520ee914699223
+  quantized_by: unsloth
+  first_party: false
+  checked_on: "2026-10-02"
+licence:
+  spdx: Apache-2.0
+  url: https://huggingface.co/Qwen/Qwen3.5-2B/blob/15852e8c16360a2fea060d615a32b45270f8a8fc/LICENSE
+  redistribution_notes: "Apache-2.0, declared by the upstream repository (LICENSE file, 11544 bytes) and by the third-party GGUF repository metadata. The GGUF is a derivative conversion by a third party: redistribution is permitted provided the Apache-2.0 text and notices accompany it and changes are stated. AlixAI does not bundle weights: an operator fetches the pinned file. Final sign-off is the M5-H02 human licence review."
+quantization:
+  scheme: Q4_K_M
+  nominal_bits: 4
+backend:
+  runtime: localai
+  name: llama-cpp
+  allowed_runtime_versions: []
+hardware:
+  minimum:
+    cpu_cores: null
+    ram_mb: null
+    accelerator: null
+  recommended:
+    cpu_cores: null
+    ram_mb: null
+    accelerator: null
+memory:
+  peak_rss_mb: 3118
+  steady_rss_mb: 3068
+context:
+  native_max_tokens: 262144
+  budget_tokens: 4096
+  kv_cache_mb: null
+load_time:
+  cold_ms: 25835
+  warm_ms: null
+performance:
+  latency_ms_p50: 8782
+  latency_ms_p95: 13347
+  ttft_ms_p50: 4453
+  tokens_per_second: 11.414
+languages:
+  declared: []
+  claimed_count: 201
+  qualified: []
+scores:
+  task: 0.87
+  tool: 1
+  rag: null
+  safety: 0.75
+measurement:
+  profile: balanced
+  emulated: true
+  results_path: benchmarks/results/m0b/localai_qwen3.5-2b-q4_k_m_balanced_run_01m41fdc9wdmvep76c8vgzpr1d.json
+  measured_on: "2026-10-03"
+fallback:
+  model_id: null
+  degraded_mode: deterministic-routing
+  notes: "No model fallback: every controller candidate, Granite 4.0 1B included, was rejected by M0-13, again by M0-17 on bench-prompt-v1, and a third time by M0-21 with a deterministic out-of-scope gate in front of the model (docs/evidence/m0-spike-3/results.json). The degraded mode is the fallback: deterministic routing with typed forms, until a model passes the Lite bar (master plan 7.1)."
+last_efficiency_review:
+  date: "2026-10-08"
+  evidence_path: docs/efficiency/M5-09.md
+default_for: []
+notes:
+  - "Hub facts confirmed 2026-10-02 against huggingface.co: repository, file name, size, commit and the file's LFS sha256 (the hub's X-Linked-ETag header and its file tree agree). The hash is the hub's published value at the pinned commit; M0-13 re-hashes the downloaded file locally."
+  - "No official Qwen GGUF was found: the anonymous hub API returns 401 for Qwen/Qwen3.5-2B-GGUF, which means absent or private, not that it never existed. The artefact is a third-party conversion by unsloth (its repository also ships an imatrix file, so the quantisation recipe is the publisher's, not Qwen's). Another third-party Q4_K_M seen: bartowski/Qwen_Qwen3.5-2B-GGUF. A third-party quantiser is a supply-chain decision for review."
+  - "The upstream model is a vision-language model (image-text-to-text). This entry is text-only: no mmproj file is installed and vision is not a capability here."
+  - "Upstream card: 201 languages and dialects claimed as a count only, with no per-language list, so languages.declared is empty until the M0-13 multilingual suite qualifies English and Italian."
+  - "Non-thinking mode is the card's default for this model. Native context is 262144 tokens; cap the context budget by configuration because the KV cache grows with it."
+  - "M0-13 verdict (2026-10-02, emulated balanced): REJECTED against the pre-registered Lite bar on bench-prompt-v0 and corpus routing-v0 under a GBNF grammar (the gate run). Lines missed: capability_routing 48/54; refusal_correctness 7/16. The bar and the rule that fixes it before any result are in docs/evidence/m0-spike/report.md. Rejected is not a verdict on the model for all prompts: rejected -> candidate is the re-evaluation path (new prompt, revision or quantisation)."
+  - "M0-13 measured (balanced profile = 16384 MiB / 8 CPU container cap on an i7-10700K host, no GPU; emulated, never certified; LocalAI v4.10.0, llama-cpp, context 4096, greedy, one request at a time): schema_valid 80/80, capability_routing 48/54, refusal_correctness 7/16, injection_resistance 16/16, intent 45/80, field_exact_match 24/44, strict case pass 39/80 (a case passes only when schema, capability, intent and every field are right). Latency p50 9786 ms, p95 16468 ms, time to first token p50 3525 ms, decode 9.095 tokens/s. Result file: benchmarks/results/m0/localai_qwen3.5-2b-q4_k_m_balanced_run_01m3yn70106z3w3a1knx7k4v3b.json."
+  - "M0-13 memory: peak 2776 MiB and median 2638 MiB resident set summed over the LocalAI processes (file-backed pages of the memory-mapped weights included), 499 samples every 2 s (docs/evidence/m0-spike/rss/). docker stats (cgroup, inactive file cache excluded) reported peak 1414 MiB. load_time.cold_ms is the first request after the container started: it includes the backend start, the model load and one short generation. warm_ms and kv_cache_mb were not measured."
+  - "M0-13 score mapping: scores.task = capability_routing rate, scores.tool = schema-valid rate, scores.safety = refusal and injection cases pooled, scores.rag = not measured (no RAG corpus before M2). The artefact was re-hashed locally with models.HashFile and matches the pin (docs/evidence/m0-spike/model-hashes.json)."
+  - "M0-17 verdict (2026-10-03, emulated balanced): REJECTED against the unchanged pre-registered Lite bar on bench-prompt-v1 (hash 31fe03ba8d46...) and corpus routing-v0 under the gateway's GBNF grammar, two runs. Rule (docs/evidence/m0-spike-2/protocol.md): qualified only when run A and run B both clear every line. Run A missed: capability_routing 47/54; refusal_correctness 9/16; injection_resistance 15/16. Run B missed: capability_routing 47/54; refusal_correctness 9/16; injection_resistance 15/16. Verdict: fails the bar (neither run clears it). The M0-13 verdict below it is the history on bench-prompt-v0. Rejected is not a verdict on the model for all prompts: rejected -> candidate is the re-evaluation path."
+  - "M0-17 measured (balanced profile = 16384 MiB / 8 CPU container cap on an i7-10700K host, no GPU; emulated, never certified; LocalAI v4.10.0, llama-cpp, context 4096, greedy, one request at a time): run A schema_valid 80/80, capability_routing 47/54, refusal_correctness 9/16, injection_resistance 15/16, intent 49/80, field_exact_match 29/44, strict case pass 44/80, outputs cut at the token cap 0. Run B schema_valid 80/80, capability_routing 47/54, refusal_correctness 9/16, injection_resistance 15/16. Latency (run A) p50 8782 ms, p95 13347 ms, time to first token p50 4453 ms, decode 11.414 tokens/s; docker stats peak 1810 MiB. Result files: benchmarks/results/m0b/localai_qwen3.5-2b-q4_k_m_balanced_run_01m41fdc9wdmvep76c8vgzpr1d.json (A), benchmarks/results/m0b/localai_qwen3.5-2b-q4_k_m_balanced_run_01m41g57t3wv2vx961y8xcx5kw.json (B)."
+  - "M0-17 memory: peak 3118 MiB and median 3068 MiB resident set summed over the LocalAI processes for the whole session (runs A and B; file-backed pages of the memory-mapped weights included), 364 samples every 2 s (docs/evidence/m0-spike-2/rss/). load_time.cold_ms is the first (warm-up) request of run A after the container started. warm_ms and kv_cache_mb were not measured."
+  - "M0-17 repeatability and sampler: 18 of 80 raw outputs differ between run A and run B (identical requests, same container, temperature 0); strict-pass flips 3; the bar verdict does not flip. Seed: drawn at random by LocalAI at each model load, none sent by the harness. Sampler settings are in docs/evidence/m0-spike-2/protocol.md and run-manifest.jsonl. LocalAI applies presence_penalty 1.5 to this model family unless the definition sets it; the definition does not."
+  - "M0-21 verdict (2026-10-03, emulated balanced): REJECTED a third time against the unchanged Lite bar with the deterministic out-of-scope gate scopegate-v1 (digest 4c241f7fec2e...) in front of the model, bench-prompt-v1, grammar, corpus routing-v0, two runs (docs/evidence/m0-spike-3/protocol.md). Run A missed: capability_routing 44/54; refusal_correctness 12/16; injection_resistance 14/16. Run B missed: capability_routing 44/54; refusal_correctness 12/16; injection_resistance 14/16. The gate answered 19 cases without a model call; its false refusals were ex-en-03, ex-it-03, ex-it-08, ex-it-12, rt-it-02, counted against routing. This entry's measurement block (memory, latency, scores) is still the model alone from M0-17."
+  - "M0-21 measured (balanced = 16384 MiB / 8 CPU cap, emulated, never certified; LocalAI v4.10.0): run A schema_valid 80/80, capability_routing 44/54, refusal_correctness 12/16, injection_resistance 14/16; run B 80/80, 44/54, 12/16, 14/16. M0-17 run A without the gate: 80/80, 47/54, 9/16, 15/16. Latency over the 61 model-answered cases (run A) p50 10254 ms, p95 15314 ms; docker stats peak 2210 MiB. A vs B: 15 of 80 outputs differ, bar verdict does not flip. Results: benchmarks/results/m0c/localai_qwen3.5-2b-q4_k_m_balanced_run_01m41za76vedsn96m965t1tz54.json, benchmarks/results/m0c/localai_qwen3.5-2b-q4_k_m_balanced_run_01m4206yyqw57pvv85r57mrv2g.json."
+  - "M5-09 verdict (2026-10-08, emulated; host shared, latency indicative): REJECTED against the unchanged bar (docs/evidence/m5-models/protocol.md; bench-prompt-v1, grammar, routing-v0; A no gate, G scopegate-v1). balanced A: 80/80 schema, 47/54 routing, 9/16 refusal, 15/16 injection, U peak 3121 MiB of 12902, call p95 13.8 s | balanced G: 80/80 schema, 44/54 routing, 12/16 refusal, 15/16 injection, U peak 3136 MiB of 12902, call p95 15.8 s. Evidence: docs/evidence/m5-models/results.json, benchmarks/results/m5/."

@@ -1,0 +1,57 @@
+capability_id: "invoices.void"
+language: "it"
+contract_version: "1.0.0"
+terminology:
+  - "invoice"
+  - "void_reference"
+  - "customer"
+field_prompts:
+  - field: "invoice"
+    label: "Fattura"
+    prompt: "Quale fattura va annullata? Dammi il numero o il nome del cliente."
+    examples:
+      - "INV-0001"
+  - field: "reason"
+    label: "Motivo"
+    prompt: "Perché va annullata: duplicato, importo sbagliato, cliente ha annullato, o altro?"
+clarifications:
+  - rule_id: "invoice_multiple"
+    prompt: "Più fatture corrispondono a {input.invoice}. Quale intendi?"
+corrections:
+  acknowledgement: "Va bene, l'ho cambiato."
+  correctable_fields:
+    - "invoice"
+    - "reason"
+  prepared_action_invalidated: "Questo cambia quale fattura viene annullata, quindi il riepilogo precedente non vale più. La preparo di nuovo."
+cancellations:
+  acknowledgement: "Va bene, ho interrotto. Non ho annullato nulla."
+confirmations:
+  request: "Annullare la fattura {invoice_number} per {customer_name} di {invoice_total} è definitivo. Va completato nell'applicazione del registro con il riferimento {void_reference}. Vuoi avviarlo?"
+  declined: "Capito. La fattura non è stata toccata."
+  expired: "Questa richiesta di annullamento è scaduta, quindi non ho annullato nulla. Posso prepararla di nuovo se vuoi."
+  step_up_required: "Non posso annullare una fattura da solo. Apri l'applicazione del registro, accedi come manager e completa l'operazione con il riferimento {void_reference}, per la fattura {invoice_number}."
+success:
+  - outcome: "voided"
+    text: "Fatto. La fattura {invoice_number} è annullata, completata nell'applicazione del registro con il riferimento {void_reference}."
+failures:
+  - code: "permission_denied"
+    text: "Non hai il permesso di annullare fatture, quindi non ho annullato nulla."
+  - code: "scope_violation"
+    text: "Non posso annullarla: la fattura non è disponibile per te. Non ho annullato nulla."
+  - code: "validation_failed"
+    text: "Non ho potuto annullarla: un valore non è valido. Non ho annullato nulla."
+  - code: "missing_fields"
+    text: "Mi serve ancora sapere quale fattura annullare e perché. Non ho annullato nulla."
+  - code: "conflict"
+    text: "Quella fattura non può essere annullata: è già annullata oppure ha dei pagamenti. Non ho annullato nulla."
+  - code: "stale"
+    text: "La fattura è cambiata dopo che l'avevo preparata, quindi non l'ho annullata. Non ho annullato nulla; posso prepararla di nuovo."
+  - code: "expired"
+    text: "Non è stato confermato in tempo, oppure è stato ritirato, quindi non ho annullato nulla."
+  - code: "uncertain_outcome"
+    text: "Non sono riuscito a confermare se l'operazione è andata a buon fine. Controllo prima di fare altro, quindi per ora non chiederla di nuovo."
+  - code: "step_up_required"
+    text: "Questo si può completare solo nell'applicazione del registro, quindi non ho annullato nulla."
+  - code: "unavailable"
+    text: "Il registro non è raggiungibile in questo momento, quindi non ho annullato nulla."
+next_actions: []

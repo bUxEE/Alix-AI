@@ -1,0 +1,88 @@
+# Model registry entry (schemas/models/registry-entry.schema.json). One file per model; the file name is the id.
+# Every key is present; null means not yet known or not yet measured. Added by M5-09 (the re-survey of 2026-10-07).
+id: minicpm5-1b-q4_k_m
+name: "MiniCPM5-1B (Q4_K_M)"
+version: "5"
+status: rejected
+roles:
+  - "conversational-controller"
+  - "typed-routing"
+capabilities:
+  - "chat"
+  - "tool-calling"
+upstream:
+  repo_url: https://huggingface.co/openbmb/MiniCPM5-1B
+  revision: 87179e5c1f455ef22e6223592d2d61351b525bfc
+artifact:
+  format: gguf
+  repo_url: https://huggingface.co/openbmb/MiniCPM5-1B-GGUF
+  filename: MiniCPM5-1B-Q4_K_M.gguf
+  revision: 3d55fac80935ae6456986ad2384b5cbcc4d6c948
+  size_bytes: 688065920
+  sha256: 81b64d05a23b17b34c475f42b3e72fbde62d4b92cc34541f7a8031d0752deafa
+  quantized_by: openbmb
+  first_party: true
+  checked_on: "2026-10-07"
+licence:
+  spdx: Apache-2.0
+  url: https://www.apache.org/licenses/LICENSE-2.0
+  redistribution_notes: "Apache-2.0, declared by the upstream model card and by the first-party GGUF repository metadata at the pinned revisions. Apache-2.0 permits redistribution, modification and quantisation provided the licence text and any notices accompany the file and changes are stated. AlixAI does not bundle weights: an operator fetches the pinned file. Final sign-off is the M5-H02 human licence review."
+quantization:
+  scheme: Q4_K_M
+  nominal_bits: 4
+backend:
+  runtime: localai
+  name: llama-cpp
+  allowed_runtime_versions: []
+hardware:
+  minimum:
+    cpu_cores: null
+    ram_mb: null
+    accelerator: null
+  recommended:
+    cpu_cores: null
+    ram_mb: null
+    accelerator: null
+memory:
+  peak_rss_mb: 1519
+  steady_rss_mb: 1480
+context:
+  native_max_tokens: 131072
+  budget_tokens: 4096
+  kv_cache_mb: null
+load_time:
+  cold_ms: 61314
+  warm_ms: null
+performance:
+  latency_ms_p50: 15540
+  latency_ms_p95: 24250
+  ttft_ms_p50: 6145
+  tokens_per_second: 4.181
+languages:
+  declared: ["en", "zh"]
+  claimed_count: null
+  qualified: []
+scores:
+  task: 0.481
+  tool: 0.7
+  rag: null
+  safety: 0.406
+measurement:
+  profile: lite
+  emulated: true
+  results_path: benchmarks/results/m5/localai_minicpm5-1b-q4_k_m_lite_run_01m4c2d1qpnsv2ve5tn4b33tj9.json
+  measured_on: "2026-10-08"
+fallback:
+  model_id: null
+  degraded_mode: deterministic-routing
+  notes: "No model fallback until a model passes the Lite bar (master plan 7.1); the degraded mode is deterministic routing with typed forms."
+last_efficiency_review:
+  date: "2026-10-08"
+  evidence_path: docs/efficiency/M5-09.md
+default_for: []
+notes:
+  - "Found by the M5-09 re-survey (2026-10-07) of first-party repositories: openbmb, Apache-2.0, 1,080,632,832 parameters (679,552,512 non-embedding), standard LlamaForCausalLM architecture (no custom kernels needed), 131072-token native context, first-party GGUF Q4_K_M 688,065,920 bytes. Hub facts (commit, file size, LFS sha256) read from the hub API on 2026-10-07; the downloaded file was re-hashed locally and matches."
+  - "The card declares English and Chinese only; Italian is not claimed. Any Italian result is a measurement on the project corpus, not a declared capability, and languages.qualified stays empty until the multilingual suite says otherwise."
+  - "Tool calls are XML-style in the model's own chat template (SGLang parser recommended upstream); AlixAI constrains output with a GBNF grammar instead, so the template's tool format is not what is measured."
+  - "M5-09 verdict (2026-10-08, emulated; host shared, latency indicative): REJECTED against the unchanged bar (docs/evidence/m5-models/protocol.md; bench-prompt-v1, grammar, routing-v0; A no gate, G scopegate-v1). lite A: 56/80 schema, 26/54 routing, 1/16 refusal, 12/16 injection, U peak 1519 MiB of 5939, call p95 24.3 s | lite G: 58/80 schema, 24/54 routing, 10/16 refusal, 12/16 injection, U peak 1518 MiB of 5939, call p95 22.6 s. Evidence: docs/evidence/m5-models/results.json, benchmarks/results/m5/."
+  - "M5-09 measurement mapping: scores.task = capability_routing rate (26/54), scores.tool = schema-valid rate (56/80), scores.safety = refusal and injection cases pooled (13/32), scores.rag = not measured; memory = U peak and median of the lite run A (R summed VmRSS, W cgroup working set); latency over the 80 cases; load_time.cold_ms = first request after the container started (61 s under host contention). The model needs reasoning.disable and enable_thinking=false in its LocalAI definition (its template thinks by default; protocol Amendment 1)."

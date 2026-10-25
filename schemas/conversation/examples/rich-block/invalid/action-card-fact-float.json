@@ -1,0 +1,22 @@
+{
+  "type": "action_card",
+  "title": "Appointment booked",
+  "capability_id": "appointments.book",
+  "facts": [
+    {
+      "field": "fee",
+      "value": {
+        "kind": "float",
+        "value": 45.5
+      }
+    }
+  ],
+  "actions": [
+    {
+      "action": "invoke_capability",
+      "capability_id": "appointments.cancel",
+      "label": "Cancel appointment"
+    }
+  ],
+  "receipt_id": "rcpt_01J0000000000000000000000A"
+}

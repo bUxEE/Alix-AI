@@ -1,0 +1,51 @@
+# v1 contract compatibility gate (master plan 20.1, 21 M6). Copy to .github/workflows/compat.yml (M6-01 could not write
+# there: that directory belongs to M0-01). Actions are pinned by commit SHA like ci.yml; no secrets, no network but checkout.
+name: Contract compatibility
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CGO_ENABLED: "0"
+
+jobs:
+  compat:
+    name: frozen v1 contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Go (version from go.mod)
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Working tree against the frozen set
+        run: go run ./tools/compat check
+
+      - name: Frozen set itself only grows (pull requests)
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # Editing schemas/_frozen to hide a breaking change is the loophole: compare the base branch's frozen tree
+          # with this branch's. A removed or incompatible entry fails; additive growth passes.
+          set -euo pipefail
+          if ! git cat-file -e "origin/${BASE_REF}:schemas/_frozen/v1/openapi.frozen.json" 2>/dev/null; then
+            echo "base branch has no frozen v1 set yet; nothing to compare"
+            exit 0
+          fi
+          old="$(mktemp -d)"
+          git archive "origin/${BASE_REF}" schemas/_frozen/v1 | tar -x -C "$old"
+          go run ./tools/compat compare "$old/schemas/_frozen/v1" schemas/_frozen/v1

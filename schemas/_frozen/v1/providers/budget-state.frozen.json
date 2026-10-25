@@ -1,0 +1,229 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:providers:budget-state:v1",
+  "title": "Budget state",
+  "description": "The state of one budget as the host application can display it (additive plan section 11.2, 17 criterion 8): for each of the two windows, daily and monthly, the limit, what has been spent (settled), what is reserved (in flight), what remains and the state ok, warning or exhausted, plus the overall state, the time it was computed and whether a local fallback is available when policy allows. exhausted is the hard stop: no external call is made, the failure is a typed resource_exhausted error and no alternate provider is chosen. All amounts are integer micro-units of the budget currency. The state is computed by the core; a host cannot write it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "budget_id",
+    "subject",
+    "channel",
+    "currency",
+    "as_of",
+    "state",
+    "windows",
+    "local_fallback_available"
+  ],
+  "properties": {
+    "budget_id": {
+      "description": "The budget.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/budgetId"
+    },
+    "subject": {
+      "description": "What the budget applies to.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/budgetSubject"
+    },
+    "channel": {
+      "description": "interactive or background.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/channel"
+    },
+    "currency": {
+      "description": "The currency of every amount.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/currency"
+    },
+    "as_of": {
+      "description": "When the state was computed.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    },
+    "state": {
+      "description": "The worst of the two windows: exhausted if either is exhausted, else warning if either is warning, else ok.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/budgetStatus"
+    },
+    "windows": {
+      "description": "Exactly two windows, one daily and one monthly: at most two entries, and one of each is required.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "items": { "$ref": "#/$defs/window" },
+      "maxItems": 2
+    },
+    "local_fallback_available": {
+      "description": "True when policy names a local fallback that can serve while the budget is exhausted. A hint for the host; the router applies the policy.",
+      "x-alixai-authority": "alixai",
+      "type": "boolean"
+    }
+  },
+  "allOf": [
+    {
+      "description": "There is a daily window.",
+      "properties": {
+        "windows": {
+          "contains": {
+            "required": ["window"],
+            "properties": {
+              "window": { "const": "daily" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "There is a monthly window.",
+      "properties": {
+        "windows": {
+          "contains": {
+            "required": ["window"],
+            "properties": {
+              "window": { "const": "monthly" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "The overall state is exhausted exactly when a window is exhausted.",
+      "if": {
+        "required": ["state"],
+        "properties": {
+          "state": { "const": "exhausted" }
+        }
+      },
+      "then": {
+        "properties": {
+          "windows": {
+            "contains": {
+              "required": ["state"],
+              "properties": {
+                "state": { "const": "exhausted" }
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "windows": {
+            "items": {
+              "properties": {
+                "state": {
+                  "not": { "const": "exhausted" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "The overall state is ok only when no window is in warning.",
+      "if": {
+        "required": ["state"],
+        "properties": {
+          "state": { "const": "ok" }
+        }
+      },
+      "then": {
+        "properties": {
+          "windows": {
+            "items": {
+              "properties": {
+                "state": {
+                  "not": { "const": "warning" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "window": {
+      "description": "One window of the budget.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "window",
+        "starts_at",
+        "ends_at",
+        "limit_micro_units",
+        "spent_micro_units",
+        "reserved_micro_units",
+        "remaining_micro_units",
+        "state"
+      ],
+      "properties": {
+        "window": {
+          "description": "daily or monthly, UTC.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "enum": ["daily", "monthly"]
+        },
+        "starts_at": {
+          "description": "Start of the window, inclusive.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+        },
+        "ends_at": {
+          "description": "End of the window, exclusive.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+        },
+        "limit_micro_units": {
+          "description": "The limit of the window.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/microUnits"
+        },
+        "spent_micro_units": {
+          "description": "Settled spend in the window.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/microUnits"
+        },
+        "reserved_micro_units": {
+          "description": "Reserved, not yet settled, amounts in the window. A reservation never settled returns after its timeout.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/microUnits"
+        },
+        "remaining_micro_units": {
+          "description": "What may still be spent: the limit less spent and reserved, never below 0.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/microUnits"
+        },
+        "state": {
+          "description": "ok, warning or exhausted. exhausted exactly when nothing remains.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/budgetStatus"
+        }
+      },
+      "allOf": [
+        {
+          "description": "A window is exhausted exactly when nothing remains.",
+          "if": {
+            "required": ["remaining_micro_units"],
+            "properties": {
+              "remaining_micro_units": { "const": 0 }
+            }
+          },
+          "then": {
+            "properties": {
+              "state": { "const": "exhausted" }
+            }
+          },
+          "else": {
+            "properties": {
+              "state": {
+                "not": { "const": "exhausted" }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

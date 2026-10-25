@@ -1,0 +1,214 @@
+{
+  "name": "resume_approve",
+  "description": "The user approves: resume with {approved: true} and the confirmation secret in the request header. The action commits, its receipt (the application's facts) is the result of the confirmation tool call, and the run finishes.",
+  "protocol": "AG-UI 1.0 (@ag-ui/core 1.0.1)",
+  "source": "engine",
+  "request": {
+    "method": "POST",
+    "path": "/v1/agui",
+    "headers": {
+      "X-AlixAI-Confirmation-Token": "<the confirmation secret the run that prepared the action returned in this header>"
+    },
+    "body": {
+      "context": [],
+      "forwardedProps": {},
+      "messages": [],
+      "resume": [
+        {
+          "interruptId": "prep_01J00000000000000000000001",
+          "payload": {
+            "approved": true
+          },
+          "status": "resolved"
+        }
+      ],
+      "runId": "run_approve",
+      "state": {},
+      "threadId": "ses_test_01",
+      "tools": []
+    }
+  },
+  "response": {
+    "status": 200,
+    "content_type": "text/event-stream",
+    "sse_file": "resume_approve.sse",
+    "ids": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "event_types": [
+      "RUN_STARTED",
+      "STATE_DELTA",
+      "STEP_STARTED",
+      "STEP_FINISHED",
+      "STEP_STARTED",
+      "STEP_FINISHED",
+      "STEP_STARTED",
+      "STEP_FINISHED",
+      "CUSTOM",
+      "TOOL_CALL_RESULT",
+      "TEXT_MESSAGE_START",
+      "TEXT_MESSAGE_CONTENT",
+      "TEXT_MESSAGE_END",
+      "STATE_DELTA",
+      "RUN_FINISHED"
+    ],
+    "events": [
+      {
+        "type": "RUN_STARTED",
+        "threadId": "ses_test_01",
+        "runId": "run_approve"
+      },
+      {
+        "type": "STATE_DELTA",
+        "delta": [
+          {
+            "op": "add",
+            "path": "/alixai",
+            "value": {
+              "pending": {
+                "capabilityId": "items.create",
+                "collectedFields": [
+                  {
+                    "name": "name",
+                    "origin": "user_turn"
+                  },
+                  {
+                    "name": "quantity",
+                    "origin": "user_turn"
+                  },
+                  {
+                    "name": "size",
+                    "origin": "user_turn"
+                  }
+                ],
+                "expiresAt": "2026-10-02T12:05:00Z",
+                "kind": "confirmation",
+                "missingFields": [],
+                "phase": "prepared",
+                "preparationId": "prep_01J00000000000000000000001"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "committing"
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "committing"
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "generating"
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "generating"
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "verifying"
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "verifying"
+      },
+      {
+        "type": "CUSTOM",
+        "name": "alixai.directive",
+        "value": {
+          "turn_id": "trn_01J00000000000000000000001",
+          "capability_id": "items.create",
+          "act": "report_outcome",
+          "facts": [
+            {
+              "field": "name",
+              "value": {
+                "kind": "text",
+                "value": "widget"
+              }
+            }
+          ],
+          "must_state": [
+            "name"
+          ],
+          "missing_fields": [],
+          "invalid_fields": [],
+          "allowed_suggestions": [],
+          "confirmation": {
+            "mode": "none",
+            "bindings": []
+          },
+          "permitted_next_actions": [],
+          "sources": [],
+          "receipt_id": "rcpt_01J00000000000000000000001"
+        }
+      },
+      {
+        "type": "TOOL_CALL_RESULT",
+        "messageId": "msg_trn_01J00000000000000000000001_r1",
+        "toolCallId": "alixai_confirm_prep_01J00000000000000000000001",
+        "content": "{\"receipt_id\":\"rcpt_01J00000000000000000000001\",\"preparation_id\":\"prep_01J00000000000000000000001\",\"capability_id\":\"items.create\",\"status\":\"committed\",\"records\":[{\"entity_type\":\"item\",\"entity_id\":\"item_1\"}],\"facts\":[{\"field\":\"name\",\"value\":{\"kind\":\"text\",\"value\":\"widget\"}}],\"errors\":[],\"audit_ref\":\"aud_01J00000000000000000000001\",\"issued_at\":\"2026-10-02T12:00:00.000Z\"}",
+        "role": "tool"
+      },
+      {
+        "type": "TEXT_MESSAGE_START",
+        "messageId": "msg_trn_01J00000000000000000000001_1",
+        "role": "assistant"
+      },
+      {
+        "type": "TEXT_MESSAGE_CONTENT",
+        "messageId": "msg_trn_01J00000000000000000000001_1",
+        "delta": "Done. The item widget was created."
+      },
+      {
+        "type": "TEXT_MESSAGE_END",
+        "messageId": "msg_trn_01J00000000000000000000001_1"
+      },
+      {
+        "type": "STATE_DELTA",
+        "delta": [
+          {
+            "op": "replace",
+            "path": "/alixai/pending/expiresAt",
+            "value": "2026-10-02T12:30:00Z"
+          },
+          {
+            "op": "replace",
+            "path": "/alixai/pending/kind",
+            "value": "goal"
+          },
+          {
+            "op": "replace",
+            "path": "/alixai/pending/phase",
+            "value": "success"
+          },
+          {
+            "op": "remove",
+            "path": "/alixai/pending/preparationId"
+          }
+        ]
+      },
+      {
+        "type": "RUN_FINISHED",
+        "threadId": "ses_test_01",
+        "runId": "run_approve",
+        "result": {
+          "finishReason": "completed",
+          "turnId": "trn_01J00000000000000000000001"
+        },
+        "outcome": {
+          "type": "success"
+        }
+      }
+    ]
+  }
+}

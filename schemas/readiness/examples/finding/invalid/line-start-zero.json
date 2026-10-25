@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "finding_id": "fnd_0123456789abcdef",
+  "requirement_id": "req.data.read",
+  "category": "deterministic_data",
+  "status": "found",
+  "source": "deterministic",
+  "check_id": "application.deterministic_results",
+  "evidence": [
+    {
+      "path": "src/api/reads.ts",
+      "line_start": 0,
+      "line_end": 48,
+      "file_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ],
+  "summary": "Three read operations return schema-typed responses.",
+  "remediation": {
+    "en": "Add a typed response schema to each read operation.",
+    "it": "Aggiungere uno schema di risposta tipizzato a ogni operazione di lettura."
+  }
+}

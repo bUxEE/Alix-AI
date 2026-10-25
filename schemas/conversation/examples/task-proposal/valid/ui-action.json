@@ -1,0 +1,19 @@
+{
+  "capability_id": "tasks.create",
+  "fields": {
+    "title": "Call the supplier about the delayed order"
+  },
+  "entity_refs": [],
+  "intent": "task",
+  "uncertainty": {
+    "overall": 0.8
+  },
+  "ui_action": {
+    "name": "highlightRow",
+    "arguments": {
+      "rowId": "r_41",
+      "color": "yellow"
+    }
+  },
+  "trace_id": "trc_01J0000000000000000000000A"
+}

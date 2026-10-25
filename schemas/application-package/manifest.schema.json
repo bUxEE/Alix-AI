@@ -1,0 +1,661 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:application-package:manifest:v1",
+  "title": "Application manifest (alixai.yaml)",
+  "description": "The root of an Application Integration Package (master plan 9.1): who the application is, how AlixAI reaches it, how identity is exchanged, how tenancy works, which languages, capabilities and RAG sources it supplies, what models it needs, how long data is kept, which network destinations it may use, which AlixAI core versions it works with and where its integrity metadata lives. Authored as YAML (alixai.yaml at the package root); this schema validates the parsed JSON form. Every property is required unless its description says otherwise: a missing declaration is never filled with a permissive default.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "application",
+    "package",
+    "compatibility",
+    "endpoints",
+    "context_exchange",
+    "tenancy",
+    "languages",
+    "capabilities",
+    "rag_sources",
+    "model_requirements",
+    "retention",
+    "network",
+    "integrity"
+  ],
+  "properties": {
+    "format": {
+      "description": "The package format and its major version. A loader that does not know this value refuses the package.",
+      "const": "alixai.application-package/v1"
+    },
+    "application": {
+      "description": "Identity of the host application (master plan 9.1: application ID and version).",
+      "$ref": "#/$defs/application"
+    },
+    "package": {
+      "description": "Identity of this integration package (master plan 9.1: integration package version). The package version changes whenever any file in the package changes; the application version is independent.",
+      "$ref": "#/$defs/package"
+    },
+    "compatibility": {
+      "description": "Which AlixAI core versions this package works with (master plan 9.1: compatibility range).",
+      "$ref": "#/$defs/compatibility"
+    },
+    "endpoints": {
+      "description": "The service endpoints and transports AlixAI may use to reach the application (master plan 9.1, 9.3), keyed by endpoint ID. At least one. Capabilities and RAG sources refer to these IDs; an endpoint nothing refers to is still inventoried and audited.",
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 16,
+      "propertyNames": { "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug" },
+      "additionalProperties": { "$ref": "#/$defs/endpoint" }
+    },
+    "context_exchange": {
+      "description": "How the host application proves a user's identity to AlixAI (master plan 9.1 authentication/context exchange, 10.1).",
+      "$ref": "#/$defs/contextExchange"
+    },
+    "tenancy": {
+      "description": "What tenant and workspace mean in this application and which roles it asserts (master plan 9.1, 10).",
+      "$ref": "#/$defs/tenancy"
+    },
+    "languages": {
+      "description": "The languages the application supports (master plan 9.1). Every conversational capability needs a conversation contract in each of them.",
+      "$ref": "#/$defs/languages"
+    },
+    "capabilities": {
+      "description": "The capability registry (master plan 9.1: capabilities): capability ID to the package-relative capabilities/ file that defines it. This list is the deny-by-default registry: a file under capabilities/ that is not listed here, or a listed ID whose file declares a different ID, fails validation. At least one.",
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 256,
+      "propertyNames": { "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/capabilityId" },
+      "additionalProperties": {
+        "type": "string",
+        "maxLength": 240,
+        "pattern": "^capabilities/[A-Za-z0-9_][A-Za-z0-9._-]*\\.yaml$"
+      }
+    },
+    "rag_sources": {
+      "description": "The RAG source registry (master plan 9.1: RAG source definitions): source ID to the package-relative rag-sources/ file that declares it. May be empty for an application without document sources; a source not listed here is undeclared and is reported by the audit.",
+      "type": "object",
+      "maxProperties": 64,
+      "propertyNames": { "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug" },
+      "additionalProperties": {
+        "type": "string",
+        "maxLength": 240,
+        "pattern": "^rag-sources/[A-Za-z0-9_][A-Za-z0-9._-]*\\.yaml$"
+      }
+    },
+    "model_requirements": {
+      "description": "What the application needs from the model runtime (master plan 9.1: model/profile requirements). Roles and qualities only: a package never names a model file, a provider or a runtime.",
+      "$ref": "#/$defs/modelRequirements"
+    },
+    "retention": {
+      "description": "Data-retention defaults (master plan 9.1, 19). The operator may override them per application and tenant; the package states what it expects.",
+      "$ref": "#/$defs/retention"
+    },
+    "network": {
+      "description": "Network permissions (master plan 9.1, 16.1): outbound access is denied unless an entry here allows it.",
+      "$ref": "#/$defs/network"
+    },
+    "integrity": {
+      "description": "Where the package signature and integrity metadata live (master plan 9.1, 4.5 check 1).",
+      "$ref": "#/$defs/integrity"
+    },
+    "security_domain": {
+      "description": "Optional. The security domain the application belongs to (ADR-0016): a label for a set of applications whose operators accept the same trust level and blast radius. Applications that share one AlixAI process must declare the same security domain; a registration whose domain differs from the one the deployment already serves is refused by the registration step (the loader only records the value). Absent means the application declares no domain, which the registration step treats as a domain of its own. It is a label chosen by the operator, never a secret and never a grant.",
+      "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+    },
+    "external": {
+      "description": "Optional. What the application says about external model providers (external provider mode plan). The mode itself (Local, External, Hybrid) is deployment and tenant policy, never a package field, so switching mode never changes the integration contract. The package can only restrict.",
+      "$ref": "#/$defs/external"
+    }
+  },
+  "$defs": {
+    "external": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "forbid": {
+          "description": "Optional, default false. true: nothing of this application may be sent to an external provider, whatever the deployment, tenant or workspace policy allows. A package declaring forbid: true cannot declare a RAG source with egress_mode allow_excerpt or allow_metadata (the loader refuses the contradiction).",
+          "type": "boolean"
+        }
+      }
+    },
+    "application": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "version"],
+      "properties": {
+        "id": {
+          "description": "The application ID. It must equal the application_id claim of every context token the application issues.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/applicationId"
+        },
+        "name": {
+          "description": "Human-readable application name.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/label"
+        },
+        "version": {
+          "description": "The host application's own version, for audit records. Not required to be semver: 1 to 64 letters, digits, dot, underscore, plus or hyphen.",
+          "type": "string",
+          "pattern": "^[0-9A-Za-z][0-9A-Za-z._+-]{0,63}$"
+        },
+        "vendor": {
+          "description": "Optional name of the organisation that publishes the application.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/label"
+        },
+        "description": {
+          "description": "Optional short description of what the application does.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/text"
+        }
+      }
+    },
+    "package": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version"],
+      "properties": {
+        "version": {
+          "description": "The integration package version (semver).",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/semver"
+        },
+        "description": {
+          "description": "Optional note on what changed in this package version.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/text"
+        }
+      }
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["alixai_core"],
+      "properties": {
+        "alixai_core": {
+          "description": "The AlixAI core versions the package was written and tested for: min inclusive, max_exclusive exclusive. Both bounds are required, so a package can never claim compatibility with every future core. An installed core outside the range rejects the package.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["min", "max_exclusive"],
+          "properties": {
+            "min": {
+              "description": "Lowest compatible core version (inclusive).",
+              "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/semver"
+            },
+            "max_exclusive": {
+              "description": "First core version that is NOT compatible (exclusive upper bound). Must be greater than min.",
+              "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/semver"
+            }
+          }
+        }
+      }
+    },
+    "endpoint": {
+      "description": "One endpoint. The transport property selects the variant. The endpoint's ID is its key in the endpoints map.",
+      "oneOf": [
+        { "$ref": "#/$defs/mcpEndpoint" },
+        { "$ref": "#/$defs/openapiEndpoint" },
+        { "$ref": "#/$defs/nativeEndpoint" },
+        { "$ref": "#/$defs/eventsEndpoint" }
+      ]
+    },
+    "mcpEndpoint": {
+      "title": "MCP endpoint",
+      "description": "Preferred transport for capability discovery and typed tool exchange (master plan 9.3). AlixAI filters and wraps the individual tools that capabilities map to; it never exposes the whole server to a model. The connection is over HTTP(S): a package cannot make AlixAI spawn a local process.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["transport", "url", "adapter_config"],
+      "properties": {
+        "transport": { "const": "mcp" },
+        "url": {
+          "description": "Absolute http(s) URL of the MCP server. Its host must have an entry in network.egress unless it is loopback.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/httpUrl"
+        },
+        "adapter_config": {
+          "description": "Package-relative path (below schemas/) of the adapter configuration file for this endpoint. Its format is owned by the MCP adapter. It is signed with the package like every other file.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/schemaRef"
+        },
+        "contract_sha256": {
+          "description": "Optional SHA-256 of the approved tool list (names and input schemas) that the capabilities map to. When present, a discovered tool list that hashes differently is an audit finding, not a silent update.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/sha256"
+        },
+        "credential_ref": {
+          "description": "Optional credential reference AlixAI uses to authenticate to the server.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/credentialRef"
+        }
+      }
+    },
+    "openapiEndpoint": {
+      "title": "OpenAPI/HTTP endpoint",
+      "description": "An approved subset of an HTTP API from which AlixAI generates a typed client (master plan 9.3). The package maps operationIds to capabilities.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["transport", "base_url", "spec", "adapter_config"],
+      "properties": {
+        "transport": { "const": "openapi" },
+        "base_url": {
+          "description": "Absolute http(s) base URL of the API. Its host must have an entry in network.egress unless it is loopback.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/httpUrl"
+        },
+        "spec": {
+          "description": "Package-relative path (below schemas/) of the OpenAPI document containing the approved operations. Operations absent from it are unreachable to AlixAI.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/schemaRef"
+        },
+        "adapter_config": {
+          "description": "Package-relative path (below schemas/) of the adapter configuration file for this endpoint. Its format is owned by the OpenAPI adapter.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/schemaRef"
+        },
+        "contract_sha256": {
+          "description": "Optional SHA-256 of the approved operation subset. A discovered API whose subset hashes differently is an audit finding.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/sha256"
+        },
+        "credential_ref": {
+          "description": "Optional credential reference AlixAI uses to authenticate to the API.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/credentialRef"
+        }
+      }
+    },
+    "nativeEndpoint": {
+      "title": "Native SDK endpoint",
+      "description": "A language-specific bridge embedded in the host application, reached over local IPC (master plan 9.3). Local IPC only: the address is a Unix socket, a Windows named pipe or a loopback TCP port.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["transport", "bridge", "ipc", "adapter_config"],
+      "properties": {
+        "transport": { "const": "native" },
+        "bridge": {
+          "description": "The language of the embedded bridge.",
+          "type": "string",
+          "enum": ["typescript", "python", "go", "other"]
+        },
+        "ipc": {
+          "description": "How AlixAI reaches the bridge.",
+          "$ref": "#/$defs/nativeIpc"
+        },
+        "adapter_config": {
+          "description": "Package-relative path (below schemas/) of the adapter configuration file for this endpoint. Its format is owned by the native adapter.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/schemaRef"
+        }
+      }
+    },
+    "nativeIpc": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "address"],
+      "properties": {
+        "kind": {
+          "description": "unix_socket (an absolute path), named_pipe (a \\\\.\\pipe\\ name) or loopback_tcp (127.0.0.1, [::1] or localhost with a port).",
+          "type": "string",
+          "enum": ["unix_socket", "named_pipe", "loopback_tcp"]
+        },
+        "address": {
+          "description": "The address for the kind. No other address form exists, so a package cannot point the native adapter at a remote host.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "unix_socket" } }, "required": ["kind"] },
+          "then": { "properties": { "address": { "pattern": "^/[^\\s]+$" } } }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "named_pipe" } }, "required": ["kind"] },
+          "then": { "properties": { "address": { "pattern": "^\\\\\\\\\\.\\\\pipe\\\\[A-Za-z0-9_.-]+$" } } }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "loopback_tcp" } }, "required": ["kind"] },
+          "then": { "properties": { "address": { "pattern": "^(127\\.0\\.0\\.1|\\[::1\\]|localhost):[0-9]{1,5}$" } } }
+        }
+      ]
+    },
+    "eventsEndpoint": {
+      "title": "Event endpoint",
+      "description": "Receives application events that invalidate state, refresh projections or notify a session (master plan 9.3). An event can never trigger an AI commit: the effect enum has no commit value, and an events endpoint cannot be the target of a capability operation.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["transport", "delivery", "event_types", "adapter_config"],
+      "properties": {
+        "transport": { "const": "events" },
+        "delivery": {
+          "description": "webhook: the application posts signed events to AlixAI (key_id required). sse or poll: AlixAI reads events from url.",
+          "type": "string",
+          "enum": ["webhook", "sse", "poll"]
+        },
+        "url": {
+          "description": "Absolute http(s) URL AlixAI reads events from. Required for sse and poll; not allowed for webhook.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/httpUrl"
+        },
+        "key_id": {
+          "description": "ID of the registered key that authenticates the event sender. Required for webhook; events with an unknown or missing signature are dropped.",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "credential_ref": {
+          "description": "Optional credential reference used for sse or poll delivery.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/credentialRef"
+        },
+        "event_types": {
+          "description": "The event types AlixAI accepts, keyed by event type name. Anything else is dropped. At least one.",
+          "type": "object",
+          "minProperties": 1,
+          "maxProperties": 64,
+          "propertyNames": { "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/dottedId" },
+          "additionalProperties": { "$ref": "#/$defs/eventType" }
+        },
+        "adapter_config": {
+          "description": "Package-relative path (below schemas/) of the adapter configuration file for this endpoint. Its format is owned by the event adapter.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/schemaRef"
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "delivery": { "const": "webhook" } }, "required": ["delivery"] },
+          "then": {
+            "required": ["key_id"],
+            "properties": { "url": false }
+          },
+          "else": {
+            "required": ["url"],
+            "properties": { "key_id": false }
+          }
+        }
+      ]
+    },
+    "eventType": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["effect", "description"],
+      "properties": {
+        "effect": {
+          "description": "What AlixAI does when the event arrives: invalidate_state (drop pending goals, prepared actions and caches that depend on the changed record), refresh_projection (re-read a cached projection) or notify_session (tell an active session). There is no value that executes or commits anything.",
+          "type": "string",
+          "enum": ["invalidate_state", "refresh_projection", "notify_session"]
+        },
+        "description": {
+          "description": "What the event means in the application.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/text"
+        }
+      }
+    },
+    "contextExchange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "issuer", "audience", "key_ids"],
+      "properties": {
+        "mode": {
+          "description": "context_token: the application mints a short-lived, audience-bound token per request. local_ipc: mutually authenticated local IPC with the native adapter. The token format and algorithm are fixed by the AlixAI core (ADR-0013), not by the package.",
+          "type": "string",
+          "enum": ["context_token", "local_ipc"]
+        },
+        "issuer": {
+          "description": "The issuer value AlixAI must see on the application's tokens or IPC identity. Exact match, no whitespace.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[^\\s]+$"
+        },
+        "audience": {
+          "description": "The audience value the application puts in its tokens, naming this AlixAI deployment's service. Exact match, no whitespace.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[^\\s]+$"
+        },
+        "key_ids": {
+          "description": "IDs of the public keys registered for this application that may sign its tokens (or authenticate the IPC peer). At least one; AlixAI never trusts a key ID that is not registered for this application.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier" }
+        },
+        "max_lifetime_seconds": {
+          "description": "Optional. The longest token lifetime the application will issue, 1 to 900 (15 minutes, master plan 10.1). When absent the platform maximum applies. AlixAI may enforce a lower value.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 900
+        }
+      }
+    },
+    "tenancy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tenant", "workspace", "principal_kinds", "roles"],
+      "properties": {
+        "tenant": {
+          "description": "What a tenant is in this application. Every request carries a tenant ID; there is no default tenant.",
+          "$ref": "#/$defs/tenancyLevel"
+        },
+        "workspace": {
+          "description": "What a workspace is inside a tenant. Every request carries a workspace ID; an application with a single workspace per tenant still sends one, and a session can never change tenant or workspace without a new authenticated context.",
+          "$ref": "#/$defs/tenancyLevel"
+        },
+        "principal_kinds": {
+          "description": "The kinds of principal the application authenticates: human users, service principals or both.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": { "type": "string", "enum": ["human", "service"] }
+        },
+        "roles": {
+          "description": "The roles the application asserts in context tokens, keyed by role ID, with what each role means. At least one: a Scope always carries a role. Policy files may only refer to roles listed here.",
+          "type": "object",
+          "minProperties": 1,
+          "maxProperties": 64,
+          "propertyNames": { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier" },
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["description"],
+            "properties": {
+              "description": { "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/text" }
+            }
+          }
+        }
+      }
+    },
+    "tenancyLevel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "description"],
+      "properties": {
+        "label": {
+          "description": "The application's own noun for this level (for example clinic group, site, organisation, project).",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/label"
+        },
+        "description": {
+          "description": "What the level means and what data it isolates.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/text"
+        }
+      }
+    },
+    "languages": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["default", "supported"],
+      "properties": {
+        "default": {
+          "description": "The language used when the user's language is unknown. Must be one of supported.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/languageTag"
+        },
+        "supported": {
+          "description": "Every supported language. At least one.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": { "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/languageTag" }
+        }
+      }
+    },
+    "modelRequirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minimum_profile", "controller"],
+      "properties": {
+        "minimum_profile": {
+          "description": "The smallest deployment profile the application's complete workload has been shown to fit: experimental-4g (emulated, never certified), lite, balanced or performance (master plan 7).",
+          "type": "string",
+          "enum": ["experimental-4g", "lite", "balanced", "performance"]
+        },
+        "controller": {
+          "description": "The conversational controller model (master plan 8.1). Required: AlixAI cannot run a conversation without one.",
+          "$ref": "#/$defs/modelRole"
+        },
+        "router": {
+          "description": "Optional decision/router model.",
+          "$ref": "#/$defs/modelRole"
+        },
+        "embedding": {
+          "description": "Embedding model, needed for semantic RAG retrieval. Absent means lexical (FTS) retrieval only.",
+          "$ref": "#/$defs/modelRole"
+        },
+        "reranker": {
+          "description": "Optional reranker over an authorized shortlist.",
+          "$ref": "#/$defs/modelRole"
+        },
+        "stt": {
+          "description": "Optional speech recognition.",
+          "$ref": "#/$defs/modelRole"
+        },
+        "tts": {
+          "description": "Optional speech generation.",
+          "$ref": "#/$defs/modelRole"
+        }
+      }
+    },
+    "modelRole": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["need"],
+      "properties": {
+        "need": {
+          "description": "required: the application is not supported without this role. optional: the application degrades gracefully (master plan 18) without it.",
+          "type": "string",
+          "enum": ["required", "optional"]
+        },
+        "languages": {
+          "description": "Optional. Languages the model must cover; when absent, languages.supported applies.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": { "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/languageTag" }
+        },
+        "min_context_tokens": {
+          "description": "Optional. The smallest context window, in tokens, the workload was qualified with.",
+          "type": "integer",
+          "minimum": 256,
+          "maximum": 1048576
+        }
+      }
+    },
+    "retention": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["session_state_days", "transcript_days", "action_receipt_days", "audit_days", "log_days"],
+      "properties": {
+        "session_state_days": {
+          "description": "How long goal and slot state of a finished session is kept.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/retentionDays"
+        },
+        "transcript_days": {
+          "description": "How long the display transcript is kept. Clearing it never deletes records, receipts or audit evidence.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/retentionDays"
+        },
+        "action_receipt_days": {
+          "description": "How long committed or rejected action receipts are kept. At least 1: a receipt is evidence.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3650
+        },
+        "audit_days": {
+          "description": "How long audit events are kept. At least 1: audit evidence is never discarded immediately.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3650
+        },
+        "log_days": {
+          "description": "How long redacted operational logs are kept.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/retentionDays"
+        }
+      }
+    },
+    "network": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["default", "egress"],
+      "properties": {
+        "default": {
+          "description": "Always deny. The property exists so the policy is stated in the signed file instead of being implied.",
+          "const": "deny"
+        },
+        "egress": {
+          "description": "The outbound destinations that are allowed, keyed by entry ID. An empty map allows none. RAG sources refer to entry IDs; every non-loopback host of an endpoint must appear here.",
+          "type": "object",
+          "maxProperties": 64,
+          "propertyNames": { "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug" },
+          "additionalProperties": { "$ref": "#/$defs/egressEntry" }
+        }
+      }
+    },
+    "egressEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["host", "ports", "scheme", "purpose"],
+      "properties": {
+        "host": {
+          "description": "An exact host name or IPv4 address. Wildcards do not exist.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/hostname"
+        },
+        "ports": {
+          "description": "The allowed destination ports. At least one.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": { "type": "integer", "minimum": 1, "maximum": 65535 }
+        },
+        "scheme": {
+          "description": "https, or plain http. Plain http is accepted only to localhost or 127.0.0.1.",
+          "type": "string",
+          "enum": ["https", "http"]
+        },
+        "purpose": {
+          "description": "Why the application needs this destination.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/label"
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "scheme": { "const": "http" } }, "required": ["scheme"] },
+          "then": { "properties": { "host": { "enum": ["localhost", "127.0.0.1"] } } }
+        }
+      ]
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["signature_manifest", "hash_algorithm", "signature_algorithm", "publisher_key_ids"],
+      "properties": {
+        "signature_manifest": {
+          "description": "The package-relative path of the signature manifest. Fixed: the manifest cannot hash itself, so integrity is carried by this file, which lists every other file with its digest and carries the detached signature.",
+          "const": "signatures/signature-manifest.json"
+        },
+        "hash_algorithm": {
+          "description": "Digest algorithm of the signature manifest.",
+          "type": "string",
+          "enum": ["sha256"]
+        },
+        "signature_algorithm": {
+          "description": "Signature algorithm of the signature manifest.",
+          "type": "string",
+          "enum": ["ed25519"]
+        },
+        "publisher_key_ids": {
+          "description": "IDs of the publisher keys that may sign this package. The signature manifest's signing key must be one of them and must be registered for this application in the trust store.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier" }
+        }
+      }
+    }
+  }
+}

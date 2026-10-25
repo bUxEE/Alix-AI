@@ -1,0 +1,4 @@
+// The kit's stylesheet: tokens, primitives, utilities. A host imports it once (`@alixai/vue/styles`).
+@use "tokens";
+@use "primitives";
+@use "utilities";

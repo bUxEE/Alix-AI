@@ -1,0 +1,41 @@
+{
+  "tenant_id": "tenant-acme",
+  "application_id": "app-booking",
+  "session_id": "ses-0001",
+  "contract_version": "2026-10-01.3",
+  "decision_type": "capability_routing",
+  "schema_version": 1,
+  "bounded_state": {
+    "draft": {
+      "date": "tomorrow"
+    }
+  },
+  "allowed_next_actions": [
+    {
+      "action": "cancel"
+    },
+    {
+      "action": "invoke_capability",
+      "capability_id": "book_appointment",
+      "label": "Book"
+    }
+  ],
+  "candidate_set": {
+    "candidates": [
+      {
+        "candidate_id": "book_appointment",
+        "label": "Book an appointment"
+      },
+      {
+        "candidate_id": "cancel_appointment",
+        "label": "Cancel an appointment",
+        "text": "Cancels an existing booking for the signed-in customer.",
+        "data_version": "v12"
+      }
+    ],
+    "max_selections": 1,
+    "built_at": "2026-10-07T09:30:00Z"
+  },
+  "locale": "it",
+  "deadline": "2026-10-07T09:30:02Z"
+}

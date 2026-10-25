@@ -1,0 +1,67 @@
+capability_id: workorders.assign
+language: en
+contract_version: 1.0.0
+terminology:
+- work_order
+- technician
+- site
+- assignment
+field_prompts:
+- field: work_order
+  label: Work order
+  prompt: Which work order? Give its reference, such as WO-1001, or describe it.
+  examples:
+  - WO-1001
+- field: technician
+  label: Technician
+  prompt: Who should take it? Give the technician's name.
+  examples:
+  - Marco Bianchi
+- field: note
+  label: Note
+  prompt: Is there anything the technician should know? You can skip this.
+clarifications:
+- rule_id: work_order_multiple
+  prompt: More than one work order matches {input.work_order}. Which one do you mean?
+- rule_id: technician_multiple
+  prompt: More than one technician matches {input.technician}. Which one do you mean?
+corrections:
+  acknowledgement: Okay, I have changed that.
+  correctable_fields:
+  - work_order
+  - technician
+  - note
+  prepared_action_invalidated: That changes the assignment, so the earlier summary no longer applies. I will prepare it again and ask you to confirm the new details.
+cancellations:
+  acknowledgement: Okay, I stopped. Nothing was assigned.
+confirmations:
+  request: 'Please confirm: assign work order {work_order_id} ({work_order_title}) to {technician_name}. The technician will be notified. Shall I assign it?'
+  declined: Okay, I did not assign anything.
+  expired: That assignment is no longer valid, so nothing was assigned. I can prepare it again if you like.
+success:
+- outcome: assigned
+  text: Done. Work order {work_order_id} is assigned to {technician_name}. The technician was notified (reference {notification_reference}).
+failures:
+- code: permission_denied
+  text: You are not allowed to do that, so nothing was changed.
+- code: scope_violation
+  text: 'I cannot do that: the record is not available to you. Nothing was changed.'
+- code: validation_failed
+  text: 'I could not assign that: the note can be at most 200 characters. Nothing was assigned.'
+- code: conflict
+  text: 'I could not assign that: the work order is closed or already assigned to that technician, or the technician is inactive or already has 5 open work orders. Nothing was assigned.'
+- code: stale
+  text: A record changed after I prepared this, so I did not apply it. Nothing was changed; I can prepare it again.
+- code: expired
+  text: This was not confirmed in time, or it was withdrawn, so nothing was changed.
+- code: uncertain_outcome
+  text: I could not confirm whether this was applied. I will check before doing anything else, so please do not ask for it again yet.
+- code: missing_fields
+  text: I still need a few details before I can do that. Nothing was changed.
+- code: unavailable
+  text: The maintenance system is not reachable right now, so nothing was changed.
+next_actions:
+- id: show_open_orders
+  label: Show the open work orders
+- id: show_orders_after_failure
+  label: Show the work orders

@@ -1,0 +1,19 @@
+{
+  "source_id": "src_01J0000000000000000000000A",
+  "display_name": "Clinic cancellation policy",
+  "version": "rev-12",
+  "locator": {
+    "span": {
+      "start": 120,
+      "end": 342
+    }
+  },
+  "availability": "available",
+  "staleness": "current",
+  "open_ref": {
+    "kind": "source"
+  },
+  "claims": [
+    "Appointments can be cancelled free of charge up to 24 hours before the start."
+  ]
+}

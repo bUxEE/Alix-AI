@@ -1,0 +1,457 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Result of payments.record commit and status (payments_record_commit, payments_record_status)",
+  "description": "The recorded outcome of the commit: the records written and the facts the user is told. A repeat of the commit and a status call return this same receipt.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status",
+    "identifiers",
+    "values",
+    "errors",
+    "allowed_next_actions"
+  ],
+  "properties": {
+    "status": {
+      "enum": [
+        "ok",
+        "rejected"
+      ]
+    },
+    "identifiers": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entity_type",
+          "entity_id"
+        ],
+        "properties": {
+          "entity_type": {
+            "enum": [
+              "payment",
+              "invoice"
+            ]
+          },
+          "entity_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        }
+      }
+    },
+    "values": {
+      "type": "array",
+      "maxItems": 80,
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "field",
+              "value"
+            ],
+            "properties": {
+              "field": {
+                "const": "payment_reference"
+              },
+              "value": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "value"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "text"
+                  },
+                  "value": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048
+                  }
+                }
+              },
+              "display": {
+                "type": "string",
+                "maxLength": 512
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "field",
+              "value"
+            ],
+            "properties": {
+              "field": {
+                "const": "invoice_number"
+              },
+              "value": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "value"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "text"
+                  },
+                  "value": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048
+                  }
+                }
+              },
+              "display": {
+                "type": "string",
+                "maxLength": 512
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "field",
+              "value"
+            ],
+            "properties": {
+              "field": {
+                "const": "payment_amount"
+              },
+              "value": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "value",
+                  "currency"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "money"
+                  },
+                  "value": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,17})(\\.[0-9]{1,9})?$"
+                  },
+                  "currency": {
+                    "enum": [
+                      "CHF",
+                      "EUR",
+                      "GBP",
+                      "JPY",
+                      "KWD",
+                      "USD"
+                    ]
+                  }
+                }
+              },
+              "display": {
+                "type": "string",
+                "maxLength": 512
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "field",
+              "value"
+            ],
+            "properties": {
+              "field": {
+                "const": "balance_remaining"
+              },
+              "value": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "value",
+                  "currency"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "money"
+                  },
+                  "value": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,17})(\\.[0-9]{1,9})?$"
+                  },
+                  "currency": {
+                    "enum": [
+                      "CHF",
+                      "EUR",
+                      "GBP",
+                      "JPY",
+                      "KWD",
+                      "USD"
+                    ]
+                  }
+                }
+              },
+              "display": {
+                "type": "string",
+                "maxLength": 512
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "field",
+              "value"
+            ],
+            "properties": {
+              "field": {
+                "const": "invoice_status"
+              },
+              "value": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "value"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "text"
+                  },
+                  "value": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048
+                  }
+                }
+              },
+              "display": {
+                "type": "string",
+                "maxLength": 512
+              }
+            }
+          }
+        ]
+      }
+    },
+    "errors": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "enum": [
+              "conflict",
+              "expired",
+              "internal",
+              "missing_fields",
+              "permission_denied",
+              "scope_missing",
+              "scope_violation",
+              "stale",
+              "step_up_required",
+              "unavailable",
+              "validation_failed"
+            ]
+          },
+          "field": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        }
+      }
+    },
+    "freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "as_of",
+        "version"
+      ],
+      "properties": {
+        "as_of": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^rv1-[0-9a-f]{32}$"
+        }
+      }
+    },
+    "allowed_next_actions": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "enum": [
+              "confirm",
+              "cancel",
+              "retry",
+              "invoke_capability"
+            ]
+          },
+          "capability_id": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 200
+          }
+        }
+      }
+    },
+    "follow_up": false
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "ok"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "freshness"
+        ],
+        "properties": {
+          "errors": {
+            "maxItems": 0
+          },
+          "values": {
+            "allOf": [
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "field"
+                  ],
+                  "properties": {
+                    "field": {
+                      "const": "payment_reference"
+                    }
+                  }
+                }
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "field"
+                  ],
+                  "properties": {
+                    "field": {
+                      "const": "invoice_number"
+                    }
+                  }
+                }
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "field"
+                  ],
+                  "properties": {
+                    "field": {
+                      "const": "payment_amount"
+                    }
+                  }
+                }
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "field"
+                  ],
+                  "properties": {
+                    "field": {
+                      "const": "balance_remaining"
+                    }
+                  }
+                }
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "field"
+                  ],
+                  "properties": {
+                    "field": {
+                      "const": "invoice_status"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "identifiers": {
+            "minItems": 2
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "rejected"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "errors": {
+            "minItems": 1
+          },
+          "identifiers": {
+            "maxItems": 0
+          },
+          "values": {
+            "maxItems": 0
+          }
+        }
+      }
+    }
+  ]
+}

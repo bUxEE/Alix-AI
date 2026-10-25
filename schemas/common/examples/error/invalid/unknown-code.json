@@ -1,0 +1,5 @@
+{
+  "code": "kaboom",
+  "message": "something broke",
+  "retryable": false
+}

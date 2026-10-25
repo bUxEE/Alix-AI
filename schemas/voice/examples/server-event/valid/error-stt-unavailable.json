@@ -1,0 +1,9 @@
+{
+  "type": "error",
+  "error": {
+    "code": "unavailable",
+    "message": "voice: no language pack is active",
+    "retryable": true
+  },
+  "effect": "text_input_only"
+}

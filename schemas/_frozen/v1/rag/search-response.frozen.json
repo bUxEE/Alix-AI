@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:rag:search-response:v1",
+  "title": "SearchResponse",
+  "description": "The result of a SearchRequest (master plan 14.2): authorised passages, best first, and the notices that say how they were found. Only authorised content is in it: retrieval scope is applied before any text is returned, and each hit passed the final authorisation and version recheck. An empty results array is a successful search that matched nothing; it is not an answer and not an error. A search that could not run is a typed error (unavailable, timeout, scope_missing), never an empty result.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["results", "notices"],
+  "properties": {
+    "results": {
+      "description": "The hits, best first, at most 50. May be empty.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "maxItems": 50,
+      "items": { "$ref": "urn:alixai:schema:rag:search-hit:v1" }
+    },
+    "notices": {
+      "description": "Labels for a degraded or adjusted search, for example reduced_semantic_recall when only FTS ran. Empty means none; a result is never silently degraded.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:rag:shared:v1#/$defs/retrievalNotices"
+    }
+  }
+}

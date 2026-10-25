@@ -1,0 +1,72 @@
+capability_id: "payments.record"
+language: "it"
+contract_version: "1.0.0"
+terminology:
+  - "invoice"
+  - "payment"
+  - "payment_method"
+  - "customer"
+field_prompts:
+  - field: "invoice"
+    label: "Fattura"
+    prompt: "Quale fattura è stata pagata? Dammi il numero o il nome del cliente."
+    examples:
+      - "INV-0001"
+      - "Acme Srl"
+  - field: "amount_minor"
+    label: "Importo in unità minime"
+    prompt: "Quanto è stato incassato? Dammelo in unità minime della valuta, per esempio 10000 per 100,00 EUR."
+    examples:
+      - "10000"
+  - field: "currency"
+    label: "Valuta"
+    prompt: "Quale valuta? Deve essere quella della fattura."
+  - field: "paid_on"
+    label: "Data di incasso"
+    prompt: "In quale data è stato incassato? Scrivila come AAAA-MM-GG, oppure salta per oggi."
+    examples:
+      - "2026-10-02"
+  - field: "method"
+    label: "Metodo"
+    prompt: "Come è stato pagato: bonifico, carta o contanti?"
+clarifications:
+  - rule_id: "invoice_multiple"
+    prompt: "Più fatture corrispondono a {input.invoice}. Quale intendi?"
+corrections:
+  acknowledgement: "Va bene, l'ho cambiato."
+  correctable_fields:
+    - "invoice"
+    - "amount_minor"
+    - "currency"
+    - "paid_on"
+    - "method"
+  prepared_action_invalidated: "Questo cambia il pagamento, quindi il riepilogo precedente non vale più. Lo preparo di nuovo e ti chiedo di confermare."
+cancellations:
+  acknowledgement: "Va bene, ho interrotto. Non ho registrato nulla."
+confirmations:
+  request: "Conferma questo pagamento: {payment_amount} sulla fattura {invoice_number}. Saldo dopo il pagamento: {balance_after}. Stato della fattura dopo il pagamento: {invoice_status_after}. Il cliente riceverà una ricevuta. Lo registro?"
+  declined: "Va bene, non ho registrato nulla."
+  expired: "Questo pagamento non è più valido, quindi non ho registrato nulla. Posso prepararlo di nuovo se vuoi."
+success:
+  - outcome: "recorded"
+    text: "Fatto. Il pagamento {payment_reference} di {payment_amount} è registrato sulla fattura {invoice_number}. Saldo residuo: {balance_remaining}. Stato della fattura: {invoice_status}."
+failures:
+  - code: "permission_denied"
+    text: "Non hai il permesso di registrare pagamenti, quindi non ho registrato nulla."
+  - code: "scope_violation"
+    text: "Non posso farlo: la fattura non è disponibile per te. Non ho registrato nulla."
+  - code: "validation_failed"
+    text: "Non ho potuto registrarlo: l'importo supera il saldo, la valuta non è quella della fattura oppure la data non è valida. Non ho registrato nulla."
+  - code: "missing_fields"
+    text: "Mi servono ancora la fattura e l'importo per registrare il pagamento. Non ho registrato nulla."
+  - code: "conflict"
+    text: "Quella fattura non accetta pagamenti nello stato attuale, oppure la richiesta è in conflitto con una già registrata. Non ho registrato nulla."
+  - code: "stale"
+    text: "La fattura è cambiata dopo che avevo preparato il pagamento, quindi non l'ho registrato. Non ho registrato nulla; posso prepararlo di nuovo."
+  - code: "expired"
+    text: "Non è stato confermato in tempo, oppure è stato ritirato, quindi non ho registrato nulla."
+  - code: "uncertain_outcome"
+    text: "Non sono riuscito a confermare se l'operazione è andata a buon fine. Controllo prima di fare altro, quindi per ora non chiederla di nuovo."
+  - code: "unavailable"
+    text: "Il registro non è raggiungibile in questo momento, quindi non ho registrato nulla."
+next_actions: []

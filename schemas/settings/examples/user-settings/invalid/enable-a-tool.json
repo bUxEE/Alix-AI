@@ -1,0 +1,7 @@
+{
+  "capabilities": {
+    "enabled": [
+      "shell.exec"
+    ]
+  }
+}

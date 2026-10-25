@@ -1,0 +1,10 @@
+{
+  "id": "resp_0123456789abcdef",
+  "object": "response",
+  "status": "completed",
+  "model": "gpt-5-mini-2025-08-07",
+  "output": [
+    {"type": "function_call", "id": "fc_1", "call_id": {{CALL_ID}}, "name": {{NAME}}, "arguments": {{ARGS}}, "status": "completed"}
+  ],
+  "usage": {"input_tokens": {{IN}}, "input_tokens_details": {"cached_tokens": 0}, "output_tokens": {{OUT}}, "output_tokens_details": {"reasoning_tokens": 0}, "total_tokens": 0}
+}

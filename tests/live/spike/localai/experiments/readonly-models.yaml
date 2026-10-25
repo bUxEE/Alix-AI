@@ -1,0 +1,9 @@
+# HC-24 experiment: the models directory mounted read-only. The shipped guard (entrypoint.sh) refuses a read-only /models on
+# purpose, so this override starts the image's own entrypoint directly; it answers only "can LocalAI run with models read-only",
+# not "does the shipped guard allow it" (it does not).
+services:
+  localai:
+    entrypoint:
+      - /entrypoint.sh
+    volumes:
+      - ./data/models:/models:ro

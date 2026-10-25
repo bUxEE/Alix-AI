@@ -1,0 +1,25 @@
+// Mixins shared by the kit's stylesheets. Hover effects only apply where hovering exists, so a tap on a touch screen never
+// leaves a component stuck in its hover state.
+@mixin hover {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @content;
+    }
+  }
+}
+
+@mixin focus-ring {
+  &:focus-visible {
+    outline: 2px solid var(--alix-focus);
+    outline-offset: 2px;
+  }
+}
+
+// Presses scale slightly: the interface is seen to listen. Transform and opacity only.
+@mixin pressable {
+  transition: transform var(--alix-dur-press) var(--alix-ease-out), background-color var(--alix-dur-fast) ease, border-color var(--alix-dur-fast) ease, color var(--alix-dur-fast) ease;
+
+  &:active:not(:disabled, [aria-disabled="true"]) {
+    transform: scale(0.97);
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "artifact": {
+    "checked_on": "2026-10-08",
+    "filename": "CLM_v0.1-8B.pt",
+    "first_party": true,
+    "format": "pytorch",
+    "quantized_by": "Contrastive-LM",
+    "repo_url": "https://huggingface.co/Contrastive-LM/CLM-v0.1-8B",
+    "revision": "e939398d4556fcd9400c76fa8c5a513202f42b0a",
+    "sha256": "b2b4a8c9c2d39263eff78a351eb909a342ce9b3bf21a3f07c1d1bf15f1c4eda5",
+    "size_bytes": 75557149
+  },
+  "backend": {
+    "allowed_runtime_versions": [],
+    "name": "contrastive-lm",
+    "runtime": "clm-sidecar"
+  },
+  "capabilities": [
+    "decision-scoring"
+  ],
+  "context": {
+    "budget_tokens": null,
+    "kv_cache_mb": null,
+    "native_max_tokens": null
+  },
+  "default_for": [],
+  "fallback": {
+    "degraded_mode": "deterministic-routing",
+    "model_id": "laya",
+    "notes": "Laya (English checkpoint) is a benchmark candidate and the constrained-profile fallback, never the primary decision model. When neither scorer is available or admitted: Deterministic rules, the controller and typed forms (the zero-model option) serve the decision. With the layer off, unavailable or failing, every flow gives the same outcome through the deterministic controller (ADR 0029)."
+  },
+  "hardware": {
+    "minimum": {
+      "accelerator": null,
+      "cpu_cores": null,
+      "ram_mb": null
+    },
+    "recommended": {
+      "accelerator": null,
+      "cpu_cores": null,
+      "ram_mb": null
+    }
+  },
+  "id": "clm-v0.1-8b",
+  "languages": {
+    "claimed_count": null,
+    "declared": [],
+    "qualified": []
+  },
+  "last_efficiency_review": {
+    "date": "2026-10-08",
+    "evidence_path": "docs/operations/resource-budgets.md"
+  },
+  "licence": {
+    "redistribution_notes": "Apache-2.0, declared by the model card metadata and the LICENSE file (11358 bytes) at the pinned commit; the contrastive-lm wheel is pinned separately in deploy/container/clm/config/pins.txt. First-party weights, unmodified. AlixAI does not bundle weights: the operator fetches the pinned file. Final sign-off is the human licence review (D-H01, M5-H02).",
+    "spdx": "Apache-2.0",
+    "url": "https://huggingface.co/Contrastive-LM/CLM-v0.1-8B/blob/e939398d4556fcd9400c76fa8c5a513202f42b0a/LICENSE"
+  },
+  "load_time": {
+    "cold_ms": null,
+    "warm_ms": null
+  },
+  "measurement": {
+    "emulated": null,
+    "measured_on": null,
+    "profile": null,
+    "results_path": null
+  },
+  "memory": {
+    "peak_rss_mb": null,
+    "steady_rss_mb": null
+  },
+  "name": "CLM-v0.1-8B decision scorer (state/action heads on a frozen Qwen3-8B encoder)",
+  "notes": [
+    "Status candidate: CLM-v0.1-8B is the owner-adopted primary candidate (ADR 0029) and becomes qualified-emulated only through D-08 evidence. No profile defaults to it: default_for is empty, and the loader refuses a scorer default without evidence, on experimental-4g, or (with an encoder dependency) on any profile but high.",
+    "Pin: revision e939398d4556fcd9400c76fa8c5a513202f42b0a (repository commit of 2026-09-24T21:37:19Z), file CLM_v0.1-8B.pt, 75557149 bytes, sha256 b2b4a8c9c2d39263eff78a351eb909a342ce9b3bf21a3f07c1d1bf15f1c4eda5 (hub LFS oid). Fetched from https://huggingface.co/api/models/Contrastive-LM/CLM-v0.1-8B/tree/e939398d4556fcd9400c76fa8c5a513202f42b0a on 2026-10-08 and equal to the line in deploy/container/clm/config/pins.txt (computed there 2026-10-07). The artefact is pinned so the sidecar entrypoint accepts the entry and the release manifest can list it; pinned is not qualified, and no runtime version is allowed yet.",
+    "Format: a PyTorch .pt checkpoint, which is a pickle container. It must only be loaded after the hash check and with a weights-only loader; whether the contrastive-lm wheel does this is unverified (D-12 reviews it). The head dtype is unverified, so quantization.scheme is unspecified and nominal_bits 32 is a placeholder, not a measurement.",
+    "Architecture (model card, reviewed 2026-10-02, https://huggingface.co/Contrastive-LM/CLM-v0.1-8B): two small projection heads on a frozen Qwen3-8B encoder with last-token pooling; it ranks supplied candidates by cosine similarity and does not generate text. The encoder is the dependency qwen3-8b. LocalAI documents a clm-v0.1-8b-vllm-cpp gallery entry (about 16.5 GB, bi-encoder, about 19 GB of free RAM on CPU) at https://localai.io/docs/features/decisions/ (fetched 2026-10-08); whether the pinned LocalAI v4.10.0 ships that backend is untested.",
+    "Option count: LocalAI states letter-based models accept at most 26 options, but CLM answers by cosine similarity and no CLM-specific maximum was found, so scorer.max_options is null (unverified). The CLM state limit is 2048 tokens (CLM repo, reviewed 2026-10-02).",
+    "Vendor claims (latency, accuracy, up to 9x lower latency than Jev, about 28 ms with 3 actions on an RTX 4090) are the vendor's, on other hardware and workloads, unverified by AlixAI and not evidence for any profile. Our numbers will be labelled emulated until measured on the target host.",
+    "Memory: nothing measured. Arithmetic from the pinned files (basis A): head 72.1 MiB plus the BF16 encoder 15622 MiB, about 15.7 GiB of weights before activations; it fits no lite or balanced container budget. The high profile (32768 MB, 8 CPU, tools/decbench) is the only profile it can be judged on. See docs/operations/resource-budgets.md section 4.4.",
+    "The scorer is advisory: it only scores a bounded set of authorised candidates and every selected id is re-resolved by the deterministic adapter; it never authorises, validates, prepares, confirms or commits (master plan 3, 8.5)."
+  ],
+  "performance": {
+    "latency_ms_p50": null,
+    "latency_ms_p95": null,
+    "tokens_per_second": null,
+    "ttft_ms_p50": null
+  },
+  "quantization": {
+    "nominal_bits": 32,
+    "scheme": "unspecified"
+  },
+  "roles": [
+    "decision-scorer"
+  ],
+  "scorer": {
+    "architecture": "bi-encoder",
+    "max_options": null
+  },
+  "scores": {
+    "rag": null,
+    "safety": null,
+    "task": null,
+    "tool": null
+  },
+  "status": "candidate",
+  "upstream": {
+    "repo_url": "https://huggingface.co/Contrastive-LM/CLM-v0.1-8B",
+    "revision": "e939398d4556fcd9400c76fa8c5a513202f42b0a"
+  },
+  "version": "0.1"
+}

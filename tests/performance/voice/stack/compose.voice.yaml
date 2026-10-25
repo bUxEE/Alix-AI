@@ -1,0 +1,20 @@
+# M4-06 override, layered after the shipped files from deploy/container/localai:
+#
+#   docker compose --env-file <env> -f compose.yaml -f compose.lite.yaml -f <this file> up -d
+#
+# Only bind mounts and environment change (same method as the M0-13 spike override). VOICE_DATA is the gitignored data
+# directory that fetch-backends.sh and fetch-models.sh fill; it replaces the shipped ./data so the existing model store of the
+# deployment is never touched. Ports, hardening, limits and the guard entrypoint are the shipped ones.
+services:
+  localai:
+    environment:
+      LOCALAI_BACKEND_GALLERIES: '[{"name":"alixai-pinned","url":"file:///backends/alixai-backend-gallery.yaml"}]'
+      LOCALAI_EXTERNAL_BACKENDS: ${LOCALAI_EXTERNAL_BACKENDS:-whisper,piper,kokoros}
+      # the watchdog would unload an idle voice worker in the middle of a pause between phases
+      LOCALAI_WATCHDOG_IDLE: "false"
+    volumes:
+      - ${VOICE_DATA:?set VOICE_DATA to the voice data directory}/models:/models
+      - ${VOICE_DATA}/backends:/backends
+      - ${VOICE_DATA}/state:/data
+      - ../../../tests/performance/voice/stack/backend-gallery.yaml:/backends/alixai-backend-gallery.yaml:ro
+      - ../../../tests/performance/voice/stack/models.yaml:/configuration/models.yaml:ro

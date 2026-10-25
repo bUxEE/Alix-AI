@@ -1,0 +1,170 @@
+id: patients.update_contact
+version: 1.0.0
+audience: user
+title: Update contact details
+purpose: Change the phone number, the email address or both on a patient's record. Reversible and low-impact, so the application allows it to commit right after a concise summary, without a separate confirmation. A patient may change their own record, a receptionist any record of the site.
+scope_level: workspace
+permissions:
+  - patients.update_contact
+fields:
+  - name: patient
+    type: entity_ref
+    entity_type: patient
+    required: true
+    description: The patient whose contact details change.
+  - name: phone
+    type: string
+    required: false
+    sensitive: true
+    description: The new phone number.
+    min_length: 5
+    max_length: 32
+  - name: email
+    type: string
+    required: false
+    sensitive: true
+    description: The new email address.
+    max_length: 254
+entity_types:
+  patient:
+    description: A patient of the clinic site, as the caller is allowed to see them.
+    resolve:
+      endpoint: clinic-mcp
+      mcp_tool: resolve_patient
+      result_schema: schemas/resolve.result.schema.json
+ambiguity:
+  - id: patient_multiple
+    field: patient
+    when: multiple_matches
+    action: ask_user
+    max_choices: 5
+  - id: patient_none
+    field: patient
+    when: no_match
+    action: reject
+validation:
+  - id: contact_change_present
+    fields:
+      - phone
+      - email
+    description: At least one of the phone number and the email address must be given.
+    error_code: validation_failed
+  - id: phone_format
+    fields:
+      - phone
+    description: A phone number holds at least 5 digits and only digits, spaces and + - ( ) . characters.
+    error_code: validation_failed
+  - id: email_format
+    fields:
+      - email
+    description: An email address has the form name@domain.tld and at most 254 characters.
+    error_code: validation_failed
+failure_states:
+  - code: permission_denied
+    description: The principal's role may not change contact details.
+  - code: scope_violation
+    description: The patient record is outside the principal's access (another site, another clinic group, or another patient for a patient), or does not exist. The application does not say which.
+  - code: validation_failed
+    description: Nothing to change was given, or the phone number or email address is malformed. Nothing was updated.
+  - code: stale
+    description: The patient record changed after the update was prepared, so the preparation is no longer valid. Nothing was updated; it can be prepared again.
+  - code: expired
+    description: The prepared update was not committed in time, or was withdrawn. Nothing was updated.
+  - code: uncertain_outcome
+    description: The commit response was lost. Whether the details were updated is established through the status operation before anything is retried.
+  - code: missing_fields
+    description: A required field (patient) was not supplied. Nothing was updated.
+  - code: unavailable
+    description: The clinic database cannot be reached. Nothing was updated.
+effect_class: reversible
+risk_level: 1
+operations:
+  validate:
+    endpoint: clinic-mcp
+    mcp_tool: patients_update_contact_validate
+    result_schema: schemas/patients.update_contact.validation.result.schema.json
+    timeout_ms: 5000
+  prepare:
+    endpoint: clinic-mcp
+    mcp_tool: patients_update_contact_prepare
+    result_schema: schemas/patients.update_contact.prepared.result.schema.json
+    timeout_ms: 8000
+  commit:
+    endpoint: clinic-mcp
+    mcp_tool: patients_update_contact_commit
+    result_schema: schemas/patients.update_contact.receipt.result.schema.json
+    timeout_ms: 15000
+  status:
+    endpoint: clinic-mcp
+    mcp_tool: patients_update_contact_status
+    result_schema: schemas/patients.update_contact.receipt.result.schema.json
+    timeout_ms: 5000
+confirmation:
+  mode: none
+prepared_action:
+  ttl_seconds: 120
+  invalidated_by:
+    - record_revision
+idempotency:
+  key_source: prepared_action_id
+  window_seconds: 86400
+  on_replay: return_original_receipt
+response_obligations:
+  - fact: patient_name
+    when: success
+    description: The patient whose contact details were updated.
+  - fact: contact_fields_updated
+    when: success
+    description: Which contact details were updated (phone, email or both).
+next_actions:
+  - id: book_for_updated_patient
+    after: success
+    capability_id: appointments.book
+doc_refs:
+  - uc-field-patient
+  - uc-field-phone
+  - uc-field-email
+  - uc-rule-contact_change_present
+  - uc-rule-phone_format
+  - uc-rule-email_format
+  - uc-perm-patients.update_contact
+  - uc-failure-permission_denied
+  - uc-failure-scope_violation
+  - uc-failure-validation_failed
+  - uc-failure-stale
+  - uc-failure-expired
+  - uc-failure-uncertain_outcome
+  - uc-failure-missing_fields
+  - uc-failure-unavailable
+  - uc-risk
+  - uc-confirmation
+  - uc-outcome-contact_updated
+examples:
+  - id: en-new-phone
+    language: en
+    test_only: true
+    utterance: Change Maria Rossi's phone number to +1 555 0123
+    expected_fields:
+      patient: Maria Rossi
+      phone: +1 555 0123
+  - id: en-new-email
+    language: en
+    test_only: true
+    utterance: My new email address is maria.new@example.test
+    expected_fields:
+      patient: me
+      email: maria.new@example.test
+  - id: it-nuovo-telefono
+    language: it
+    test_only: true
+    utterance: Cambia il numero di telefono di Maria Rossi in +1 555 0123
+    expected_fields:
+      patient: Maria Rossi
+      phone: +1 555 0123
+  - id: it-nuova-email
+    language: it
+    test_only: true
+    utterance: Il mio nuovo indirizzo email è maria.nuova@example.test
+    expected_fields:
+      patient: me
+      email: maria.nuova@example.test

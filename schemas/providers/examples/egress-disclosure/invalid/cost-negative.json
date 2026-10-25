@@ -1,0 +1,27 @@
+{
+  "generated_at": "2026-10-02T09:00:00Z",
+  "provider": {
+    "profile_id": "pprf_01J0000000000000000000000P",
+    "provider_id": "openai",
+    "model_id": "gpt-4.1-mini",
+    "model_version": "2025-04-14"
+  },
+  "role": "conversational_controller",
+  "external_enabled": true,
+  "data_classes": ["public"],
+  "data_categories": ["user_message", "structured_state", "deterministic_fact", "rag_excerpt"],
+  "rag_excerpts_included": true,
+  "regions": ["us"],
+  "terms": {
+    "retention": "limited",
+    "retention_days": 30,
+    "training_use": "never",
+    "residency": "selectable"
+  },
+  "cost": {
+    "currency": "EUR",
+    "estimate_upper_micro_units": -1,
+    "budget_state": "ok"
+  },
+  "on_unavailable": { "behavior": "fail", "fallback_profile_id": null }
+}

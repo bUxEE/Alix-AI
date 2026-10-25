@@ -1,0 +1,271 @@
+{
+  "name": "forms",
+  "description": "A request with a missing choice: the question and its choices are a clarification_choices block (the form a client renders as buttons, with optional free text), shown as a generative-UI activity beside the text.",
+  "protocol": "AG-UI 1.0 (@ag-ui/core 1.0.1)",
+  "source": "engine",
+  "request": {
+    "method": "POST",
+    "path": "/v1/agui",
+    "body": {
+      "context": [],
+      "forwardedProps": {},
+      "messages": [
+        {
+          "content": "create an item named widget with quantity 3",
+          "id": "m1",
+          "role": "user"
+        }
+      ],
+      "runId": "run_form",
+      "state": {},
+      "threadId": "ses_test_01",
+      "tools": []
+    }
+  },
+  "response": {
+    "status": 200,
+    "content_type": "text/event-stream",
+    "sse_file": "forms.sse",
+    "ids": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7"
+    ],
+    "event_types": [
+      "RUN_STARTED",
+      "STATE_DELTA",
+      "STEP_STARTED",
+      "STEP_FINISHED",
+      "STEP_STARTED",
+      "STEP_FINISHED",
+      "STEP_STARTED",
+      "STEP_FINISHED",
+      "STEP_STARTED",
+      "STEP_FINISHED",
+      "CUSTOM",
+      "ACTIVITY_SNAPSHOT",
+      "TEXT_MESSAGE_START",
+      "TEXT_MESSAGE_CONTENT",
+      "TEXT_MESSAGE_END",
+      "STATE_DELTA",
+      "RUN_FINISHED"
+    ],
+    "events": [
+      {
+        "type": "RUN_STARTED",
+        "threadId": "ses_test_01",
+        "runId": "run_form"
+      },
+      {
+        "type": "STATE_DELTA",
+        "delta": [
+          {
+            "op": "add",
+            "path": "/alixai",
+            "value": {
+              "pending": null
+            }
+          }
+        ]
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "interpreting"
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "interpreting"
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "validating"
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "validating"
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "generating"
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "generating"
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "verifying"
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "verifying"
+      },
+      {
+        "type": "CUSTOM",
+        "name": "alixai.directive",
+        "value": {
+          "turn_id": "trn_01J00000000000000000000001",
+          "capability_id": "items.create",
+          "act": "ask_missing",
+          "facts": [],
+          "must_state": [],
+          "missing_fields": [
+            "size"
+          ],
+          "invalid_fields": [],
+          "next_question": {
+            "field": "size",
+            "answer_kind": "choice",
+            "choices": [
+              {
+                "choice_id": "small",
+                "label": "small",
+                "value": {
+                  "kind": "text",
+                  "value": "small"
+                }
+              },
+              {
+                "choice_id": "medium",
+                "label": "medium",
+                "value": {
+                  "kind": "text",
+                  "value": "medium"
+                }
+              },
+              {
+                "choice_id": "large",
+                "label": "large",
+                "value": {
+                  "kind": "text",
+                  "value": "large"
+                }
+              }
+            ]
+          },
+          "allowed_suggestions": [],
+          "confirmation": {
+            "mode": "none",
+            "bindings": []
+          },
+          "permitted_next_actions": [],
+          "sources": []
+        }
+      },
+      {
+        "type": "ACTIVITY_SNAPSHOT",
+        "messageId": "act_trn_01J00000000000000000000001_b1",
+        "activityType": "alixai.block.clarification_choices",
+        "content": {
+          "type": "clarification_choices",
+          "field": "size",
+          "answer_kind": "choice",
+          "allow_free_text": true,
+          "choices": [
+            {
+              "choice_id": "small",
+              "label": "small",
+              "value": {
+                "kind": "text",
+                "value": "small"
+              }
+            },
+            {
+              "choice_id": "medium",
+              "label": "medium",
+              "value": {
+                "kind": "text",
+                "value": "medium"
+              }
+            },
+            {
+              "choice_id": "large",
+              "label": "large",
+              "value": {
+                "kind": "text",
+                "value": "large"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "type": "TEXT_MESSAGE_START",
+        "messageId": "msg_trn_01J00000000000000000000001_1",
+        "role": "assistant"
+      },
+      {
+        "type": "TEXT_MESSAGE_CONTENT",
+        "messageId": "msg_trn_01J00000000000000000000001_1",
+        "delta": "Which size?"
+      },
+      {
+        "type": "TEXT_MESSAGE_END",
+        "messageId": "msg_trn_01J00000000000000000000001_1"
+      },
+      {
+        "type": "STATE_DELTA",
+        "delta": [
+          {
+            "op": "replace",
+            "path": "/alixai/pending",
+            "value": {
+              "capabilityId": "items.create",
+              "collectedFields": [
+                {
+                  "name": "name",
+                  "origin": "user_turn"
+                },
+                {
+                  "name": "quantity",
+                  "origin": "user_turn"
+                }
+              ],
+              "expiresAt": "2026-10-02T12:30:00Z",
+              "kind": "clarification",
+              "missingFields": [
+                "size"
+              ],
+              "phase": "",
+              "question": {
+                "answerKind": "choice",
+                "choices": [
+                  {
+                    "id": "small",
+                    "label": "small"
+                  },
+                  {
+                    "id": "medium",
+                    "label": "medium"
+                  },
+                  {
+                    "id": "large",
+                    "label": "large"
+                  }
+                ],
+                "field": "size"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "RUN_FINISHED",
+        "threadId": "ses_test_01",
+        "runId": "run_form",
+        "result": {
+          "finishReason": "awaiting_input",
+          "turnId": "trn_01J00000000000000000000001"
+        },
+        "outcome": {
+          "type": "success"
+        }
+      }
+    ]
+  }
+}

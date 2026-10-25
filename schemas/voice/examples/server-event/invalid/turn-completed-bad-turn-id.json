@@ -1,0 +1,7 @@
+{
+  "type": "turn.completed",
+  "utterance_id": "utt_01J0000000000000000000000A",
+  "turn_id": "not-a-turn",
+  "act": "refuse",
+  "failed": true
+}

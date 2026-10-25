@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "id": "req.data.read",
+  "category": "deterministic_data",
+  "check_id": "application.deterministic_results",
+  "level": "mandatory",
+  "title": {
+    "en": "Deterministic read operations",
+    "it": "Operazioni di lettura deterministiche"
+  },
+  "description": {
+    "en": "Reads return typed, stable results.",
+    "it": "Le letture restituiscono risultati tipizzati e stabili."
+  },
+  "satisfied_by": [
+    "model_unverified"
+  ],
+  "how_satisfied": {
+    "en": "A rule finds schema-typed reads.",
+    "it": "Una regola trova letture tipizzate da schema."
+  },
+  "remediation": {
+    "en": "Expose each read with a typed response.",
+    "it": "Esporre ogni lettura con una risposta tipizzata."
+  }
+}

@@ -1,0 +1,32 @@
+data: {"type":"RUN_STARTED","threadId":"ses_test_01","runId":"run_ui_undeclared"}
+
+data: {"type":"STATE_DELTA","delta":[{"op":"add","path":"/alixai","value":{"pending":null}}]}
+
+data: {"type":"STEP_STARTED","stepName":"interpreting"}
+
+id: 0
+data: {"type":"STEP_FINISHED","stepName":"interpreting"}
+
+data: {"type":"STEP_STARTED","stepName":"validating"}
+
+id: 1
+data: {"type":"STEP_FINISHED","stepName":"validating"}
+
+data: {"type":"STEP_STARTED","stepName":"verifying"}
+
+id: 2
+data: {"type":"STEP_FINISHED","stepName":"verifying"}
+
+id: 3
+data: {"type":"CUSTOM","name":"alixai.directive","value":{"turn_id":"trn_01J00000000000000000000001","capability_id":null,"act":"report_failure","facts":[],"must_state":[],"missing_fields":[],"invalid_fields":[],"allowed_suggestions":[],"confirmation":{"mode":"none","bindings":[]},"permitted_next_actions":[],"sources":[],"reason_code":"validation_failed"}}
+
+data: {"type":"TEXT_MESSAGE_START","messageId":"msg_trn_01J00000000000000000000001_1","role":"assistant"}
+
+id: 5
+data: {"type":"TEXT_MESSAGE_CONTENT","messageId":"msg_trn_01J00000000000000000000001_1","delta":"Sorry, this could not be carried out.\nSome of the details are not valid."}
+
+data: {"type":"TEXT_MESSAGE_END","messageId":"msg_trn_01J00000000000000000000001_1"}
+
+id: 6
+data: {"type":"RUN_ERROR","message":"Sorry, this could not be carried out.\nSome of the details are not valid.","code":"validation_failed"}
+

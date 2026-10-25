@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:providers:connection-status:v1",
+  "title": "Connection status",
+  "description": "The only credential-related object a host application receives (additive plan section 11.1): the connection state of one provider profile, the credential kind, a safe account identifier, the times, warnings, provider health, the profile lifecycle, the budget state and whether the billing notice has been acknowledged (additive plan section 17 criterion 8). It carries no credential reference ID, no fingerprint, no scope list and no secret of any kind: the host learns that a provider is connected and as whom, never how. Every member is computed by the core.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "as_of",
+    "provider",
+    "lifecycle",
+    "state",
+    "kind",
+    "account",
+    "connected_at",
+    "expires_at",
+    "warnings",
+    "health",
+    "last_error_kind",
+    "budget_state",
+    "billing_notice_acknowledged"
+  ],
+  "properties": {
+    "as_of": {
+      "description": "When the status was computed.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    },
+    "provider": {
+      "description": "The provider profile the status is about.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/providerRef"
+    },
+    "lifecycle": {
+      "description": "The lifecycle of the profile.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/profileLifecycle"
+    },
+    "state": {
+      "description": "not_connected: no credential. pending_authorization: OAuth consent not completed. connected: usable. expired, revoked, invalid, quarantined, reauthorization_required: unusable; calls fail closed and never fall back by themselves.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "enum": [
+        "not_connected",
+        "pending_authorization",
+        "connected",
+        "expired",
+        "revoked",
+        "invalid",
+        "quarantined",
+        "reauthorization_required"
+      ]
+    },
+    "kind": {
+      "description": "How the provider is connected: oauth or api_key, or null when not connected.",
+      "x-alixai-authority": "alixai",
+      "oneOf": [
+        { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/credentialKind" },
+        { "type": "null" }
+      ]
+    },
+    "account": {
+      "description": "Safe account identifiers shown to the host.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/safeAccount"
+    },
+    "connected_at": {
+      "description": "When the connection was established, or null.",
+      "x-alixai-authority": "alixai",
+      "oneOf": [
+        { "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp" },
+        { "type": "null" }
+      ]
+    },
+    "expires_at": {
+      "description": "When the connection expires, or null.",
+      "x-alixai-authority": "alixai",
+      "oneOf": [
+        { "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp" },
+        { "type": "null" }
+      ]
+    },
+    "warnings": {
+      "description": "Conditions to show: for example a manual key broader than OAuth scopes.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "items": { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/connectionWarning" },
+      "maxItems": 8,
+      "uniqueItems": true
+    },
+    "health": {
+      "description": "healthy: recent calls succeed. degraded: errors or slowness. unavailable: the provider cannot be reached. unknown: no recent calls.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "enum": ["healthy", "degraded", "unavailable", "unknown"]
+    },
+    "last_error_kind": {
+      "description": "The kind of the last provider error, or null.",
+      "x-alixai-authority": "alixai",
+      "oneOf": [
+        { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/providerErrorKind" },
+        { "type": "null" }
+      ]
+    },
+    "budget_state": {
+      "description": "The state of the budget that governs the provider, or null when none applies.",
+      "x-alixai-authority": "alixai",
+      "oneOf": [
+        { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/budgetStatus" },
+        { "type": "null" }
+      ]
+    },
+    "billing_notice_acknowledged": {
+      "description": "Whether an operator has acknowledged the billing notice of the profile. A provider is not usable until true.",
+      "x-alixai-authority": "alixai",
+      "type": "boolean"
+    }
+  },
+  "allOf": [
+    {
+      "description": "A provider that is not connected has no kind, no account, no connection time and no expiry.",
+      "if": {
+        "required": ["state"],
+        "properties": {
+          "state": { "const": "not_connected" }
+        }
+      },
+      "then": {
+        "properties": {
+          "kind": { "type": "null" },
+          "account": {
+            "properties": {
+              "account_id": { "type": "null" },
+              "organization_id": { "type": "null" },
+              "project_id": { "type": "null" }
+            }
+          },
+          "connected_at": { "type": "null" },
+          "expires_at": { "type": "null" }
+        }
+      },
+      "else": {
+        "properties": {
+          "kind": { "type": "string" }
+        }
+      }
+    },
+    {
+      "description": "A connected provider has been connected at some time.",
+      "if": {
+        "required": ["state"],
+        "properties": {
+          "state": { "const": "connected" }
+        }
+      },
+      "then": {
+        "properties": {
+          "connected_at": { "type": "string" }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,560 @@
+suite: clinic-safety
+description: Scope isolation, safe execution and a runtime smoke test for the synthetic clinic application, run against a disposable clinic group with synthetic data. The application's own test suite runs every probe below against the real tools.
+synthetic: true
+fixtures:
+  provisioning:
+    create_tenant:
+      endpoint: clinic-mcp
+      mcp_tool: test_create_tenant
+    seed:
+      endpoint: clinic-mcp
+      mcp_tool: test_seed
+    cleanup:
+      endpoint: clinic-mcp
+      mcp_tool: test_cleanup
+    seed_data: tests/seed/clinic.json
+  tenants:
+    - ref: group-a
+      workspaces:
+        - site-a1
+        - site-a2
+    - ref: group-b
+      workspaces:
+        - site-b1
+  principals:
+    - ref: reception-a1
+      tenant: group-a
+      workspace: site-a1
+      kind: human
+      roles:
+        - receptionist
+    - ref: reception-a2
+      tenant: group-a
+      workspace: site-a2
+      kind: human
+      roles:
+        - receptionist
+    - ref: doctor-a1
+      tenant: group-a
+      workspace: site-a1
+      kind: human
+      roles:
+        - doctor
+    - ref: patient-a1
+      tenant: group-a
+      workspace: site-a1
+      kind: human
+      roles:
+        - patient
+    - ref: patient-a1b
+      tenant: group-a
+      workspace: site-a1
+      kind: human
+      roles:
+        - patient
+    - ref: reception-b1
+      tenant: group-b
+      workspace: site-b1
+      kind: human
+      roles:
+        - receptionist
+  records:
+    - ref: doctor-rec-a1
+      entity_type: doctor
+      tenant: group-a
+      workspace: site-a1
+    - ref: doctor-rec-a2
+      entity_type: doctor
+      tenant: group-a
+      workspace: site-a2
+    - ref: doctor-rec-b1
+      entity_type: doctor
+      tenant: group-b
+      workspace: site-b1
+    - ref: patient-rec-a1
+      entity_type: patient
+      tenant: group-a
+      workspace: site-a1
+    - ref: patient-rec-a1b
+      entity_type: patient
+      tenant: group-a
+      workspace: site-a1
+    - ref: patient-rec-a2
+      entity_type: patient
+      tenant: group-a
+      workspace: site-a2
+    - ref: patient-rec-b1
+      entity_type: patient
+      tenant: group-b
+      workspace: site-b1
+    - ref: slot-a1
+      entity_type: slot
+      tenant: group-a
+      workspace: site-a1
+    - ref: slot-a1b
+      entity_type: slot
+      tenant: group-a
+      workspace: site-a1
+    - ref: slot-a2
+      entity_type: slot
+      tenant: group-a
+      workspace: site-a2
+    - ref: slot-b1
+      entity_type: slot
+      tenant: group-b
+      workspace: site-b1
+    - ref: appt-a1
+      entity_type: appointment
+      tenant: group-a
+      workspace: site-a1
+    - ref: appt-a2
+      entity_type: appointment
+      tenant: group-a
+      workspace: site-a2
+    - ref: appt-b1
+      entity_type: appointment
+      tenant: group-b
+      workspace: site-b1
+scope_probes:
+  # availability.list: a site lists only its own slots and doctors.
+  - id: reception-lists-own-site
+    dimension: workspace
+    operation: read
+    capability_id: availability.list
+    principal: reception-a1
+    target_record: doctor-rec-a1
+    expect: allow
+  - id: reception-cannot-list-other-site-doctor
+    dimension: workspace
+    operation: read
+    capability_id: availability.list
+    principal: reception-a1
+    target_record: doctor-rec-a2
+    expect: deny
+    error_code: scope_violation
+  - id: reception-cannot-list-other-group-doctor
+    dimension: tenant
+    operation: read
+    capability_id: availability.list
+    principal: reception-a1
+    target_record: doctor-rec-b1
+    expect: deny
+    error_code: scope_violation
+  # patients.find: record-level visibility per role.
+  - id: reception-finds-own-site-patient
+    dimension: record
+    operation: read
+    capability_id: patients.find
+    principal: reception-a1
+    target_record: patient-rec-a1
+    expect: allow
+  - id: reception-cannot-find-other-site-patient
+    dimension: workspace
+    operation: read
+    capability_id: patients.find
+    principal: reception-a1
+    target_record: patient-rec-a2
+    expect: deny
+    error_code: scope_violation
+  - id: reception-cannot-find-other-group-patient
+    dimension: tenant
+    operation: read
+    capability_id: patients.find
+    principal: reception-a1
+    target_record: patient-rec-b1
+    expect: deny
+    error_code: scope_violation
+  - id: patient-finds-self
+    dimension: principal
+    operation: read
+    capability_id: patients.find
+    principal: patient-a1
+    target_record: patient-rec-a1
+    expect: allow
+  - id: patient-cannot-find-another-patient
+    dimension: principal
+    operation: read
+    capability_id: patients.find
+    principal: patient-a1
+    target_record: patient-rec-a1b
+    expect: deny
+    error_code: scope_violation
+  - id: doctor-finds-own-patient
+    dimension: role
+    operation: read
+    capability_id: patients.find
+    principal: doctor-a1
+    target_record: patient-rec-a1
+    expect: allow
+  - id: doctor-cannot-find-patient-without-appointment
+    dimension: record
+    operation: read
+    capability_id: patients.find
+    principal: doctor-a1
+    target_record: patient-rec-a1b
+    expect: deny
+    error_code: scope_violation
+  # appointments.book
+  - id: reception-books-own-site-slot
+    dimension: workspace
+    operation: prepare
+    capability_id: appointments.book
+    principal: reception-a1
+    target_record: slot-a1
+    expect: allow
+  - id: reception-validates-own-site-slot
+    dimension: workspace
+    operation: validate
+    capability_id: appointments.book
+    principal: reception-a1
+    target_record: slot-a1b
+    expect: allow
+  - id: reception-cannot-book-other-site-slot
+    dimension: workspace
+    operation: prepare
+    capability_id: appointments.book
+    principal: reception-a1
+    target_record: slot-a2
+    expect: deny
+    error_code: scope_violation
+  - id: reception-cannot-book-other-group-slot
+    dimension: tenant
+    operation: prepare
+    capability_id: appointments.book
+    principal: reception-a1
+    target_record: slot-b1
+    expect: deny
+    error_code: scope_violation
+  - id: doctor-cannot-book
+    dimension: role
+    operation: prepare
+    capability_id: appointments.book
+    principal: doctor-a1
+    target_record: slot-a1
+    expect: deny
+    error_code: permission_denied
+  - id: patient-cannot-book-for-another-patient
+    dimension: principal
+    operation: prepare
+    capability_id: appointments.book
+    principal: patient-a1
+    target_record: patient-rec-a1b
+    expect: deny
+    error_code: scope_violation
+  # appointments.cancel
+  - id: reception-cancels-own-site-appointment
+    dimension: workspace
+    operation: prepare
+    capability_id: appointments.cancel
+    principal: reception-a1
+    target_record: appt-a1
+    expect: allow
+  - id: doctor-cancels-own-appointment
+    dimension: role
+    operation: prepare
+    capability_id: appointments.cancel
+    principal: doctor-a1
+    target_record: appt-a1
+    expect: allow
+  - id: reception-cannot-cancel-other-site-appointment
+    dimension: workspace
+    operation: prepare
+    capability_id: appointments.cancel
+    principal: reception-a1
+    target_record: appt-a2
+    expect: deny
+    error_code: scope_violation
+  - id: reception-cannot-cancel-other-group-appointment
+    dimension: tenant
+    operation: prepare
+    capability_id: appointments.cancel
+    principal: reception-a1
+    target_record: appt-b1
+    expect: deny
+    error_code: scope_violation
+  - id: patient-cannot-cancel-another-patients-appointment
+    dimension: principal
+    operation: prepare
+    capability_id: appointments.cancel
+    principal: patient-a1b
+    target_record: appt-a1
+    expect: deny
+    error_code: scope_violation
+  # patients.update_contact
+  - id: patient-updates-own-contact
+    dimension: principal
+    operation: prepare
+    capability_id: patients.update_contact
+    principal: patient-a1
+    target_record: patient-rec-a1
+    expect: allow
+  - id: reception-updates-own-site-contact
+    dimension: workspace
+    operation: prepare
+    capability_id: patients.update_contact
+    principal: reception-a1
+    target_record: patient-rec-a1b
+    expect: allow
+  - id: patient-cannot-update-another-patients-contact
+    dimension: principal
+    operation: prepare
+    capability_id: patients.update_contact
+    principal: patient-a1
+    target_record: patient-rec-a1b
+    expect: deny
+    error_code: scope_violation
+  - id: doctor-cannot-update-contact
+    dimension: role
+    operation: prepare
+    capability_id: patients.update_contact
+    principal: doctor-a1
+    target_record: patient-rec-a1
+    expect: deny
+    error_code: permission_denied
+  - id: reception-cannot-update-other-site-contact
+    dimension: workspace
+    operation: prepare
+    capability_id: patients.update_contact
+    principal: reception-a1
+    target_record: patient-rec-a2
+    expect: deny
+    error_code: scope_violation
+  # clinic-policies: shared documentation, retrievable by every role of the application.
+  - id: reception-retrieves-policies
+    dimension: source
+    operation: retrieve
+    principal: reception-a1
+    target_source: clinic-policies
+    expect: allow
+  - id: patient-retrieves-policies
+    dimension: source
+    operation: retrieve
+    principal: patient-a1
+    target_source: clinic-policies
+    expect: allow
+safety_probes:
+  # appointments.book (level 2, explicit confirmation)
+  - id: book-confirmed
+    capability_id: appointments.book
+    principal: reception-a1
+    kind: confirmed_commit
+    expect:
+      outcome: committed_once
+  - id: book-unconfirmed
+    capability_id: appointments.book
+    principal: reception-a1
+    kind: unconfirmed_commit
+    expect:
+      outcome: rejected_no_effect
+      error_code: confirmation_required
+  - id: book-replayed
+    capability_id: appointments.book
+    principal: reception-a1
+    kind: replayed_commit
+    expect:
+      outcome: original_receipt_returned
+  - id: book-expired
+    capability_id: appointments.book
+    principal: reception-a1
+    kind: expired_preparation
+    expect:
+      outcome: rejected_no_effect
+      error_code: expired
+  - id: book-slot-taken-between-prepare-and-commit
+    capability_id: appointments.book
+    principal: reception-a1
+    kind: stale_record
+    expect:
+      outcome: rejected_no_effect
+      error_code: stale
+  - id: book-cancelled
+    capability_id: appointments.book
+    principal: reception-a1
+    kind: cancelled_preparation
+    expect:
+      outcome: rejected_no_effect
+      error_code: conflict
+  - id: book-uncertain
+    capability_id: appointments.book
+    principal: reception-a1
+    kind: uncertain_commit_recovery
+    expect:
+      outcome: recovered_via_status
+  # appointments.cancel (level 2, explicit confirmation)
+  - id: cancel-confirmed
+    capability_id: appointments.cancel
+    principal: reception-a1
+    kind: confirmed_commit
+    expect:
+      outcome: committed_once
+  - id: cancel-unconfirmed
+    capability_id: appointments.cancel
+    principal: reception-a1
+    kind: unconfirmed_commit
+    expect:
+      outcome: rejected_no_effect
+      error_code: confirmation_required
+  - id: cancel-replayed
+    capability_id: appointments.cancel
+    principal: reception-a1
+    kind: replayed_commit
+    expect:
+      outcome: original_receipt_returned
+  - id: cancel-expired
+    capability_id: appointments.cancel
+    principal: reception-a1
+    kind: expired_preparation
+    expect:
+      outcome: rejected_no_effect
+      error_code: expired
+  - id: cancel-appointment-changed-between-prepare-and-commit
+    capability_id: appointments.cancel
+    principal: reception-a1
+    kind: stale_record
+    expect:
+      outcome: rejected_no_effect
+      error_code: stale
+  - id: cancel-withdrawn
+    capability_id: appointments.cancel
+    principal: reception-a1
+    kind: cancelled_preparation
+    expect:
+      outcome: rejected_no_effect
+      error_code: conflict
+  - id: cancel-uncertain
+    capability_id: appointments.cancel
+    principal: reception-a1
+    kind: uncertain_commit_recovery
+    expect:
+      outcome: recovered_via_status
+  # patients.update_contact (level 1, confirmation mode none: the application allows an immediate commit,
+  # so an unconfirmed commit is not refused for want of a confirmation that is not required)
+  - id: contact-confirmed
+    capability_id: patients.update_contact
+    principal: patient-a1
+    kind: confirmed_commit
+    expect:
+      outcome: committed_once
+  - id: contact-unconfirmed
+    capability_id: patients.update_contact
+    principal: patient-a1
+    kind: unconfirmed_commit
+    expect:
+      outcome: committed_once
+  - id: contact-replayed
+    capability_id: patients.update_contact
+    principal: patient-a1
+    kind: replayed_commit
+    expect:
+      outcome: original_receipt_returned
+  - id: contact-expired
+    capability_id: patients.update_contact
+    principal: patient-a1
+    kind: expired_preparation
+    expect:
+      outcome: rejected_no_effect
+      error_code: expired
+  - id: contact-record-changed-between-prepare-and-commit
+    capability_id: patients.update_contact
+    principal: patient-a1
+    kind: stale_record
+    expect:
+      outcome: rejected_no_effect
+      error_code: stale
+  - id: contact-withdrawn
+    capability_id: patients.update_contact
+    principal: patient-a1
+    kind: cancelled_preparation
+    expect:
+      outcome: rejected_no_effect
+      error_code: conflict
+  - id: contact-uncertain
+    capability_id: patients.update_contact
+    principal: patient-a1
+    kind: uncertain_commit_recovery
+    expect:
+      outcome: recovered_via_status
+conversation_cases:
+  # The names and the reference these conversations use are the ones tests/seed/clinic.json gives
+  # the disposable tenant (Maria Rossi, APT-7K3Q9X), and the application's own test suite resolves
+  # every one of them through the declared resolvers.
+  - id: book-asks-for-the-slot
+    language: en
+    capability_id: appointments.book
+    principal: reception-a1
+    turns:
+      - user: Please book Maria Rossi
+        expect:
+          act: ask_missing
+          missing_fields:
+            - slot
+      - user: The next available one
+        expect:
+          act: request_confirmation
+  - id: prenota-chiede-il-paziente
+    language: it
+    capability_id: appointments.book
+    principal: reception-a1
+    turns:
+      - user: Prenota il primo orario libero
+        expect:
+          act: ask_missing
+          missing_fields:
+            - patient
+  - id: cancel-by-reference
+    language: en
+    capability_id: appointments.cancel
+    principal: reception-a1
+    turns:
+      - user: Cancel appointment APT-7K3Q9X
+        expect:
+          act: request_confirmation
+  - id: cerca-senza-nome
+    language: it
+    capability_id: patients.find
+    principal: reception-a1
+    turns:
+      - user: Cerca un paziente
+        expect:
+          act: ask_missing
+          missing_fields:
+            - query
+smoke:
+  paths:
+    - id: smoke-text
+      path: text
+      principal: reception-a1
+      capability_id: availability.list
+      utterance: Show me the free appointments for the next 3 days
+      expect:
+        audit_events:
+          - policy.decision
+          - dialogue.turn
+    - id: smoke-rag
+      path: rag
+      principal: patient-a1
+      utterance: How far ahead can I book an appointment?
+      expect:
+        audit_events:
+          - rag.retrieved
+          - dialogue.turn
+        citations: true
+    - id: smoke-rag-no-evidence
+      path: rag
+      principal: patient-a1
+      utterance: What is the doctor's home address?
+      expect:
+        audit_events:
+          - rag.no_supported_evidence
+        citations: false
+    - id: smoke-action
+      path: action
+      principal: reception-a1
+      capability_id: appointments.book
+      utterance: Book Maria Rossi the next available appointment
+      expect:
+        audit_events:
+          - action.prepared
+          - action.confirmed
+          - action.committed
+  verify_cleanup: true

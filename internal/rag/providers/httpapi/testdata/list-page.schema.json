@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:rag:httpapi-list-page:v1",
+  "title": "Document API list page",
+  "description": "One page of the list response an application-managed document API (or scoped record API) gives the httpapi source provider: GET <root>?limit=N&cursor=C plus the scope and fixed query parameters. The package comment of internal/rag/providers/httpapi is the full contract; this schema is its machine-checkable part. Unknown members are allowed so an application can add its own. Item bytes are not JSON and have no schema: GET <root>/<key> returns them, with an optional ETag equal to the listed version.",
+  "type": "object",
+  "required": ["items"],
+  "properties": {
+    "items": {
+      "description": "The page. An empty array is a valid page.",
+      "type": "array",
+      "maxItems": 50000,
+      "items": { "$ref": "#/$defs/entry" }
+    },
+    "next_cursor": {
+      "description": "The opaque cursor of the next page, sent back verbatim as the cursor parameter. null, absent or empty on the last page.",
+      "type": ["string", "null"],
+      "maxLength": 1024,
+      "pattern": "^[^\\x00-\\x1f\\x7f]*$"
+    }
+  },
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "required": ["key", "version"],
+      "properties": {
+        "key": {
+          "description": "The item key: a clean, slash-separated relative path that the include and exclude rules are matched against. The provider additionally refuses a key with a '.' or '..' segment, a backslash, a control character or a leading slash (skipped as unsafe_name).",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "version": {
+          "description": "The item's current opaque version: the value its ETag will carry. A value of the form sha256:<64 hex digits> is a content address and is verified against the bytes.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[^\\x00-\\x20\\x7f]+$"
+        },
+        "size": {
+          "description": "The exact length of the item in bytes. Optional.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "modified_at": {
+          "description": "When the item last changed (RFC 3339). Optional; with size it lets an unchanged item be skipped without fetching it.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "deleted": {
+          "description": "True for a deletion marker: the item is gone. Optional, default false.",
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

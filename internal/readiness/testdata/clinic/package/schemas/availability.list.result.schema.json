@@ -1,0 +1,477 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Result of availability.list (read availability_list)",
+  "description": "The free appointments of the caller's clinic site as canonical facts: the first day searched, how many are listed, whether more exist and a summary, then each listed slot's local start and doctor (slot_<n>_starts_at, slot_<n>_doctor). identifiers are the listed slots; freshness.version is the snapshot version of exactly those slots.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status",
+    "identifiers",
+    "values",
+    "errors",
+    "allowed_next_actions"
+  ],
+  "properties": {
+    "status": {
+      "enum": [
+        "ok",
+        "rejected",
+        "unavailable"
+      ]
+    },
+    "identifiers": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entity_type",
+          "entity_id"
+        ],
+        "properties": {
+          "entity_type": {
+            "enum": [
+              "slot"
+            ]
+          },
+          "entity_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        }
+      }
+    },
+    "values": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "field",
+              "value"
+            ],
+            "properties": {
+              "field": {
+                "const": "search_from"
+              },
+              "value": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "value"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "date"
+                  },
+                  "value": {
+                    "type": "string",
+                    "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+                  }
+                }
+              },
+              "display": {
+                "type": "string",
+                "maxLength": 2048
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "field",
+              "value"
+            ],
+            "properties": {
+              "field": {
+                "const": "slot_count"
+              },
+              "value": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "value"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "integer"
+                  },
+                  "value": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "display": {
+                "type": "string",
+                "maxLength": 2048
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "field",
+              "value"
+            ],
+            "properties": {
+              "field": {
+                "const": "more_available"
+              },
+              "value": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "value"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "boolean"
+                  },
+                  "value": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "display": {
+                "type": "string",
+                "maxLength": 2048
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "field",
+              "value"
+            ],
+            "properties": {
+              "field": {
+                "const": "slot_summary"
+              },
+              "value": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "value"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "text"
+                  },
+                  "value": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048
+                  }
+                }
+              },
+              "display": {
+                "type": "string",
+                "maxLength": 2048
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "field",
+              "value"
+            ],
+            "properties": {
+              "field": {
+                "type": "string",
+                "pattern": "^slot_[0-9]{1,2}_starts_at$"
+              },
+              "value": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "value"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "datetime"
+                  },
+                  "value": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "zone": {
+                    "type": "string",
+                    "maxLength": 64
+                  }
+                }
+              },
+              "display": {
+                "type": "string",
+                "maxLength": 2048
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "field",
+              "value"
+            ],
+            "properties": {
+              "field": {
+                "type": "string",
+                "pattern": "^slot_[0-9]{1,2}_doctor$"
+              },
+              "value": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "value"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "text"
+                  },
+                  "value": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048
+                  }
+                }
+              },
+              "display": {
+                "type": "string",
+                "maxLength": 2048
+              }
+            }
+          }
+        ]
+      }
+    },
+    "errors": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "enum": [
+              "internal",
+              "permission_denied",
+              "scope_missing",
+              "scope_violation",
+              "unavailable",
+              "validation_failed"
+            ]
+          },
+          "field": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        }
+      }
+    },
+    "freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "as_of",
+        "version"
+      ],
+      "properties": {
+        "as_of": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^rv1-[0-9a-f]{32}$"
+        }
+      }
+    },
+    "allowed_next_actions": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "enum": [
+              "invoke_capability",
+              "retry"
+            ]
+          },
+          "capability_id": {
+            "enum": [
+              "appointments.book"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 200
+          }
+        }
+      }
+    },
+    "preparation": false,
+    "follow_up": false
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "ok"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "freshness"
+        ],
+        "properties": {
+          "errors": {
+            "maxItems": 0
+          },
+          "values": {
+            "allOf": [
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "field"
+                  ],
+                  "properties": {
+                    "field": {
+                      "const": "search_from"
+                    }
+                  }
+                }
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "field"
+                  ],
+                  "properties": {
+                    "field": {
+                      "const": "slot_count"
+                    }
+                  }
+                }
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "field"
+                  ],
+                  "properties": {
+                    "field": {
+                      "const": "more_available"
+                    }
+                  }
+                }
+              },
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "field"
+                  ],
+                  "properties": {
+                    "field": {
+                      "const": "slot_summary"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "rejected"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "errors": {
+            "minItems": 1
+          },
+          "identifiers": {
+            "maxItems": 0
+          },
+          "values": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "unavailable"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "errors": {
+            "minItems": 1
+          },
+          "identifiers": {
+            "maxItems": 0
+          },
+          "values": {
+            "maxItems": 0
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,116 @@
+# AlixAI private LocalAI runtime (CPU image).
+#
+#   - image pinned by digest (see README.md "Pinned versions")
+#   - published on 127.0.0.1 only; every request needs LOCALAI_API_KEY
+#   - web UI, model/backend gallery, MCP, agents, p2p and federation are off (hardening.md)
+#   - models and backends are fetched by this service itself at start, from the
+#     sha256-pinned definitions in ./config (no one-shot init container); when the
+#     container cannot reach the registries, README.md "Backend and model pull from the host"
+#     lists the host-side fallback
+#   - data lives in bind mounts, never named or anonymous volumes
+#
+# Resource profiles are override files: -f compose.yaml -f compose.lite.yaml
+# Plain `docker compose` / `podman compose` syntax only; no Docker-only extensions.
+
+name: alixai-localai
+
+services:
+  localai:
+    # tag is informational, the digest is what is pulled. Multi-arch index (amd64 + arm64).
+    image: docker.io/localai/localai:v4.10.0@sha256:0632c21ddbe440bb71bc7aa744796c227a51658641b216290e86d6894e1c705b
+    container_name: alixai-localai
+    # Guard wrapper: refuses to start with a missing/weak API key, unwritable data dirs (a read-only
+    # /models only through ALIXAI_MODELS_READONLY) or a debug/trace log level, then execs the image's own
+    # /entrypoint.sh. Invoked through bash so the file needs no exec bit.
+    entrypoint: ["/bin/bash", "/alixai/entrypoint.sh"]
+    command: ["run"]
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      # --- authentication: one shared key; a legacy LocalAI key is full admin (hardening.md) ---
+      LOCALAI_API_KEY: ${LOCALAI_API_KEY:?set LOCALAI_API_KEY in .env (cp .env.example .env, then openssl rand -hex 32)}
+      LOCALAI_SUBTLE_KEY_COMPARISON: "true"
+      LOCALAI_AUTH: "false"
+      # --- network ---
+      LOCALAI_ADDRESS: ":8080"
+      LOCALAI_CORS: "false"
+      # --- storage: the four paths the image declares as VOLUMEs, all bound below ---
+      LOCALAI_MODELS_PATH: /models
+      LOCALAI_BACKENDS_PATH: /backends
+      LOCALAI_DATA_PATH: /data
+      LOCALAI_CONFIG_DIR: /configuration
+      # --- models: sha256-pinned definitions, downloaded by LocalAI's own preload at start ---
+      LOCALAI_MODELS_CONFIG_FILE: /configuration/models.yaml
+      # --- backends: only this local, digest-pinned catalogue; names installed at first boot ---
+      # The catalogue must sit INSIDE the backends directory: LocalAI v4.10.0 refuses a file:// gallery
+      # anywhere else ("path is outside of trusted root"), so a file:///configuration/... URL never loads
+      # and no backend is installed (M0-13 F7). It is mounted at /backends/alixai-backend-gallery.yaml below.
+      LOCALAI_BACKEND_GALLERIES: '[{"name":"alixai-pinned","url":"file:///backends/alixai-backend-gallery.yaml"}]'
+      LOCALAI_EXTERNAL_BACKENDS: ${LOCALAI_EXTERNAL_BACKENDS:-cpu-llama-cpp}
+      LOCALAI_AUTO_UPGRADE_BACKENDS: "false"
+      # Upstream strict mode needs a Sigstore-bundle signature the pinned image does not carry (hardening.md).
+      LOCALAI_REQUIRE_BACKEND_INTEGRITY: ${LOCALAI_REQUIRE_BACKEND_INTEGRITY:-false}
+      # --- upstream surfaces AlixAI does not use ---
+      LOCALAI_DISABLE_WEBUI: "true"
+      LOCALAI_DISABLE_RUNTIME_SETTINGS: "true"
+      LOCALAI_DISABLE_GALLERY_ENDPOINT: "true"
+      LOCALAI_GALLERIES: "[]"
+      LOCALAI_AUTOLOAD_GALLERIES: "false"
+      LOCALAI_AUTOLOAD_BACKEND_GALLERIES: "false"
+      LOCALAI_DISABLE_MCP: "true"
+      LOCALAI_DISABLE_AGENTS: "true"
+      LOCALAI_DISABLE_ASSISTANT: "true"
+      LOCALAI_P2P: "false"
+      LOCALAI_FEDERATED: "false"
+      LOCALAI_DISTRIBUTED: "false"
+      LOCALAI_ENABLE_TRACING: "false"
+      # --- memory (master plan 17.2): resident backends, unload after idle ---
+      # Never fewer than the models the profile keeps resident (docs/operations/resource-budgets.md R2, R3):
+      # below that LocalAI reloads a model on every call (15.2 s for a chat after an embedding on 4 GiB, M0-15).
+      # compose.lite.yaml (2), compose.balanced.yaml (4) and compose.4g.yaml (1) set their own default; this
+      # one serves a plain compose.yaml run, the Lite shape: the controller and the embedder.
+      # `alixai serve` refuses a value below the configured resident models (cmd_serve_readiness.go).
+      LOCALAI_MAX_ACTIVE_BACKENDS: ${LOCALAI_MAX_ACTIVE_BACKENDS:-2}
+      LOCALAI_WATCHDOG_IDLE: "true"
+      LOCALAI_WATCHDOG_IDLE_TIMEOUT: ${LOCALAI_WATCHDOG_IDLE_TIMEOUT:-15m}
+      # info only: at debug and trace LocalAI logs every completion body in full (hardening-live.md, HC-34).
+      # entrypoint.sh refuses debug and trace unless ALIXAI_ALLOW_VERBOSE_LOG=true is set next to it.
+      LOCALAI_LOG_LEVEL: info
+      # --- guard switch of entrypoint.sh, not a LocalAI setting ---
+      # true only together with the :ro mount of compose.readonly-models.yaml (README.md)
+      ALIXAI_MODELS_READONLY: ${ALIXAI_MODELS_READONLY:-false}
+    volumes:
+      - ./data/models:/models
+      - ./data/backends:/backends
+      # the backend catalogue, INSIDE the backends directory (see LOCALAI_BACKEND_GALLERIES above); read-only
+      - ./config/backend-gallery.yaml:/backends/alixai-backend-gallery.yaml:ro
+      - ./data/state:/data
+      # read-only on purpose: LocalAI hot-applies runtime_settings.json, api_keys.json and
+      # external_backends.json dropped here, so nothing may be writable at runtime
+      - ./config:/configuration:ro
+      - ./entrypoint.sh:/alixai/entrypoint.sh:ro
+    healthcheck:
+      # /readyz is exempt from the API key. start_period covers the first boot, when the
+      # backend image (~50 MB) and the model file are downloaded before the API binds.
+      test: ["CMD", "curl", "-fsS", "-m", "5", "http://127.0.0.1:8080/readyz"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60m
+    restart: unless-stopped
+    stop_grace_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    # Drop everything, then add back only file-access capabilities: DAC_OVERRIDE so root can write
+    # bind mounts owned by another user on rootful Linux Docker, CHOWN and FOWNER for ownership and
+    # mode changes while staging models and extracting backend images. No network, device or
+    # setuid capabilities (NET_RAW, MKNOD, SETUID, SETGID, SETFCAP, SYS_CHROOT ... stay dropped).
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+    labels:
+      ai.alixai.component: localai
+      ai.alixai.profile: unconstrained

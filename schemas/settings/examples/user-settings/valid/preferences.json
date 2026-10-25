@@ -1,0 +1,44 @@
+{
+  "language": "it",
+  "model_profile": "balanced",
+  "voice": {
+    "enabled": true,
+    "voice_id": "it_female_1",
+    "speech_rate_pct": 110,
+    "auto_play": false,
+    "barge_in": true
+  },
+  "history": {
+    "retention_days": 30,
+    "auto_cleanup": true
+  },
+  "privacy": {
+    "store_transcript": false
+  },
+  "attachments": {
+    "accept_uploads": true,
+    "max_file_mb": 10
+  },
+  "sources": {
+    "include_attachments": true,
+    "citation_display": "panel"
+  },
+  "notifications": {
+    "enabled": true,
+    "events": [
+      "action_ready",
+      "job_finished"
+    ]
+  },
+  "streaming": {
+    "enabled": true,
+    "unit": "sentence"
+  },
+  "accessibility": {
+    "reduced_motion": true,
+    "high_contrast": false,
+    "text_scale_pct": 150,
+    "screen_reader": true,
+    "captions": true
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "report_id": "conf_01J0000000000000000000000R",
+  "provider": {
+    "profile_id": "pprf_01J0000000000000000000000P",
+    "provider_id": "openai",
+    "model_id": "gpt-4.1-mini",
+    "model_version": "2025-04-14"
+  },
+  "suite": { "version": "1.0.0", "mode": "fixtures" },
+  "declared": {
+    "image": false,
+    "file": false,
+    "audio": true
+  },
+  "started_at": "2026-10-02T10:00:00Z",
+  "completed_at": "2026-10-02T10:04:00Z",
+  "outcome": "passed",
+  "groups": {
+    "inference": {
+      "text_generation_and_streaming": { "result": "passed", "reason": null },
+      "bounded_context": { "result": "passed", "reason": null },
+      "structured_output": { "result": "passed", "reason": null },
+      "cancellation_and_timeout": { "result": "passed", "reason": null },
+      "usage_reporting": { "result": "passed", "reason": null },
+      "malformed_and_error_mapping": { "result": "passed", "reason": null }
+    },
+    "control": {
+      "typed_task_proposal": { "result": "passed", "reason": null },
+      "unknown_capability_refusal": { "result": "passed", "reason": null },
+      "argument_schema_compliance": { "result": "passed", "reason": null },
+      "no_direct_adapter_invocation": { "result": "passed", "reason": null },
+      "directive_and_receipt_handling": { "result": "passed", "reason": null },
+      "confirmation_and_cancellation": { "result": "passed", "reason": null }
+    },
+    "rag": {
+      "authorized_excerpt_handling": { "result": "passed", "reason": null },
+      "source_reference_preservation": { "result": "passed", "reason": null },
+      "no_unsupported_citations": { "result": "passed", "reason": null },
+      "prompt_injection_resistance": { "result": "passed", "reason": null },
+      "local_only_source_enforcement": { "result": "passed", "reason": null },
+      "no_path_or_cred_leakage": { "result": "passed", "reason": null }
+    },
+    "multimodal": {
+      "image_input_output": { "result": "not_applicable", "reason": null },
+      "file_input_output": { "result": "not_applicable", "reason": null },
+      "audio_input_output": { "result": "not_applicable", "reason": null },
+      "cancellation_and_partial_stream": { "result": "passed", "reason": null },
+      "sanitized_rich_blocks": { "result": "passed", "reason": null }
+    },
+    "operations": {
+      "creds_never_in_responses_or_logs": { "result": "passed", "reason": null },
+      "quota_and_budget_enforcement": { "result": "passed", "reason": null },
+      "provider_disablement": { "result": "passed", "reason": null },
+      "fallback_and_outage_behavior": { "result": "passed", "reason": null },
+      "tenant_isolation": { "result": "passed", "reason": null },
+      "audit_completeness": { "result": "passed", "reason": null },
+      "terms_and_capability_profile_validation": { "result": "passed", "reason": null }
+    }
+  }
+}

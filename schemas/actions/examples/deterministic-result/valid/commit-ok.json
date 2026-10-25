@@ -1,0 +1,39 @@
+{
+  "operation": "commit",
+  "capability_id": "appointments.book",
+  "status": "ok",
+  "identifiers": [
+    {
+      "entity_type": "appointment",
+      "entity_id": "apt_20991"
+    }
+  ],
+  "values": [
+    {
+      "field": "slot_date",
+      "value": {
+        "kind": "date",
+        "value": "2026-10-14"
+      }
+    },
+    {
+      "field": "slot_start",
+      "value": {
+        "kind": "time",
+        "value": "10:30"
+      }
+    }
+  ],
+  "errors": [],
+  "freshness": {
+    "as_of": "2026-10-09T08:03:00Z",
+    "version": "v43"
+  },
+  "allowed_next_actions": [
+    {
+      "action": "invoke_capability",
+      "capability_id": "appointments.cancel",
+      "label": "Cancel appointment"
+    }
+  ]
+}

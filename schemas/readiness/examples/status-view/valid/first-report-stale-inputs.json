@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "advisory": true,
+  "report_id": "rdr_01J0000000000000000000000A",
+  "generated_at": "2026-10-12T09:00:00Z",
+  "evaluated_at": "2026-10-12T10:30:00Z",
+  "inputs_changed": true,
+  "mode": "deterministic_only",
+  "summary": {
+    "found": 1,
+    "partial": 0,
+    "missing": 0,
+    "unverified": 0,
+    "contradicted": 0
+  },
+  "items": [
+    {
+      "requirement_id": "req.data.read",
+      "category": "deterministic_data",
+      "check_id": "application.deterministic_results",
+      "level": "mandatory",
+      "status": "found",
+      "changed": false
+    }
+  ]
+}

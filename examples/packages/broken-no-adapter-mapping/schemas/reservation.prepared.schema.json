@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Result of preparing a reservation",
+  "type": "object",
+  "required": ["status", "prepared_id", "effects", "expires_at"],
+  "additionalProperties": false,
+  "properties": {
+    "status": { "enum": ["prepared"] },
+    "prepared_id": { "type": "string", "maxLength": 64 },
+    "expires_at": { "type": "string", "format": "date-time" },
+    "effects": {
+      "type": "object",
+      "required": ["title", "branch", "pickup_date"],
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "string", "maxLength": 300 },
+        "branch": { "type": "string", "maxLength": 100 },
+        "pickup_date": { "type": "string", "format": "date" }
+      }
+    }
+  }
+}

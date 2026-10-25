@@ -1,0 +1,59 @@
+{
+  "turn_id": "trn_01J0000000000000000000000A",
+  "capability_id": "appointments.book",
+  "act": "request_confirmation",
+  "facts": [
+    {
+      "field": "doctor",
+      "value": {
+        "kind": "text",
+        "value": "Dr. Rossi"
+      }
+    },
+    {
+      "field": "slot_date",
+      "value": {
+        "kind": "date",
+        "value": "2026-10-14"
+      },
+      "display": "Tuesday 14 October 2026"
+    },
+    {
+      "field": "slot_start",
+      "value": {
+        "kind": "time",
+        "value": "10:30"
+      }
+    }
+  ],
+  "must_state": [
+    "doctor",
+    "slot_date",
+    "slot_start"
+  ],
+  "missing_fields": [],
+  "invalid_fields": [],
+  "allowed_suggestions": [],
+  "confirmation": {
+    "mode": "explicit",
+    "bindings": [
+      "preparation_id",
+      "principal",
+      "session",
+      "data_versions"
+    ]
+  },
+  "permitted_next_actions": [
+    {
+      "action": "confirm"
+    },
+    {
+      "action": "reject"
+    },
+    {
+      "action": "modify"
+    }
+  ],
+  "sources": [],
+  "preparation_id": "prep_01J0000000000000000000000A"
+}

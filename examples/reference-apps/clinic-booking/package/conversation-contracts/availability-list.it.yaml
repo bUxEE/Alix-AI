@@ -1,0 +1,51 @@
+capability_id: availability.list
+language: it
+contract_version: 1.0.0
+terminology:
+  - doctor
+  - slot
+  - appointment
+field_prompts:
+  - field: date
+    label: Primo giorno
+    prompt: "Da quale giorno devo cercare? Dimmi una data come 2026-10-14, altrimenti parto da oggi."
+    examples:
+      - "2026-10-14"
+  - field: days
+    label: Numero di giorni
+    prompt: "Per quanti giorni devo cercare?"
+  - field: doctor
+    label: Medico
+    prompt: "Devo cercare solo con un medico? Dimmi quale."
+  - field: max_results
+    label: Numero di risultati
+    prompt: "Quanti orari liberi devo elencare?"
+clarifications:
+  - rule_id: doctor_multiple
+    prompt: "Più di un medico corrisponde a {input.doctor}. Quale intendi?"
+corrections:
+  acknowledgement: "Va bene, cerco di nuovo con i nuovi dati."
+  correctable_fields:
+    - date
+    - days
+    - doctor
+    - max_results
+cancellations:
+  acknowledgement: "Va bene, ho interrotto la ricerca."
+success:
+  - outcome: slots_found
+    text: "Ho trovato {slot_count} orari liberi a partire da {search_from}: {slot_summary}."
+  - outcome: none_available
+    text: "Non ho trovato orari liberi a partire da {search_from}. I risultati sono {slot_count}."
+failures:
+  - code: permission_denied
+    text: "Non hai il permesso di consultare le disponibilità, quindi non ho cercato."
+  - code: scope_violation
+    text: "Non posso cercare per quel medico nella tua sede. Non ho cercato nulla."
+  - code: validation_failed
+    text: "Non ho potuto cercare: il primo giorno deve essere compreso tra oggi e 90 giorni da oggi, e il numero di giorni da 1 a 14."
+  - code: unavailable
+    text: "Il sistema degli appuntamenti non è raggiungibile in questo momento, quindi non ho potuto cercare. Non è stato modificato nulla."
+next_actions:
+  - id: book_listed_slot
+    label: "Prenota uno di questi appuntamenti"

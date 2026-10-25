@@ -1,0 +1,8 @@
+{
+  "type": "progress",
+  "turn_id": "trn_01J0000000000000000000000A",
+  "seq": 4,
+  "stage": "tool_call",
+  "state": "started",
+  "capability_id": "appointments.list_availability"
+}

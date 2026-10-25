@@ -1,0 +1,468 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:application-package:package-tests:v1",
+  "title": "Package tests",
+  "description": "A test suite the integration audit runs against the application (master plan 4.5 checks 6, 8 and 10, 9.4): synthetic fixtures for a disposable tenant, positive and negative scope probes, safe-execution probes for every consequential operation, optional conversation cases and a runtime smoke test. One or more files under tests/. Everything here is test-only and synthetic: no real tenant, person or record belongs in a package, and nothing here is ever used at runtime. The suite declares WHAT to probe and what outcome is correct; AlixAI's audit executes it deterministically and records the result. The schema fixes the shape and the two things that must exist (a positive and a negative scope probe, a text smoke path); that every capability is covered is the loader's and the audit's check. Authored as YAML; this schema validates the parsed JSON form.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["suite", "synthetic", "fixtures", "scope_probes", "safety_probes", "smoke"],
+  "properties": {
+    "suite": {
+      "description": "The suite ID, unique in the package.",
+      "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+    },
+    "description": {
+      "description": "Optional note on what the suite covers.",
+      "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/text"
+    },
+    "synthetic": {
+      "description": "Always true. States that every tenant, principal and record in the suite is synthetic and privacy-safe.",
+      "const": true
+    },
+    "fixtures": {
+      "description": "The disposable tenants, principals and records the probes use, and the application operations that create and remove them.",
+      "$ref": "#/$defs/fixtures"
+    },
+    "scope_probes": {
+      "description": "Positive and negative scope probes (master plan 4.5 check 6). At least one probe must expect allow and at least one must expect deny: a suite that only checks what works proves nothing about isolation. A denied probe passes only if the unauthorized record or chunk never reaches the model.",
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 512,
+      "items": { "$ref": "#/$defs/scopeProbe" },
+      "allOf": [
+        {
+          "contains": {
+            "type": "object",
+            "properties": { "expect": { "const": "allow" } },
+            "required": ["expect"]
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": { "expect": { "const": "deny" } },
+            "required": ["expect"]
+          }
+        }
+      ]
+    },
+    "safety_probes": {
+      "description": "Safe-execution probes (master plan 4.5 check 8): prepare/confirm/commit, idempotency, expiry, cancellation, stale-record invalidation and uncertain-response recovery. Every consequential operation (risk level 1 or higher) needs probes of every kind; the loader and the audit check coverage. May be empty only for an application with read-only capabilities.",
+      "type": "array",
+      "maxItems": 1024,
+      "items": { "$ref": "#/$defs/safetyProbe" }
+    },
+    "conversation_cases": {
+      "description": "Optional multi-turn conversation cases for the conversation test harness. Test-only: expectations are checked against deterministic results, never used as runtime policy.",
+      "type": "array",
+      "maxItems": 256,
+      "items": { "$ref": "#/$defs/conversationCase" }
+    },
+    "smoke": {
+      "description": "The runtime smoke test against a disposable tenant (master plan 4.5 check 10).",
+      "$ref": "#/$defs/smoke"
+    }
+  },
+  "$defs": {
+    "fixtures": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provisioning", "tenants", "principals", "records"],
+      "properties": {
+        "provisioning": {
+          "description": "The application operations that create and remove the synthetic data.",
+          "$ref": "#/$defs/provisioning"
+        },
+        "tenants": {
+          "description": "The disposable tenants, by logical reference. At least two, so cross-tenant probes exist. The references are logical names: the audit generates the real tenant and workspace IDs for the disposable run.",
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 16,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["ref", "workspaces"],
+            "properties": {
+              "ref": {
+                "description": "Logical tenant reference, unique in the suite.",
+                "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+              },
+              "workspaces": {
+                "description": "Logical references of the tenant's workspaces. At least one.",
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 16,
+                "uniqueItems": true,
+                "items": { "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug" }
+              }
+            }
+          }
+        },
+        "principals": {
+          "description": "The synthetic principals, by logical reference. At least two, so cross-principal probes exist.",
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/principal" }
+        },
+        "records": {
+          "description": "The synthetic records the seed operation creates, by logical reference. At least one.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1024,
+          "items": { "$ref": "#/$defs/record" }
+        }
+      }
+    },
+    "provisioning": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["create_tenant", "seed", "cleanup"],
+      "properties": {
+        "create_tenant": {
+          "description": "The inspection or management operation that creates a disposable tenant with its workspaces and principals.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/adapterCall"
+        },
+        "seed": {
+          "description": "The operation that loads the synthetic records.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/adapterCall"
+        },
+        "cleanup": {
+          "description": "The operation that removes the disposable tenant and everything the run created. The smoke test verifies nothing is left.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/adapterCall"
+        },
+        "seed_data": {
+          "description": "Optional package-relative path (below tests/) of the synthetic data file the seed operation reads.",
+          "type": "string",
+          "maxLength": 240,
+          "pattern": "^tests/[A-Za-z0-9_][A-Za-z0-9._-]*(/[A-Za-z0-9_][A-Za-z0-9._-]*)*$"
+        }
+      }
+    },
+    "principal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ref", "tenant", "workspace", "kind", "roles"],
+      "properties": {
+        "ref": {
+          "description": "Logical principal reference, unique in the suite.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "tenant": {
+          "description": "The reference of one of the fixture tenants.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "workspace": {
+          "description": "The reference of one of that tenant's workspaces.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "kind": {
+          "description": "human or service principal.",
+          "type": "string",
+          "enum": ["human", "service"]
+        },
+        "roles": {
+          "description": "Roles the principal's context carries. Each must be declared in the manifest's tenancy.roles. At least one.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier" }
+        }
+      }
+    },
+    "record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ref", "entity_type", "tenant", "workspace"],
+      "properties": {
+        "ref": {
+          "description": "Logical record reference, unique in the suite.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "entity_type": {
+          "description": "The entity type of the record.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "tenant": {
+          "description": "The fixture tenant the record belongs to.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "workspace": {
+          "description": "The fixture workspace the record belongs to.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        }
+      }
+    },
+    "scopeProbe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "dimension", "operation", "principal", "expect"],
+      "properties": {
+        "id": {
+          "description": "Probe ID, unique in the suite.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "dimension": {
+          "description": "The scope boundary the probe tests (master plan 4.5 check 6): tenant, workspace, principal, role, record, document or source.",
+          "type": "string",
+          "enum": ["tenant", "workspace", "principal", "role", "record", "document", "source"]
+        },
+        "operation": {
+          "description": "What is attempted: a capability operation (read, validate, prepare, commit, status) or retrieve, a RAG retrieval.",
+          "type": "string",
+          "enum": ["read", "validate", "prepare", "commit", "status", "retrieve"]
+        },
+        "capability_id": {
+          "description": "The capability attempted. Required for every operation except retrieve.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/capabilityId"
+        },
+        "principal": {
+          "description": "The reference of the fixture principal making the attempt.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "target_record": {
+          "description": "The reference of the fixture record the attempt targets, for record-level probes.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "target_source": {
+          "description": "The ID of the RAG source retrieved from, for source and document probes.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "expect": {
+          "description": "allow: the attempt succeeds. deny: it is refused with error_code, and nothing about the target is disclosed.",
+          "type": "string",
+          "enum": ["allow", "deny"]
+        },
+        "error_code": {
+          "description": "The error code a denied attempt must produce. Required for deny, not allowed for allow.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/errorCode"
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "expect": { "const": "deny" } }, "required": ["expect"] },
+          "then": { "required": ["error_code"] },
+          "else": { "properties": { "error_code": false } }
+        },
+        {
+          "if": { "properties": { "operation": { "const": "retrieve" } }, "required": ["operation"] },
+          "then": { "required": ["target_source"] },
+          "else": { "required": ["capability_id"] }
+        }
+      ]
+    },
+    "safetyProbe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "capability_id", "principal", "kind", "expect"],
+      "properties": {
+        "id": {
+          "description": "Probe ID, unique in the suite.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "capability_id": {
+          "description": "The consequential capability probed.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/capabilityId"
+        },
+        "principal": {
+          "description": "The reference of the fixture principal acting.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "kind": {
+          "description": "confirmed_commit: prepare, confirm, commit once. unconfirmed_commit: commit without the required confirmation. replayed_commit: the same commit sent twice. expired_preparation: commit after the preparation expired. stale_record: a record changes between prepare and commit. cancelled_preparation: commit after cancellation. uncertain_commit_recovery: the commit response is lost, and status decides whether to retry.",
+          "type": "string",
+          "enum": [
+            "confirmed_commit",
+            "unconfirmed_commit",
+            "replayed_commit",
+            "expired_preparation",
+            "stale_record",
+            "cancelled_preparation",
+            "uncertain_commit_recovery"
+          ]
+        },
+        "expect": {
+          "description": "The required outcome.",
+          "$ref": "#/$defs/safetyExpect"
+        }
+      }
+    },
+    "safetyExpect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome"],
+      "properties": {
+        "outcome": {
+          "description": "committed_once: the effect was applied exactly once. rejected_no_effect: the attempt failed with error_code and changed nothing. original_receipt_returned: a repeat returned the first receipt and changed nothing more. recovered_via_status: status established what happened and the action was neither lost nor duplicated.",
+          "type": "string",
+          "enum": ["committed_once", "rejected_no_effect", "original_receipt_returned", "recovered_via_status"]
+        },
+        "error_code": {
+          "description": "The error code of a rejected attempt. Required for rejected_no_effect, not allowed otherwise.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/errorCode"
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "outcome": { "const": "rejected_no_effect" } }, "required": ["outcome"] },
+          "then": { "required": ["error_code"] },
+          "else": { "properties": { "error_code": false } }
+        }
+      ]
+    },
+    "conversationCase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "language", "capability_id", "principal", "turns"],
+      "properties": {
+        "id": {
+          "description": "Case ID, unique in the suite.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "language": {
+          "description": "The language of the user turns.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/languageTag"
+        },
+        "capability_id": {
+          "description": "The capability the conversation is about.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/capabilityId"
+        },
+        "principal": {
+          "description": "The reference of the fixture principal talking.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "turns": {
+          "description": "The user turns in order, each with what the controller must do. At least one.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": { "$ref": "#/$defs/turn" }
+        }
+      }
+    },
+    "turn": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["user", "expect"],
+      "properties": {
+        "user": {
+          "description": "What the user says in this turn.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "expect": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["act"],
+          "properties": {
+            "act": {
+              "description": "The dialogue act of the resulting DialogueDirective (the vocabulary is defined by the conversation object schemas, docs/integration/conversation-objects.md), for example ask_missing, disambiguate, request_confirmation, request_step_up, report_outcome or report_failure. The generated act enum is the vocabulary; the alias ask_missing_field is still accepted and read as ask_missing.",
+              "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+            },
+            "missing_fields": {
+              "description": "The fields the controller must report as missing.",
+              "type": "array",
+              "maxItems": 64,
+              "uniqueItems": true,
+              "items": { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName" }
+            },
+            "fields": {
+              "description": "Field values the controller must hold after the turn.",
+              "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/exampleFields"
+            },
+            "error_code": {
+              "description": "The error code the turn must produce, for a failing turn.",
+              "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/errorCode"
+            }
+          }
+        }
+      }
+    },
+    "smoke": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["paths", "verify_cleanup"],
+      "properties": {
+        "paths": {
+          "description": "The end-to-end paths exercised in the disposable tenant. A text path is required; voice, rag and action paths are listed when the application has them.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/smokePath" },
+          "contains": {
+            "type": "object",
+            "properties": { "path": { "const": "text" } },
+            "required": ["path"]
+          },
+          "minContains": 1
+        },
+        "verify_cleanup": {
+          "description": "Always true. After the run the audit verifies that the disposable tenant and every record the run created are gone.",
+          "const": true
+        }
+      }
+    },
+    "smokePath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "path", "principal", "utterance", "expect"],
+      "properties": {
+        "id": {
+          "description": "Path ID, unique in the suite.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "path": {
+          "description": "text, voice (a synthetic transcript), rag (a question answered from a source) or action (a prepare, confirm, commit round trip).",
+          "type": "string",
+          "enum": ["text", "voice", "rag", "action"]
+        },
+        "principal": {
+          "description": "The reference of the fixture principal.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "capability_id": {
+          "description": "The capability exercised. Required for the action path.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/capabilityId"
+        },
+        "utterance": {
+          "description": "What the synthetic user says or asks.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "expect": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["audit_events"],
+          "properties": {
+            "audit_events": {
+              "description": "The audit event types the path must produce, so the audit trail is exercised along with the behaviour. At least one.",
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 32,
+              "uniqueItems": true,
+              "items": { "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/dottedId" }
+            },
+            "citations": {
+              "description": "For the rag path: true if the answer must carry original-source citations, false if the path must return no_supported_evidence.",
+              "type": "boolean"
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "path": { "const": "action" } }, "required": ["path"] },
+          "then": { "required": ["capability_id"] }
+        },
+        {
+          "if": { "properties": { "path": { "const": "rag" } }, "required": ["path"] },
+          "then": { "properties": { "expect": { "required": ["citations"] } } },
+          "else": { "properties": { "expect": { "properties": { "citations": false } } } }
+        }
+      ]
+    }
+  }
+}

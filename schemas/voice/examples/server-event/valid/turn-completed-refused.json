@@ -1,0 +1,8 @@
+{
+  "type": "turn.completed",
+  "utterance_id": "utt_01J0000000000000000000000A",
+  "turn_id": "trn_01J0000000000000000000000A",
+  "act": "refuse",
+  "failed": true,
+  "code": "permission_denied"
+}

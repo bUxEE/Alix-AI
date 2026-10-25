@@ -1,0 +1,112 @@
+{
+  "format": "alixai.application-package/v1",
+  "application": {
+    "id": "demo-library",
+    "name": "Demo Library Desk",
+    "version": "2.4.0",
+    "vendor": "Example Libraries Ltd",
+    "description": "A synthetic lending-library application used as the minimal example package."
+  },
+  "package": {
+    "version": "1.0.0",
+    "description": "Initial integration package: catalogue search and title reservation."
+  },
+  "compatibility": {
+    "alixai_core": {
+      "min": "0.1.0",
+      "max_exclusive": "1.0.0"
+    }
+  },
+  "endpoints": {
+    "library-mcp": {
+      "transport": "mcp",
+      "url": "https://library.example.test/mcp",
+      "adapter_config": "schemas/adapters/library-mcp.yaml",
+      "credential_ref": "cred:demo-library-mcp"
+    }
+  },
+  "context_exchange": {
+    "mode": "context_token",
+    "issuer": "https://library.example.test",
+    "audience": "alixai",
+    "key_ids": [
+      "demo-library-ctx-2026"
+    ],
+    "max_lifetime_seconds": 600
+  },
+  "tenancy": {
+    "tenant": {
+      "label": "library network",
+      "description": "A library network is one customer organisation. Members, titles and reservations never cross networks."
+    },
+    "workspace": {
+      "label": "branch",
+      "description": "A branch is one physical library of a network. Stock and pickups are per branch."
+    },
+    "principal_kinds": [
+      "human"
+    ],
+    "roles": {
+      "member": {
+        "description": "A registered library member who can search and reserve at their own branch."
+      },
+      "visitor": {
+        "description": "An unregistered visitor who can only search the catalogue."
+      }
+    }
+  },
+  "languages": {
+    "default": "en",
+    "supported": [
+      "en",
+      "it"
+    ]
+  },
+  "capabilities": {
+    "catalog.find_title": "capabilities/catalog-find-title.yaml",
+    "reservations.create": "capabilities/reservations-create.yaml"
+  },
+  "rag_sources": {
+    "loan-policies": "rag-sources/loan-policies.yaml"
+  },
+  "model_requirements": {
+    "minimum_profile": "lite",
+    "controller": {
+      "need": "required",
+      "languages": [
+        "en",
+        "it"
+      ],
+      "min_context_tokens": 4096
+    },
+    "embedding": {
+      "need": "optional"
+    }
+  },
+  "retention": {
+    "session_state_days": 7,
+    "transcript_days": 30,
+    "action_receipt_days": 365,
+    "audit_days": 730,
+    "log_days": 14
+  },
+  "network": {
+    "default": "deny",
+    "egress": {
+      "library-api": {
+        "host": "library.example.test",
+        "ports": [],
+        "scheme": "https",
+        "purpose": "Library MCP server"
+      }
+    }
+  },
+  "integrity": {
+    "signature_manifest": "signatures/signature-manifest.json",
+    "hash_algorithm": "sha256",
+    "signature_algorithm": "ed25519",
+    "publisher_key_ids": [
+      "demo-library-publisher-2026"
+    ]
+  }
+}

@@ -1,0 +1,133 @@
+{
+  "name": "table",
+  "description": "A table block (columns and rows as data) as a generative-UI activity of type alixai.block.table, beside the text. Recorded through the hub and read back from the run's events route.",
+  "protocol": "AG-UI 1.0 (@ag-ui/core 1.0.1)",
+  "source": "hub",
+  "request": {
+    "method": "GET",
+    "path": "/v1/agui/threads/ses_test_01/runs/run_table/events"
+  },
+  "response": {
+    "status": 200,
+    "content_type": "text/event-stream",
+    "sse_file": "table.sse",
+    "ids": [
+      "0",
+      "1",
+      "2",
+      "3"
+    ],
+    "event_types": [
+      "RUN_STARTED",
+      "CUSTOM",
+      "ACTIVITY_SNAPSHOT",
+      "TEXT_MESSAGE_START",
+      "TEXT_MESSAGE_CONTENT",
+      "TEXT_MESSAGE_END",
+      "RUN_FINISHED"
+    ],
+    "events": [
+      {
+        "type": "RUN_STARTED",
+        "threadId": "ses_test_01",
+        "runId": "run_table"
+      },
+      {
+        "type": "CUSTOM",
+        "name": "alixai.directive",
+        "value": {
+          "turn_id": "trn_01J00000000000000000000001",
+          "capability_id": "appointments.book",
+          "act": "present_result",
+          "facts": [
+            {
+              "field": "free_slots",
+              "value": {
+                "kind": "integer",
+                "value": 3
+              }
+            }
+          ],
+          "must_state": [],
+          "missing_fields": [],
+          "invalid_fields": [],
+          "allowed_suggestions": [],
+          "confirmation": {
+            "mode": "none",
+            "bindings": []
+          },
+          "permitted_next_actions": [],
+          "sources": []
+        }
+      },
+      {
+        "type": "ACTIVITY_SNAPSHOT",
+        "messageId": "act_trn_01J00000000000000000000001_b1",
+        "activityType": "alixai.block.table",
+        "content": {
+          "type": "table",
+          "caption": "Free slots on 14 October",
+          "columns": [
+            {
+              "key": "start",
+              "label": "Start",
+              "kind": "text"
+            },
+            {
+              "key": "doctor",
+              "label": "Doctor"
+            },
+            {
+              "key": "free",
+              "label": "Free",
+              "kind": "boolean"
+            }
+          ],
+          "rows": [
+            [
+              "10:30",
+              "Dr. Rossi",
+              true
+            ],
+            [
+              "11:00",
+              "Dr. Rossi",
+              false
+            ],
+            [
+              "11:30",
+              null,
+              3
+            ]
+          ]
+        }
+      },
+      {
+        "type": "TEXT_MESSAGE_START",
+        "messageId": "msg_trn_01J00000000000000000000001_1",
+        "role": "assistant"
+      },
+      {
+        "type": "TEXT_MESSAGE_CONTENT",
+        "messageId": "msg_trn_01J00000000000000000000001_1",
+        "delta": "These are the free slots."
+      },
+      {
+        "type": "TEXT_MESSAGE_END",
+        "messageId": "msg_trn_01J00000000000000000000001_1"
+      },
+      {
+        "type": "RUN_FINISHED",
+        "threadId": "ses_test_01",
+        "runId": "run_table",
+        "result": {
+          "finishReason": "completed",
+          "turnId": "trn_01J00000000000000000000001"
+        },
+        "outcome": {
+          "type": "success"
+        }
+      }
+    ]
+  }
+}

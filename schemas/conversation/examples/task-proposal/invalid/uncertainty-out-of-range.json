@@ -1,0 +1,12 @@
+{
+  "capability_id": "tasks.create",
+  "fields": {
+    "title": "Call the supplier"
+  },
+  "entity_refs": [],
+  "intent": "task",
+  "uncertainty": {
+    "overall": 1.5
+  },
+  "trace_id": "trc_01J0000000000000000000000G"
+}

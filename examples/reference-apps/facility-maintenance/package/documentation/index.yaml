@@ -1,0 +1,971 @@
+entries:
+- id: wl-field-status
+  capability_id: workorders.list
+  facet: field
+  language: en
+  title: Field status
+  summary: Type enum (open, assigned, closed, any), optional, default any. Only list work orders in this status; any lists every status.
+  location:
+    path: documentation/workorders/list.md
+    anchor: field-status
+  field: status
+- id: wl-field-priority
+  capability_id: workorders.list
+  facet: field
+  language: en
+  title: Field priority
+  summary: Type enum (low, normal, high, urgent), optional. Only list work orders with this priority.
+  location:
+    path: documentation/workorders/list.md
+    anchor: field-priority
+  field: priority
+- id: wl-field-asset
+  capability_id: workorders.list
+  facet: field
+  language: en
+  title: Field asset
+  summary: Type entity_ref of asset, optional. Only list work orders of this asset.
+  location:
+    path: documentation/workorders/list.md
+    anchor: field-asset
+  field: asset
+- id: wl-field-technician
+  capability_id: workorders.list
+  facet: field
+  language: en
+  title: Field technician
+  summary: Type entity_ref of technician, optional. Only list work orders assigned to this technician. A technician may name only themselves.
+  location:
+    path: documentation/workorders/list.md
+    anchor: field-technician
+  field: technician
+- id: wl-field-max_results
+  capability_id: workorders.list
+  facet: field
+  language: en
+  title: Field max_results
+  summary: Type integer, optional, from 1 to 10, default 5. How many work orders to list at most.
+  location:
+    path: documentation/workorders/list.md
+    anchor: field-max_results
+  field: max_results
+- id: wl-rule-max_results_in_range
+  capability_id: workorders.list
+  facet: validation_rule
+  language: en
+  title: Rule max_results_in_range
+  summary: The number of work orders must be a whole number from 1 to 10. Reported as validation_failed.
+  location:
+    path: documentation/workorders/list.md
+    anchor: rule-max_results_in_range
+  rule_id: max_results_in_range
+- id: wl-rule-technician_filter_scope
+  capability_id: workorders.list
+  facet: validation_rule
+  language: en
+  title: Rule technician_filter_scope
+  summary: A technician may filter by their own name only; another technician's work is not available to them. Reported as scope_violation.
+  location:
+    path: documentation/workorders/list.md
+    anchor: rule-technician_filter_scope
+  rule_id: technician_filter_scope
+- id: wl-perm-workorders.read
+  capability_id: workorders.list
+  facet: permission
+  language: en
+  title: Permission workorders.read
+  summary: Allows listing work orders and resolving assets, technicians and work orders. Granted to technician, supervisor, auditor; checked by the host on every call, which also limits a technician to the work assigned to them or raised by them.
+  location:
+    path: documentation/workorders/list.md
+    anchor: permission-workordersread
+  permission: workorders.read
+- id: wl-failure-permission_denied
+  capability_id: workorders.list
+  facet: failure_state
+  language: en
+  title: Failure permission_denied
+  summary: The principal's role may not use this capability.
+  location:
+    path: documentation/workorders/list.md
+    anchor: failure-permission_denied
+  error_code: permission_denied
+- id: wl-failure-scope_violation
+  capability_id: workorders.list
+  facet: failure_state
+  language: en
+  title: Failure scope_violation
+  summary: A record named is outside the principal's access (another site, another tenant, or work the role may not see), or does not exist. The application does not say which.
+  location:
+    path: documentation/workorders/list.md
+    anchor: failure-scope_violation
+  error_code: scope_violation
+- id: wl-failure-validation_failed
+  capability_id: workorders.list
+  facet: failure_state
+  language: en
+  title: Failure validation_failed
+  summary: A value is missing, malformed or out of bounds. Nothing was changed.
+  location:
+    path: documentation/workorders/list.md
+    anchor: failure-validation_failed
+  error_code: validation_failed
+- id: wl-failure-unavailable
+  capability_id: workorders.list
+  facet: failure_state
+  language: en
+  title: Failure unavailable
+  summary: The application's data store cannot be reached. Nothing was changed.
+  location:
+    path: documentation/workorders/list.md
+    anchor: failure-unavailable
+  error_code: unavailable
+- id: wl-risk
+  capability_id: workorders.list
+  facet: risk_level
+  language: en
+  title: Risk level 0
+  summary: 'Level 0 (read-only, low sensitivity): executed after authorisation; nothing is prepared and nothing is committed. Effect class none.'
+  location:
+    path: documentation/workorders/list.md
+    anchor: level-0
+- id: wl-confirmation
+  capability_id: workorders.list
+  facet: confirmation_rule
+  language: en
+  title: Confirmation rule (none)
+  summary: 'No separate confirmation is asked: the application commits right after the concise summary. The host still reauthorises the call and limits it to the caller''s own site.'
+  location:
+    path: documentation/workorders/list.md
+    anchor: confirmation-none
+- id: wl-outcome-work_orders_found
+  capability_id: workorders.list
+  facet: user_visible_outcome
+  language: en
+  title: Outcome work_orders_found
+  summary: 'What the user is told when the outcome is work_orders_found: I found {work_order_count} work orders (status: {search_status}): {work_order_summary}.'
+  location:
+    path: documentation/workorders/list.md
+    anchor: outcome-work_orders_found
+  outcome: work_orders_found
+- id: wl-outcome-none_found
+  capability_id: workorders.list
+  facet: user_visible_outcome
+  language: en
+  title: Outcome none_found
+  summary: 'What the user is told when the outcome is none_found: I found no work orders (status: {search_status}). That is {work_order_count} results.'
+  location:
+    path: documentation/workorders/list.md
+    anchor: outcome-none_found
+  outcome: none_found
+- id: wc-field-asset
+  capability_id: workorders.create
+  facet: field
+  language: en
+  title: Field asset
+  summary: Type entity_ref of asset, required. The asset the work is for.
+  location:
+    path: documentation/workorders/create.md
+    anchor: field-asset
+  field: asset
+- id: wc-field-title
+  capability_id: workorders.create
+  facet: field
+  language: en
+  title: Field title
+  summary: Type string, required, length 5 to 120. A short statement of the problem or the job.
+  location:
+    path: documentation/workorders/create.md
+    anchor: field-title
+  field: title
+- id: wc-field-description
+  capability_id: workorders.create
+  facet: field
+  language: en
+  title: Field description
+  summary: Type string, optional, length 0 to 500. More detail about the problem, in the reporter's words. Optional free text.
+  location:
+    path: documentation/workorders/create.md
+    anchor: field-description
+  field: description
+- id: wc-field-priority
+  capability_id: workorders.create
+  facet: field
+  language: en
+  title: Field priority
+  summary: Type enum (low, normal, high, urgent), optional, default normal. How soon it must be dealt with. Defaults to normal.
+  location:
+    path: documentation/workorders/create.md
+    anchor: field-priority
+  field: priority
+- id: wc-rule-title_length
+  capability_id: workorders.create
+  facet: validation_rule
+  language: en
+  title: Rule title_length
+  summary: The title must be 5 to 120 characters of plain text. Reported as validation_failed.
+  location:
+    path: documentation/workorders/create.md
+    anchor: rule-title_length
+  rule_id: title_length
+- id: wc-rule-asset_active
+  capability_id: workorders.create
+  facet: validation_rule
+  language: en
+  title: Rule asset_active
+  summary: 'The asset must still be active: a decommissioned asset takes no new work. Reported as conflict.'
+  location:
+    path: documentation/workorders/create.md
+    anchor: rule-asset_active
+  rule_id: asset_active
+- id: wc-rule-no_duplicate_open
+  capability_id: workorders.create
+  facet: validation_rule
+  language: en
+  title: Rule no_duplicate_open
+  summary: The asset must not already have an open work order with the same title. Reported as conflict.
+  location:
+    path: documentation/workorders/create.md
+    anchor: rule-no_duplicate_open
+  rule_id: no_duplicate_open
+- id: wc-perm-workorders.create
+  capability_id: workorders.create
+  facet: permission
+  language: en
+  title: Permission workorders.create
+  summary: Allows raising work orders against the assets of the caller's site. Granted to technician and supervisor; checked by the host on every call.
+  location:
+    path: documentation/workorders/create.md
+    anchor: permission-workorderscreate
+  permission: workorders.create
+- id: wc-failure-permission_denied
+  capability_id: workorders.create
+  facet: failure_state
+  language: en
+  title: Failure permission_denied
+  summary: The principal's role may not use this capability.
+  location:
+    path: documentation/workorders/create.md
+    anchor: failure-permission_denied
+  error_code: permission_denied
+- id: wc-failure-scope_violation
+  capability_id: workorders.create
+  facet: failure_state
+  language: en
+  title: Failure scope_violation
+  summary: A record named is outside the principal's access (another site, another tenant, or work the role may not see), or does not exist. The application does not say which.
+  location:
+    path: documentation/workorders/create.md
+    anchor: failure-scope_violation
+  error_code: scope_violation
+- id: wc-failure-validation_failed
+  capability_id: workorders.create
+  facet: failure_state
+  language: en
+  title: Failure validation_failed
+  summary: A value is missing, malformed or out of bounds. Nothing was changed.
+  location:
+    path: documentation/workorders/create.md
+    anchor: failure-validation_failed
+  error_code: validation_failed
+- id: wc-failure-conflict
+  capability_id: workorders.create
+  facet: failure_state
+  language: en
+  title: Failure conflict
+  summary: A business rule is violated by the current state of the records. Nothing was changed.
+  location:
+    path: documentation/workorders/create.md
+    anchor: failure-conflict
+  error_code: conflict
+- id: wc-failure-stale
+  capability_id: workorders.create
+  facet: failure_state
+  language: en
+  title: Failure stale
+  summary: A record changed after the action was prepared, so the preparation is no longer valid. Nothing was changed; it can be prepared again.
+  location:
+    path: documentation/workorders/create.md
+    anchor: failure-stale
+  error_code: stale
+- id: wc-failure-expired
+  capability_id: workorders.create
+  facet: failure_state
+  language: en
+  title: Failure expired
+  summary: The prepared action was not confirmed in time, or was withdrawn. Nothing was changed.
+  location:
+    path: documentation/workorders/create.md
+    anchor: failure-expired
+  error_code: expired
+- id: wc-failure-uncertain_outcome
+  capability_id: workorders.create
+  facet: failure_state
+  language: en
+  title: Failure uncertain_outcome
+  summary: The commit response was lost. Whether the change was applied is established through the status operation before anything is retried.
+  location:
+    path: documentation/workorders/create.md
+    anchor: failure-uncertain_outcome
+  error_code: uncertain_outcome
+- id: wc-failure-missing_fields
+  capability_id: workorders.create
+  facet: failure_state
+  language: en
+  title: Failure missing_fields
+  summary: A required field was not supplied. Nothing was changed.
+  location:
+    path: documentation/workorders/create.md
+    anchor: failure-missing_fields
+  error_code: missing_fields
+- id: wc-failure-unavailable
+  capability_id: workorders.create
+  facet: failure_state
+  language: en
+  title: Failure unavailable
+  summary: The application's data store cannot be reached. Nothing was changed.
+  location:
+    path: documentation/workorders/create.md
+    anchor: failure-unavailable
+  error_code: unavailable
+- id: wc-risk
+  capability_id: workorders.create
+  facet: risk_level
+  language: en
+  title: Risk level 1
+  summary: 'Level 1 (reversible low-impact change): the application shows a concise summary and commits immediately; the change can be undone by a later work order action. Effect class reversible.'
+  location:
+    path: documentation/workorders/create.md
+    anchor: level-1
+- id: wc-confirmation
+  capability_id: workorders.create
+  facet: confirmation_rule
+  language: en
+  title: Confirmation rule (none)
+  summary: 'No separate confirmation is asked: the application commits right after the concise summary. The host still reauthorises the call and limits it to the caller''s own site.'
+  location:
+    path: documentation/workorders/create.md
+    anchor: confirmation-none
+- id: wc-outcome-created
+  capability_id: workorders.create
+  facet: user_visible_outcome
+  language: en
+  title: Outcome created
+  summary: 'What the user is told when the outcome is created: Done. Work order {work_order_id} was created for {asset_name}: {work_order_title}, priority {priority}.'
+  location:
+    path: documentation/workorders/create.md
+    anchor: outcome-created
+  outcome: created
+- id: wa-field-work_order
+  capability_id: workorders.assign
+  facet: field
+  language: en
+  title: Field work_order
+  summary: Type entity_ref of work_order, required. The work order to assign.
+  location:
+    path: documentation/workorders/assign.md
+    anchor: field-work_order
+  field: work_order
+- id: wa-field-technician
+  capability_id: workorders.assign
+  facet: field
+  language: en
+  title: Field technician
+  summary: Type entity_ref of technician, required. The technician who takes the work.
+  location:
+    path: documentation/workorders/assign.md
+    anchor: field-technician
+  field: technician
+- id: wa-field-note
+  capability_id: workorders.assign
+  facet: field
+  language: en
+  title: Field note
+  summary: Type string, optional, length 0 to 200. A note for the technician, included in the notification. Optional free text.
+  location:
+    path: documentation/workorders/assign.md
+    anchor: field-note
+  field: note
+- id: wa-rule-work_order_open
+  capability_id: workorders.assign
+  facet: validation_rule
+  language: en
+  title: Rule work_order_open
+  summary: The work order must not be closed. Reported as conflict.
+  location:
+    path: documentation/workorders/assign.md
+    anchor: rule-work_order_open
+  rule_id: work_order_open
+- id: wa-rule-technician_assignable
+  capability_id: workorders.assign
+  facet: validation_rule
+  language: en
+  title: Rule technician_assignable
+  summary: The technician must be active and have fewer than 5 open work orders. Reported as conflict.
+  location:
+    path: documentation/workorders/assign.md
+    anchor: rule-technician_assignable
+  rule_id: technician_assignable
+- id: wa-rule-already_assigned
+  capability_id: workorders.assign
+  facet: validation_rule
+  language: en
+  title: Rule already_assigned
+  summary: The work order must not already be assigned to this technician. Reported as conflict.
+  location:
+    path: documentation/workorders/assign.md
+    anchor: rule-already_assigned
+  rule_id: already_assigned
+- id: wa-rule-note_length
+  capability_id: workorders.assign
+  facet: validation_rule
+  language: en
+  title: Rule note_length
+  summary: The note must be at most 200 characters of plain text. Reported as validation_failed.
+  location:
+    path: documentation/workorders/assign.md
+    anchor: rule-note_length
+  rule_id: note_length
+- id: wa-perm-workorders.assign
+  capability_id: workorders.assign
+  facet: permission
+  language: en
+  title: Permission workorders.assign
+  summary: Allows assigning technicians to the work orders of the caller's site. Granted to supervisor only; checked by the host on every call.
+  location:
+    path: documentation/workorders/assign.md
+    anchor: permission-workordersassign
+  permission: workorders.assign
+- id: wa-failure-permission_denied
+  capability_id: workorders.assign
+  facet: failure_state
+  language: en
+  title: Failure permission_denied
+  summary: The principal's role may not use this capability.
+  location:
+    path: documentation/workorders/assign.md
+    anchor: failure-permission_denied
+  error_code: permission_denied
+- id: wa-failure-scope_violation
+  capability_id: workorders.assign
+  facet: failure_state
+  language: en
+  title: Failure scope_violation
+  summary: A record named is outside the principal's access (another site, another tenant, or work the role may not see), or does not exist. The application does not say which.
+  location:
+    path: documentation/workorders/assign.md
+    anchor: failure-scope_violation
+  error_code: scope_violation
+- id: wa-failure-validation_failed
+  capability_id: workorders.assign
+  facet: failure_state
+  language: en
+  title: Failure validation_failed
+  summary: A value is missing, malformed or out of bounds. Nothing was changed.
+  location:
+    path: documentation/workorders/assign.md
+    anchor: failure-validation_failed
+  error_code: validation_failed
+- id: wa-failure-conflict
+  capability_id: workorders.assign
+  facet: failure_state
+  language: en
+  title: Failure conflict
+  summary: A business rule is violated by the current state of the records. Nothing was changed.
+  location:
+    path: documentation/workorders/assign.md
+    anchor: failure-conflict
+  error_code: conflict
+- id: wa-failure-stale
+  capability_id: workorders.assign
+  facet: failure_state
+  language: en
+  title: Failure stale
+  summary: A record changed after the action was prepared, so the preparation is no longer valid. Nothing was changed; it can be prepared again.
+  location:
+    path: documentation/workorders/assign.md
+    anchor: failure-stale
+  error_code: stale
+- id: wa-failure-expired
+  capability_id: workorders.assign
+  facet: failure_state
+  language: en
+  title: Failure expired
+  summary: The prepared action was not confirmed in time, or was withdrawn. Nothing was changed.
+  location:
+    path: documentation/workorders/assign.md
+    anchor: failure-expired
+  error_code: expired
+- id: wa-failure-uncertain_outcome
+  capability_id: workorders.assign
+  facet: failure_state
+  language: en
+  title: Failure uncertain_outcome
+  summary: The commit response was lost. Whether the change was applied is established through the status operation before anything is retried.
+  location:
+    path: documentation/workorders/assign.md
+    anchor: failure-uncertain_outcome
+  error_code: uncertain_outcome
+- id: wa-failure-missing_fields
+  capability_id: workorders.assign
+  facet: failure_state
+  language: en
+  title: Failure missing_fields
+  summary: A required field was not supplied. Nothing was changed.
+  location:
+    path: documentation/workorders/assign.md
+    anchor: failure-missing_fields
+  error_code: missing_fields
+- id: wa-failure-unavailable
+  capability_id: workorders.assign
+  facet: failure_state
+  language: en
+  title: Failure unavailable
+  summary: The application's data store cannot be reached. Nothing was changed.
+  location:
+    path: documentation/workorders/assign.md
+    anchor: failure-unavailable
+  error_code: unavailable
+- id: wa-risk
+  capability_id: workorders.assign
+  facet: risk_level
+  language: en
+  title: Risk level 2
+  summary: 'Level 2 (consequential or external side effect): the change is prepared, its exact effects are shown and it is committed only after the user explicitly confirms. Effect class external.'
+  location:
+    path: documentation/workorders/assign.md
+    anchor: level-2
+- id: wa-confirmation
+  capability_id: workorders.assign
+  facet: confirmation_rule
+  language: en
+  title: Confirmation rule (explicit)
+  summary: The user must confirm the exact prepared effects before anything is committed. The confirmation is bound to the preparation, the principal, the session and the data versions it relied on.
+  location:
+    path: documentation/workorders/assign.md
+    anchor: confirmation-explicit
+- id: wa-outcome-assigned
+  capability_id: workorders.assign
+  facet: user_visible_outcome
+  language: en
+  title: Outcome assigned
+  summary: 'What the user is told when the outcome is assigned: Done. Work order {work_order_id} is assigned to {technician_name}. The technician was notified (reference {notification_reference}).'
+  location:
+    path: documentation/workorders/assign.md
+    anchor: outcome-assigned
+  outcome: assigned
+- id: wx-field-work_order
+  capability_id: workorders.close
+  facet: field
+  language: en
+  title: Field work_order
+  summary: Type entity_ref of work_order, required. The work order to close.
+  location:
+    path: documentation/workorders/close.md
+    anchor: field-work_order
+  field: work_order
+- id: wx-field-resolution
+  capability_id: workorders.close
+  facet: field
+  language: en
+  title: Field resolution
+  summary: Type string, required, length 3 to 500. What was done to resolve it, in the technician's words.
+  location:
+    path: documentation/workorders/close.md
+    anchor: field-resolution
+  field: resolution
+- id: wx-field-parts_used
+  capability_id: workorders.close
+  facet: field
+  language: en
+  title: Field parts_used
+  summary: Type list of string, optional, at most 20 items. The parts consumed, each written PART-NUMBER:QUANTITY, for example FLT-204:2. Leave it out when no parts were used.
+  location:
+    path: documentation/workorders/close.md
+    anchor: field-parts_used
+  field: parts_used
+- id: wx-field-labor_hours
+  capability_id: workorders.close
+  facet: field
+  language: en
+  title: Field labor_hours
+  summary: Type number, optional, from 0 to 24. The hours of labour spent, with at most two decimals. Leave it out when not recorded.
+  location:
+    path: documentation/workorders/close.md
+    anchor: field-labor_hours
+  field: labor_hours
+- id: wx-rule-work_order_closable
+  capability_id: workorders.close
+  facet: validation_rule
+  language: en
+  title: Rule work_order_closable
+  summary: The work order must not already be closed. Reported as conflict.
+  location:
+    path: documentation/workorders/close.md
+    anchor: rule-work_order_closable
+  rule_id: work_order_closable
+- id: wx-rule-resolution_length
+  capability_id: workorders.close
+  facet: validation_rule
+  language: en
+  title: Rule resolution_length
+  summary: The resolution must be 3 to 500 characters of plain text. Reported as validation_failed.
+  location:
+    path: documentation/workorders/close.md
+    anchor: rule-resolution_length
+  rule_id: resolution_length
+- id: wx-rule-parts_format
+  capability_id: workorders.close
+  facet: validation_rule
+  language: en
+  title: Rule parts_format
+  summary: Each part must be written PART-NUMBER:QUANTITY with a quantity of 1 to 999, and each part number may appear only once. Reported as validation_failed.
+  location:
+    path: documentation/workorders/close.md
+    anchor: rule-parts_format
+  rule_id: parts_format
+- id: wx-rule-parts_known
+  capability_id: workorders.close
+  facet: validation_rule
+  language: en
+  title: Rule parts_known
+  summary: Every part number must be in the stock catalogue of the caller's site. Reported as validation_failed.
+  location:
+    path: documentation/workorders/close.md
+    anchor: rule-parts_known
+  rule_id: parts_known
+- id: wx-rule-parts_in_stock
+  capability_id: workorders.close
+  facet: validation_rule
+  language: en
+  title: Rule parts_in_stock
+  summary: Every part must be in stock in the quantity used. Reported as conflict.
+  location:
+    path: documentation/workorders/close.md
+    anchor: rule-parts_in_stock
+  rule_id: parts_in_stock
+- id: wx-rule-labor_hours_in_range
+  capability_id: workorders.close
+  facet: validation_rule
+  language: en
+  title: Rule labor_hours_in_range
+  summary: The labour hours must be from 0 to 24 with at most two decimals. Reported as validation_failed.
+  location:
+    path: documentation/workorders/close.md
+    anchor: rule-labor_hours_in_range
+  rule_id: labor_hours_in_range
+- id: wx-perm-workorders.close
+  capability_id: workorders.close
+  facet: permission
+  language: en
+  title: Permission workorders.close
+  summary: Allows closing the work orders the caller may see at their site. Granted to technician and supervisor; checked by the host on every call, which also limits a technician to their own work.
+  location:
+    path: documentation/workorders/close.md
+    anchor: permission-workordersclose
+  permission: workorders.close
+- id: wx-failure-permission_denied
+  capability_id: workorders.close
+  facet: failure_state
+  language: en
+  title: Failure permission_denied
+  summary: The principal's role may not use this capability.
+  location:
+    path: documentation/workorders/close.md
+    anchor: failure-permission_denied
+  error_code: permission_denied
+- id: wx-failure-scope_violation
+  capability_id: workorders.close
+  facet: failure_state
+  language: en
+  title: Failure scope_violation
+  summary: A record named is outside the principal's access (another site, another tenant, or work the role may not see), or does not exist. The application does not say which.
+  location:
+    path: documentation/workorders/close.md
+    anchor: failure-scope_violation
+  error_code: scope_violation
+- id: wx-failure-validation_failed
+  capability_id: workorders.close
+  facet: failure_state
+  language: en
+  title: Failure validation_failed
+  summary: A value is missing, malformed or out of bounds. Nothing was changed.
+  location:
+    path: documentation/workorders/close.md
+    anchor: failure-validation_failed
+  error_code: validation_failed
+- id: wx-failure-conflict
+  capability_id: workorders.close
+  facet: failure_state
+  language: en
+  title: Failure conflict
+  summary: A business rule is violated by the current state of the records. Nothing was changed.
+  location:
+    path: documentation/workorders/close.md
+    anchor: failure-conflict
+  error_code: conflict
+- id: wx-failure-stale
+  capability_id: workorders.close
+  facet: failure_state
+  language: en
+  title: Failure stale
+  summary: A record changed after the action was prepared, so the preparation is no longer valid. Nothing was changed; it can be prepared again.
+  location:
+    path: documentation/workorders/close.md
+    anchor: failure-stale
+  error_code: stale
+- id: wx-failure-expired
+  capability_id: workorders.close
+  facet: failure_state
+  language: en
+  title: Failure expired
+  summary: The prepared action was not confirmed in time, or was withdrawn. Nothing was changed.
+  location:
+    path: documentation/workorders/close.md
+    anchor: failure-expired
+  error_code: expired
+- id: wx-failure-uncertain_outcome
+  capability_id: workorders.close
+  facet: failure_state
+  language: en
+  title: Failure uncertain_outcome
+  summary: The commit response was lost. Whether the change was applied is established through the status operation before anything is retried.
+  location:
+    path: documentation/workorders/close.md
+    anchor: failure-uncertain_outcome
+  error_code: uncertain_outcome
+- id: wx-failure-missing_fields
+  capability_id: workorders.close
+  facet: failure_state
+  language: en
+  title: Failure missing_fields
+  summary: A required field was not supplied. Nothing was changed.
+  location:
+    path: documentation/workorders/close.md
+    anchor: failure-missing_fields
+  error_code: missing_fields
+- id: wx-failure-unavailable
+  capability_id: workorders.close
+  facet: failure_state
+  language: en
+  title: Failure unavailable
+  summary: The application's data store cannot be reached. Nothing was changed.
+  location:
+    path: documentation/workorders/close.md
+    anchor: failure-unavailable
+  error_code: unavailable
+- id: wx-risk
+  capability_id: workorders.close
+  facet: risk_level
+  language: en
+  title: Risk level 2
+  summary: 'Level 2 (consequential or external side effect): the change is prepared, its exact effects are shown and it is committed only after the user explicitly confirms. Effect class external.'
+  location:
+    path: documentation/workorders/close.md
+    anchor: level-2
+- id: wx-confirmation
+  capability_id: workorders.close
+  facet: confirmation_rule
+  language: en
+  title: Confirmation rule (explicit)
+  summary: The user must confirm the exact prepared effects before anything is committed. The confirmation is bound to the preparation, the principal, the session and the data versions it relied on.
+  location:
+    path: documentation/workorders/close.md
+    anchor: confirmation-explicit
+- id: wx-outcome-closed
+  capability_id: workorders.close
+  facet: user_visible_outcome
+  language: en
+  title: Outcome closed
+  summary: 'What the user is told when the outcome is closed: Done. Work order {work_order_id} is closed ({closed_at}). Parts cost: {parts_cost}.'
+  location:
+    path: documentation/workorders/close.md
+    anchor: outcome-closed
+  outcome: closed
+- id: ad-field-asset
+  capability_id: assets.decommission
+  facet: field
+  language: en
+  title: Field asset
+  summary: Type entity_ref of asset, required. The asset to decommission.
+  location:
+    path: documentation/assets/decommission.md
+    anchor: field-asset
+  field: asset
+- id: ad-field-reason
+  capability_id: assets.decommission
+  facet: field
+  language: en
+  title: Field reason
+  summary: Type string, required, length 10 to 300. Why the asset is being retired, for the record.
+  location:
+    path: documentation/assets/decommission.md
+    anchor: field-reason
+  field: reason
+- id: ad-rule-asset_active
+  capability_id: assets.decommission
+  facet: validation_rule
+  language: en
+  title: Rule asset_active
+  summary: The asset must still be active. Reported as conflict.
+  location:
+    path: documentation/assets/decommission.md
+    anchor: rule-asset_active
+  rule_id: asset_active
+- id: ad-rule-no_open_work_orders
+  capability_id: assets.decommission
+  facet: validation_rule
+  language: en
+  title: Rule no_open_work_orders
+  summary: The asset must have no open or assigned work orders. Reported as conflict.
+  location:
+    path: documentation/assets/decommission.md
+    anchor: rule-no_open_work_orders
+  rule_id: no_open_work_orders
+- id: ad-rule-reason_length
+  capability_id: assets.decommission
+  facet: validation_rule
+  language: en
+  title: Rule reason_length
+  summary: The reason must be 10 to 300 characters of plain text. Reported as validation_failed.
+  location:
+    path: documentation/assets/decommission.md
+    anchor: rule-reason_length
+  rule_id: reason_length
+- id: ad-perm-assets.decommission
+  capability_id: assets.decommission
+  facet: permission
+  language: en
+  title: Permission assets.decommission
+  summary: Allows starting the decommissioning of the assets of the caller's site. Granted to supervisor only; checked by the host on every call. Completing it needs the supervisor's own step-up in the application's UI, which no role can do through the assistant.
+  location:
+    path: documentation/assets/decommission.md
+    anchor: permission-assetsdecommission
+  permission: assets.decommission
+- id: ad-failure-permission_denied
+  capability_id: assets.decommission
+  facet: failure_state
+  language: en
+  title: Failure permission_denied
+  summary: The principal's role may not use this capability.
+  location:
+    path: documentation/assets/decommission.md
+    anchor: failure-permission_denied
+  error_code: permission_denied
+- id: ad-failure-scope_violation
+  capability_id: assets.decommission
+  facet: failure_state
+  language: en
+  title: Failure scope_violation
+  summary: A record named is outside the principal's access (another site, another tenant, or work the role may not see), or does not exist. The application does not say which.
+  location:
+    path: documentation/assets/decommission.md
+    anchor: failure-scope_violation
+  error_code: scope_violation
+- id: ad-failure-validation_failed
+  capability_id: assets.decommission
+  facet: failure_state
+  language: en
+  title: Failure validation_failed
+  summary: A value is missing, malformed or out of bounds. Nothing was changed.
+  location:
+    path: documentation/assets/decommission.md
+    anchor: failure-validation_failed
+  error_code: validation_failed
+- id: ad-failure-conflict
+  capability_id: assets.decommission
+  facet: failure_state
+  language: en
+  title: Failure conflict
+  summary: A business rule is violated by the current state of the records. Nothing was changed.
+  location:
+    path: documentation/assets/decommission.md
+    anchor: failure-conflict
+  error_code: conflict
+- id: ad-failure-stale
+  capability_id: assets.decommission
+  facet: failure_state
+  language: en
+  title: Failure stale
+  summary: A record changed after the action was prepared, so the preparation is no longer valid. Nothing was changed; it can be prepared again.
+  location:
+    path: documentation/assets/decommission.md
+    anchor: failure-stale
+  error_code: stale
+- id: ad-failure-expired
+  capability_id: assets.decommission
+  facet: failure_state
+  language: en
+  title: Failure expired
+  summary: The prepared action was not confirmed in time, or was withdrawn. Nothing was changed.
+  location:
+    path: documentation/assets/decommission.md
+    anchor: failure-expired
+  error_code: expired
+- id: ad-failure-step_up_required
+  capability_id: assets.decommission
+  facet: failure_state
+  language: en
+  title: Failure step_up_required
+  summary: The action must be completed in the application's own authenticated interface. The AI path never completes it, and nothing was changed.
+  location:
+    path: documentation/assets/decommission.md
+    anchor: failure-step_up_required
+  error_code: step_up_required
+- id: ad-failure-uncertain_outcome
+  capability_id: assets.decommission
+  facet: failure_state
+  language: en
+  title: Failure uncertain_outcome
+  summary: The commit response was lost. Whether the change was applied is established through the status operation before anything is retried.
+  location:
+    path: documentation/assets/decommission.md
+    anchor: failure-uncertain_outcome
+  error_code: uncertain_outcome
+- id: ad-failure-missing_fields
+  capability_id: assets.decommission
+  facet: failure_state
+  language: en
+  title: Failure missing_fields
+  summary: A required field was not supplied. Nothing was changed.
+  location:
+    path: documentation/assets/decommission.md
+    anchor: failure-missing_fields
+  error_code: missing_fields
+- id: ad-failure-unavailable
+  capability_id: assets.decommission
+  facet: failure_state
+  language: en
+  title: Failure unavailable
+  summary: The application's data store cannot be reached. Nothing was changed.
+  location:
+    path: documentation/assets/decommission.md
+    anchor: failure-unavailable
+  error_code: unavailable
+- id: ad-risk
+  capability_id: assets.decommission
+  facet: risk_level
+  language: en
+  title: Risk level 3
+  summary: 'Level 3 (high-risk, privileged): the assistant can prepare it but never complete it; the supervisor completes it in the application''s own authenticated interface after a step-up check. Effect class privileged.'
+  location:
+    path: documentation/assets/decommission.md
+    anchor: level-3
+- id: ad-confirmation
+  capability_id: assets.decommission
+  facet: confirmation_rule
+  language: en
+  title: Confirmation rule (step_up)
+  summary: The assistant cannot complete this action. The user completes it in the Facility Maintenance application's own authenticated interface (channel application_ui) after a step-up check; the application's API refuses the commit as step_up_required.
+  location:
+    path: documentation/assets/decommission.md
+    anchor: confirmation-step_up
+- id: ad-outcome-decommissioned
+  capability_id: assets.decommission
+  facet: user_visible_outcome
+  language: en
+  title: Outcome decommissioned
+  summary: 'What the user is told when the outcome is decommissioned: {asset_name} has been decommissioned in the Facility Maintenance app. The assistant never reports this itself: the supervisor completes it in the app.'
+  location:
+    path: documentation/assets/decommission.md
+    anchor: outcome-decommissioned
+  outcome: decommissioned

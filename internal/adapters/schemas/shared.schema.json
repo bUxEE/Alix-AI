@@ -1,0 +1,571 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:actions:shared:v1",
+  "title": "Shared action and conversation building blocks",
+  "description": "Definitions shared by the structured objects of master plan 11.2 and the rich blocks of 14.1, referenced as urn:alixai:schema:actions:shared:v1#/$defs/<name>. This file is a definitions library: it constrains nothing on its own. Every property defined here carries x-alixai-authority. Defs that hold host data (canonical values, facts, data versions, issues, effects, choices) are all 'host'; defs that hold core decisions (permitted actions, confirmation requirements) are all 'alixai'. A def is never used under a second authority: where two authorities need the same shape there are two defs (allowedNextAction and permittedNextAction).",
+  "$defs": {
+    "preparationId": {
+      "title": "Preparation ID",
+      "description": "Opaque ID of a PreparedAction, minted by the core. The client and the model treat it as an unguessable token, never as a structure.",
+      "type": "string",
+      "pattern": "^prep_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "receiptId": {
+      "title": "Receipt ID",
+      "description": "ID of an ActionReceipt, minted by the core.",
+      "type": "string",
+      "pattern": "^rcpt_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "auditRef": {
+      "title": "Audit reference",
+      "description": "Reference to the audit record of an action, minted by the core. Resolving it needs audit permission.",
+      "type": "string",
+      "pattern": "^aud_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "turnId": {
+      "title": "Turn ID",
+      "description": "ID of one conversation turn, minted by the core.",
+      "type": "string",
+      "pattern": "^trn_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "sourceId": {
+      "title": "Source ID",
+      "description": "ID of a registered RAG source, minted by the core (master plan 12.5).",
+      "type": "string",
+      "pattern": "^src_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "jobId": {
+      "title": "Job ID",
+      "description": "ID of a durable background job, minted by the core.",
+      "type": "string",
+      "pattern": "^job_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "fileId": {
+      "title": "File ID",
+      "description": "Opaque ID of a scoped file reference, minted by the core. It is not a path and never resolves to one.",
+      "type": "string",
+      "pattern": "^fil_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "idempotencyKey": {
+      "title": "Idempotency key",
+      "description": "Opaque key minted by the core and sent with Commit and Status. The same key always yields the same outcome. 16 to 128 URL-safe characters.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{16,128}$"
+    },
+    "opaqueVersion": {
+      "title": "Opaque data version",
+      "description": "A version label, revision number, ETag or content hash chosen by the host application. Compared for equality only; never parsed or ordered. 1 to 256 characters, no whitespace or control characters.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[^\\x00-\\x20\\x7f]+$"
+    },
+    "riskLevel": {
+      "title": "Risk level",
+      "description": "Action safety level of master plan 11.4: 0 read-only, 1 reversible low-impact, 2 consequential or external side effect, 3 high-risk or privileged. A bare integer; null, strings and out-of-range values are rejected. Mirrors pkg/contracts RiskLevel. The zero value is a real, low-risk level, so every object that carries a risk level requires the property.",
+      "type": "integer",
+      "enum": [0, 1, 2, 3]
+    },
+    "textValue": {
+      "description": "Free text as a canonical value.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": {
+          "x-alixai-authority": "host",
+          "const": "text"
+        },
+        "value": {
+          "x-alixai-authority": "host",
+          "type": "string",
+          "maxLength": 4096
+        }
+      }
+    },
+    "integerValue": {
+      "description": "A whole number in the range every JSON implementation represents exactly.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": {
+          "x-alixai-authority": "host",
+          "const": "integer"
+        },
+        "value": {
+          "x-alixai-authority": "host",
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "decimalValue": {
+      "description": "An exact decimal number written as a string, so no binary floating point is ever involved: optional minus, integer part without leading zeros, optional fraction of up to 9 digits.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": {
+          "x-alixai-authority": "host",
+          "const": "decimal"
+        },
+        "value": {
+          "x-alixai-authority": "host",
+          "type": "string",
+          "pattern": "^-?(0|[1-9][0-9]{0,17})(\\.[0-9]{1,9})?$"
+        }
+      }
+    },
+    "booleanValue": {
+      "description": "A boolean.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": {
+          "x-alixai-authority": "host",
+          "const": "boolean"
+        },
+        "value": {
+          "x-alixai-authority": "host",
+          "type": "boolean"
+        }
+      }
+    },
+    "dateValue": {
+      "description": "A calendar date, YYYY-MM-DD, with no time zone.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": {
+          "x-alixai-authority": "host",
+          "const": "date"
+        },
+        "value": {
+          "x-alixai-authority": "host",
+          "type": "string",
+          "format": "date",
+          "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
+        }
+      }
+    },
+    "timeValue": {
+      "description": "A wall-clock time of day, HH:MM or HH:MM:SS, with no date and no time zone.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": {
+          "x-alixai-authority": "host",
+          "const": "time"
+        },
+        "value": {
+          "x-alixai-authority": "host",
+          "type": "string",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$"
+        }
+      }
+    },
+    "datetimeValue": {
+      "description": "An instant in UTC. The optional zone is the IANA zone the host application displays it in, so a verifier can compare local wording against the instant.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": {
+          "x-alixai-authority": "host",
+          "const": "datetime"
+        },
+        "value": {
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+        },
+        "zone": {
+          "x-alixai-authority": "host",
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z][A-Za-z0-9_+-]*(/[A-Za-z0-9_+-]+){0,2}$"
+        }
+      }
+    },
+    "moneyValue": {
+      "description": "An exact monetary amount (decimal string, see decimalValue) in an ISO 4217 currency.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "value", "currency"],
+      "properties": {
+        "kind": {
+          "x-alixai-authority": "host",
+          "const": "money"
+        },
+        "value": {
+          "x-alixai-authority": "host",
+          "type": "string",
+          "pattern": "^-?(0|[1-9][0-9]{0,17})(\\.[0-9]{1,9})?$"
+        },
+        "currency": {
+          "x-alixai-authority": "host",
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        }
+      }
+    },
+    "identifierValue": {
+      "description": "A reference to an application entity by its stable ID.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": {
+          "x-alixai-authority": "host",
+          "const": "identifier"
+        },
+        "value": {
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        }
+      }
+    },
+    "canonicalValue": {
+      "title": "Canonical value",
+      "description": "A typed value in the one canonical spelling the host application uses, so the response verifier can compare numbers, dates, times, amounts and IDs after normalisation instead of matching prose. Discriminated by kind. Set only from adapter results.",
+      "oneOf": [
+        { "$ref": "#/$defs/textValue" },
+        { "$ref": "#/$defs/integerValue" },
+        { "$ref": "#/$defs/decimalValue" },
+        { "$ref": "#/$defs/booleanValue" },
+        { "$ref": "#/$defs/dateValue" },
+        { "$ref": "#/$defs/timeValue" },
+        { "$ref": "#/$defs/datetimeValue" },
+        { "$ref": "#/$defs/moneyValue" },
+        { "$ref": "#/$defs/identifierValue" }
+      ]
+    },
+    "fact": {
+      "title": "Fact",
+      "description": "One authoritative, named, typed value reported by the host application. Facts are the only numbers, dates, times, amounts and IDs a verified response may state.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["field", "value"],
+      "properties": {
+        "field": {
+          "description": "The capability field or result key the value belongs to.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+        },
+        "value": {
+          "description": "The canonical value.",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/canonicalValue"
+        },
+        "display": {
+          "description": "The host application's localised display form of the value, for example a formatted date. Optional; the verifier accepts the canonical or the display form.",
+          "x-alixai-authority": "host",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      }
+    },
+    "recordRef": {
+      "title": "Record reference",
+      "description": "A stable reference to one application record.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entity_type", "entity_id"],
+      "properties": {
+        "entity_type": {
+          "description": "The application's entity type.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "entity_id": {
+          "description": "The record's stable ID in the application.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        }
+      }
+    },
+    "dataVersion": {
+      "title": "Data version",
+      "description": "The version of one record, or of one data snapshot, that a validation relied on. A prepared action is stale when the host reports a different version.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entity_type", "entity_id", "version"],
+      "properties": {
+        "entity_type": {
+          "description": "The application's entity type, or a snapshot type such as an availability snapshot.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "entity_id": {
+          "description": "The record or snapshot ID.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "version": {
+          "description": "The opaque version the validation used.",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/opaqueVersion"
+        }
+      }
+    },
+    "freshness": {
+      "title": "Freshness",
+      "description": "How current a result is: the instant the host observed the data and the data version it observed.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["as_of", "version"],
+      "properties": {
+        "as_of": {
+          "description": "When the host application read the data.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+        },
+        "version": {
+          "description": "The data version, or snapshot version, the result reflects.",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/opaqueVersion"
+        }
+      }
+    },
+    "issue": {
+      "title": "Issue",
+      "description": "One typed failure or validation problem: an ErrCode, the capability field it concerns when there is one, and a short non-sensitive message. Whether an issue is retryable is derived from its code by the core (pkg/contracts), not stated here.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message"],
+      "properties": {
+        "code": {
+          "description": "Stable machine-readable classification: the ErrCode enum of common/error.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:error:v1#/properties/code"
+        },
+        "field": {
+          "description": "The capability field the issue concerns, when it concerns one.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+        },
+        "message": {
+          "description": "Human-readable, non-sensitive description.",
+          "x-alixai-authority": "host",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      }
+    },
+    "followUp": {
+      "title": "Follow-up",
+      "description": "Status of work the host queued after, or instead of, completing the operation synchronously (for example a notification or a deferred write).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reference", "state"],
+      "properties": {
+        "reference": {
+          "description": "The host application's reference for the queued work.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "state": {
+          "description": "Where the queued work stands. unknown means the host cannot tell; it is never read as success.",
+          "x-alixai-authority": "host",
+          "type": "string",
+          "enum": ["queued", "running", "succeeded", "failed", "unknown"]
+        },
+        "as_of": {
+          "description": "When the host last observed this state.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+        }
+      }
+    },
+    "allowedNextAction": {
+      "title": "Allowed next action (host)",
+      "description": "A next step the host application declares it will accept for this object. The core intersects these with policy to produce the permitted next actions of a DialogueDirective.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action"],
+      "properties": {
+        "action": {
+          "description": "The kind of next step. invoke_capability names a capability in capability_id; continue_in_app hands the user to the host application's own authenticated UI.",
+          "x-alixai-authority": "host",
+          "type": "string",
+          "enum": ["confirm", "reject", "cancel", "modify", "refresh", "retry", "continue_in_app", "invoke_capability"]
+        },
+        "capability_id": {
+          "description": "The capability to invoke. Present exactly when action is invoke_capability.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/capabilityId"
+        },
+        "label": {
+          "description": "The host application's display label for the step.",
+          "x-alixai-authority": "host",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "if": {
+        "properties": { "action": { "const": "invoke_capability" } },
+        "required": ["action"]
+      },
+      "then": { "required": ["capability_id"] },
+      "else": { "not": { "required": ["capability_id"] } }
+    },
+    "permittedNextAction": {
+      "title": "Permitted next action (core)",
+      "description": "A next step the core permits after intersecting the host's allowed actions with policy, scope and the current state. Same shape as allowedNextAction, different authority.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action"],
+      "properties": {
+        "action": {
+          "description": "The kind of next step. invoke_capability names a capability in capability_id; continue_in_app hands the user to the host application's own authenticated UI.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "enum": ["confirm", "reject", "cancel", "modify", "refresh", "retry", "continue_in_app", "invoke_capability"]
+        },
+        "capability_id": {
+          "description": "The capability to invoke. Present exactly when action is invoke_capability.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/capabilityId"
+        },
+        "label": {
+          "description": "Display label, taken from the host's allowed action.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "if": {
+        "properties": { "action": { "const": "invoke_capability" } },
+        "required": ["action"]
+      },
+      "then": { "required": ["capability_id"] },
+      "else": { "not": { "required": ["capability_id"] } }
+    },
+    "effect": {
+      "title": "Effect",
+      "description": "One exact consequence of a prepared action on one target, as the host application reported it from Prepare. The user confirms these, not the model's description of them.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation", "entity_type", "description", "changes", "external"],
+      "properties": {
+        "operation": {
+          "description": "What happens to the target.",
+          "x-alixai-authority": "host",
+          "type": "string",
+          "enum": ["create", "update", "delete", "send", "other"]
+        },
+        "entity_type": {
+          "description": "The application's entity type of the target.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "entity_id": {
+          "description": "The target record. Absent only for create, where the record does not exist yet.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "description": {
+          "description": "One canonical sentence stating the effect.",
+          "x-alixai-authority": "host",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "changes": {
+          "description": "The exact canonical values the effect sets, changes or transmits.",
+          "x-alixai-authority": "host",
+          "type": "array",
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/fact" }
+        },
+        "external": {
+          "description": "True when the effect leaves the host application (an email, a payment, a call to a third party). An external effect forces risk level 2 or higher.",
+          "x-alixai-authority": "host",
+          "type": "boolean"
+        }
+      },
+      "if": {
+        "properties": { "operation": { "enum": ["update", "delete"] } },
+        "required": ["operation"]
+      },
+      "then": { "required": ["entity_id"] }
+    },
+    "choice": {
+      "title": "Choice",
+      "description": "One selectable answer to a clarification or one allowed suggestion: an opaque choice ID, a display label and the canonical value that selecting it supplies. Selecting a choice sends the choice ID, never free text.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["choice_id", "label", "value"],
+      "properties": {
+        "choice_id": {
+          "description": "Identifies the choice within its question.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "label": {
+          "description": "Display text for the choice.",
+          "x-alixai-authority": "host",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "value": {
+          "description": "The canonical value the choice supplies, for example an entity ID or an enum value.",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/canonicalValue"
+        },
+        "description": {
+          "description": "Optional secondary line, for example a disambiguating detail.",
+          "x-alixai-authority": "host",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      }
+    },
+    "confirmationRequirement": {
+      "title": "Confirmation requirement",
+      "description": "What must happen before the action may commit. none: no confirmation. explicit: the user confirms the exact effects. step_up: stronger authentication or the host application's own UI; the AI cannot complete it alone. Any confirmation is single-use and bound to every item in bindings.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "bindings"],
+      "properties": {
+        "mode": {
+          "description": "The confirmation mode, set by the core from the risk level and policy.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "enum": ["none", "explicit", "step_up"]
+        },
+        "bindings": {
+          "description": "What a confirmation is bound to. Empty when mode is none; all four otherwise.",
+          "x-alixai-authority": "alixai",
+          "type": "array",
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": ["preparation_id", "principal", "session", "data_versions"]
+          }
+        }
+      },
+      "if": {
+        "properties": { "mode": { "const": "none" } },
+        "required": ["mode"]
+      },
+      "then": {
+        "properties": { "bindings": { "maxItems": 0 } }
+      },
+      "else": {
+        "properties": { "bindings": { "minItems": 4 } }
+      }
+    }
+  }
+}

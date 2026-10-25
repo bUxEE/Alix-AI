@@ -1,0 +1,24 @@
+{
+  "as_of": "2026-10-02T09:00:00Z",
+  "provider": {
+    "profile_id": "pprf_01J0000000000000000000000P",
+    "provider_id": "openai",
+    "model_id": "gpt-4.1-mini",
+    "model_version": "2025-04-14"
+  },
+  "lifecycle": "qualified",
+  "state": "not_connected",
+  "kind": null,
+  "account": {
+    "account_id": null,
+    "organization_id": "org-AbCd1234",
+    "project_id": "proj_alix"
+  },
+  "connected_at": null,
+  "expires_at": null,
+  "warnings": ["broader_than_oauth_scopes"],
+  "health": "healthy",
+  "last_error_kind": null,
+  "budget_state": "ok",
+  "billing_notice_acknowledged": true
+}

@@ -1,0 +1,17 @@
+{
+  "turn_id": "trn_01J0000000000000000000000A",
+  "capability_id": null,
+  "act": "refuse",
+  "facts": [],
+  "must_state": [],
+  "missing_fields": [],
+  "invalid_fields": [],
+  "allowed_suggestions": [],
+  "confirmation": {
+    "mode": "none",
+    "bindings": []
+  },
+  "permitted_next_actions": [],
+  "sources": [],
+  "reason_code": "permission_denied"
+}

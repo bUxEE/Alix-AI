@@ -1,0 +1,8 @@
+{
+  "policy_id": "default-access",
+  "role_grants": [
+    { "role": "member", "capabilities": ["catalog.find_title"] }
+  ],
+  "risk_overrides": [],
+  "field_projection": []
+}

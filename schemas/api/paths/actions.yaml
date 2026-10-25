@@ -1,0 +1,171 @@
+# Actions (master plan 14.2): inspect a preparation, confirm or reject it, read the receipt. Implemented by
+# internal/gateway/routes_v1_actions.go. An action is prepared by a turn (its events carry the PreparedAction);
+# these routes act on what a turn prepared. They reach the host only through the action coordinator.
+paths:
+  /v1/actions/{preparation_id}:
+    parameters:
+      - $ref: '#/components/parameters/PreparationId'
+    get:
+      operationId: getAction
+      tags: [actions]
+      summary: Inspect a preparation
+      description: |
+        The prepared action with its current state. A preparation of another tenant, workspace, principal or
+        session is `scope_violation`, the same as one that does not exist.
+      responses:
+        '200':
+          description: The preparation.
+          content:
+            application/json:
+              schema:
+                $ref: ../openapi.yaml#/components/schemas/PreparedAction
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/actions/{preparation_id}/confirm:
+    parameters:
+      - $ref: '#/components/parameters/PreparationId'
+    post:
+      operationId: confirmAction
+      tags: [actions]
+      summary: Present the confirmation and commit the action
+      description: |
+        Presents the single-use confirmation secret and, if it is the right one for this preparation, principal,
+        session and set of data versions, commits the action through the coordinator. The secret is used up by
+        the first presentation: the second is `replayed` (409) and reaches no adapter. A level 3 action cannot be
+        confirmed here (`step_up_required`, 403). Preparations expire after at most ten minutes (`expired`).
+
+        200 carries the receipt of a committed or queued outcome. A rejected outcome (the host refused, nothing was
+        applied) is 409 and a partial or uncertain one is 500, each with the same body shape plus `error`: the
+        receipt is the durable record, `error` says why. An uncertain outcome is never retried by the core; read
+        the receipt later.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [token]
+              properties:
+                token:
+                  type: string
+                  pattern: '^cfm_[A-Za-z0-9_-]{43}$'
+      responses:
+        '200':
+          description: The action was committed (or queued); the receipt says which.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionOutcome'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '409':
+          description: |
+            Not committed. Either the confirmation or the preparation is not in a state that allows it
+            (`replayed`, `conflict`, `stale`: the bare `Error`), or the host refused the commit and nothing was
+            applied (the receipt, status `rejected`, beside the `Error` that carries the host's reason).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionFailure'
+        '500':
+          description: |
+            The outcome is partial or unknown (`partial_failure`, `uncertain_outcome`: the receipt beside the
+            `Error`), or the commit failed internally (the bare `Error`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionFailure'
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/actions/{preparation_id}/reject:
+    parameters:
+      - $ref: '#/components/parameters/PreparationId'
+    post:
+      operationId: rejectAction
+      tags: [actions]
+      summary: Decline a preparation
+      description: Nothing is sent to the application. Rejecting a rejected preparation returns it.
+      responses:
+        '200':
+          description: The preparation, now rejected.
+          content:
+            application/json:
+              schema:
+                $ref: ../openapi.yaml#/components/schemas/PreparedAction
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '409':
+          $ref: ../openapi.yaml#/components/responses/Conflict
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/actions/{preparation_id}/receipt:
+    parameters:
+      - $ref: '#/components/parameters/PreparationId'
+    get:
+      operationId: getActionReceipt
+      tags: [actions]
+      summary: Retrieve the receipt of an action
+      description: The durable outcome. `conflict` while the preparation has no outcome yet.
+      responses:
+        '200':
+          description: The receipt.
+          content:
+            application/json:
+              schema:
+                $ref: ../openapi.yaml#/components/schemas/ActionReceipt
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '409':
+          $ref: ../openapi.yaml#/components/responses/Conflict
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+components:
+  parameters:
+    PreparationId:
+      name: preparation_id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^[A-Za-z0-9_.-]{1,128}$'
+  schemas:
+    ActionFailure:
+      description: |
+        The body of a confirmation that did not commit: the bare Error, or, when an outcome exists, the receipt
+        beside the Error (ActionOutcome).
+      oneOf:
+        - $ref: ../openapi.yaml#/components/schemas/Error
+        - $ref: '#/components/schemas/ActionOutcome'
+    ActionOutcome:
+      type: object
+      additionalProperties: false
+      properties:
+        preparation:
+          $ref: ../openapi.yaml#/components/schemas/PreparedAction
+        receipt:
+          $ref: ../openapi.yaml#/components/schemas/ActionReceipt
+        error:
+          $ref: ../openapi.yaml#/components/schemas/Error

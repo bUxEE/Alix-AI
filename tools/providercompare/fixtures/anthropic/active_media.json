@@ -1,0 +1,13 @@
+{
+  "id": "msg_01FixtureMedia0001",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-haiku-4-5-20251001",
+  "content": [
+    {"type": "text", "text": "Here is a picture."},
+    {"type": "image", "source": {"type": "base64", "media_type": "image/svg+xml", "data": "PHN2Zz48L3N2Zz4="}}
+  ],
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "usage": {"input_tokens": {{IN}}, "output_tokens": {{OUT}}}
+}

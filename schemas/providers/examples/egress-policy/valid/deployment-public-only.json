@@ -1,0 +1,16 @@
+{
+  "policy_id": "epol_01J0000000000000000000000A",
+  "revision": 1,
+  "level": "deployment",
+  "target": { "deployment_id": "dep_main" },
+  "enabled": true,
+  "source_mode": "local_only",
+  "allowed_providers": ["openai"],
+  "allowed_models": [
+    { "provider_id": "openai", "model_id": "gpt-4.1-mini" }
+  ],
+  "allowed_classes": ["public"],
+  "allowed_regions": ["us", "eu"],
+  "updated_at": "2026-10-02T08:30:00Z",
+  "updated_by": "usr_admin"
+}

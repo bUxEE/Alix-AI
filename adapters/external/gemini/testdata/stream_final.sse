@@ -1,0 +1,2 @@
+data: {"candidates":[{"content":{"role":"model","parts":[{"text":""}]},"finishReason":"{{FINISH}}","index":0}],"usageMetadata":{"promptTokenCount":{{IN}},"candidatesTokenCount":{{OUT}},"totalTokenCount":{{TOTAL}}},"modelVersion":"gemini-3.5-flash-lite","responseId":"{{RID}}"}
+

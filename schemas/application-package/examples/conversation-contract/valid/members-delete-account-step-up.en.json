@@ -1,0 +1,45 @@
+{
+  "capability_id": "members.delete_account",
+  "language": "en",
+  "contract_version": "1.0.0",
+  "terminology": [],
+  "field_prompts": [
+    {
+      "field": "reason",
+      "label": "Reason",
+      "prompt": "Would you like to tell us why you are leaving?"
+    }
+  ],
+  "clarifications": [],
+  "corrections": {
+    "acknowledgement": "Noted.",
+    "correctable_fields": ["reason"],
+    "prepared_action_invalidated": "I changed the details, so I prepared the deletion request again."
+  },
+  "cancellations": {
+    "acknowledgement": "Okay, your account was not touched."
+  },
+  "confirmations": {
+    "request": "Deleting your account is permanent. Reference {deletion.reference}.",
+    "declined": "Understood. Your account was not touched.",
+    "expired": "That request expired, so nothing was deleted.",
+    "step_up_required": "I cannot delete an account myself. Open the library application, sign in and finish the request with reference {deletion.reference}."
+  },
+  "success": [
+    {
+      "outcome": "deletion_started",
+      "text": "Your deletion request is ready. Finish it in the library application with reference {deletion.reference}."
+    }
+  ],
+  "failures": [
+    {
+      "code": "step_up_required",
+      "text": "This can only be completed in the library application, so nothing was deleted."
+    },
+    {
+      "code": "conflict",
+      "text": "You still have unreturned loans, so nothing was deleted."
+    }
+  ],
+  "next_actions": []
+}

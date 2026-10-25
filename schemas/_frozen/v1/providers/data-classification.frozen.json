@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:providers:data-classification:v1",
+  "title": "Data classification",
+  "description": "The classification an external-mode data item carries (additive plan section 6.1), ordered public < internal < confidential < restricted. Default external behaviour: public may be sent if provider and application policy allow it; internal is blocked unless an authorised operator explicitly allows it; confidential is blocked by default and needs per-source approval; restricted/regulated is local-only (no separately approved compliance profile exists in version 1, so restricted is never egress-eligible). Credentials and secrets, and raw application database content, are NOT classes: they never leave under any policy and are modelled as blocked categories (providers shared blockedCategory), which have no representation in a request envelope. An unclassified item is treated as restricted: a record that does not state a classification fails validation and is blocked (fail closed).",
+  "type": "string",
+  "enum": ["public", "internal", "confidential", "restricted"],
+  "$defs": {
+    "egressEligibleClass": {
+      "title": "Egress-eligible classification",
+      "description": "The classifications a policy or a provider profile may allow to leave the deployment. restricted is absent by design: it cannot be allowed, listed in allowed_classes or placed in a request envelope in version 1. Whether public, internal or confidential data actually leaves is decided by the egress policy chain, never by listing a class here alone.",
+      "type": "string",
+      "enum": ["public", "internal", "confidential"]
+    }
+  }
+}

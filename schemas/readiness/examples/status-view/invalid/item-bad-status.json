@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "advisory": true,
+  "report_id": "rdr_01J0000000000000000000000A",
+  "generated_at": "2026-10-12T09:00:00Z",
+  "evaluated_at": "2026-10-12T10:30:00Z",
+  "previous_report_id": "rdr_01J0000000000000000000000B",
+  "inputs_changed": false,
+  "mode": "deterministic_and_model",
+  "summary": {
+    "found": 1,
+    "partial": 1,
+    "missing": 1,
+    "unverified": 1,
+    "contradicted": 0
+  },
+  "items": [
+    {
+      "requirement_id": "req.data.read",
+      "category": "deterministic_data",
+      "check_id": "application.deterministic_results",
+      "level": "mandatory",
+      "status": "ok",
+      "previous_status": "partial",
+      "changed": true
+    },
+    {
+      "requirement_id": "req.mcp.tool_list",
+      "category": "mcp",
+      "check_id": "application.control_surface",
+      "level": "recommended",
+      "status": "partial",
+      "previous_status": "partial",
+      "changed": false
+    },
+    {
+      "requirement_id": "req.package.manifest",
+      "category": "deployment",
+      "check_id": "package.authenticity",
+      "level": "mandatory",
+      "status": "missing",
+      "previous_status": "missing",
+      "changed": false
+    },
+    {
+      "requirement_id": "req.rag.source_candidates",
+      "category": "rag_source",
+      "check_id": "package.rag_inventory",
+      "level": "recommended",
+      "status": "unverified",
+      "changed": true
+    }
+  ]
+}

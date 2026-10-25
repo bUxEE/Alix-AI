@@ -1,0 +1,65 @@
+{
+  "format": "alixai.policy-decision/v1",
+  "decision_id": "pdec_01M3XZ5YE0VF1A3VM6K7EQPTAE",
+  "decided_at": "2026-10-02T09:30:00Z",
+  "phase": "expose",
+  "outcome": "deny",
+  "subject": {
+    "application_id": "demo-library",
+    "tenant_id": "tenant-a",
+    "workspace_id": "ws-1",
+    "principal_id": "user-1",
+    "session_id": "ses-1",
+    "roles": [
+      "member"
+    ],
+    "capability_scopes": [
+      "catalog.find_title",
+      "loans.extend",
+      "members.delete_account",
+      "reservations.create"
+    ]
+  },
+  "capability_id": "",
+  "package": {
+    "application_id": "demo-library",
+    "version": "1.0.0",
+    "status": "quarantined"
+  },
+  "policies": [],
+  "checks": [
+    {
+      "name": "request",
+      "passed": true,
+      "reason": "well_formed"
+    },
+    {
+      "name": "scope",
+      "passed": true,
+      "reason": "scope_complete"
+    },
+    {
+      "name": "package_active",
+      "passed": false,
+      "code": "quarantined",
+      "reason": "package_not_active"
+    }
+  ],
+  "risk": {
+    "declared": 3,
+    "platform_floor": 3,
+    "host_minimum": 0,
+    "effective": 3,
+    "effect_class": "unknown",
+    "raised_by": []
+  },
+  "requires": {
+    "confirmation": true,
+    "step_up": true
+  },
+  "visible_fields": [],
+  "withheld_fields": [],
+  "rules_applied": [],
+  "rules_deferred": [],
+  "code": "quarantined"
+}

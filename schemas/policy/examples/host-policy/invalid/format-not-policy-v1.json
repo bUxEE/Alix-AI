@@ -1,0 +1,14 @@
+{
+  "format": "cedar/v1",
+  "policy_id": "p",
+  "role_grants": [
+    {
+      "role": "member",
+      "capabilities": [
+        "catalog.find_title"
+      ]
+    }
+  ],
+  "risk_overrides": [],
+  "field_projection": []
+}

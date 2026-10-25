@@ -1,0 +1,52 @@
+{
+  "operation": "prepare",
+  "capability_id": "appointments.book",
+  "status": "ok",
+  "identifiers": [
+    {
+      "entity_type": "slot",
+      "entity_id": "slot_0412"
+    }
+  ],
+  "values": [
+    {
+      "field": "doctor",
+      "value": {
+        "kind": "text",
+        "value": "Dr. Rossi"
+      }
+    },
+    {
+      "field": "slot_date",
+      "value": {
+        "kind": "date",
+        "value": "2026-10-14"
+      },
+      "display": "Tuesday 14 October 2026"
+    },
+    {
+      "field": "slot_start",
+      "value": {
+        "kind": "time",
+        "value": "10:30"
+      }
+    }
+  ],
+  "errors": [],
+  "freshness": {
+    "as_of": "2026-10-09T08:00:00Z",
+    "version": "v42"
+  },
+  "allowed_next_actions": [
+    {
+      "action": "confirm"
+    },
+    {
+      "action": "reject"
+    },
+    {
+      "action": "modify",
+      "label": "Change the time"
+    }
+  ]
+}

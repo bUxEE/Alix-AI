@@ -1,0 +1,307 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:conversation:turn-event:v1",
+  "title": "TurnEvent",
+  "description": "One event of a streamed turn (master plan 14.1, 14.2), discriminated by type: token, directive, clarification, prepared_action, receipt, citation, progress, error, done, plus block for rich blocks. Every event carries turn_id and seq, a per-turn counter that starts at 0 and rises by one, which is also the resume cursor. Events are emitted only by the core. The model's only contribution is the verified text in token events and in model-authority members of blocks; structured payloads (directive, prepared_action, receipt, citation) are core or host data and are never taken from model output. Each variant repeats the envelope members instead of composing them with allOf so that additionalProperties false holds and generated types stay flat.",
+  "oneOf": [
+    { "$ref": "#/$defs/tokenEvent" },
+    { "$ref": "#/$defs/directiveEvent" },
+    { "$ref": "#/$defs/clarificationEvent" },
+    { "$ref": "#/$defs/preparedActionEvent" },
+    { "$ref": "#/$defs/receiptEvent" },
+    { "$ref": "#/$defs/citationEvent" },
+    { "$ref": "#/$defs/progressEvent" },
+    { "$ref": "#/$defs/errorEvent" },
+    { "$ref": "#/$defs/doneEvent" },
+    { "$ref": "#/$defs/blockEvent" }
+  ],
+  "$defs": {
+    "seq": {
+      "description": "Per-turn event counter, from 0, rising by one. Used as the resume cursor.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "tokenEvent": {
+      "description": "A fragment of the response text, in order. Emitted only after the response verifier has accepted the text it belongs to, so streamed text never states a fact the directive does not allow.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "turn_id", "seq", "text"],
+      "properties": {
+        "type": {
+          "x-alixai-authority": "alixai",
+          "const": "token"
+        },
+        "turn_id": {
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/turnId"
+        },
+        "seq": {
+          "x-alixai-authority": "alixai",
+          "$ref": "#/$defs/seq"
+        },
+        "text": {
+          "description": "The next fragment of the response, Markdown text.",
+          "x-alixai-authority": "model",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        }
+      }
+    },
+    "directiveEvent": {
+      "description": "The DialogueDirective the response is realised from, for clients that show or log what the core decided.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "turn_id", "seq", "directive"],
+      "properties": {
+        "type": {
+          "x-alixai-authority": "alixai",
+          "const": "directive"
+        },
+        "turn_id": {
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/turnId"
+        },
+        "seq": {
+          "x-alixai-authority": "alixai",
+          "$ref": "#/$defs/seq"
+        },
+        "directive": {
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:conversation:dialogue-directive:v1"
+        }
+      }
+    },
+    "clarificationEvent": {
+      "description": "A structured clarification the user answers by selecting a choice. The payload is the clarification_choices rich block.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "turn_id", "seq", "clarification"],
+      "properties": {
+        "type": {
+          "x-alixai-authority": "alixai",
+          "const": "clarification"
+        },
+        "turn_id": {
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/turnId"
+        },
+        "seq": {
+          "x-alixai-authority": "alixai",
+          "$ref": "#/$defs/seq"
+        },
+        "clarification": {
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:conversation:rich-block:v1#/$defs/clarificationChoicesBlock"
+        }
+      }
+    },
+    "preparedActionEvent": {
+      "description": "A PreparedAction awaiting confirmation. The confirmation_panel block that presents it follows as a block event.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "turn_id", "seq", "prepared_action"],
+      "properties": {
+        "type": {
+          "x-alixai-authority": "alixai",
+          "const": "prepared_action"
+        },
+        "turn_id": {
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/turnId"
+        },
+        "seq": {
+          "x-alixai-authority": "alixai",
+          "$ref": "#/$defs/seq"
+        },
+        "prepared_action": {
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:actions:prepared-action:v1"
+        }
+      }
+    },
+    "receiptEvent": {
+      "description": "The ActionReceipt of a committed, rejected, queued, partial or uncertain action. A response may claim completion only after a receipt event with status committed.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "turn_id", "seq", "receipt"],
+      "properties": {
+        "type": {
+          "x-alixai-authority": "alixai",
+          "const": "receipt"
+        },
+        "turn_id": {
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/turnId"
+        },
+        "seq": {
+          "x-alixai-authority": "alixai",
+          "$ref": "#/$defs/seq"
+        },
+        "receipt": {
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:actions:action-receipt:v1"
+        }
+      }
+    },
+    "citationEvent": {
+      "description": "One source supporting the answer, emitted as the answer streams.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "turn_id", "seq", "citation"],
+      "properties": {
+        "type": {
+          "x-alixai-authority": "alixai",
+          "const": "citation"
+        },
+        "turn_id": {
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/turnId"
+        },
+        "seq": {
+          "x-alixai-authority": "alixai",
+          "$ref": "#/$defs/seq"
+        },
+        "citation": {
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:conversation:citation:v1"
+        }
+      }
+    },
+    "progressEvent": {
+      "description": "Progress of the turn: pipeline stage, queued work, a capability call or source retrieval. Informational; it carries no facts and no text from the model.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "turn_id", "seq", "stage", "state"],
+      "properties": {
+        "type": {
+          "x-alixai-authority": "alixai",
+          "const": "progress"
+        },
+        "turn_id": {
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/turnId"
+        },
+        "seq": {
+          "x-alixai-authority": "alixai",
+          "$ref": "#/$defs/seq"
+        },
+        "stage": {
+          "description": "The pipeline stage. tool_call is a call to an application capability; sources is retrieval from registered sources; queued is work handed to the durable queue.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "enum": ["interpreting", "retrieving", "sources", "validating", "preparing", "committing", "tool_call", "queued", "generating", "verifying"]
+        },
+        "state": {
+          "description": "started, advanced, completed or failed. A failed stage is followed by an error event.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "enum": ["started", "progress", "completed", "failed"]
+        },
+        "percent": {
+          "description": "Completion, 0 to 100, when the stage can tell.",
+          "x-alixai-authority": "alixai",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "capability_id": {
+          "description": "The capability a tool_call stage concerns.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/capabilityId"
+        },
+        "job_id": {
+          "description": "The durable job a queued stage refers to.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/jobId"
+        }
+      }
+    },
+    "errorEvent": {
+      "description": "A typed failure of the turn or of one stage of it. Never replaced by a success-looking message.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "turn_id", "seq", "error"],
+      "properties": {
+        "type": {
+          "x-alixai-authority": "alixai",
+          "const": "error"
+        },
+        "turn_id": {
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/turnId"
+        },
+        "seq": {
+          "x-alixai-authority": "alixai",
+          "$ref": "#/$defs/seq"
+        },
+        "error": {
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:common:error:v1"
+        }
+      }
+    },
+    "doneEvent": {
+      "description": "The last event of a turn. finish_reason says why the turn stopped; awaiting_input and awaiting_confirmation mean the goal is still open.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "turn_id", "seq", "finish_reason"],
+      "properties": {
+        "type": {
+          "x-alixai-authority": "alixai",
+          "const": "done"
+        },
+        "turn_id": {
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/turnId"
+        },
+        "seq": {
+          "x-alixai-authority": "alixai",
+          "$ref": "#/$defs/seq"
+        },
+        "finish_reason": {
+          "description": "completed: the turn is finished. awaiting_input: a clarification is open. awaiting_confirmation: a PreparedAction awaits confirmation. cancelled: the client or user stopped the turn. failed: the turn ended on an error event.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "enum": ["completed", "awaiting_input", "awaiting_confirmation", "cancelled", "failed"]
+        },
+        "preparation_id": {
+          "description": "The PreparedAction awaiting confirmation. Present exactly when finish_reason is awaiting_confirmation.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/preparationId"
+        }
+      },
+      "if": {
+        "properties": { "finish_reason": { "const": "awaiting_confirmation" } },
+        "required": ["finish_reason"]
+      },
+      "then": { "required": ["preparation_id"] },
+      "else": { "not": { "required": ["preparation_id"] } }
+    },
+    "blockEvent": {
+      "description": "One rich block of the response: markdown, code, table, chart, diagram, citation_list, action_card, clarification_choices or confirmation_panel. Added to the nine event types of the plan so that every RichBlock has a place in the stream.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "turn_id", "seq", "block"],
+      "properties": {
+        "type": {
+          "x-alixai-authority": "alixai",
+          "const": "block"
+        },
+        "turn_id": {
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/turnId"
+        },
+        "seq": {
+          "x-alixai-authority": "alixai",
+          "$ref": "#/$defs/seq"
+        },
+        "block": {
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:conversation:rich-block:v1"
+        }
+      }
+    }
+  }
+}

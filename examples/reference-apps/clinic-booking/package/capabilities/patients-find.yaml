@@ -1,0 +1,120 @@
+id: patients.find
+version: 1.0.0
+audience: user
+title: Find a patient
+purpose: Find the patients of the caller's clinic site that the caller is allowed to see, by name and optionally by date of birth. A receptionist sees every patient of the site, a doctor only the patients with an appointment with them, a patient only themselves. Read-only.
+scope_level: workspace
+permissions:
+  - patients.read
+fields:
+  - name: query
+    type: string
+    required: true
+    description: Part of the patient's name, or the patient's identifier.
+    min_length: 2
+    max_length: 100
+  - name: date_of_birth
+    type: date
+    required: false
+    sensitive: true
+    description: The patient's date of birth, to narrow the search.
+  - name: max_results
+    type: integer
+    required: false
+    description: How many patients to list at most.
+    minimum: 1
+    maximum: 10
+    default:
+      source: literal
+      value: 5
+entity_types: {}
+ambiguity: []
+validation:
+  - id: query_not_blank
+    fields:
+      - query
+    description: The query must contain at least two characters that are not spaces.
+    error_code: validation_failed
+  - id: birth_date_not_future
+    fields:
+      - date_of_birth
+    description: The date of birth cannot be after today.
+    error_code: validation_failed
+failure_states:
+  - code: permission_denied
+    description: The principal's role may not look up patients.
+  - code: scope_violation
+    description: The query is a patient identifier of a record the principal may not see, or one that does not exist. The application does not say which.
+  - code: validation_failed
+    description: The query is too short or the date of birth is invalid. Nothing was searched.
+  - code: missing_fields
+    description: A required field (query) was not supplied. Nothing was searched.
+  - code: unavailable
+    description: The clinic database cannot be reached. No result is available and none is guessed.
+effect_class: none
+risk_level: 0
+operations:
+  read:
+    endpoint: clinic-mcp
+    mcp_tool: patients_find
+    result_schema: schemas/patients.find.result.schema.json
+    timeout_ms: 5000
+confirmation:
+  mode: none
+response_obligations:
+  - fact: patient_count
+    when: success
+    description: How many matching patients are listed.
+  - fact: patient_summary
+    when: success
+    description: The matching patients, each with name and date of birth.
+next_actions:
+  - id: book_for_patient
+    after: success
+    capability_id: appointments.book
+  - id: update_patient_contact
+    after: success
+    capability_id: patients.update_contact
+doc_refs:
+  - pf-field-query
+  - pf-field-date_of_birth
+  - pf-field-max_results
+  - pf-rule-query_not_blank
+  - pf-rule-birth_date_not_future
+  - pf-perm-patients.read
+  - pf-failure-permission_denied
+  - pf-failure-scope_violation
+  - pf-failure-validation_failed
+  - pf-failure-missing_fields
+  - pf-failure-unavailable
+  - pf-risk
+  - pf-confirmation
+  - pf-outcome-patients_found
+  - pf-outcome-none_found
+examples:
+  - id: en-find-by-name
+    language: en
+    test_only: true
+    utterance: Find the patient Maria Rossi
+    expected_fields:
+      query: Maria Rossi
+  - id: en-find-with-birth-date
+    language: en
+    test_only: true
+    utterance: Look up Luca Ferri, born 1975-11-02
+    expected_fields:
+      query: Luca Ferri
+      date_of_birth: '1975-11-02'
+  - id: it-cerca-per-nome
+    language: it
+    test_only: true
+    utterance: Cerca la paziente Maria Rossi
+    expected_fields:
+      query: Maria Rossi
+  - id: it-cerca-con-data
+    language: it
+    test_only: true
+    utterance: Trova Luca Ferri nato il 1975-11-02
+    expected_fields:
+      query: Luca Ferri
+      date_of_birth: '1975-11-02'

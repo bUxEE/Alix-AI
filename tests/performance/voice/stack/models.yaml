@@ -1,0 +1,72 @@
+# M4-06 voice model definitions (mounted over the shipped /configuration/models.yaml). The files are put in /models by
+# fetch-models.sh, verified against the sha256 pins of models/voice-packs/*.yaml and docs/evidence/m4-voice/protocol.md;
+# there is no download_files entry, so LocalAI never fetches anything.
+- name: whisper-tiny
+  backend: whisper
+  known_usecases: [transcript]
+  parameters:
+    model: ggml-tiny-q5_1.bin
+- name: whisper-base
+  backend: whisper
+  known_usecases: [transcript]
+  parameters:
+    model: ggml-base-q5_1.bin
+- name: whisper-small
+  backend: whisper
+  known_usecases: [transcript]
+  parameters:
+    model: ggml-small-q5_1.bin
+# the ggml Silero VAD of whisper.cpp, served by the whisper backend (LocalAI gallery entry silero-vad-ggml)
+- name: silero-vad
+  backend: whisper
+  known_usecases: [vad]
+  options:
+    - vad_only
+  parameters:
+    model: ggml-silero-v5.1.2.bin
+- name: piper-en-ljspeech
+  backend: piper
+  known_usecases: [tts]
+  parameters:
+    model: en_US-ljspeech-medium.onnx
+- name: piper-it-paola
+  backend: piper
+  known_usecases: [tts]
+  parameters:
+    model: it_IT-paola-medium.onnx
+- name: piper-it-riccardo
+  backend: piper
+  known_usecases: [tts]
+  parameters:
+    model: it_IT-riccardo-x_low.onnx
+# Kokoro v1.0 (82M parameters, Apache-2.0) through the Rust kokoros backend: the English challenger of the protocol's stop rule (no Italian).
+- name: kokoros-en
+  backend: kokoros
+  known_usecases: [tts]
+  options:
+    - lang_code:en-us
+  parameters:
+    model: kokoro-v1.0.onnx
+    voice: af_heart
+# Co-residency run only (compose.coresident.yaml mounts the files read-only from the deployment's model store, nothing is copied):
+# the Lite default controller fallback and the Lite embedder, configured as in the M0-13 spike.
+- name: granite-4.0-1b-q4_k_m
+  backend: llama-cpp
+  context_size: 4096
+  known_usecases:
+    - chat
+  options:
+    - use_jinja:true
+  parameters:
+    model: granite-4.0-1b-Q4_K_M.gguf
+    temperature: 0
+  template:
+    use_tokenizer_template: true
+- name: granite-embedding-97m-multilingual-r2-q4_k_m
+  backend: llama-cpp
+  embeddings: true
+  context_size: 512
+  known_usecases:
+    - embeddings
+  parameters:
+    model: granite-embedding-97M-multilingual-r2-Q4_K_M.gguf

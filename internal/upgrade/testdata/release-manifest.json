@@ -1,0 +1,206 @@
+{
+  "format": "alixai.release-manifest.v1",
+  "signed": {
+    "kind": "release-manifest",
+    "application_id": "alixai.platform",
+    "version": "2.0.0",
+    "commit": "9425317878e4174ee4cfc87b387b4bfba0746533",
+    "created_at": "2026-10-03T11:59:27Z",
+    "hash_algorithm": "sha256",
+    "artifacts": [
+      {
+        "name": "alixai.exe",
+        "kind": "binary",
+        "os": "windows",
+        "arch": "amd64",
+        "sha256": "d6a9d21a40f9d09621a7b14880724f8547d08ce1dbabf236ff0a5b5450a998c4",
+        "size": 38935552
+      }
+    ],
+    "images": [
+      {
+        "name": "localai",
+        "source": "third-party",
+        "reference": "docker.io/localai/localai:v4.10.0",
+        "digest": "sha256:0632c21ddbe440bb71bc7aa744796c227a51658641b216290e86d6894e1c705b"
+      }
+    ],
+    "backends": [
+      {
+        "runtime": "localai",
+        "name": "cpu-llama-cpp",
+        "alias": "llama-cpp",
+        "version": "v4.10.0",
+        "licence": "mit",
+        "reference": "quay.io/go-skynet/local-ai-backends",
+        "digest": "sha256:d7b0d9c69ecce93c2e7f7500ac3d99aba28648dab1ab29b698e0cc4538662579",
+        "mirrors": [
+          "docker.io/localai/localai-backends@sha256:d7b0d9c69ecce93c2e7f7500ac3d99aba28648dab1ab29b698e0cc4538662579"
+        ]
+      }
+    ],
+    "models": [
+      {
+        "id": "granite-4.0-1b-q4_k_m",
+        "name": "IBM Granite 4.0 1B (Q4_K_M)",
+        "version": "4.0",
+        "status": "rejected",
+        "upstream": {
+          "repo_url": "https://huggingface.co/ibm-granite/granite-4.0-1b",
+          "revision": "6a7381ba1f54d684ff508d991aeb7dc580157103"
+        },
+        "artifact": {
+          "format": "gguf",
+          "repo_url": "https://huggingface.co/ibm-granite/granite-4.0-1b-GGUF",
+          "filename": "granite-4.0-1b-Q4_K_M.gguf",
+          "revision": "b27c2fe3f211b7f44e80fa620177aea371099aaa",
+          "size_bytes": 1023645440,
+          "sha256": "22ec0f9cc99a90185312de3c882c84e7bd6789bdd050389844380a01a831d7f1",
+          "quantized_by": "ibm-granite",
+          "first_party": true
+        },
+        "licence": {
+          "spdx": "Apache-2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0",
+          "redistribution_notes": "Apache-2.0, declared by the upstream model card and by the first-party GGUF repository metadata at the pinned revisions. Apache-2.0 permits redistribution, modification and quantisation provided the licence text and any notices accompany the file and changes are stated. AlixAI does not bundle weights: an operator fetches the pinned file. Final sign-off is the M5-H02 human licence review."
+        },
+        "backend": {
+          "runtime": "localai",
+          "name": "llama-cpp",
+          "allowed_runtime_versions": []
+        }
+      },
+      {
+        "id": "granite-4.0-350m-q4_k_m",
+        "name": "IBM Granite 4.0 350M (Q4_K_M)",
+        "version": "4.0",
+        "status": "rejected",
+        "upstream": {
+          "repo_url": "https://huggingface.co/ibm-granite/granite-4.0-350m",
+          "revision": "bd8a1497065c0d6ba1ef19af6b0d2b14bacf71c2"
+        },
+        "artifact": {
+          "format": "gguf",
+          "repo_url": "https://huggingface.co/ibm-granite/granite-4.0-350m-GGUF",
+          "filename": "granite-4.0-350m-Q4_K_M.gguf",
+          "revision": "b8208a86a58427e1739265318028eb5895b74bf2",
+          "size_bytes": 236985760,
+          "sha256": "771c588a49607f274a2bba3185733607ebe6f74b996ab90e2d6bee0d98bcec52",
+          "quantized_by": "ibm-granite",
+          "first_party": true
+        },
+        "licence": {
+          "spdx": "Apache-2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0",
+          "redistribution_notes": "Apache-2.0, declared by the upstream model card and by the first-party GGUF repository metadata at the pinned revisions. Apache-2.0 permits redistribution, modification and quantisation provided the licence text and any notices accompany the file and changes are stated. AlixAI does not bundle weights: an operator fetches the pinned file. Final sign-off is the M5-H02 human licence review."
+        },
+        "backend": {
+          "runtime": "localai",
+          "name": "llama-cpp",
+          "allowed_runtime_versions": []
+        }
+      },
+      {
+        "id": "granite-embedding-97m-multilingual-r2-q4_k_m",
+        "name": "IBM Granite Embedding 97M Multilingual R2 (Q4_K_M)",
+        "version": "R2",
+        "status": "qualified-emulated",
+        "upstream": {
+          "repo_url": "https://huggingface.co/ibm-granite/granite-embedding-97m-multilingual-r2",
+          "revision": "835ad14087e140460703cf0fae09f97d469d65c2"
+        },
+        "artifact": {
+          "format": "gguf",
+          "repo_url": "https://huggingface.co/mykor/granite-embedding-97m-multilingual-r2-GGUF",
+          "filename": "granite-embedding-97M-multilingual-r2-Q4_K_M.gguf",
+          "revision": "45ce642d3fab2033d167ec09641a159010f7d9d9",
+          "size_bytes": 105467232,
+          "sha256": "355f1f30ac3bdad09de420c5d78dd369e2a47d6f4ee3b5da342483f857965daf",
+          "quantized_by": "mykor",
+          "first_party": false
+        },
+        "licence": {
+          "spdx": "Apache-2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0",
+          "redistribution_notes": "Apache-2.0, declared by the upstream model card and by the third-party GGUF repository metadata. The GGUF is a derivative conversion and quantisation by a third party: redistribution is permitted provided the Apache-2.0 text and notices accompany it and changes are stated. AlixAI does not bundle weights: an operator fetches the pinned file. Final sign-off is the M5-H02 human licence review."
+        },
+        "backend": {
+          "runtime": "localai",
+          "name": "llama-cpp",
+          "allowed_runtime_versions": [
+            "v4.10.0"
+          ]
+        }
+      },
+      {
+        "id": "qwen3.5-0.8b-q4_k_m",
+        "name": "Qwen3.5-0.8B (Q4_K_M)",
+        "version": "3.5",
+        "status": "rejected",
+        "upstream": {
+          "repo_url": "https://huggingface.co/Qwen/Qwen3.5-0.8B",
+          "revision": "2fc06364715b967f1860aea9cf38778875588b17"
+        },
+        "artifact": {
+          "format": "gguf",
+          "repo_url": "https://huggingface.co/unsloth/Qwen3.5-0.8B-GGUF",
+          "filename": "Qwen3.5-0.8B-Q4_K_M.gguf",
+          "revision": "6ab461498e2023f6e3c1baea90a8f0fe38ab64d0",
+          "size_bytes": 532517120,
+          "sha256": "bd258782e35f7f458f8aced1adc053e6e92e89bc735ba3be89d38a06121dc517",
+          "quantized_by": "unsloth",
+          "first_party": false
+        },
+        "licence": {
+          "spdx": "Apache-2.0",
+          "url": "https://huggingface.co/Qwen/Qwen3.5-0.8B/blob/2fc06364715b967f1860aea9cf38778875588b17/LICENSE",
+          "redistribution_notes": "Apache-2.0, declared by the upstream repository (LICENSE file, 11544 bytes) and by the third-party GGUF repository metadata. The GGUF is a derivative conversion by a third party: redistribution is permitted provided the Apache-2.0 text and notices accompany it and changes are stated. AlixAI does not bundle weights: an operator fetches the pinned file. Final sign-off is the M5-H02 human licence review."
+        },
+        "backend": {
+          "runtime": "localai",
+          "name": "llama-cpp",
+          "allowed_runtime_versions": []
+        }
+      },
+      {
+        "id": "qwen3.5-2b-q4_k_m",
+        "name": "Qwen3.5-2B (Q4_K_M)",
+        "version": "3.5",
+        "status": "rejected",
+        "upstream": {
+          "repo_url": "https://huggingface.co/Qwen/Qwen3.5-2B",
+          "revision": "15852e8c16360a2fea060d615a32b45270f8a8fc"
+        },
+        "artifact": {
+          "format": "gguf",
+          "repo_url": "https://huggingface.co/unsloth/Qwen3.5-2B-GGUF",
+          "filename": "Qwen3.5-2B-Q4_K_M.gguf",
+          "revision": "f6d5376be1edb4d416d56da11e5397a961aca8ae",
+          "size_bytes": 1280835840,
+          "sha256": "aaf42c8b7c3cab2bf3d69c355048d4a0ee9973d48f16c731c0520ee914699223",
+          "quantized_by": "unsloth",
+          "first_party": false
+        },
+        "licence": {
+          "spdx": "Apache-2.0",
+          "url": "https://huggingface.co/Qwen/Qwen3.5-2B/blob/15852e8c16360a2fea060d615a32b45270f8a8fc/LICENSE",
+          "redistribution_notes": "Apache-2.0, declared by the upstream repository (LICENSE file, 11544 bytes) and by the third-party GGUF repository metadata. The GGUF is a derivative conversion by a third party: redistribution is permitted provided the Apache-2.0 text and notices accompany it and changes are stated. AlixAI does not bundle weights: an operator fetches the pinned file. Final sign-off is the M5-H02 human licence review."
+        },
+        "backend": {
+          "runtime": "localai",
+          "name": "llama-cpp",
+          "allowed_runtime_versions": []
+        }
+      }
+    ]
+  },
+  "signatures": [
+    {
+      "key_id": "alixai-test-only-publisher",
+      "algorithm": "ed25519",
+      "signature": "D1L2Q2AQV9UJWFDg8b0DaIXpVSdgdwSQ7RSP4+cU+b0AQXSY1RDKp5ZtKNeghW3Ts5DVYE3KKNJzLICJAJlvBQ==",
+      "signed_at": "2026-10-03T11:59:28Z",
+      "expires_at": "2027-10-04T11:59:28Z"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+# Build context for deploy/container/alixai/Dockerfile (BuildKit reads <Dockerfile>.dockerignore
+# next to the Dockerfile). Allow-list: only what `go build ./cmd/alixai`, the parser worker (./cmd/alixai-parser) and the netctl helper import.
+# Keeps .git, .worktrees, plan state, models on disk, data directories, node_modules and secrets
+# out of the daemon, out of the layer cache and out of any image.
+*
+!go.mod
+!go.sum
+!cmd
+!internal
+!adapters
+!models
+!pkg
+!deploy/container/alixai/netctl
+**/*.gguf
+**/node_modules
+**/data
+**/.env
+**/*.pem
+**/*.key

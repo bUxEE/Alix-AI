@@ -1,0 +1,598 @@
+suite: facility-safety
+description: Scope isolation, safe execution and a runtime smoke test for the synthetic facility-maintenance application, run against disposable tenants with synthetic data. The application's own test suite runs every probe below against the real API.
+synthetic: true
+fixtures:
+  provisioning:
+    create_tenant:
+      endpoint: facility-api
+      openapi_operation_id: createTenant
+    seed:
+      endpoint: facility-api
+      openapi_operation_id: seedTenant
+    cleanup:
+      endpoint: facility-api
+      openapi_operation_id: cleanupTenant
+    seed_data: tests/seed/facility.json
+  tenants:
+  - ref: tenant-a
+    workspaces:
+    - site-a1
+    - site-a2
+  - ref: tenant-b
+    workspaces:
+    - site-b1
+  principals:
+  - ref: sup-a1
+    tenant: tenant-a
+    workspace: site-a1
+    kind: human
+    roles:
+    - supervisor
+  - ref: tech-a1
+    tenant: tenant-a
+    workspace: site-a1
+    kind: human
+    roles:
+    - technician
+  - ref: tech-a1b
+    tenant: tenant-a
+    workspace: site-a1
+    kind: human
+    roles:
+    - technician
+  - ref: aud-a1
+    tenant: tenant-a
+    workspace: site-a1
+    kind: human
+    roles:
+    - auditor
+  - ref: sup-a2
+    tenant: tenant-a
+    workspace: site-a2
+    kind: human
+    roles:
+    - supervisor
+  - ref: sup-b1
+    tenant: tenant-b
+    workspace: site-b1
+    kind: human
+    roles:
+    - supervisor
+  records:
+  - ref: tec-a1
+    entity_type: technician
+    tenant: tenant-a
+    workspace: site-a1
+  - ref: tec-a1b
+    entity_type: technician
+    tenant: tenant-a
+    workspace: site-a1
+  - ref: tec-a2
+    entity_type: technician
+    tenant: tenant-a
+    workspace: site-a2
+  - ref: tec-b1
+    entity_type: technician
+    tenant: tenant-b
+    workspace: site-b1
+  - ref: ast-a1
+    entity_type: asset
+    tenant: tenant-a
+    workspace: site-a1
+  - ref: ast-a1b
+    entity_type: asset
+    tenant: tenant-a
+    workspace: site-a1
+  - ref: ast-a2
+    entity_type: asset
+    tenant: tenant-a
+    workspace: site-a2
+  - ref: ast-b1
+    entity_type: asset
+    tenant: tenant-b
+    workspace: site-b1
+  - ref: wo-a1
+    entity_type: work_order
+    tenant: tenant-a
+    workspace: site-a1
+  - ref: wo-a1b
+    entity_type: work_order
+    tenant: tenant-a
+    workspace: site-a1
+  - ref: wo-a1c
+    entity_type: work_order
+    tenant: tenant-a
+    workspace: site-a1
+  - ref: wo-a2
+    entity_type: work_order
+    tenant: tenant-a
+    workspace: site-a2
+  - ref: wo-b1
+    entity_type: work_order
+    tenant: tenant-b
+    workspace: site-b1
+scope_probes:
+- id: supervisor-lists-own-site-asset
+  dimension: workspace
+  operation: read
+  capability_id: workorders.list
+  principal: sup-a1
+  target_record: ast-a1b
+  expect: allow
+- id: supervisor-cannot-list-other-site-asset
+  dimension: workspace
+  operation: read
+  capability_id: workorders.list
+  principal: sup-a1
+  target_record: ast-a2
+  expect: deny
+  error_code: scope_violation
+- id: supervisor-cannot-list-other-tenant-asset
+  dimension: tenant
+  operation: read
+  capability_id: workorders.list
+  principal: sup-a1
+  target_record: ast-b1
+  expect: deny
+  error_code: scope_violation
+- id: technician-lists-own-work
+  dimension: principal
+  operation: read
+  capability_id: workorders.list
+  principal: tech-a1
+  target_record: tec-a1
+  expect: allow
+- id: technician-cannot-list-colleague-work
+  dimension: principal
+  operation: read
+  capability_id: workorders.list
+  principal: tech-a1
+  target_record: tec-a1b
+  expect: deny
+  error_code: scope_violation
+- id: auditor-lists-own-site-asset
+  dimension: role
+  operation: read
+  capability_id: workorders.list
+  principal: aud-a1
+  target_record: ast-a1b
+  expect: allow
+- id: technician-raises-for-own-site-asset
+  dimension: workspace
+  operation: prepare
+  capability_id: workorders.create
+  principal: tech-a1
+  target_record: ast-a1
+  expect: allow
+- id: technician-validates-for-own-site-asset
+  dimension: workspace
+  operation: validate
+  capability_id: workorders.create
+  principal: tech-a1
+  target_record: ast-a1b
+  expect: allow
+- id: technician-cannot-raise-on-other-site-asset
+  dimension: workspace
+  operation: prepare
+  capability_id: workorders.create
+  principal: tech-a1
+  target_record: ast-a2
+  expect: deny
+  error_code: scope_violation
+- id: technician-cannot-raise-on-other-tenant-asset
+  dimension: tenant
+  operation: prepare
+  capability_id: workorders.create
+  principal: tech-a1
+  target_record: ast-b1
+  expect: deny
+  error_code: scope_violation
+- id: auditor-cannot-raise
+  dimension: role
+  operation: prepare
+  capability_id: workorders.create
+  principal: aud-a1
+  target_record: ast-a1
+  expect: deny
+  error_code: permission_denied
+- id: supervisor-assigns-own-site-order
+  dimension: workspace
+  operation: prepare
+  capability_id: workorders.assign
+  principal: sup-a1
+  target_record: wo-a1
+  expect: allow
+- id: supervisor-validates-own-site-order
+  dimension: workspace
+  operation: validate
+  capability_id: workorders.assign
+  principal: sup-a1
+  target_record: wo-a1b
+  expect: allow
+- id: supervisor-cannot-assign-other-site-order
+  dimension: workspace
+  operation: prepare
+  capability_id: workorders.assign
+  principal: sup-a1
+  target_record: wo-a2
+  expect: deny
+  error_code: scope_violation
+- id: supervisor-cannot-assign-other-tenant-order
+  dimension: tenant
+  operation: prepare
+  capability_id: workorders.assign
+  principal: sup-a1
+  target_record: wo-b1
+  expect: deny
+  error_code: scope_violation
+- id: technician-cannot-assign
+  dimension: role
+  operation: prepare
+  capability_id: workorders.assign
+  principal: tech-a1
+  target_record: wo-a1
+  expect: deny
+  error_code: permission_denied
+- id: technician-closes-own-order
+  dimension: principal
+  operation: prepare
+  capability_id: workorders.close
+  principal: tech-a1b
+  target_record: wo-a1b
+  expect: allow
+- id: supervisor-closes-own-site-order
+  dimension: workspace
+  operation: prepare
+  capability_id: workorders.close
+  principal: sup-a1
+  target_record: wo-a1
+  expect: allow
+- id: technician-cannot-close-colleague-order
+  dimension: principal
+  operation: prepare
+  capability_id: workorders.close
+  principal: tech-a1
+  target_record: wo-a1b
+  expect: deny
+  error_code: scope_violation
+- id: supervisor-cannot-close-other-site-order
+  dimension: workspace
+  operation: prepare
+  capability_id: workorders.close
+  principal: sup-a1
+  target_record: wo-a2
+  expect: deny
+  error_code: scope_violation
+- id: supervisor-cannot-close-other-tenant-order
+  dimension: tenant
+  operation: prepare
+  capability_id: workorders.close
+  principal: sup-a1
+  target_record: wo-b1
+  expect: deny
+  error_code: scope_violation
+- id: auditor-cannot-close
+  dimension: role
+  operation: prepare
+  capability_id: workorders.close
+  principal: aud-a1
+  target_record: wo-a1
+  expect: deny
+  error_code: permission_denied
+- id: supervisor-prepares-own-site-decommission
+  dimension: workspace
+  operation: prepare
+  capability_id: assets.decommission
+  principal: sup-a1
+  target_record: ast-a1
+  expect: allow
+- id: supervisor-cannot-decommission-other-site-asset
+  dimension: workspace
+  operation: prepare
+  capability_id: assets.decommission
+  principal: sup-a1
+  target_record: ast-a2
+  expect: deny
+  error_code: scope_violation
+- id: supervisor-cannot-decommission-other-tenant-asset
+  dimension: tenant
+  operation: prepare
+  capability_id: assets.decommission
+  principal: sup-a1
+  target_record: ast-b1
+  expect: deny
+  error_code: scope_violation
+- id: technician-cannot-decommission
+  dimension: role
+  operation: prepare
+  capability_id: assets.decommission
+  principal: tech-a1
+  target_record: ast-a1
+  expect: deny
+  error_code: permission_denied
+- id: technician-retrieves-manuals
+  dimension: source
+  operation: retrieve
+  principal: tech-a1
+  target_source: equipment-manuals
+  expect: allow
+- id: auditor-retrieves-manuals
+  dimension: source
+  operation: retrieve
+  principal: aud-a1
+  target_source: equipment-manuals
+  expect: allow
+- id: supervisor-retrieves-history
+  dimension: source
+  operation: retrieve
+  principal: sup-a1
+  target_source: maintenance-history
+  expect: allow
+- id: technician-retrieves-history
+  dimension: source
+  operation: retrieve
+  principal: tech-a1
+  target_source: maintenance-history
+  expect: allow
+safety_probes:
+- id: create-confirmed
+  capability_id: workorders.create
+  principal: tech-a1
+  kind: confirmed_commit
+  expect:
+    outcome: committed_once
+- id: create-unconfirmed
+  capability_id: workorders.create
+  principal: tech-a1
+  kind: unconfirmed_commit
+  expect:
+    outcome: committed_once
+- id: create-replayed
+  capability_id: workorders.create
+  principal: tech-a1
+  kind: replayed_commit
+  expect:
+    outcome: original_receipt_returned
+- id: create-expired
+  capability_id: workorders.create
+  principal: tech-a1
+  kind: expired_preparation
+  expect:
+    outcome: rejected_no_effect
+    error_code: expired
+- id: create-stale
+  capability_id: workorders.create
+  principal: tech-a1
+  kind: stale_record
+  expect:
+    outcome: rejected_no_effect
+    error_code: stale
+- id: create-cancelled
+  capability_id: workorders.create
+  principal: tech-a1
+  kind: cancelled_preparation
+  expect:
+    outcome: rejected_no_effect
+    error_code: conflict
+- id: create-uncertain
+  capability_id: workorders.create
+  principal: tech-a1
+  kind: uncertain_commit_recovery
+  expect:
+    outcome: recovered_via_status
+- id: assign-confirmed
+  capability_id: workorders.assign
+  principal: sup-a1
+  kind: confirmed_commit
+  expect:
+    outcome: committed_once
+- id: assign-unconfirmed
+  capability_id: workorders.assign
+  principal: sup-a1
+  kind: unconfirmed_commit
+  expect:
+    outcome: rejected_no_effect
+    error_code: confirmation_required
+- id: assign-replayed
+  capability_id: workorders.assign
+  principal: sup-a1
+  kind: replayed_commit
+  expect:
+    outcome: original_receipt_returned
+- id: assign-expired
+  capability_id: workorders.assign
+  principal: sup-a1
+  kind: expired_preparation
+  expect:
+    outcome: rejected_no_effect
+    error_code: expired
+- id: assign-stale
+  capability_id: workorders.assign
+  principal: sup-a1
+  kind: stale_record
+  expect:
+    outcome: rejected_no_effect
+    error_code: stale
+- id: assign-cancelled
+  capability_id: workorders.assign
+  principal: sup-a1
+  kind: cancelled_preparation
+  expect:
+    outcome: rejected_no_effect
+    error_code: conflict
+- id: assign-uncertain
+  capability_id: workorders.assign
+  principal: sup-a1
+  kind: uncertain_commit_recovery
+  expect:
+    outcome: recovered_via_status
+- id: close-confirmed
+  capability_id: workorders.close
+  principal: sup-a1
+  kind: confirmed_commit
+  expect:
+    outcome: committed_once
+- id: close-unconfirmed
+  capability_id: workorders.close
+  principal: sup-a1
+  kind: unconfirmed_commit
+  expect:
+    outcome: rejected_no_effect
+    error_code: confirmation_required
+- id: close-replayed
+  capability_id: workorders.close
+  principal: sup-a1
+  kind: replayed_commit
+  expect:
+    outcome: original_receipt_returned
+- id: close-expired
+  capability_id: workorders.close
+  principal: sup-a1
+  kind: expired_preparation
+  expect:
+    outcome: rejected_no_effect
+    error_code: expired
+- id: close-stale
+  capability_id: workorders.close
+  principal: sup-a1
+  kind: stale_record
+  expect:
+    outcome: rejected_no_effect
+    error_code: stale
+- id: close-cancelled
+  capability_id: workorders.close
+  principal: sup-a1
+  kind: cancelled_preparation
+  expect:
+    outcome: rejected_no_effect
+    error_code: conflict
+- id: close-uncertain
+  capability_id: workorders.close
+  principal: sup-a1
+  kind: uncertain_commit_recovery
+  expect:
+    outcome: recovered_via_status
+- id: decommission-confirmed
+  capability_id: assets.decommission
+  principal: sup-a1
+  kind: confirmed_commit
+  expect:
+    outcome: rejected_no_effect
+    error_code: step_up_required
+- id: decommission-unconfirmed
+  capability_id: assets.decommission
+  principal: sup-a1
+  kind: unconfirmed_commit
+  expect:
+    outcome: rejected_no_effect
+    error_code: step_up_required
+- id: decommission-replayed
+  capability_id: assets.decommission
+  principal: sup-a1
+  kind: replayed_commit
+  expect:
+    outcome: rejected_no_effect
+    error_code: step_up_required
+- id: decommission-expired
+  capability_id: assets.decommission
+  principal: sup-a1
+  kind: expired_preparation
+  expect:
+    outcome: rejected_no_effect
+    error_code: expired
+- id: decommission-stale
+  capability_id: assets.decommission
+  principal: sup-a1
+  kind: stale_record
+  expect:
+    outcome: rejected_no_effect
+    error_code: stale
+- id: decommission-cancelled
+  capability_id: assets.decommission
+  principal: sup-a1
+  kind: cancelled_preparation
+  expect:
+    outcome: rejected_no_effect
+    error_code: conflict
+- id: decommission-uncertain
+  capability_id: assets.decommission
+  principal: sup-a1
+  kind: uncertain_commit_recovery
+  expect:
+    outcome: recovered_via_status
+conversation_cases:
+- id: create-asks-for-the-title
+  language: en
+  capability_id: workorders.create
+  principal: tech-a1
+  turns:
+  - user: Raise a work order for the Backup generator
+    expect:
+      act: ask_missing
+      missing_fields:
+      - title
+- id: assegna-chiede-il-tecnico
+  language: it
+  capability_id: workorders.assign
+  principal: sup-a1
+  turns:
+  - user: Assegna l'ordine di lavoro del damper
+    expect:
+      act: ask_missing
+      missing_fields:
+      - technician
+- id: close-by-reference
+  language: en
+  capability_id: workorders.close
+  principal: sup-a1
+  turns:
+  - user: Close the damper work order, the damper was freed and lubricated
+    expect:
+      act: request_confirmation
+- id: decommission-needs-the-app
+  language: en
+  capability_id: assets.decommission
+  principal: sup-a1
+  turns:
+  - user: Decommission the Backup generator, it was replaced last month
+    expect:
+      act: request_step_up
+smoke:
+  paths:
+  - id: smoke-text
+    path: text
+    principal: sup-a1
+    capability_id: workorders.list
+    utterance: Show me the open work orders
+    expect:
+      audit_events:
+      - policy.decision
+      - dialogue.turn
+  - id: smoke-rag
+    path: rag
+    principal: tech-a1
+    utterance: How often should the air handling unit filters be replaced?
+    expect:
+      audit_events:
+      - rag.retrieved
+      - dialogue.turn
+      citations: true
+  - id: smoke-rag-no-evidence
+    path: rag
+    principal: tech-a1
+    utterance: What is the technician's home address?
+    expect:
+      audit_events:
+      - rag.no_supported_evidence
+      citations: false
+  - id: smoke-action
+    path: action
+    principal: sup-a1
+    capability_id: workorders.assign
+    utterance: Assign the damper work order to Marco Bianchi
+    expect:
+      audit_events:
+      - action.prepared
+      - action.confirmed
+      - action.committed
+  verify_cleanup: true

@@ -1,0 +1,70 @@
+capability_id: workorders.list
+language: en
+contract_version: 1.0.0
+terminology:
+- work_order
+- asset
+- technician
+- priority
+- site
+- assignment
+field_prompts:
+- field: status
+  label: Status
+  prompt: 'Which status do you want: open, assigned, closed, or any?'
+  examples:
+  - open
+- field: priority
+  label: Priority
+  prompt: Only one priority? Low, normal, high or urgent. You can skip this.
+  examples:
+  - urgent
+- field: asset
+  label: Asset
+  prompt: Only one asset? Name it or give its tag. You can skip this.
+  examples:
+  - AHU-200
+- field: technician
+  label: Technician
+  prompt: Only one technician's work? Give the name. You can skip this.
+  examples:
+  - Marco Bianchi
+- field: max_results
+  label: How many
+  prompt: How many work orders should I list at most? Up to 10.
+  examples:
+  - '5'
+clarifications:
+- rule_id: asset_multiple
+  prompt: More than one asset matches {input.asset}. Which one do you mean?
+- rule_id: technician_multiple
+  prompt: More than one technician matches {input.technician}. Which one do you mean?
+corrections:
+  acknowledgement: Okay, I have changed that.
+  correctable_fields:
+  - status
+  - priority
+  - asset
+  - technician
+  - max_results
+cancellations:
+  acknowledgement: Okay, I stopped. Nothing was searched.
+success:
+- outcome: work_orders_found
+  text: 'I found {work_order_count} work orders (status: {search_status}): {work_order_summary}.'
+- outcome: none_found
+  text: 'I found no work orders (status: {search_status}). That is {work_order_count} results.'
+failures:
+- code: permission_denied
+  text: You are not allowed to do that, so nothing was changed.
+- code: scope_violation
+  text: 'I cannot do that: the record is not available to you. Nothing was changed.'
+- code: validation_failed
+  text: 'I could not list that: ask for 1 to 10 work orders, and for your own work only if you are a technician. Nothing was searched.'
+- code: unavailable
+  text: The maintenance system is not reachable right now, so nothing was changed.
+next_actions:
+- id: assign_listed
+  label: Assign one of these work orders
+- id: close_listed
+  label: Close one of these work orders

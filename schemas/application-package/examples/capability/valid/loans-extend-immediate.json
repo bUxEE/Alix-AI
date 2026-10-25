@@ -1,0 +1,107 @@
+{
+  "id": "loans.extend",
+  "version": "1.2.0",
+  "audience": "user",
+  "title": "Extend a loan",
+  "purpose": "Extend the due date of one of the user's own loans by one week. Reversible and low-impact, so the application allows it to commit right after a concise summary.",
+  "scope_level": "principal",
+  "permissions": ["loans.extend_own"],
+  "fields": [
+    {
+      "name": "loan",
+      "type": "entity_ref",
+      "entity_type": "loan",
+      "required": true,
+      "description": "The loan to extend."
+    },
+    {
+      "name": "weeks",
+      "type": "integer",
+      "required": false,
+      "description": "How many weeks to extend by.",
+      "minimum": 1,
+      "maximum": 1,
+      "default": { "source": "literal", "value": 1 }
+    }
+  ],
+  "entity_types": {
+    "loan": {
+      "description": "A loan of the signed-in member."
+    }
+  },
+  "ambiguity": [
+    {
+      "id": "loan_multiple",
+      "field": "loan",
+      "when": "multiple_matches",
+      "action": "ask_user",
+      "max_choices": 5
+    }
+  ],
+  "validation": [
+    {
+      "id": "not_already_extended",
+      "fields": ["loan"],
+      "description": "A loan can be extended once.",
+      "error_code": "conflict"
+    }
+  ],
+  "failure_states": [
+    {
+      "code": "conflict",
+      "description": "The loan was already extended or is reserved by another member."
+    },
+    {
+      "code": "uncertain_outcome",
+      "application_code": "extension_unconfirmed",
+      "description": "The extension response was lost; its status is queried before any retry."
+    }
+  ],
+  "effect_class": "reversible",
+  "risk_level": 1,
+  "operations": {
+    "prepare": {
+      "endpoint": "library-api",
+      "openapi_operation_id": "prepareLoanExtension",
+      "result_schema": "schemas/openapi.yaml#/components/schemas/PreparedExtension"
+    },
+    "commit": {
+      "endpoint": "library-api",
+      "openapi_operation_id": "commitLoanExtension",
+      "result_schema": "schemas/openapi.yaml#/components/schemas/ExtensionReceipt"
+    },
+    "status": {
+      "endpoint": "library-api",
+      "openapi_operation_id": "getLoanExtension",
+      "result_schema": "schemas/openapi.yaml#/components/schemas/ExtensionReceipt"
+    }
+  },
+  "confirmation": { "mode": "none" },
+  "prepared_action": {
+    "ttl_seconds": 120,
+    "invalidated_by": ["record_revision"]
+  },
+  "idempotency": {
+    "key_source": "host_assigned",
+    "window_seconds": 3600,
+    "on_replay": "return_original_receipt"
+  },
+  "response_obligations": [
+    {
+      "fact": "loan.new_due_date",
+      "when": "success",
+      "description": "The new due date."
+    }
+  ],
+  "next_actions": [],
+  "doc_refs": ["le-risk"],
+  "examples": [
+    {
+      "id": "en-extend-my-loan",
+      "language": "en",
+      "test_only": true,
+      "utterance": "Can I keep The Leopard another week?",
+      "expected_fields": { "loan": "The Leopard", "weeks": 1 }
+    }
+  ]
+}

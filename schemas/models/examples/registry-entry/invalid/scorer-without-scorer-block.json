@@ -1,0 +1,110 @@
+{
+  "artifact": {
+    "checked_on": "2026-10-08",
+    "filename": "model.safetensors",
+    "first_party": true,
+    "format": "safetensors",
+    "quantized_by": "convaiinnovations",
+    "repo_url": "https://huggingface.co/convaiinnovations/laya",
+    "revision": "7b928d828b7b0e022f929d9bd2e44165aa270148",
+    "sha256": "891102d372688fc2a094dac56a384bc537b87c63f21f9f3dac0be2b7cbc8d86c",
+    "size_bytes": 842609210
+  },
+  "backend": {
+    "allowed_runtime_versions": [],
+    "name": "vllm-cpp",
+    "runtime": "localai"
+  },
+  "capabilities": [
+    "decision-scoring"
+  ],
+  "context": {
+    "budget_tokens": null,
+    "kv_cache_mb": null,
+    "native_max_tokens": 512
+  },
+  "default_for": [],
+  "fallback": {
+    "degraded_mode": "deterministic-routing",
+    "model_id": null,
+    "notes": "Deterministic rules, the controller and typed forms (the zero-model option) serve the decision. With the layer off, unavailable or failing, every flow gives the same outcome through the deterministic controller (ADR 0029)."
+  },
+  "hardware": {
+    "minimum": {
+      "accelerator": null,
+      "cpu_cores": null,
+      "ram_mb": null
+    },
+    "recommended": {
+      "accelerator": null,
+      "cpu_cores": null,
+      "ram_mb": null
+    }
+  },
+  "id": "laya",
+  "languages": {
+    "claimed_count": null,
+    "declared": [
+      "en"
+    ],
+    "qualified": []
+  },
+  "last_efficiency_review": {
+    "date": "2026-10-08",
+    "evidence_path": "docs/operations/resource-budgets.md"
+  },
+  "licence": {
+    "redistribution_notes": "Apache-2.0, declared in the model card metadata at the pinned commit; the repository has no LICENSE file, so the licence text itself was not seen (unverified). First-party weights, unmodified. AlixAI does not bundle weights: the operator fetches the pinned file. Final sign-off is the human licence review (D-H01, M5-H02).",
+    "spdx": "Apache-2.0",
+    "url": "https://huggingface.co/convaiinnovations/laya/blob/7b928d828b7b0e022f929d9bd2e44165aa270148/README.md"
+  },
+  "load_time": {
+    "cold_ms": null,
+    "warm_ms": null
+  },
+  "measurement": {
+    "emulated": null,
+    "measured_on": null,
+    "profile": null,
+    "results_path": null
+  },
+  "memory": {
+    "peak_rss_mb": null,
+    "steady_rss_mb": null
+  },
+  "name": "Laya (English, ModernBERT-large)",
+  "notes": [
+    "Role: benchmark candidate and constrained-profile fallback for the decision layer, never the primary decision model (master plan 8.2, ADR 0029). Status candidate, default_for empty.",
+    "Pin: the repository root checkpoint (English), revision 7b928d828b7b0e022f929d9bd2e44165aa270148 (lastModified 2026-10-03T18:00:07Z), model.safetensors 842609210 bytes, sha256 891102d372688fc2a094dac56a384bc537b87c63f21f9f3dac0be2b7cbc8d86c (hub LFS oid), fetched 2026-10-08 from https://huggingface.co/api/models/convaiinnovations/laya/tree/7b928d828b7b0e022f929d9bd2e44165aa270148. The hub reports 421293830 parameters, F16 (https://huggingface.co/api/models/convaiinnovations/laya). The repository also bundles the multilingual and typed-decisions checkpoints in subfolders; the registry records single-segment file names, so the multilingual one has its own entry.",
+    "Size and architecture (model card, fetched 2026-10-08): ModernBERT-large backbone (395M) plus a decision head, 421M parameters in all, non-autoregressive, one forward pass, context 512 tokens, answers choice, score and noul with calibrated probabilities; this checkpoint is English only. LocalAI documents the gallery entry laya-vllm-cpp at about 800 MB (https://localai.io/docs/features/decisions/, fetched 2026-10-08); AlixAI has not run it, so runtime support is unverified and backend.allowed_runtime_versions is empty.",
+    "Option count: scorer.max_options 20 is the vendor card's Honest Limits figure (accuracy falls off above about 20 options at the default head budget; Banking77 with 77 labels scored 0.425 against 0.870 for Jev). It is a vendor statement, not an enforced limit and not measured by AlixAI. LocalAI states letter-based models accept at most 26 options; Laya is not letter-based.",
+    "CPU feasibility: the card quotes 32.8 ms per question on a T4 GPU and 193 to 464 ms on CPU with the model preloaded, on unspecified hardware (vendor numbers, unverified). The weights alone are 842609210 bytes (803 MiB), over the 300 MiB lite scorer row of docs/operations/resource-budgets.md, so Laya needs a measured, smaller serving form before it could be a lite default. Nothing has been measured.",
+    "Calibration: the card says the checkpoint ships over-confident (mean ECE 0.466 before refitting a temperature per question type and option count, 0.081 after), so its probabilities must be re-fitted on AlixAI data before any threshold is trusted. Vendor accuracy claims are not evidence for AlixAI.",
+    "The scorer is advisory: it only scores a bounded set of authorised candidates and every selected id is re-resolved by the deterministic adapter; it never authorises, validates, prepares, confirms or commits (master plan 3, 8.5)."
+  ],
+  "performance": {
+    "latency_ms_p50": null,
+    "latency_ms_p95": null,
+    "tokens_per_second": null,
+    "ttft_ms_p50": null
+  },
+  "quantization": {
+    "nominal_bits": 16,
+    "scheme": "F16"
+  },
+  "roles": [
+    "decision-scorer"
+  ],
+  "scores": {
+    "rag": null,
+    "safety": null,
+    "task": null,
+    "tool": null
+  },
+  "status": "candidate",
+  "upstream": {
+    "repo_url": "https://huggingface.co/convaiinnovations/laya",
+    "revision": "7b928d828b7b0e022f929d9bd2e44165aa270148"
+  },
+  "version": "0.3"
+}

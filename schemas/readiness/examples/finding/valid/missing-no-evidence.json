@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "finding_id": "fnd_1111111111111111",
+  "requirement_id": "req.package.manifest",
+  "category": "deployment",
+  "status": "missing",
+  "source": "deterministic",
+  "check_id": "package.authenticity",
+  "evidence": [],
+  "remediation": {
+    "en": "Create alixai.yaml at the package root."
+  }
+}

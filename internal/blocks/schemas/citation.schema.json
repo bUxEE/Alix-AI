@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:conversation:citation:v1",
+  "title": "Citation",
+  "description": "One original, authorised source supporting a RAG answer (master plan 12.5, rule 9): source ID, authorised display name, source version or content hash, where in the source when known, availability and staleness, a permission-checked open reference and the answer claims the source supports. Produced by the core's RAG service after the final authorisation and version recheck, never by the model: a model cannot cite a source the retrieval did not return. When no authorised evidence supports an answer the result is the no_supported_evidence error, not an empty citation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["source_id", "display_name", "version", "availability", "staleness", "open_ref", "claims"],
+  "properties": {
+    "source_id": {
+      "description": "ID of the registered source.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/sourceId"
+    },
+    "display_name": {
+      "description": "The source's name as the requesting principal is authorised to see it.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "version": {
+      "description": "Source version or content hash the answer was grounded on.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/opaqueVersion"
+    },
+    "locator": {
+      "description": "Where in the source the evidence sits, when known: a page, a section, a record or a character span.",
+      "x-alixai-authority": "alixai",
+      "$ref": "#/$defs/locator"
+    },
+    "availability": {
+      "description": "Whether the source can still be opened. available: the source can still be opened by this principal. unavailable: it exists but cannot be reached now. removed: it was deleted or the principal lost access since retrieval.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "enum": ["available", "unavailable", "removed"]
+    },
+    "staleness": {
+      "description": "Whether the cited version is the latest. current: the version cited is the latest. stale: the source changed after the version cited. unknown: the core cannot tell.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "enum": ["current", "stale", "unknown"]
+    },
+    "open_ref": {
+      "description": "Permission-checked way to open or preview the source. It is an opaque reference, never a URL or a path; resolving it re-checks scope and expiry every time.",
+      "x-alixai-authority": "alixai",
+      "$ref": "#/$defs/openRef"
+    },
+    "claims": {
+      "description": "The answer claims this source supports, one short statement each, as verified by the core's claim/source check. At least one: a citation that supports nothing is not returned.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      }
+    }
+  },
+  "$defs": {
+    "locator": {
+      "description": "A position inside a source. At least one member; span offsets are zero-based character offsets into the source's extracted text at the cited version, end exclusive.",
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "page": {
+          "description": "One-based page number.",
+          "x-alixai-authority": "alixai",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "section": {
+          "description": "Section or heading title.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "record": {
+          "description": "Record identifier inside a structured source.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "span": {
+          "description": "Character span of the evidence.",
+          "x-alixai-authority": "alixai",
+          "$ref": "#/$defs/span"
+        }
+      }
+    },
+    "span": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end"],
+      "properties": {
+        "start": {
+          "description": "Zero-based start offset, inclusive.",
+          "x-alixai-authority": "alixai",
+          "type": "integer",
+          "minimum": 0
+        },
+        "end": {
+          "description": "End offset, exclusive. Not before start.",
+          "x-alixai-authority": "alixai",
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "openRef": {
+      "description": "Opaque, permission-checked reference. file points to a scoped FileRef, record to an application record, source to the source itself (resolved by source_id).",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "file_id"],
+          "properties": {
+            "kind": {
+              "x-alixai-authority": "alixai",
+              "const": "file"
+            },
+            "file_id": {
+              "x-alixai-authority": "alixai",
+              "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/fileId"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "entity_type", "entity_id"],
+          "properties": {
+            "kind": {
+              "x-alixai-authority": "alixai",
+              "const": "record"
+            },
+            "entity_type": {
+              "x-alixai-authority": "alixai",
+              "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+            },
+            "entity_id": {
+              "x-alixai-authority": "alixai",
+              "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": {
+            "kind": {
+              "x-alixai-authority": "alixai",
+              "const": "source"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

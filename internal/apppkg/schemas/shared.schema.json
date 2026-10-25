@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:rag:shared:v1",
+  "title": "RAG shared definitions",
+  "description": "Building blocks shared by the RAG schemas (master plan 12.3, 12.4, 12.5), referenced as urn:alixai:schema:rag:shared:v1#/$defs/<name>. This file is a definitions library: it constrains nothing on its own. It holds the two internal source-metadata enums of the external-provider seam (sourceEgress, sourceClassification), the core-minted IDs of the RAG pipeline, the retrieval notices and the component-version record of an index generation.",
+  "$defs": {
+    "sourceEgress": {
+      "title": "Source data-egress mode",
+      "description": "What an external model provider may receive from a source (additive plan section 8). This is DATA egress, a property of what leaves; it is unrelated to the network egress allowlist of a source declaration, which says where AlixAI may connect. local_only: content never leaves the machine. allow_excerpt: only bounded, authorised excerpts may be sent. allow_metadata: titles, IDs and status may be sent, never content. deny: the source is excluded from the AlixAI capability entirely. A source declaration that states no mode is registered as local_only. A value that is MISSING from an evidence item or citation is also read as local_only, the most restrictive mode that keeps Local mode working: it is never read as allow_excerpt, allow_metadata or deny. (deny is not the missing-value reading because it would remove the source from Local mode too.) With external mode off the value is carried and ignored. It is internal metadata: it is never part of anything a client receives.",
+      "type": "string",
+      "enum": ["local_only", "allow_excerpt", "allow_metadata", "deny"]
+    },
+    "sourceClassification": {
+      "title": "Source data classification",
+      "description": "How sensitive the content of a source is, least to most: public, internal, confidential, restricted. A source declaration that states no classification is registered as internal. A value that is MISSING from an evidence item or citation, or that is not one of these four, is read as restricted, the most restrictive class: the registration default (internal) and the missing-value reading (restricted) are deliberately different, because a value lost on the way is not the same thing as a value an operator chose. It is internal metadata: it is never part of anything a client receives.",
+      "type": "string",
+      "enum": ["public", "internal", "confidential", "restricted"]
+    },
+    "generationId": {
+      "title": "Index generation ID",
+      "description": "ID of one index generation of a source (master plan 12.3), minted by the core.",
+      "type": "string",
+      "pattern": "^gen_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "evidencePackageId": {
+      "title": "Evidence package ID",
+      "description": "ID of one evidence package (master plan 12.4), minted by the core. A package is bound to the scope and principal it was authorised for and is never reused for another.",
+      "type": "string",
+      "pattern": "^evp_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "evidenceId": {
+      "title": "Evidence ID",
+      "description": "The handle of one evidence item inside one evidence package: the letter e and a number from 1, assigned by the core in rank order (e1, e2, ...). It is deliberately short because the model sees it and cites it once per sentence, and it means nothing outside its package. Two items of two packages may share a handle; two items of one package never do. A model may cite only a handle that is in the package it was given.",
+      "type": "string",
+      "pattern": "^e[1-9][0-9]{0,3}$"
+    },
+    "chunkId": {
+      "title": "Chunk ID",
+      "description": "The deterministic ID of the chunk an evidence item was taken from (master plan 12.3): derived from content and position, so unchanged content keeps its ID. Opaque to everything but the index.",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+    },
+    "count": {
+      "title": "Count",
+      "description": "A non-negative whole number of items, at most 2^53-1 so it is exact in every client language.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "estToks": {
+      "title": "Estimated model tokens",
+      "description": "A conservative estimate of the model tokens a piece of text costs in a prompt (master plan section 17, resource management). The estimate is made by the core without a model and errs high, so a budget measured with it is an upper bound. The property is named est_toks, never with the word token in a key name: the log redactor matches that substring.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000000
+    },
+    "retrievalMethod": {
+      "title": "Retrieval method",
+      "description": "A stage of the query pipeline that contributed to a result (master plan 12.4). fts: authorised FTS5/BM25 retrieval, including exact identifiers. vector: authorised vector retrieval. rerank: the optional short-list reranker. Reciprocal Rank Fusion is implied whenever both fts and vector are present.",
+      "type": "string",
+      "enum": ["fts", "vector", "rerank"]
+    },
+    "retrievalNotice": {
+      "title": "Retrieval notice",
+      "description": "A label on how a result was produced, so a degraded result is never presented as a full one. reduced_semantic_recall: the vector stage did not run (no embedder, or the embeddings of the active generation are incomplete), so results come from FTS only and may miss paraphrases. query_rewritten: the low-confidence query rewrite ran inside its fixed time and query budget.",
+      "type": "string",
+      "enum": ["reduced_semantic_recall", "query_rewritten"]
+    },
+    "retrievalNotices": {
+      "title": "Retrieval notices",
+      "description": "The notices that apply to a result. Empty means none: the result is a full one. Required wherever it appears, so a missing label cannot be mistaken for no label.",
+      "type": "array",
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/retrievalNotice" }
+    },
+    "componentVersion": {
+      "title": "Component version",
+      "description": "The identity and version of one pipeline component that shaped an index generation (master plan 12.3: parser, OCR, chunker and embedding versions are recorded, and a changed component creates a new generation).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": {
+          "description": "The component, for example a parser, a chunker or an embedding model: lower case letters, digits, dot, underscore and hyphen.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+        },
+        "version": {
+          "description": "The component version or revision, compared for equality only.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/opaqueVersion"
+        }
+      }
+    }
+  }
+}

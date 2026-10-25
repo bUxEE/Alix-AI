@@ -1,0 +1,7 @@
+# Builds the forwarder and health-probe image used by the anchor and the relay (target netctl). Edit the two
+# paths to your checkout.
+[Build]
+ImageTag=localhost/alixai-netctl:local
+File=%h/src/alixai/deploy/container/alixai/Dockerfile
+SetWorkingDirectory=%h/src/alixai
+Target=netctl

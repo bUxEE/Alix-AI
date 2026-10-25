@@ -1,0 +1,66 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 1558 >>
+stream
+BT
+56 790 Td
+14 TL
+/F2 16 Tf (PMP-30 Circulation Pump - Quick Service Guide) Tj T*
+T*
+/F2 13.5 Tf (1. About this guide) Tj T*
+/F1 10.5 Tf (Synthetic reference text written for the AlixAI facility-maintenance reference application.) Tj T*
+/F1 10.5 Tf (No real equipment is described.) Tj T*
+/F1 10.5 Tf (The PMP-30 is a close-coupled circulation pump with a 30 mm mechanical seal.) Tj T*
+T*
+/F2 13.5 Tf (2. Normal operating values) Tj T*
+/F1 10.5 Tf (- Bearing vibration: below 4.5 mm/s RMS. Above 7 mm/s, stop the pump and inspect the) Tj T*
+/F1 10.5 Tf (  alignment.) Tj T*
+/F1 10.5 Tf (- Seal leakage: a few drops per minute are normal while the seal beds in. A steady drip) Tj T*
+/F1 10.5 Tf (  means the seal must be replaced.) Tj T*
+/F1 10.5 Tf (- Motor current: within 10 percent of the nameplate value.) Tj T*
+T*
+/F2 13.5 Tf (3. Replacing the mechanical seal) Tj T*
+/F1 10.5 Tf (Part SEL-30 Mechanical pump seal 30 mm. Isolate the pump electrically and close both) Tj T*
+/F1 10.5 Tf (isolation valves. Drain the casing, remove the motor and impeller, and slide the old seal) Tj T*
+/F1 10.5 Tf (off the shaft. Clean the shaft, fit the new seal with a drop of water as lubricant \(never) Tj T*
+/F1 10.5 Tf (oil\) and reassemble.) Tj T*
+/F1 10.5 Tf (Do not touch the seal faces with bare fingers. Refill, vent the casing and check for leaks) Tj T*
+/F1 10.5 Tf (at full pressure.) Tj T*
+T*
+/F2 13.5 Tf (4. Parts) Tj T*
+/F1 10.5 Tf (- SEL-30 Mechanical pump seal 30 mm, quantity per change: 1.) Tj T*
+/F1 10.5 Tf (- CAP-45 Run capacitor 45 uF.) Tj T*
+T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+6 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000121 00000 n 
+0000000257 00000 n 
+0000001867 00000 n 
+0000001964 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+2066
+%%EOF

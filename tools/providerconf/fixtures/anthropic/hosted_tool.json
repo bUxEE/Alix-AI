@@ -1,0 +1,14 @@
+{
+  "id": "msg_01FixtureHost0001",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-haiku-4-5-20251001",
+  "content": [
+    {"type": "server_tool_use", "id": "srvtoolu_01Fixture", "name": "web_search", "input": {"query": "clinic hours"}},
+    {"type": "web_search_tool_result", "tool_use_id": "srvtoolu_01Fixture", "content": []},
+    {"type": "text", "text": "Found it."}
+  ],
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "usage": {"input_tokens": {{IN}}, "output_tokens": {{OUT}}}
+}

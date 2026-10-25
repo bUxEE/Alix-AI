@@ -1,0 +1,268 @@
+# AlixAI production stack: the alixai service and its private LocalAI runtime (M5-01).
+#
+# Master plan 16.1 and 16.2, packaged:
+#   - AlixAI and LocalAI run as different, non-root OS identities (65532 and 10001), each with a read-only
+#     root filesystem, every capability dropped and no-new-privileges
+#   - LocalAI is on an internal network, has no `ports` and is never published; the only way to it is the
+#     fixed forwarder in the `anchor` container
+#   - outbound traffic is denied: LocalAI, the anchor and AlixAI live on networks that are `internal: true`, which
+#     Docker gives no route out. The one published port is the host loopback; it is carried in by `relay`, which
+#     is also on the only network that is not internal and can dial one thing, the anchor.
+#     compose.external.yaml is the opt-in that changes this
+#   - start order is healthcheck-gated, no init container: localai -> anchor -> alixai -> relay
+#   - data lives in bind mounts under ./data, never named or anonymous volumes
+#
+# Why the anchor exists. AlixAI refuses a plaintext LocalAI endpoint that is not loopback (SEC-065) and a
+# listener beyond loopback without TLS (SEC-093), so it must dial 127.0.0.1:8080 and listen on 127.0.0.1:7470.
+# The anchor owns the network namespace AlixAI runs in (network_mode: service:anchor). Inside it
+# alixai-netctl forwards 127.0.0.1:8080 to the LocalAI container and 7471 to AlixAI's loopback listener.
+# Docker cannot publish a port of an internal network, hence the relay. Both hops are plaintext, over
+# bridges that no other container joins and that have no route out; the host side stays on 127.0.0.1.
+#
+# Profiles are override files: -f compose.yaml -f compose.lite.yaml (or .balanced.yaml, .4g.yaml).
+# Opt-in overrides: compose.external.yaml (outbound for External mode), compose.noexternal.yaml (image
+# without external-provider code). Plain Compose syntax only, so `podman compose` runs it as well; the
+# rootless Podman production path is ../quadlet.
+#
+# First start: README.md "Prepare the host" (directories, owners, API key, provisioned models).
+
+name: alixai-stack
+
+services:
+  localai:
+    # tag is informational, the digest is what is pulled. Same pin as deploy/container/localai/compose.yaml.
+    image: docker.io/localai/localai:v4.10.0@sha256:0632c21ddbe440bb71bc7aa744796c227a51658641b216290e86d6894e1c705b
+    container_name: alixai-localai
+    user: "10001:10001"
+    # Guard wrapper of M0-08: refuses a missing or weak API key, a writable /configuration, an unwritable data dir
+    # and a debug log level, then execs the image's own entrypoint. Invoked through bash so it needs no exec bit.
+    entrypoint: ["/bin/bash", "/alixai/entrypoint.sh"]
+    command: ["run"]
+    expose:
+      - "8080"
+    networks:
+      - backend
+    environment:
+      # --- authentication: one shared key; a legacy LocalAI key is full admin ---
+      LOCALAI_API_KEY: ${LOCALAI_API_KEY:?set LOCALAI_API_KEY in .env (cp .env.example .env, then openssl rand -hex 32)}
+      LOCALAI_SUBTLE_KEY_COMPARISON: "true"
+      LOCALAI_AUTH: "false"
+      # --- network: all interfaces of its own container; the container is on an internal network, unpublished ---
+      LOCALAI_ADDRESS: ":8080"
+      LOCALAI_CORS: "false"
+      # --- storage: the four paths the image declares as VOLUMEs, all bound below ---
+      LOCALAI_MODELS_PATH: /models
+      LOCALAI_BACKENDS_PATH: /backends
+      LOCALAI_DATA_PATH: /data
+      LOCALAI_CONFIG_DIR: /configuration
+      # --- models and backends: provisioned on the host (README.md); the pins are re-checked at every start ---
+      LOCALAI_MODELS_CONFIG_FILE: /configuration/models.yaml
+      LOCALAI_BACKEND_GALLERIES: '[{"name":"alixai-pinned","url":"file:///backends/alixai-backend-gallery.yaml"}]'
+      LOCALAI_EXTERNAL_BACKENDS: ${LOCALAI_EXTERNAL_BACKENDS:-cpu-llama-cpp}
+      LOCALAI_AUTO_UPGRADE_BACKENDS: "false"
+      LOCALAI_REQUIRE_BACKEND_INTEGRITY: ${LOCALAI_REQUIRE_BACKEND_INTEGRITY:-false}
+      # --- upstream surfaces AlixAI does not use ---
+      LOCALAI_DISABLE_WEBUI: "true"
+      LOCALAI_DISABLE_RUNTIME_SETTINGS: "true"
+      LOCALAI_DISABLE_GALLERY_ENDPOINT: "true"
+      LOCALAI_GALLERIES: "[]"
+      LOCALAI_AUTOLOAD_GALLERIES: "false"
+      LOCALAI_AUTOLOAD_BACKEND_GALLERIES: "false"
+      LOCALAI_DISABLE_MCP: "true"
+      LOCALAI_DISABLE_AGENTS: "true"
+      LOCALAI_DISABLE_ASSISTANT: "true"
+      LOCALAI_P2P: "false"
+      LOCALAI_FEDERATED: "false"
+      LOCALAI_DISTRIBUTED: "false"
+      LOCALAI_ENABLE_TRACING: "false"
+      # --- memory: the profile files set the resident-backend default of their profile ---
+      LOCALAI_MAX_ACTIVE_BACKENDS: ${LOCALAI_MAX_ACTIVE_BACKENDS:-2}
+      LOCALAI_WATCHDOG_IDLE: "true"
+      LOCALAI_WATCHDOG_IDLE_TIMEOUT: ${LOCALAI_WATCHDOG_IDLE_TIMEOUT:-15m}
+      # info only: at debug and trace LocalAI logs every completion body (HC-34); the guard refuses both.
+      LOCALAI_LOG_LEVEL: info
+      # Guard switch of entrypoint.sh, not a LocalAI setting: /models is mounted :ro below (HC-24).
+      ALIXAI_MODELS_READONLY: "true"
+    volumes:
+      # Provisioned before the first start and read-only here: a compromised runtime cannot rewrite a model.
+      - ./data/localai/models:/models:ro
+      - ./data/localai/backends:/backends
+      # the pinned backend catalogue, INSIDE the backends directory (M0-13 F7); read-only
+      - ${ALIXAI_LOCALAI_CONFIG:-../localai/config}/backend-gallery.yaml:/backends/alixai-backend-gallery.yaml:ro
+      - ./data/localai/state:/data
+      # LocalAI hot-applies runtime_settings.json and api_keys.json from here: nothing may be writable
+      - ${ALIXAI_LOCALAI_CONFIG:-../localai/config}:/configuration:ro
+      - ../localai/entrypoint.sh:/alixai/entrypoint.sh:ro
+    tmpfs:
+      - /tmp
+      - /run/localai
+    read_only: true
+    healthcheck:
+      # /readyz is exempt from the API key. start_period covers the sha256 re-check of the model files and
+      # the backend start; nothing is downloaded here, the stack has no route out.
+      test: ["CMD", "curl", "-fsS", "-m", "5", "http://127.0.0.1:8080/readyz"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 10m
+    restart: unless-stopped
+    stop_grace_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 512
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    labels:
+      ai.alixai.component: localai
+
+  # Owns the network namespace of alixai and forwards its two loopback paths. Starts when LocalAI is ready,
+  # and its own health check goes through the forwarder to LocalAI's /readyz, so "anchor healthy" means
+  # "AlixAI can reach LocalAI". One process, no data, no secrets.
+  anchor:
+    build:
+      context: ../../..
+      dockerfile: deploy/container/alixai/Dockerfile
+      target: netctl
+    container_name: alixai-anchor
+    user: "65534:65534"
+    command: ["forward", "127.0.0.1:8080=localai:8080", "0.0.0.0:7471=127.0.0.1:7470"]
+    networks:
+      - backend
+      - front
+    depends_on:
+      localai:
+        condition: service_healthy
+    read_only: true
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/alixai-netctl", "probe", "http://127.0.0.1:8080/readyz"]
+      interval: 10s
+      timeout: 6s
+      retries: 6
+      start_period: 30s
+    restart: unless-stopped
+    stop_grace_period: 5s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 64m
+    memswap_limit: 64m
+    cpus: 0.5
+    pids_limit: 64
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    labels:
+      ai.alixai.component: anchor
+
+  alixai:
+    build:
+      context: ../../..
+      dockerfile: deploy/container/alixai/Dockerfile
+      target: alixai
+    container_name: alixai
+    user: "65532:65532"
+    # AlixAI lives inside the anchor's network namespace: it dials LocalAI at 127.0.0.1:8080 and listens on
+    # 127.0.0.1:7470, as the adapter and the gateway require. No ports or networks can be set here.
+    network_mode: "service:anchor"
+    environment:
+      # The key LocalAI checks; localai.api_key_ref in config/alixai.yaml reads it from here. Never in the file.
+      LOCALAI_API_KEY: ${LOCALAI_API_KEY:?set LOCALAI_API_KEY in .env (cp .env.example .env, then openssl rand -hex 32)}
+    volumes:
+      - ./config/alixai.yaml:/etc/alixai/alixai.yaml:ro
+      # The database, document index, key files and audit log. Owner-only (0700), owned by 65532.
+      - ./data/alixai:/var/lib/alixai
+      # AlixAI re-hashes every model it is configured to use before the first request (SEC-063): read-only.
+      - ./data/localai/models:/models:ro
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m
+    read_only: true
+    depends_on:
+      anchor:
+        condition: service_healthy
+    healthcheck:
+      # /healthz: the process serves. /readyz is the operator's signal (store, models, LocalAI, warm-up) and
+      # may stay 503 until the first model call, so it must not gate the start order.
+      test: ["CMD", "/usr/local/bin/alixai-netctl", "probe", "http://127.0.0.1:7470/healthz"]
+      interval: 10s
+      timeout: 6s
+      retries: 6
+      start_period: 5m
+    restart: unless-stopped
+    stop_grace_period: 20s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 512m
+    memswap_limit: 512m
+    cpus: 1
+    pids_limit: 256
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    labels:
+      ai.alixai.component: alixai
+
+  # The published port. It forwards bytes to the anchor and decides nothing: TLS, authentication and every
+  # policy are AlixAI's. It starts last, so the host port opens only when AlixAI answers.
+  relay:
+    build:
+      context: ../../..
+      dockerfile: deploy/container/alixai/Dockerfile
+      target: netctl
+    container_name: alixai-relay
+    user: "65534:65534"
+    command: ["forward", "0.0.0.0:7470=anchor:7471"]
+    ports:
+      - "127.0.0.1:${ALIXAI_PORT:-7470}:7470"
+    networks:
+      - front
+      - edge
+    depends_on:
+      alixai:
+        condition: service_healthy
+    read_only: true
+    healthcheck:
+      # through the relay, the anchor and the loopback listener of AlixAI
+      test: ["CMD", "/usr/local/bin/alixai-netctl", "probe", "http://127.0.0.1:7470/healthz"]
+      interval: 10s
+      timeout: 6s
+      retries: 6
+      start_period: 15s
+    restart: unless-stopped
+    stop_grace_period: 5s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 64m
+    memswap_limit: 64m
+    cpus: 0.5
+    pids_limit: 64
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    labels:
+      ai.alixai.component: relay
+
+networks:
+  # LocalAI <-> anchor. No route out, no host access, nothing else joins it.
+  backend:
+    internal: true
+  # anchor <-> relay. Same.
+  front:
+    internal: true
+  # relay <-> the host's published port. The only network with a route out; the relay dials nothing but the anchor.
+  edge: {}

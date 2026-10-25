@@ -1,0 +1,270 @@
+{
+  "name": "ui_tool_call",
+  "description": "A UI tool the client declared (highlightRow) and the host registered for the application: the model proposes a call after answering, the engine checks the arguments against the declared schema, and the run sends it as one tool call (START with the tool's name, ARGS, END) before it finishes. It is an instruction to the client's screen, never to the application: nothing is prepared or committed.",
+  "protocol": "AG-UI 1.0 (@ag-ui/core 1.0.1)",
+  "source": "engine",
+  "request": {
+    "method": "POST",
+    "path": "/v1/agui",
+    "body": {
+      "context": [],
+      "forwardedProps": {},
+      "messages": [
+        {
+          "content": "show item item-1",
+          "id": "m1",
+          "role": "user"
+        }
+      ],
+      "runId": "run_ui_call",
+      "state": {},
+      "threadId": "ses_test_01",
+      "tools": [
+        {
+          "description": "Highlights one row of the table the user is looking at.",
+          "name": "highlightRow",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "rowId": {
+                "type": "string",
+                "maxLength": 16
+              },
+              "color": {
+                "type": "string",
+                "enum": [
+                  "yellow",
+                  "red"
+                ]
+              }
+            },
+            "required": [
+              "rowId"
+            ],
+            "additionalProperties": false
+          }
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 200,
+    "content_type": "text/event-stream",
+    "sse_file": "ui_tool_call.sse",
+    "ids": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7"
+    ],
+    "event_types": [
+      "RUN_STARTED",
+      "STATE_DELTA",
+      "STEP_STARTED",
+      "STEP_FINISHED",
+      "STEP_STARTED",
+      "STEP_FINISHED",
+      "STEP_STARTED",
+      "ACTIVITY_SNAPSHOT",
+      "STEP_FINISHED",
+      "STEP_STARTED",
+      "STEP_FINISHED",
+      "STEP_STARTED",
+      "STEP_FINISHED",
+      "CUSTOM",
+      "TEXT_MESSAGE_START",
+      "TEXT_MESSAGE_CONTENT",
+      "TEXT_MESSAGE_END",
+      "STATE_DELTA",
+      "TOOL_CALL_START",
+      "TOOL_CALL_ARGS",
+      "TOOL_CALL_END",
+      "CUSTOM",
+      "RUN_FINISHED"
+    ],
+    "events": [
+      {
+        "type": "RUN_STARTED",
+        "threadId": "ses_test_01",
+        "runId": "run_ui_call"
+      },
+      {
+        "type": "STATE_DELTA",
+        "delta": [
+          {
+            "op": "add",
+            "path": "/alixai",
+            "value": {
+              "pending": null
+            }
+          }
+        ]
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "interpreting"
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "interpreting"
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "validating"
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "validating"
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "tool_call"
+      },
+      {
+        "type": "ACTIVITY_SNAPSHOT",
+        "messageId": "act_trn_01J00000000000000000000001_tool_call",
+        "activityType": "alixai.progress",
+        "content": {
+          "capabilityId": "items.get",
+          "stage": "tool_call",
+          "state": "completed"
+        }
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "tool_call"
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "generating"
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "generating"
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "verifying"
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "verifying"
+      },
+      {
+        "type": "CUSTOM",
+        "name": "alixai.directive",
+        "value": {
+          "turn_id": "trn_01J00000000000000000000001",
+          "capability_id": "items.get",
+          "act": "present_result",
+          "facts": [
+            {
+              "field": "name",
+              "value": {
+                "kind": "text",
+                "value": "gadget"
+              }
+            }
+          ],
+          "must_state": [
+            "name"
+          ],
+          "missing_fields": [],
+          "invalid_fields": [],
+          "allowed_suggestions": [],
+          "confirmation": {
+            "mode": "none",
+            "bindings": []
+          },
+          "permitted_next_actions": [
+            {
+              "action": "invoke_capability",
+              "capability_id": "items.create",
+              "label": "Create another item"
+            }
+          ],
+          "sources": []
+        }
+      },
+      {
+        "type": "TEXT_MESSAGE_START",
+        "messageId": "msg_trn_01J00000000000000000000001_1",
+        "role": "assistant"
+      },
+      {
+        "type": "TEXT_MESSAGE_CONTENT",
+        "messageId": "msg_trn_01J00000000000000000000001_1",
+        "delta": "The item is named gadget. I highlighted its row."
+      },
+      {
+        "type": "TEXT_MESSAGE_END",
+        "messageId": "msg_trn_01J00000000000000000000001_1"
+      },
+      {
+        "type": "STATE_DELTA",
+        "delta": [
+          {
+            "op": "replace",
+            "path": "/alixai/pending",
+            "value": {
+              "capabilityId": "items.get",
+              "collectedFields": [
+                {
+                  "name": "item_id",
+                  "origin": "user_turn"
+                }
+              ],
+              "expiresAt": "2026-10-02T12:30:00Z",
+              "kind": "goal",
+              "missingFields": [],
+              "phase": "success"
+            }
+          }
+        ]
+      },
+      {
+        "type": "TOOL_CALL_START",
+        "toolCallId": "alixai_ui_trn_01J00000000000000000000001",
+        "toolCallName": "highlightRow"
+      },
+      {
+        "type": "TOOL_CALL_ARGS",
+        "toolCallId": "alixai_ui_trn_01J00000000000000000000001",
+        "delta": "{\"color\":\"yellow\",\"rowId\":\"item-1\"}"
+      },
+      {
+        "type": "TOOL_CALL_END",
+        "toolCallId": "alixai_ui_trn_01J00000000000000000000001"
+      },
+      {
+        "type": "CUSTOM",
+        "name": "alixai.suggestions",
+        "value": {
+          "suggestions": [
+            {
+              "title": "Create an item",
+              "message": "Create an item named widget, quantity 3, small",
+              "capabilityId": "items.create"
+            }
+          ]
+        }
+      },
+      {
+        "type": "RUN_FINISHED",
+        "threadId": "ses_test_01",
+        "runId": "run_ui_call",
+        "result": {
+          "finishReason": "completed",
+          "turnId": "trn_01J00000000000000000000001"
+        },
+        "outcome": {
+          "type": "success"
+        }
+      }
+    ]
+  }
+}

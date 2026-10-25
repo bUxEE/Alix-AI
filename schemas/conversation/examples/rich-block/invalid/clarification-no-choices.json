@@ -1,0 +1,8 @@
+{
+  "type": "clarification_choices",
+  "field": "slot_start",
+  "prompt": "Which time suits you?",
+  "answer_kind": "choice",
+  "allow_free_text": false,
+  "choices": []
+}

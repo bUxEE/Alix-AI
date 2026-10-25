@@ -1,0 +1,18 @@
+{
+  "evidence_id": "e1",
+  "rank": 1,
+  "source_id": "src_01J0000000000000000000000A",
+  "display_name": "Clinic cancellation policy",
+  "version": "rev-12",
+  "locator": {
+    "page": 3,
+    "section": "Late cancellations"
+  },
+  "availability": "available",
+  "staleness": "current",
+  "open_ref": {
+    "kind": "url",
+    "url": "https://clinic.example/policy.pdf"
+  },
+  "excerpt": "Appointments can be cancelled free of charge up to 24 hours before the start."
+}

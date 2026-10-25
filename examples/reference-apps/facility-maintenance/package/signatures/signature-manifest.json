@@ -1,0 +1,240 @@
+{
+  "format": "alixai.signature-manifest/v1",
+  "signed": {
+    "application_id": "facility-maintenance",
+    "package_version": "1.0.0",
+    "created_at": "2026-10-02T00:00:00Z",
+    "hash_algorithm": "sha256",
+    "files": [
+      {
+        "path": "alixai.yaml",
+        "sha256": "7a60554908be7eafc741a512a07e00d7340a00b9493ed7be7da5db2d2b3a8062",
+        "size": 3678
+      },
+      {
+        "path": "capabilities/assets-decommission.yaml",
+        "sha256": "b15e5bc74a43e0e799708e384ec6803e44c144dcf99e21fddc75836563a4a8a5",
+        "size": 5817
+      },
+      {
+        "path": "capabilities/workorders-assign.yaml",
+        "sha256": "0a4eb1f9f086be8e762d92eae569c775ffb540c8c1c4ac2cabb1ca2f0f15d786",
+        "size": 6361
+      },
+      {
+        "path": "capabilities/workorders-close.yaml",
+        "sha256": "3ce327ae3dfc7419dedc6d8b54af97f2d8408e40ab3322da6152f2e08f208670",
+        "size": 6916
+      },
+      {
+        "path": "capabilities/workorders-create.yaml",
+        "sha256": "3e165eafbe3102aa681410366d9ec0dad9c8870e8d2de801683cf9c863fac042",
+        "size": 6011
+      },
+      {
+        "path": "capabilities/workorders-list.yaml",
+        "sha256": "921f5e4b400dff5516caca8eb148edc4fc8fa504ee503984f027f28acd39f91e",
+        "size": 5086
+      },
+      {
+        "path": "conversation-contracts/assets-decommission.en.yaml",
+        "sha256": "b6de90704b9d511f2b42da4d534d8f38db08b1ce6036ac75f1413beafbc58871",
+        "size": 2753
+      },
+      {
+        "path": "conversation-contracts/assets-decommission.it.yaml",
+        "sha256": "59866162587d94f8893d645a7f898589d5f30d526a6521ea89e1a26ae4597a58",
+        "size": 2887
+      },
+      {
+        "path": "conversation-contracts/workorders-assign.en.yaml",
+        "sha256": "98a09ccccc982df20dfcca4592f53f1dd110c0f6d6cc155d099b958ca341ced8",
+        "size": 2890
+      },
+      {
+        "path": "conversation-contracts/workorders-assign.it.yaml",
+        "sha256": "da6515eb852697bb4412b8fe05d63a3886408885e3fa171356800a0c54b66f1b",
+        "size": 3050
+      },
+      {
+        "path": "conversation-contracts/workorders-close.en.yaml",
+        "sha256": "f20b939543859d513274bb177544cbd66ef8d74342df3a38aa1b0fdc57db747c",
+        "size": 3003
+      },
+      {
+        "path": "conversation-contracts/workorders-close.it.yaml",
+        "sha256": "4a58ae50ec927e0a23f055dccfef3dc92e5bd0c3b8918c7989b26921a45e7edf",
+        "size": 3202
+      },
+      {
+        "path": "conversation-contracts/workorders-create.en.yaml",
+        "sha256": "6ac76185c3755d0b2f81f5f7982c682a7852e2e394f29793ea348572b9f7f41b",
+        "size": 2397
+      },
+      {
+        "path": "conversation-contracts/workorders-create.it.yaml",
+        "sha256": "219c50e4824625df84afddd68fa9afd7f33c9eca8efbc23a3db893656cc48c2d",
+        "size": 2539
+      },
+      {
+        "path": "conversation-contracts/workorders-list.en.yaml",
+        "sha256": "21064b3defe71d15cd08b8c9f293cd9817d9f7f7af68cc17ccd14b498b0b729b",
+        "size": 2125
+      },
+      {
+        "path": "conversation-contracts/workorders-list.it.yaml",
+        "sha256": "d150a006ec80ce57e42c801d5c705df53640c2602cb19edc400a992c820d81ca",
+        "size": 2188
+      },
+      {
+        "path": "documentation/assets/decommission.md",
+        "sha256": "bf4b4b50428da0ec0ad0f3e5ac8f60112b10d3a31afb69ba695c2b572d414aef",
+        "size": 5294
+      },
+      {
+        "path": "documentation/index.yaml",
+        "sha256": "7c989b22166b086951b024c1f63ff98e4e72f683713b5b8a642f28ed9fcb7191",
+        "size": 35798
+      },
+      {
+        "path": "documentation/workorders/assign.md",
+        "sha256": "60dffd50e0d62023fe89d601fb4a5ffff6f6b117320d63be6644cc6b81224a91",
+        "size": 5275
+      },
+      {
+        "path": "documentation/workorders/close.md",
+        "sha256": "cbf3109871f26afb7bf684b6e6f7a026e4ccfaf44b2bb30678c2c83ee226b118",
+        "size": 5692
+      },
+      {
+        "path": "documentation/workorders/create.md",
+        "sha256": "ae0fe881a586f18a612ad18eac33dfa6933825838fb49388259d94ab1d60c7ac",
+        "size": 4896
+      },
+      {
+        "path": "documentation/workorders/list.md",
+        "sha256": "cdf37654e7d93eefbc23ec12355f50473fce9ffd2bb00e7bf60cd74031317bb1",
+        "size": 3916
+      },
+      {
+        "path": "policies/default-access.yaml",
+        "sha256": "39ca54c5c22ef7462728d71efadb91a86d778998c1e00a7aae634a583daddc15",
+        "size": 1214
+      },
+      {
+        "path": "rag-sources/equipment-manuals.yaml",
+        "sha256": "ff67752d2b0428981814c176696703dfa9b1a308a470c5e47b84a71ad3daa3af",
+        "size": 1145
+      },
+      {
+        "path": "rag-sources/maintenance-history.yaml",
+        "sha256": "030bd0872c6d94a244882b2809aaa9f61e02ce7e478c0cc64c7d1a6af3b57904",
+        "size": 1325
+      },
+      {
+        "path": "schemas/adapters/facility-api.yaml",
+        "sha256": "1a037bd5aef2d611164cdec00f88bd741226e51c6660c7d938c32bd2958946d2",
+        "size": 2369
+      },
+      {
+        "path": "schemas/assets.decommission.prepared.result.schema.json",
+        "sha256": "c454fec8336e74b6526e2ff4aa6cbd506cc51f62e46036ded1f9ad88d43c0b15",
+        "size": 9638
+      },
+      {
+        "path": "schemas/assets.decommission.receipt.result.schema.json",
+        "sha256": "85e43ed8c074dec0b9f44f49230046530be906b7ebb6d605bd72b7b264500c0d",
+        "size": 6944
+      },
+      {
+        "path": "schemas/assets.decommission.validation.result.schema.json",
+        "sha256": "f14c1332958031e5bdeade370827863a5085b81146d93f20bf6d58d406fe33de",
+        "size": 6465
+      },
+      {
+        "path": "schemas/facility-api.openapi.yaml",
+        "sha256": "9ce0d48f37602a30cbee4bb507183b86c51aa4b2501f1854d4d771281f4fd230",
+        "size": 44970
+      },
+      {
+        "path": "schemas/resolve.result.schema.json",
+        "sha256": "97bc458956a31c7940a8c117a8010905509ba6ef51a2417b0e97b95b0a8507b0",
+        "size": 7083
+      },
+      {
+        "path": "schemas/workorders.assign.prepared.result.schema.json",
+        "sha256": "29e8ba92afcdca67d9f6fadb750245bd849f2397230aa4729b1b1fb8a3147746",
+        "size": 9649
+      },
+      {
+        "path": "schemas/workorders.assign.receipt.result.schema.json",
+        "sha256": "90d90dba53561715bb4daad45e42af92d06a9afdf236291f54340d17f07d4fdc",
+        "size": 8612
+      },
+      {
+        "path": "schemas/workorders.assign.validation.result.schema.json",
+        "sha256": "6c1b316b27ca3cbae1bc94185545c809221f98c01162370ccd7a22c4ce2e5a6c",
+        "size": 6948
+      },
+      {
+        "path": "schemas/workorders.close.prepared.result.schema.json",
+        "sha256": "565a0c0fcb0b0dd4eebeeefdcc62c15d762d213b66d2330d553bd3ebc006f697",
+        "size": 10639
+      },
+      {
+        "path": "schemas/workorders.close.receipt.result.schema.json",
+        "sha256": "32cc5b9bdedbd3459aa5398d60305d689dd89f468e703bcda4a4be162a5c5215",
+        "size": 7926
+      },
+      {
+        "path": "schemas/workorders.close.validation.result.schema.json",
+        "sha256": "0f89699bcc2ca00baeec80b7fd80f95beceeae6eea917cbefe19f7099d2a214b",
+        "size": 7946
+      },
+      {
+        "path": "schemas/workorders.create.prepared.result.schema.json",
+        "sha256": "1afd4c03023230d3d5ab1c8e090b732d70abf3059f0c4bc5abd8664faa805338",
+        "size": 9599
+      },
+      {
+        "path": "schemas/workorders.create.receipt.result.schema.json",
+        "sha256": "2eb6de7072262681439602e503d6aa8b3115a77ba1d47542ef7e4408fbb0e22c",
+        "size": 7923
+      },
+      {
+        "path": "schemas/workorders.create.validation.result.schema.json",
+        "sha256": "5a59c587034df431b4f41e79b67a0e1a1b3dc42dddaa8f1aed3264e919aa4c7f",
+        "size": 6932
+      },
+      {
+        "path": "schemas/workorders.list.result.schema.json",
+        "sha256": "a9496a526b76d50573cdcb5610653900c64d2c08a628281b92a4c1442b8abc6d",
+        "size": 8514
+      },
+      {
+        "path": "terminology/facility-terms.yaml",
+        "sha256": "f4d33a6a1cee5a45c7056c1a128234fa3bdf2dd25037b96f0e051535bb619d4b",
+        "size": 5656
+      },
+      {
+        "path": "tests/facility-safety.yaml",
+        "sha256": "285f9bb9d98702b83accbcbd01c85b2563663099b0ef72a393cfd151ac94ead4",
+        "size": 14771
+      },
+      {
+        "path": "tests/seed/facility.json",
+        "sha256": "ec5e37408201827212be0d299ac644b04693aed55dd19dbd7e26fd23754f53d3",
+        "size": 3433
+      }
+    ]
+  },
+  "signatures": [
+    {
+      "key_id": "alixai-test-only-publisher",
+      "algorithm": "ed25519",
+      "signature": "nLUUbmbXXXrthISgQPaH7QoUTAcOsYeEcaKvYr4itl0XZDv+/sAWDwoi4Bj5f+Ic7Um7f62Lnu6AfWJunIz+Cw==",
+      "signed_at": "2026-10-02T00:00:00Z",
+      "expires_at": "2036-10-01T00:00:00Z"
+    }
+  ]
+}

@@ -1,0 +1,324 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:application-package:policy:v1",
+  "title": "Host policy",
+  "description": "The host application's declarative policy for AlixAI (master plan 4.3: action risk classification overrides; 10.2; 11.4). Three unconditional kinds of rule: which roles may use which capabilities, raises of the risk level, and which fields the model may see; plus, optionally, conditional rules in the closed policy/v1 format of ADR-0017 (urn:alixai:schema:policy:host-policy:v1). A policy is purely declarative: it has no expression language, no regular expressions, no wildcards and no references, and a conditional rule can only deny, raise the risk level or hide fields, never grant. Every rule can only narrow or raise: a policy cannot grant a capability the package does not declare, lower a risk level or lower a platform-enforced minimum, and anything not granted is denied. One or more files under policies/; a role granted in two role_grants entries, a capability with two risk_overrides, two field_projection rules that overlap or a rule ID used twice is a conflict reported by the loader. Authored as YAML; this schema validates the parsed JSON form. A document with neither format nor rules is the original M1-01 policy and remains valid.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["policy_id", "role_grants", "risk_overrides", "field_projection"],
+  "properties": {
+    "format": {
+      "description": "Optional. The policy format and its major version. The only defined value is policy/v1 (ADR-0017), which is also what a document without this key is. A loader that sees any other value refuses the document.",
+      "const": "policy/v1"
+    },
+    "policy_id": {
+      "description": "The policy ID, unique in the package.",
+      "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+    },
+    "description": {
+      "description": "Optional note on what the policy is for.",
+      "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/text"
+    },
+    "role_grants": {
+      "description": "Which roles may use which capabilities. A capability reaches a model only if the verified context's roles include a role granted here AND the context token's capability scopes include it (least capability). At least one grant: a policy that grants nothing denies everything and is not a policy.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 256,
+      "items": { "$ref": "#/$defs/roleGrant" }
+    },
+    "risk_overrides": {
+      "description": "Raises of a capability's risk level. May be empty.",
+      "type": "array",
+      "maxItems": 256,
+      "items": { "$ref": "#/$defs/riskOverride" }
+    },
+    "field_projection": {
+      "description": "Which fields of a capability the model may see, for least capability. A field not listed for the capability is withheld from model context (the application still receives it). May be empty: a capability without a projection exposes the fields it declares, except fields marked sensitive, which stay withheld until the current task needs them.",
+      "type": "array",
+      "maxItems": 256,
+      "items": { "$ref": "#/$defs/fieldProjection" }
+    },
+    "rules": {
+      "description": "Optional conditional rules of the policy/v1 format (ADR-0017); absent means none. Every rule narrows or raises and none grants: when its condition holds it denies the capability, raises its risk level to at least a value, or hides fields from the model. Rule IDs are unique across all policies of the package, and every role, capability and field a rule names must exist in the package (checked by the loader).",
+      "type": "array",
+      "maxItems": 256,
+      "items": { "$ref": "#/$defs/rule" }
+    }
+  },
+  "$defs": {
+    "roleGrant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "capabilities"],
+      "properties": {
+        "role": {
+          "description": "A role the manifest's tenancy.roles declares. Exact match.",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "capabilities": {
+          "description": "The capability IDs the role may use. Exact IDs from the manifest; wildcards do not exist. At least one.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": { "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/capabilityId" }
+        }
+      }
+    },
+    "riskOverride": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capability_id", "minimum_risk_level", "reason"],
+      "properties": {
+        "capability_id": {
+          "description": "The capability whose level is raised.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/capabilityId"
+        },
+        "minimum_risk_level": {
+          "description": "The level the capability is treated as having at least. The effective level is the highest of the capability's declared level, the platform floor and this value; a value below the declared level changes nothing and the loader reports it.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/riskLevel"
+        },
+        "reason": {
+          "description": "Why the host raises the level, for the audit trail.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/text"
+        }
+      }
+    },
+    "fieldProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capability_id", "model_visible_fields"],
+      "properties": {
+        "capability_id": {
+          "description": "The capability the projection applies to.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/capabilityId"
+        },
+        "roles": {
+          "description": "Optional. The roles the projection applies to. When absent it applies to every role that has no more specific projection for the capability.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier" }
+        },
+        "model_visible_fields": {
+          "description": "The only fields of the capability the model may see or propose. At least one. A required field missing here makes the capability unusable, which the loader reports.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName" }
+        }
+      }
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "capabilities",
+        "when",
+        "then",
+        "reason"
+      ],
+      "properties": {
+        "id": {
+          "description": "The rule ID, unique in the package. It appears in the audit record of every decision the rule influenced.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "capabilities": {
+          "description": "The capabilities the rule applies to. Exact IDs from the manifest; wildcards do not exist. At least one.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/capabilityId"
+          }
+        },
+        "when": {
+          "description": "The condition. Every key present must hold (logical AND). At least one key.",
+          "$ref": "#/$defs/condition"
+        },
+        "then": {
+          "description": "What the rule does when the condition holds: deny, or raise the risk level and hide fields.",
+          "$ref": "#/$defs/effect"
+        },
+        "reason": {
+          "description": "Why the host wants this, for the audit trail.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/text"
+        }
+      }
+    },
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "roles": {
+          "description": "Condition on the roles of the verified context.",
+          "$ref": "#/$defs/setCondition"
+        },
+        "scopes": {
+          "description": "Condition on the capability scopes of the context token (capability IDs, exact match).",
+          "$ref": "#/$defs/setCondition"
+        },
+        "tenants": {
+          "description": "Condition on the tenant ID of the verified context.",
+          "$ref": "#/$defs/valueCondition"
+        },
+        "workspaces": {
+          "description": "Condition on the workspace ID of the verified context.",
+          "$ref": "#/$defs/valueCondition"
+        },
+        "fields": {
+          "description": "Conditions on the field values of the call, keyed by capability field name. Evaluated when a call is prepared or committed, when the values are known; at exposure no values exist (see ADR-0017). A comparison on a value that is absent or of the wrong type is indeterminate and counts as a match, so a rule never silently fails to narrow; add present: true to a predicate to say that it applies only when the field is there.",
+          "type": "object",
+          "minProperties": 1,
+          "maxProperties": 16,
+          "propertyNames": {
+            "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/fieldPredicate"
+          }
+        }
+      }
+    },
+    "setCondition": {
+      "description": "Tests a set of values the context has several of. any: at least one listed value is present. all: every listed value is present. none: no listed value is present.",
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "any": {
+          "$ref": "#/$defs/identifierList"
+        },
+        "all": {
+          "$ref": "#/$defs/identifierList"
+        },
+        "none": {
+          "$ref": "#/$defs/identifierList"
+        }
+      }
+    },
+    "valueCondition": {
+      "description": "Tests a value the context has exactly one of. in: the value is listed. not_in: the value is not listed.",
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "in": {
+          "$ref": "#/$defs/identifierList"
+        },
+        "not_in": {
+          "$ref": "#/$defs/identifierList"
+        }
+      }
+    },
+    "identifierList": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+      }
+    },
+    "scalar": {
+      "description": "A comparison value: a string of at most 256 characters, a number or a boolean. Never null, an array or an object.",
+      "oneOf": [
+        {
+          "type": "string",
+          "maxLength": 256
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        }
+      ]
+    },
+    "fieldPredicate": {
+      "description": "Operators on one field, all of which must hold (logical AND), so a range is gte plus lt. eq and ne compare a string, number or boolean for equality; in and not_in test membership of a list; gt, gte, lt and lte compare numbers; present tests only whether the field has a value.",
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "eq": {
+          "$ref": "#/$defs/scalar"
+        },
+        "ne": {
+          "$ref": "#/$defs/scalar"
+        },
+        "in": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/scalar"
+          }
+        },
+        "not_in": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/scalar"
+          }
+        },
+        "gt": {
+          "type": "number"
+        },
+        "gte": {
+          "type": "number"
+        },
+        "lt": {
+          "type": "number"
+        },
+        "lte": {
+          "type": "number"
+        },
+        "present": {
+          "type": "boolean"
+        }
+      }
+    },
+    "effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "deny": {
+          "description": "Deny the capability. Takes precedence over every other outcome and cannot be combined with the other effects.",
+          "const": true
+        },
+        "risk_min": {
+          "description": "Raise the risk level of the capability to at least this value. The effective level is the highest of the declared level, the platform floor of the effect class, every risk override and every matching risk_min; no value here can lower anything. 1 to 3: a raise to 0 raises nothing and is not accepted.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3
+        },
+        "hide_fields": {
+          "description": "Fields the model must not see or propose when the rule applies. At least one.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+          }
+        }
+      },
+      "if": {
+        "required": [
+          "deny"
+        ]
+      },
+      "then": {
+        "maxProperties": 1
+      }
+    }
+  }
+}

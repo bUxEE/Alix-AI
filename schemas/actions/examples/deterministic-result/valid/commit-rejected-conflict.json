@@ -1,0 +1,21 @@
+{
+  "operation": "commit",
+  "capability_id": "appointments.book",
+  "status": "rejected",
+  "identifiers": [],
+  "values": [],
+  "errors": [
+    {
+      "code": "conflict",
+      "field": "slot_start",
+      "message": "The slot was taken by another booking."
+    }
+  ],
+  "allowed_next_actions": [
+    {
+      "action": "invoke_capability",
+      "capability_id": "appointments.list_availability",
+      "label": "See other times"
+    }
+  ]
+}

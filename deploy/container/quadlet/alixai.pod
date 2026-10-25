@@ -1,0 +1,14 @@
+# The pod is the network namespace AlixAI runs in (the compose "anchor"): the alixai and alixai-anchor
+# containers share it. AlixAI dials LocalAI at 127.0.0.1:8080 and listens on 127.0.0.1:7470, as its adapter and
+# gateway require; the anchor forwards the first to the LocalAI container and the second to the relay.
+# The pod has no PublishPort and joins only internal networks: it has no route out and nothing outside can reach
+# it. external/ is the opt-in that changes the first half. Needs Podman 5 or later.
+[Pod]
+PodName=alixai
+Network=alixai-backend.network
+Network=alixai-front.network
+# the name the relay dials on the front network
+NetworkAlias=anchor
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,751 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:providers:conformance-report:v1",
+  "title": "Provider conformance report",
+  "description": "The result of running the AlixAI provider conformance suite (additive plan section 15) against one provider model at one exact version, as the registry records it in a profile last_conformance. The five groups are inference (15.1), control (15.2), RAG (15.3), multimodal (15.4) and operations (15.5); each is a closed object with one required member per bullet of the plan, 30 checks in all, so a missing check, a duplicate check and an invented check are all unrepresentable and the report reads against the plan one to one. A check passes or fails; only the image, file and audio checks of the multimodal group may be not_applicable, and not for a capability the profile declares. outcome is passed only if no check failed. \"No provider is production-qualified merely because it responds successfully to a basic chat request\": qualification in the registry requires a passed report for the exact model_id and model_version. The report is produced by the suite tool (alixai) from recorded fixtures or, human-gated, from live calls.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["report_id", "provider", "suite", "declared", "started_at", "completed_at", "outcome", "groups"],
+  "properties": {
+    "report_id": {
+      "description": "Report ID.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/reportId"
+    },
+    "provider": {
+      "description": "The exact provider, model and version the suite ran against.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/providerRef"
+    },
+    "suite": {
+      "description": "Which suite ran and how.",
+      "x-alixai-authority": "alixai",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "mode"],
+      "properties": {
+        "version": {
+          "description": "The suite version, MAJOR.MINOR.PATCH.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "mode": {
+          "description": "fixtures: recorded fixtures against a local mock server. live: real provider calls (human-gated).",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "enum": ["fixtures", "live"]
+        }
+      }
+    },
+    "declared": {
+      "description": "The multimodal capabilities the profile declared when the suite ran. A declared capability cannot be reported not_applicable.",
+      "x-alixai-authority": "alixai",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["image", "file", "audio"],
+      "properties": {
+        "image": {
+          "description": "The profile declares image input or output.",
+          "x-alixai-authority": "alixai",
+          "type": "boolean"
+        },
+        "file": {
+          "description": "The profile declares file input or output.",
+          "x-alixai-authority": "alixai",
+          "type": "boolean"
+        },
+        "audio": {
+          "description": "The profile declares audio input or output.",
+          "x-alixai-authority": "alixai",
+          "type": "boolean"
+        }
+      }
+    },
+    "started_at": {
+      "description": "When the run started.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    },
+    "completed_at": {
+      "description": "When the run finished. This is the date of the report.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    },
+    "outcome": {
+      "description": "passed only when no check failed; otherwise failed. A failed outcome never qualifies a profile.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "enum": ["passed", "failed"]
+    },
+    "groups": {
+      "description": "The five groups of additive plan section 15.",
+      "x-alixai-authority": "alixai",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inference", "control", "rag", "multimodal", "operations"],
+      "properties": {
+        "inference": {
+          "description": "Additive plan section 15.1: text generation and streaming; bounded context; structured output; cancellation and timeout; usage reporting; malformed and error mapping.",
+          "x-alixai-authority": "alixai",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "text_generation_and_streaming",
+            "bounded_context",
+            "structured_output",
+            "cancellation_and_timeout",
+            "usage_reporting",
+            "malformed_and_error_mapping"
+          ],
+          "properties": {
+            "text_generation_and_streaming": {
+              "description": "Text generation works and streamed deltas arrive in order.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/checkResult"
+            },
+            "bounded_context": {
+              "description": "The provider is held to the bounded context and output limits of the profile.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/checkResult"
+            },
+            "structured_output": {
+              "description": "Structured output conforms to the schema supplied.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/checkResult"
+            },
+            "cancellation_and_timeout": {
+              "description": "Cancellation and deadlines stop the request and are reported.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/checkResult"
+            },
+            "usage_reporting": {
+              "description": "Usage (toks_in, toks_out) is reported and maps to integer micro-unit cost.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/checkResult"
+            },
+            "malformed_and_error_mapping": {
+              "description": "Malformed responses and provider errors map to typed provider errors.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/checkResult"
+            }
+          }
+        },
+        "control": {
+          "description": "Additive plan section 15.2: typed TaskProposal generation; unknown-capability refusal; argument schema compliance; no direct adapter invocation; correct handling of the deterministic DialogueDirective and ActionReceipt; confirmation and cancellation behaviour.",
+          "x-alixai-authority": "alixai",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "typed_task_proposal",
+            "unknown_capability_refusal",
+            "argument_schema_compliance",
+            "no_direct_adapter_invocation",
+            "directive_and_receipt_handling",
+            "confirmation_and_cancellation"
+          ],
+          "properties": {
+            "typed_task_proposal": {
+              "description": "A typed TaskProposal is produced for an in-scope request.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/checkResult"
+            },
+            "unknown_capability_refusal": {
+              "description": "A request for a capability that is not offered is refused, not invented.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/checkResult"
+            },
+            "argument_schema_compliance": {
+              "description": "Proposed arguments comply with the capability argument schema.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/checkResult"
+            },
+            "no_direct_adapter_invocation": {
+              "description": "The provider cannot invoke an application adapter: tool calls are proposals only.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/checkResult"
+            },
+            "directive_and_receipt_handling": {
+              "description": "A deterministic DialogueDirective and ActionReceipt are verbalised without changing their facts.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/checkResult"
+            },
+            "confirmation_and_cancellation": {
+              "description": "Confirmation and cancellation turns are handled correctly.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/checkResult"
+            }
+          }
+        },
+        "rag": {
+          "description": "Additive plan section 15.3: authorized excerpt handling; source-reference preservation; no unsupported citations; prompt-injection resistance; local-only source enforcement; no path or credential leakage.",
+          "x-alixai-authority": "alixai",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "authorized_excerpt_handling",
+            "source_reference_preservation",
+            "no_unsupported_citations",
+            "prompt_injection_resistance",
+            "local_only_source_enforcement",
+            "no_path_or_cred_leakage"
+          ],
+          "properties": {
+            "authorized_excerpt_handling": {
+              "description": "Only authorised excerpts are used.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/checkResult"
+            },
+            "source_reference_preservation": {
+              "description": "Source references survive into the answer.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/checkResult"
+            },
+            "no_unsupported_citations": {
+              "description": "No citation is invented.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/checkResult"
+            },
+            "prompt_injection_resistance": {
+              "description": "Instructions inside an excerpt cannot change policy or scope.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/checkResult"
+            },
+            "local_only_source_enforcement": {
+              "description": "A local_only source never reaches the provider.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/checkResult"
+            },
+            "no_path_or_cred_leakage": {
+              "description": "No filesystem path or credential appears in any request or response.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/checkResult"
+            }
+          }
+        },
+        "multimodal": {
+          "description": "Additive plan section 15.4: image input and output where declared; file input and output references; audio input and output where declared; cancellation and partial-stream handling; sanitized rich response blocks.",
+          "x-alixai-authority": "alixai",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "image_input_output",
+            "file_input_output",
+            "audio_input_output",
+            "cancellation_and_partial_stream",
+            "sanitized_rich_blocks"
+          ],
+          "properties": {
+            "image_input_output": {
+              "description": "Image input and output, where the profile declares them.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/conditionalCheckResult"
+            },
+            "file_input_output": {
+              "description": "File input and output references, where the profile declares them.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/conditionalCheckResult"
+            },
+            "audio_input_output": {
+              "description": "Audio input and output, where the profile declares them.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/conditionalCheckResult"
+            },
+            "cancellation_and_partial_stream": {
+              "description": "Cancellation and partial streams are handled.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/checkResult"
+            },
+            "sanitized_rich_blocks": {
+              "description": "Provider rich output becomes sanitised AlixAI response blocks.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/checkResult"
+            }
+          }
+        },
+        "operations": {
+          "description": "Additive plan section 15.5: credentials never in client responses or logs; quota and budget enforcement; provider disablement; fallback and outage behaviour; tenant isolation; audit completeness; terms and capability profile validation.",
+          "x-alixai-authority": "alixai",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "creds_never_in_responses_or_logs",
+            "quota_and_budget_enforcement",
+            "provider_disablement",
+            "fallback_and_outage_behavior",
+            "tenant_isolation",
+            "audit_completeness",
+            "terms_and_capability_profile_validation"
+          ],
+          "properties": {
+            "creds_never_in_responses_or_logs": {
+              "description": "Credentials never appear in client responses or logs.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/checkResult"
+            },
+            "quota_and_budget_enforcement": {
+              "description": "Quota and budget limits stop external calls.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/checkResult"
+            },
+            "provider_disablement": {
+              "description": "Disabling the provider stops all calls.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/checkResult"
+            },
+            "fallback_and_outage_behavior": {
+              "description": "Fallback and outage behave as policy says, with no hidden fallback.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/checkResult"
+            },
+            "tenant_isolation": {
+              "description": "Requests and results never mix tenants.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/checkResult"
+            },
+            "audit_completeness": {
+              "description": "Every call leaves a complete audit record.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/checkResult"
+            },
+            "terms_and_capability_profile_validation": {
+              "description": "The terms and capability profile validate, and a stale profile is refused.",
+              "x-alixai-authority": "alixai",
+              "$ref": "#/$defs/checkResult"
+            }
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "description": "outcome passed means no check failed.",
+      "if": {
+        "required": ["outcome"],
+        "properties": {
+          "outcome": { "const": "passed" }
+        }
+      },
+      "then": {
+        "properties": {
+          "groups": {
+            "properties": {
+              "inference": {
+                "properties": {
+                  "text_generation_and_streaming": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  },
+                  "bounded_context": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  },
+                  "structured_output": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  },
+                  "cancellation_and_timeout": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  },
+                  "usage_reporting": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  },
+                  "malformed_and_error_mapping": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  }
+                }
+              },
+              "control": {
+                "properties": {
+                  "typed_task_proposal": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  },
+                  "unknown_capability_refusal": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  },
+                  "argument_schema_compliance": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  },
+                  "no_direct_adapter_invocation": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  },
+                  "directive_and_receipt_handling": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  },
+                  "confirmation_and_cancellation": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  }
+                }
+              },
+              "rag": {
+                "properties": {
+                  "authorized_excerpt_handling": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  },
+                  "source_reference_preservation": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  },
+                  "no_unsupported_citations": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  },
+                  "prompt_injection_resistance": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  },
+                  "local_only_source_enforcement": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  },
+                  "no_path_or_cred_leakage": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  }
+                }
+              },
+              "multimodal": {
+                "properties": {
+                  "image_input_output": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  },
+                  "file_input_output": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  },
+                  "audio_input_output": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  },
+                  "cancellation_and_partial_stream": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  },
+                  "sanitized_rich_blocks": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  }
+                }
+              },
+              "operations": {
+                "properties": {
+                  "creds_never_in_responses_or_logs": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  },
+                  "quota_and_budget_enforcement": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  },
+                  "provider_disablement": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  },
+                  "fallback_and_outage_behavior": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  },
+                  "tenant_isolation": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  },
+                  "audit_completeness": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  },
+                  "terms_and_capability_profile_validation": {
+                    "properties": {
+                      "result": {
+                        "not": { "const": "failed" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "A declared image capability is exercised: image_input_output cannot be not_applicable.",
+      "if": {
+        "required": ["declared"],
+        "properties": {
+          "declared": {
+            "required": ["image"],
+            "properties": {
+              "image": { "const": true }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "groups": {
+            "properties": {
+              "multimodal": {
+                "properties": {
+                  "image_input_output": {
+                    "properties": {
+                      "result": { "enum": ["passed", "failed"] }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "A declared file capability is exercised: file_input_output cannot be not_applicable.",
+      "if": {
+        "required": ["declared"],
+        "properties": {
+          "declared": {
+            "required": ["file"],
+            "properties": {
+              "file": { "const": true }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "groups": {
+            "properties": {
+              "multimodal": {
+                "properties": {
+                  "file_input_output": {
+                    "properties": {
+                      "result": { "enum": ["passed", "failed"] }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "A declared audio capability is exercised: audio_input_output cannot be not_applicable.",
+      "if": {
+        "required": ["declared"],
+        "properties": {
+          "declared": {
+            "required": ["audio"],
+            "properties": {
+              "audio": { "const": true }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "groups": {
+            "properties": {
+              "multimodal": {
+                "properties": {
+                  "audio_input_output": {
+                    "properties": {
+                      "result": { "enum": ["passed", "failed"] }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "checkResult": {
+      "description": "The result of one check that must always run.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["result", "reason"],
+      "properties": {
+        "result": {
+          "description": "passed or failed. There is no way to skip this check.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "enum": ["passed", "failed"]
+        },
+        "reason": {
+          "description": "A fixed reason code when the check failed, else null. Never free text and never a quotation of provider output.",
+          "x-alixai-authority": "alixai",
+          "oneOf": [
+            { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/reasonCode" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "description": "A failure names its reason; a pass has none.",
+          "if": {
+            "required": ["result"],
+            "properties": {
+              "result": { "const": "failed" }
+            }
+          },
+          "then": {
+            "properties": {
+              "reason": { "type": "string" }
+            }
+          },
+          "else": {
+            "properties": {
+              "reason": { "type": "null" }
+            }
+          }
+        }
+      ]
+    },
+    "conditionalCheckResult": {
+      "description": "The result of a check that applies only where the profile declares the capability. not_applicable is allowed only here and never for a declared capability.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["result", "reason"],
+      "properties": {
+        "result": {
+          "description": "passed, failed, or not_applicable when the profile does not declare the capability.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "enum": ["passed", "failed", "not_applicable"]
+        },
+        "reason": {
+          "description": "A fixed reason code when the check failed, else null.",
+          "x-alixai-authority": "alixai",
+          "oneOf": [
+            { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/reasonCode" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "description": "A failure names its reason; a pass or not_applicable has none.",
+          "if": {
+            "required": ["result"],
+            "properties": {
+              "result": { "const": "failed" }
+            }
+          },
+          "then": {
+            "properties": {
+              "reason": { "type": "string" }
+            }
+          },
+          "else": {
+            "properties": {
+              "reason": { "type": "null" }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

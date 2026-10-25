@@ -1,0 +1,38 @@
+# Adapter configuration of the OpenAPI endpoint facility-api. Its format is owned by the OpenAPI
+# adapter (adapters/openapi); the package signs it like every other file.
+#
+# Only the operations the capabilities map are callable by a model, plus the management operations
+# named here, which no capability maps. The provisioning operations are the integration audit's
+# disposable-tenant calls (the package's fixtures.provisioning names them): approved here, mapped by
+# no capability, and reachable only through the adapter's own management bridge, never from a
+# conversation. They exist in the application only while it runs for an audit.
+#
+# approveStepUp is the one provisioning operation beyond the three the package's tests name: the
+# audit's way to complete a level 3 step-up in a disposable tenant, as the supervisor would in the
+# application's own UI. Approved here and mapped by no capability, it exists only while the
+# application runs for an audit (the production configuration has no such route).
+#
+# The endpoint declares no credential_ref, so the adapter sends no Authorization header (a
+# deployment that sets FACILITY_API_TOKEN needs a package version that declares one).
+#
+# Wire contract of every capability operation:
+#   identity     the X-AlixAI-Identity header (application_id, tenant_id, workspace_id,
+#                principal_id, roles, session_id as unpadded base64url JSON)
+#   read         the fields as query parameters (listWorkOrders) or a small JSON body (resolve*)
+#   validate     the fields as one JSON object, nothing staged
+#   prepare      the fields as one JSON object; the reply carries the preparation
+#   commit       the whole PreparedAction as the body and the Idempotency-Key header
+#   status       the idempotency key as the path parameter; exactly one answer proves nothing
+#                was applied (rejected, one validation_failed on idempotency_key, HTTP 404)
+#   reply        the host members of a DeterministicResult with the HTTP status a REST host picks;
+#                a refusal is a result with status rejected, never a bare HTTP error
+server: facility-api
+identity:
+  header: X-AlixAI-Identity
+idempotency:
+  header: Idempotency-Key
+management:
+  describe: describeApplication
+  health: getHealth
+  inspect: inspectApplication
+  provisioning: [createTenant, seedTenant, cleanupTenant, approveStepUp]

@@ -1,0 +1,51 @@
+capability_id: patients.find
+language: it
+contract_version: 1.0.0
+terminology:
+  - patient
+  - clinic_site
+  - date_of_birth
+field_prompts:
+  - field: query
+    label: Nome del paziente
+    prompt: "Quale paziente devo cercare? Dammi almeno una parte del nome."
+    examples:
+      - Maria Rossi
+  - field: date_of_birth
+    label: Data di nascita
+    prompt: "Vuoi restringere la ricerca con una data di nascita? Scrivila come AAAA-MM-GG."
+    examples:
+      - "1975-11-02"
+  - field: max_results
+    label: Numero di risultati
+    prompt: "Quanti pazienti devo elencare al massimo?"
+clarifications: []
+corrections:
+  acknowledgement: "Va bene, cerco di nuovo con i nuovi dati."
+  correctable_fields:
+    - query
+    - date_of_birth
+    - max_results
+cancellations:
+  acknowledgement: "Va bene, ho interrotto la ricerca."
+success:
+  - outcome: patients_found
+    text: "Ho trovato {patient_count} pazienti corrispondenti: {patient_summary}."
+  - outcome: none_found
+    text: "Nessun paziente della tua sede corrisponde a {input.query}. I risultati sono {patient_count}: {patient_summary}."
+failures:
+  - code: permission_denied
+    text: "Non hai il permesso di cercare i pazienti, quindi non ho cercato."
+  - code: scope_violation
+    text: "Non posso mostrare quel paziente: la scheda non è disponibile per te. Non ho cercato nulla."
+  - code: validation_failed
+    text: "Non ho potuto cercare: il nome richiede almeno due caratteri e la data di nascita non può essere nel futuro."
+  - code: missing_fields
+    text: "Mi serve il nome del paziente da cercare. Non ho cercato nulla."
+  - code: unavailable
+    text: "Il sistema degli appuntamenti non è raggiungibile in questo momento, quindi non ho potuto cercare. Non è stato modificato nulla."
+next_actions:
+  - id: book_for_patient
+    label: "Prenota un appuntamento per uno di questi pazienti"
+  - id: update_patient_contact
+    label: "Aggiorna i recapiti di uno di questi pazienti"

@@ -1,0 +1,18 @@
+{
+  "budget_id": "bud_01J0000000000000000000000B",
+  "revision": 1,
+  "subject": {
+    "kind": "tenant",
+    "application_id": "app_crm",
+    "tenant_id": "ten_42"
+  },
+  "channel": "interactive",
+  "currency": "EUR",
+  "limits": { "daily_micro_units": 5000000, "monthly_micro_units": 100000000 },
+  "warn_at_percent": 80,
+  "updated_at": "2026-10-02T08:00:00Z",
+  "updated_by": "usr_admin",
+  "quotas": {
+    "input_tokens": { "daily": 10 }
+  }
+}

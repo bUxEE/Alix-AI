@@ -1,0 +1,171 @@
+# M0-13 spike model definitions, mounted over /configuration/models.yaml by compose.spike.yaml.
+#
+# One LocalAI model per registry entry, named by the registry id so `tools/bench --model <id>` needs no
+# --localai-model. Every URL is commit-pinned and every file carries the sha256 the model registry
+# (models/registry) pins; LocalAI's own preload downloads and verifies them (hardening.md section 4).
+# alixai-smoke is kept unchanged from deploy/container/localai/config/models.yaml so smoke.sh still works.
+#
+# context_size is 4096 for every controller: the bench prompt budget is 4096 estimated tokens (one token per three
+# bytes, an overestimate) plus up to 512 output tokens, and the Lite KV budget must stay small (the Qwen3.5 native
+# window is 262144). Qwen3.5 thinking is switched off two ways (reasoning.disable and the enable_thinking template
+# keyword); the evidence checks the raw outputs for a think tag.
+- name: alixai-smoke
+  backend: llama-cpp
+  context_size: 2048
+  known_usecases:
+    - chat
+  options:
+    - use_jinja:true
+  parameters:
+    model: granite-4.0-350m-Q4_K_M.gguf
+    temperature: 0
+  template:
+    use_tokenizer_template: true
+  download_files:
+    - filename: granite-4.0-350m-Q4_K_M.gguf
+      uri: https://huggingface.co/ibm-granite/granite-4.0-350m-GGUF/resolve/b8208a86a58427e1739265318028eb5895b74bf2/granite-4.0-350m-Q4_K_M.gguf
+      sha256: 771c588a49607f274a2bba3185733607ebe6f74b996ab90e2d6bee0d98bcec52
+
+- name: granite-4.0-350m-q4_k_m
+  backend: llama-cpp
+  context_size: 4096
+  known_usecases:
+    - chat
+  options:
+    - use_jinja:true
+  parameters:
+    model: granite-4.0-350m-Q4_K_M.gguf
+    temperature: 0
+  template:
+    use_tokenizer_template: true
+  download_files:
+    - filename: granite-4.0-350m-Q4_K_M.gguf
+      uri: https://huggingface.co/ibm-granite/granite-4.0-350m-GGUF/resolve/b8208a86a58427e1739265318028eb5895b74bf2/granite-4.0-350m-Q4_K_M.gguf
+      sha256: 771c588a49607f274a2bba3185733607ebe6f74b996ab90e2d6bee0d98bcec52
+
+- name: qwen3.5-0.8b-q4_k_m
+  backend: llama-cpp
+  context_size: 4096
+  known_usecases:
+    - chat
+  options:
+    - use_jinja:true
+  reasoning:
+    disable: true
+  chat_template_kwargs:
+    enable_thinking: false
+  parameters:
+    model: Qwen3.5-0.8B-Q4_K_M.gguf
+    temperature: 0
+  template:
+    use_tokenizer_template: true
+  download_files:
+    - filename: Qwen3.5-0.8B-Q4_K_M.gguf
+      uri: https://huggingface.co/unsloth/Qwen3.5-0.8B-GGUF/resolve/6ab461498e2023f6e3c1baea90a8f0fe38ab64d0/Qwen3.5-0.8B-Q4_K_M.gguf
+      sha256: bd258782e35f7f458f8aced1adc053e6e92e89bc735ba3be89d38a06121dc517
+
+- name: granite-4.0-1b-q4_k_m
+  backend: llama-cpp
+  context_size: 4096
+  known_usecases:
+    - chat
+  options:
+    - use_jinja:true
+  parameters:
+    model: granite-4.0-1b-Q4_K_M.gguf
+    temperature: 0
+  template:
+    use_tokenizer_template: true
+  download_files:
+    - filename: granite-4.0-1b-Q4_K_M.gguf
+      uri: https://huggingface.co/ibm-granite/granite-4.0-1b-GGUF/resolve/b27c2fe3f211b7f44e80fa620177aea371099aaa/granite-4.0-1b-Q4_K_M.gguf
+      sha256: 22ec0f9cc99a90185312de3c882c84e7bd6789bdd050389844380a01a831d7f1
+
+- name: qwen3.5-2b-q4_k_m
+  backend: llama-cpp
+  context_size: 4096
+  known_usecases:
+    - chat
+  options:
+    - use_jinja:true
+  reasoning:
+    disable: true
+  chat_template_kwargs:
+    enable_thinking: false
+  parameters:
+    model: Qwen3.5-2B-Q4_K_M.gguf
+    temperature: 0
+  template:
+    use_tokenizer_template: true
+  download_files:
+    - filename: Qwen3.5-2B-Q4_K_M.gguf
+      uri: https://huggingface.co/unsloth/Qwen3.5-2B-GGUF/resolve/f6d5376be1edb4d416d56da11e5397a961aca8ae/Qwen3.5-2B-Q4_K_M.gguf
+      sha256: aaf42c8b7c3cab2bf3d69c355048d4a0ee9973d48f16c731c0520ee914699223
+
+# Embedding: the registry pins the Q4_K_M file; the Q8_0 file of the same repository and commit is fetched only to
+# compare retrieval quality (its hash is the one recorded in the registry entry's notes).
+- name: granite-embedding-97m-multilingual-r2-q4_k_m
+  backend: llama-cpp
+  embeddings: true
+  context_size: 512
+  known_usecases:
+    - embeddings
+  parameters:
+    model: granite-embedding-97M-multilingual-r2-Q4_K_M.gguf
+  download_files:
+    - filename: granite-embedding-97M-multilingual-r2-Q4_K_M.gguf
+      uri: https://huggingface.co/mykor/granite-embedding-97m-multilingual-r2-GGUF/resolve/45ce642d3fab2033d167ec09641a159010f7d9d9/granite-embedding-97M-multilingual-r2-Q4_K_M.gguf
+      sha256: 355f1f30ac3bdad09de420c5d78dd369e2a47d6f4ee3b5da342483f857965daf
+
+- name: granite-embedding-97m-multilingual-r2-q8_0
+  backend: llama-cpp
+  embeddings: true
+  context_size: 512
+  known_usecases:
+    - embeddings
+  parameters:
+    model: granite-embedding-97M-multilingual-r2-Q8_0.gguf
+  download_files:
+    - filename: granite-embedding-97M-multilingual-r2-Q8_0.gguf
+      uri: https://huggingface.co/mykor/granite-embedding-97m-multilingual-r2-GGUF/resolve/45ce642d3fab2033d167ec09641a159010f7d9d9/granite-embedding-97M-multilingual-r2-Q8_0.gguf
+      sha256: 25155b89638e501ac33495fa278d551d7545e1e2f62722a499bba1f064c080f2
+
+# Failure fixtures for TestSpikeErrorMapping (error mapping and HC-20). They are listed by /v1/models, so the adapter's
+# health check passes, and fail only when a request reaches the backend.
+# m0-corrupt: the file is not a GGUF model (created by the test setup, never downloaded), so the backend cannot load it.
+- name: m0-corrupt
+  backend: llama-cpp
+  context_size: 2048
+  known_usecases:
+    - chat
+  parameters:
+    model: m0-corrupt.gguf
+    temperature: 0
+# m0-tinyctx: a valid model with a 256-token window, smaller than the gateway's own prompt, so a request overflows
+# the context window. It reuses the Granite 350M file already on disk.
+- name: m0-tinyctx
+  backend: llama-cpp
+  context_size: 256
+  known_usecases:
+    - chat
+  options:
+    - use_jinja:true
+  parameters:
+    model: granite-4.0-350m-Q4_K_M.gguf
+    temperature: 0
+  template:
+    use_tokenizer_template: true
+# m0-oom: Granite 4.0 1B with its full 131072-token window. The KV cache alone is larger than the 4 GB profile's cap, so
+# loading it under compose.4g.yaml makes the cgroup kill the backend: the failure an out-of-memory machine produces.
+- name: m0-oom
+  backend: llama-cpp
+  context_size: 131072
+  known_usecases:
+    - chat
+  options:
+    - use_jinja:true
+  parameters:
+    model: granite-4.0-1b-Q4_K_M.gguf
+    temperature: 0
+  template:
+    use_tokenizer_template: true

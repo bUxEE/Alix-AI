@@ -1,0 +1,60 @@
+capability_id: patients.update_contact
+language: it
+contract_version: 1.0.0
+terminology:
+  - patient
+  - clinic_site
+  - phone_number
+  - email_address
+  - contact_details
+field_prompts:
+  - field: patient
+    label: Paziente
+    prompt: "Di chi devo cambiare i recapiti? Dimmi il nome del paziente, oppure dì che sei tu."
+    examples:
+      - Maria Rossi
+  - field: phone
+    label: Numero di telefono
+    prompt: "Qual è il nuovo numero di telefono? Puoi saltare questa domanda se cambia solo l'email."
+    examples:
+      - "+1 555 0123"
+  - field: email
+    label: Indirizzo email
+    prompt: "Qual è il nuovo indirizzo email? Puoi saltare questa domanda se cambia solo il telefono."
+    examples:
+      - maria.nuova@example.test
+clarifications:
+  - rule_id: patient_multiple
+    prompt: "Più di un paziente corrisponde a {input.patient}. Quale intendi?"
+corrections:
+  acknowledgement: "Va bene, ho cambiato."
+  correctable_fields:
+    - patient
+    - phone
+    - email
+  prepared_action_invalidated: "Questo cambia l'aggiornamento, quindi il riepilogo precedente non vale più. Preparo di nuovo l'aggiornamento con i nuovi dati."
+cancellations:
+  acknowledgement: "Va bene, mi fermo. Non è stato aggiornato nulla."
+success:
+  - outcome: contact_updated
+    text: "Fatto. I recapiti registrati per {patient_name} sono stati aggiornati: {contact_fields_updated}."
+failures:
+  - code: permission_denied
+    text: "Non hai il permesso di cambiare i recapiti, quindi non è stato aggiornato nulla."
+  - code: scope_violation
+    text: "Non posso modificare quella scheda: non è disponibile per te. Non è stato aggiornato nulla."
+  - code: validation_failed
+    text: "Non ho potuto aggiornare: indica un nuovo numero di telefono, un nuovo indirizzo email o entrambi, e controlla il formato. Non è stato aggiornato nulla."
+  - code: missing_fields
+    text: "Devo ancora sapere di chi cambiare i recapiti. Non è stato aggiornato nulla."
+  - code: stale
+    text: "La scheda del paziente è cambiata dopo che avevo preparato questo aggiornamento, quindi non l'ho applicato. Non è stato aggiornato nulla; posso prepararlo di nuovo."
+  - code: expired
+    text: "L'aggiornamento non è stato applicato in tempo, oppure è stato ritirato, quindi non è stato aggiornato nulla."
+  - code: uncertain_outcome
+    text: "Non sono riuscito a verificare se i recapiti sono stati aggiornati. Controllo prima di fare altro, quindi per ora non richiederlo."
+  - code: unavailable
+    text: "Il sistema degli appuntamenti non è raggiungibile in questo momento, quindi non è stato aggiornato nulla."
+next_actions:
+  - id: book_for_updated_patient
+    label: "Prenota un appuntamento per questo paziente"

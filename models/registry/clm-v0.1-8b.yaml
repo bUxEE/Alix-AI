@@ -1,0 +1,97 @@
+# Model registry entry (schemas/models/registry-entry.schema.json, revision 2). One file per model; the file name is the id.
+# Optional decision layer (master plan 8.5, ADR 0029): optional, bounded, non-generative and non-authoritative. Written by task D-11, reviewed 2026-10-08.
+# Every key is present; null means not yet known or not yet measured. Nothing is measured here: measurements wait for D-08 / M5-09.
+id: clm-v0.1-8b
+name: "CLM-v0.1-8B decision scorer (state/action heads on a frozen Qwen3-8B encoder)"
+version: "0.1"
+status: candidate
+roles:
+  - "decision-scorer"
+capabilities:
+  - "decision-scoring"
+upstream:
+  repo_url: https://huggingface.co/Contrastive-LM/CLM-v0.1-8B
+  revision: e939398d4556fcd9400c76fa8c5a513202f42b0a
+artifact:
+  format: pytorch
+  repo_url: https://huggingface.co/Contrastive-LM/CLM-v0.1-8B
+  filename: CLM_v0.1-8B.pt
+  revision: e939398d4556fcd9400c76fa8c5a513202f42b0a
+  size_bytes: 75557149
+  sha256: b2b4a8c9c2d39263eff78a351eb909a342ce9b3bf21a3f07c1d1bf15f1c4eda5
+  quantized_by: Contrastive-LM
+  first_party: true
+  checked_on: "2026-10-08"
+licence:
+  spdx: Apache-2.0
+  url: https://huggingface.co/Contrastive-LM/CLM-v0.1-8B/blob/e939398d4556fcd9400c76fa8c5a513202f42b0a/LICENSE
+  redistribution_notes: "Apache-2.0, declared by the model card metadata and the LICENSE file (11358 bytes) at the pinned commit; the contrastive-lm wheel is pinned separately in deploy/container/clm/config/pins.txt. First-party weights, unmodified. AlixAI does not bundle weights: the operator fetches the pinned file. Final sign-off is the human licence review (D-H01, M5-H02)."
+quantization:
+  scheme: unspecified
+  nominal_bits: 32
+backend:
+  runtime: clm-sidecar
+  name: contrastive-lm
+  allowed_runtime_versions: []
+hardware:
+  minimum:
+    cpu_cores: null
+    ram_mb: null
+    accelerator: null
+  recommended:
+    cpu_cores: null
+    ram_mb: null
+    accelerator: null
+memory:
+  peak_rss_mb: null
+  steady_rss_mb: null
+context:
+  native_max_tokens: null
+  budget_tokens: null
+  kv_cache_mb: null
+load_time:
+  cold_ms: null
+  warm_ms: null
+performance:
+  latency_ms_p50: null
+  latency_ms_p95: null
+  ttft_ms_p50: null
+  tokens_per_second: null
+languages:
+  declared: []
+  claimed_count: null
+  qualified: []
+scores:
+  task: null
+  tool: null
+  rag: null
+  safety: null
+measurement:
+  profile: null
+  emulated: null
+  results_path: null
+  measured_on: null
+fallback:
+  model_id: laya
+  degraded_mode: deterministic-routing
+  notes: "Laya (English checkpoint) is a benchmark candidate and the constrained-profile fallback, never the primary decision model. When neither scorer is available or admitted: Deterministic rules, the controller and typed forms (the zero-model option) serve the decision. With the layer off, unavailable or failing, every flow gives the same outcome through the deterministic controller (ADR 0029)."
+last_efficiency_review:
+  date: "2026-10-08"
+  evidence_path: docs/efficiency/D-08.md
+default_for: []
+dependencies:
+  - id: qwen3-8b
+    relation: frozen-encoder
+scorer:
+  architecture: bi-encoder
+  max_options: null
+notes:
+  - "Status candidate: CLM-v0.1-8B is the owner-adopted primary candidate (ADR 0029) and becomes qualified-emulated only through D-08 evidence. No profile defaults to it: default_for is empty, and the loader refuses a scorer default without evidence, on experimental-4g, or (with an encoder dependency) on any profile but high."
+  - "Pin: revision e939398d4556fcd9400c76fa8c5a513202f42b0a (repository commit of 2026-09-24T21:37:19Z), file CLM_v0.1-8B.pt, 75557149 bytes, sha256 b2b4a8c9c2d39263eff78a351eb909a342ce9b3bf21a3f07c1d1bf15f1c4eda5 (hub LFS oid). Fetched from https://huggingface.co/api/models/Contrastive-LM/CLM-v0.1-8B/tree/e939398d4556fcd9400c76fa8c5a513202f42b0a on 2026-10-08 and equal to the line in deploy/container/clm/config/pins.txt (computed there 2026-10-07). The artefact is pinned so the sidecar entrypoint accepts the entry and the release manifest can list it; pinned is not qualified, and no runtime version is allowed yet."
+  - "Format: a PyTorch .pt checkpoint, which is a pickle container. It must only be loaded after the hash check and with a weights-only loader; whether the contrastive-lm wheel does this is not verified: the wheel is not in the repository, so the weights-only load is neither claimed nor denied here, and the review of the wheel's loader is recorded with the human licence and supply-chain review D-H01. The head dtype is unverified, so quantization.scheme is unspecified and nominal_bits 32 is a placeholder, not a measurement."
+  - "Architecture (model card, reviewed 2026-10-02, https://huggingface.co/Contrastive-LM/CLM-v0.1-8B): two small projection heads on a frozen Qwen3-8B encoder with last-token pooling; it ranks supplied candidates by cosine similarity and does not generate text. The encoder is the dependency qwen3-8b. LocalAI documents a clm-v0.1-8b-vllm-cpp gallery entry (about 16.5 GB, bi-encoder, about 19 GB of free RAM on CPU) at https://localai.io/docs/features/decisions/ (fetched 2026-10-08); whether the pinned LocalAI v4.10.0 ships that backend is untested."
+  - "Option count: LocalAI states letter-based models accept at most 26 options, but CLM answers by cosine similarity and no CLM-specific maximum was found, so scorer.max_options is null (unverified). The CLM state limit is 2048 tokens (CLM repo, reviewed 2026-10-02)."
+  - "Vendor claims (latency, accuracy, up to 9x lower latency than Jev, about 28 ms with 3 actions on an RTX 4090) are the vendor's, on other hardware and workloads, unverified by AlixAI and not evidence for any profile. Our numbers will be labelled emulated until measured on the target host."
+  - "Memory: nothing measured. Arithmetic from the pinned files (basis A): head 72.1 MiB plus the BF16 encoder 15622 MiB, about 15.7 GiB of weights before activations; it fits no lite or balanced container budget. The high profile (32768 MB, 8 CPU, tools/decbench) is the only profile it can be judged on. See docs/operations/resource-budgets.md section 4.4."
+  - "The scorer is advisory: it only scores a bounded set of authorised candidates and every selected id is re-resolved by the deterministic adapter; it never authorises, validates, prepares, confirms or commits (master plan 3, 8.5)."
+  - "D-08 (2026-10-08, emulated, host i7-10700K, Docker VM 31.3 GiB, no GPU): pinned LocalAI v4.10.0 returns HTTP 404 on /v1/systemone and the adapter reports unsupported_runtime, so CLM cannot be served by LocalAI (docs/evidence/d-decision/localai-decisions-probe.txt). Balanced sidecar (encoder 14 GiB cap): resource_gate, the encoder container reached 13742 MiB of 14336 during load, host free RAM fell to 2282 MiB, the load never completed (docs/evidence/d-decision/rss/balanced-sidecar.csv). Higher-memory profile: not measured, host could not safely run it. Status stays candidate (the registry status is not per profile; rejected would also block the high profile, which has no evidence either way); default_for stays empty and ADR 0031 keeps it OFF on every profile."

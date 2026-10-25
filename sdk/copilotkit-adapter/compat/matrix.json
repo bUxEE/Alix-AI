@@ -1,0 +1,78 @@
+{
+  "$comment": "The CopilotKit and AG-UI releases the adapter suite (pnpm --filter @alixai/copilotkit-adapter test) is run against. 'packages' is flat and exact so that tests/copilotkit (M3-28) can pin its devDependencies from it. 'primary' is the entry installed in the workspace; node compat/run.mjs installs every other entry in a scratch directory and runs the same suite. test/matrix.test.ts fails when the primary entry and the installed versions differ.",
+  "adapter": "@alixai/copilotkit-adapter",
+  "agui": {
+    "protocol": "1.0",
+    "implementedRelease": "@ag-ui/core 1.0.1",
+    "vendoredSchemas": "schemas/agui/VERSION"
+  },
+  "primary": "copilotkit-1.76.0",
+  "entries": [
+    {
+      "id": "copilotkit-1.76.0",
+      "status": "tested",
+      "packages": {
+        "@copilotkit/react-core": "1.76.0",
+        "@copilotkit/react-ui": "1.76.0",
+        "@copilotkit/runtime": "1.76.0",
+        "@copilotkit/runtime-client-gql": "1.76.0",
+        "@ag-ui/client": "1.0.1",
+        "@ag-ui/core": "1.0.1",
+        "react": "19.3.0",
+        "react-dom": "19.3.0",
+        "rxjs": "7.8.1",
+        "zod": "^3.25.76"
+      },
+      "notes": [
+        "useCopilotChat() of @copilotkit/react-core returns visibleMessages as undefined in this release (its wrapper reads a member the internal hook no longer returns): read the messages from useCopilotChatInternal().messages or the agent, as test/ui.v1.test.tsx does.",
+        "useInterrupt, useRenderTool, useConfigureSuggestions, useAgent and renderActivityMessages are from @copilotkit/react-core/v2; the structured blocks, the confirmation card and the suggestion pills need the v2 CopilotChat, CopilotSidebar or CopilotPopup. The v1 components of @copilotkit/react-ui show the streamed text and the headless hook works, but they render no activity messages.",
+        "useInterrupt refuses to resume an interrupt whose expiresAt has passed (the goldens' fixed expiry is moved forward by the fake gateway for the UI tests)."
+      ]
+    },
+    {
+      "id": "copilotkit-1.77.0",
+      "status": "tested",
+      "installWith": {
+        "minimumReleaseAge": 0
+      },
+      "packages": {
+        "@copilotkit/react-core": "1.77.0",
+        "@copilotkit/react-ui": "1.77.0",
+        "@copilotkit/runtime": "1.77.0",
+        "@copilotkit/runtime-client-gql": "1.77.0",
+        "@ag-ui/client": "1.0.1",
+        "@ag-ui/core": "1.0.1",
+        "react": "19.3.0",
+        "react-dom": "19.3.0",
+        "rxjs": "7.8.1",
+        "zod": "^3.25.76"
+      },
+      "notes": [
+        "Published after the workspace's release-age policy allows, so the scratch install of compat/run.mjs sets minimumReleaseAge to 0 for it; the workspace itself stays on 1.76.0."
+      ]
+    }
+  ],
+  "notCovered": [
+    "@copilotkit/* before 1.76.0 depend on @ag-ui/client 0.0.59, which predates the interrupt outcome and resume of the AG-UI release AlixAI implements (@ag-ui/core 1.0.1); they are not tested and not claimed."
+  ],
+  "telemetry": {
+    "env": {
+      "COPILOTKIT_TELEMETRY_DISABLED": "true",
+      "DO_NOT_TRACK": "1",
+      "SCARF_ANALYTICS": "false",
+      "SCARF_NO_ANALYTICS": "true"
+    },
+    "readBy": {
+      "COPILOTKIT_TELEMETRY_DISABLED": "@copilotkit/runtime dist/v2/runtime/telemetry/telemetry-client.mjs and dist/lib/telemetry-disclosure.mjs (read once, when the module loads)",
+      "DO_NOT_TRACK": "the same two files, and @scarf/scarf report.js",
+      "SCARF_ANALYTICS": "@scarf/scarf report.js (install-time analytics; pnpm-workspace.yaml also sets allowBuilds '@scarf/scarf': false)",
+      "SCARF_NO_ANALYTICS": "@scarf/scarf report.js"
+    },
+    "browserProps": {
+      "enableInspector": false,
+      "showDevConsole": false,
+      "showIntelligenceIndicator": false,
+      "removed": ["publicApiKey", "publicLicenseKey", "licenseToken"]
+    }
+  }
+}

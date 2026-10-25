@@ -1,0 +1,32 @@
+{
+  "name": "clinic-booking-reference-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Synthetic clinic booking application: the first neutral AlixAI reference application (Koa, node:sqlite, MCP over streamable HTTP).",
+  "license": "Apache-2.0",
+  "type": "module",
+  "packageManager": "pnpm@12.3.4",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "start": "node src/main.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@koa/router": "^15.7.0",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "koa": "^3.2.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/koa": "^3.0.3",
+    "@types/node": "^26.6.5",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5",
+    "yaml": "^2.9.1"
+  }
+}

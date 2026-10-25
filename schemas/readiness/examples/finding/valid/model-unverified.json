@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "finding_id": "fnd_2222222222222222",
+  "requirement_id": "req.documentation.capabilities",
+  "category": "documentation",
+  "status": "unverified",
+  "source": "model_unverified",
+  "check_id": "package.documentation",
+  "evidence": [
+    {
+      "path": "README.md",
+      "line_start": 90,
+      "line_end": 120,
+      "file_sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    }
+  ],
+  "summary": "Three read operations return schema-typed responses.",
+  "remediation": {
+    "en": "Write one documentation entry per capability."
+  },
+  "unverified_reason": "The cited span ends past the end of the file."
+}

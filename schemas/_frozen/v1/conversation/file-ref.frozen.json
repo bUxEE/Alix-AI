@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:conversation:file-ref:v1",
+  "title": "FileRef",
+  "description": "A scoped, opaque reference to an attachment or generated file (master plan 14.1): size, MIME, owner, expiry and permission metadata. It carries no path, no URL and no storage location: the model never receives a filesystem path and a client resolves the file only through an authorised API call that re-checks scope and expiry every time. The MIME type is sniffed from the bytes by the core and must match the declared type. Every property is minted by the core, so every property is 'alixai'.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["file_id", "name", "mime_type", "size_bytes", "owner", "origin", "permissions", "previewable", "expires_at"],
+  "properties": {
+    "file_id": {
+      "description": "Opaque file ID.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/fileId"
+    },
+    "name": {
+      "description": "Display name, sanitised by the core: a bare file name with no path separators and no control characters.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255,
+      "pattern": "^[^/\\\\\\x00-\\x1f\\x7f]+$"
+    },
+    "mime_type": {
+      "description": "The sniffed media type, lower case, for example image/png.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "maxLength": 255,
+      "pattern": "^[a-z0-9][a-z0-9!#$&^_.+-]{0,126}/[a-z0-9][a-z0-9!#$&^_.+-]{0,126}$"
+    },
+    "size_bytes": {
+      "description": "Size in bytes.",
+      "x-alixai-authority": "alixai",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "content_hash": {
+      "description": "SHA-256 of the content, as sha256: followed by 64 lower-case hex digits.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "owner": {
+      "description": "The principal that owns the file, inside the same tenant and workspace as the request.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+    },
+    "origin": {
+      "description": "Where the file came from. upload: supplied by a principal. generated: produced by an approved model. application: supplied by the host application.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "enum": ["upload", "generated", "application"]
+    },
+    "treatment": {
+      "description": "How the host's attachment policy treats the file: ephemeral turn context, a registered RAG source, or an application object.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "enum": ["ephemeral_context", "rag_source", "application_object"]
+    },
+    "permissions": {
+      "description": "What the requesting principal may do with the file. At least one: a reference that permits nothing is never minted.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": ["read", "preview", "download"]
+      }
+    },
+    "previewable": {
+      "description": "True only when a safe previewer exists for the sniffed type.",
+      "x-alixai-authority": "alixai",
+      "type": "boolean"
+    },
+    "expires_at": {
+      "description": "When the reference stops resolving.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    }
+  }
+}

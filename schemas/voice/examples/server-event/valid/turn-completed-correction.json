@@ -1,0 +1,10 @@
+{
+  "type": "turn.completed",
+  "utterance_id": "utt_01J0000000000000000000000A",
+  "turn_id": "trn_01J0000000000000000000000B",
+  "act": "request_confirmation",
+  "failed": false,
+  "corrects_turn_id": "trn_01J0000000000000000000000A",
+  "superseded_preparation_id": "prep_01J0000000000000000000000A",
+  "preparation_id": "prep_01J0000000000000000000000B"
+}

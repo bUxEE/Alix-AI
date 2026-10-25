@@ -1,0 +1,8 @@
+# HC-05 experiment: a network with no outbound route and no published port. Reach it from a container on the same network
+# (docker run --network alixai-localai_default ...), as the production AlixAI container would.
+services:
+  localai:
+    ports: !reset []
+networks:
+  default:
+    internal: true

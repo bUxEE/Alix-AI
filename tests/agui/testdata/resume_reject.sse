@@ -1,0 +1,26 @@
+data: {"type":"RUN_STARTED","threadId":"ses_test_01","runId":"run_reject"}
+
+data: {"type":"STATE_DELTA","delta":[{"op":"add","path":"/alixai","value":{"pending":{"capabilityId":"items.create","collectedFields":[{"name":"name","origin":"user_turn"},{"name":"quantity","origin":"user_turn"},{"name":"size","origin":"user_turn"}],"expiresAt":"2026-10-02T12:05:00Z","kind":"confirmation","missingFields":[],"phase":"prepared","preparationId":"prep_01J00000000000000000000001"}}}]}
+
+data: {"type":"STEP_STARTED","stepName":"verifying"}
+
+id: 0
+data: {"type":"STEP_FINISHED","stepName":"verifying"}
+
+id: 1
+data: {"type":"CUSTOM","name":"alixai.directive","value":{"turn_id":"trn_01J00000000000000000000001","capability_id":"items.create","act":"acknowledge_cancel","facts":[],"must_state":[],"missing_fields":[],"invalid_fields":[],"allowed_suggestions":[],"confirmation":{"mode":"none","bindings":[]},"permitted_next_actions":[],"sources":[]}}
+
+data: {"type":"TEXT_MESSAGE_START","messageId":"msg_trn_01J00000000000000000000001_1","role":"assistant"}
+
+id: 2
+data: {"type":"TEXT_MESSAGE_CONTENT","messageId":"msg_trn_01J00000000000000000000001_1","delta":"Okay, I've stopped that request. No changes were made."}
+
+data: {"type":"TEXT_MESSAGE_END","messageId":"msg_trn_01J00000000000000000000001_1"}
+
+data: {"type":"TOOL_CALL_RESULT","messageId":"msg_trn_01J00000000000000000000001_r1","toolCallId":"alixai_confirm_prep_01J00000000000000000000001","content":"{\"preparationId\":\"prep_01J00000000000000000000001\",\"status\":\"rejected\"}","role":"tool"}
+
+data: {"type":"STATE_DELTA","delta":[{"op":"replace","path":"/alixai/pending","value":null}]}
+
+id: 3
+data: {"type":"RUN_FINISHED","threadId":"ses_test_01","runId":"run_reject","result":{"finishReason":"cancelled","turnId":"trn_01J00000000000000000000001"},"outcome":{"type":"cancelled"}}
+

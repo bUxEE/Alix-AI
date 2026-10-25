@@ -1,0 +1,78 @@
+{
+  "policy_id": "maintenance-controls",
+  "role_grants": [
+    {
+      "role": "technician",
+      "capabilities": [
+        "workorders.list",
+        "workorders.create",
+        "workorders.close"
+      ]
+    },
+    {
+      "role": "supervisor",
+      "capabilities": [
+        "workorders.list",
+        "workorders.create",
+        "workorders.assign",
+        "workorders.close",
+        "assets.decommission"
+      ]
+    },
+    {
+      "role": "auditor",
+      "capabilities": [
+        "workorders.list"
+      ]
+    }
+  ],
+  "risk_overrides": [
+    {
+      "capability_id": "workorders.assign",
+      "minimum_risk_level": 2,
+      "reason": "Assignments notify the technician and change their schedule."
+    }
+  ],
+  "field_projection": [],
+  "rules": [
+    {
+      "id": "costly-closure-needs-step-up",
+      "capabilities": [
+        "workorders.close"
+      ],
+      "when": {
+        "fields": {
+          "parts_cost_minor": {
+            "gte": 250000
+          }
+        }
+      },
+      "then": {
+        "risk_min": 3
+      },
+      "reason": "Closing a work order that consumed expensive parts is reviewed in the maintenance application."
+    },
+    {
+      "id": "no-technician-closure-in-audit-site",
+      "capabilities": [
+        "workorders.close"
+      ],
+      "when": {
+        "roles": {
+          "any": [
+            "technician"
+          ]
+        },
+        "workspaces": {
+          "in": [
+            "site-audit"
+          ]
+        }
+      },
+      "then": {
+        "deny": true
+      },
+      "reason": "The audit site is read-only for technicians while the annual audit runs."
+    }
+  ]
+}

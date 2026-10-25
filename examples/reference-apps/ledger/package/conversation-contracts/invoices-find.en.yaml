@@ -1,0 +1,47 @@
+capability_id: "invoices.find"
+language: "en"
+contract_version: "1.0.0"
+terminology:
+  - "invoice"
+  - "customer"
+field_prompts:
+  - field: "query"
+    label: "Invoice or customer"
+    prompt: "Which invoice should I look for? Give me its number or part of the customer's name."
+    examples:
+      - "INV-0007"
+      - "Acme"
+  - field: "status"
+    label: "State"
+    prompt: "Do you want only issued, partially paid, paid or void invoices?"
+  - field: "max_results"
+    label: "Number of results"
+    prompt: "How many invoices should I list at most?"
+clarifications: []
+corrections:
+  acknowledgement: "Okay, I will search again with that."
+  correctable_fields:
+    - "query"
+    - "status"
+    - "max_results"
+cancellations:
+  acknowledgement: "Okay, I stopped the search."
+success:
+  - outcome: "found"
+    text: "I found {invoice_count} matching invoice(s): {invoice_summary}"
+failures:
+  - code: "permission_denied"
+    text: "You are not allowed to look up invoices, so nothing was searched."
+  - code: "scope_violation"
+    text: "I cannot show that: the invoice is not available to you."
+  - code: "validation_failed"
+    text: "I could not search with that: give me at least two characters of an invoice number or a customer name."
+  - code: "missing_fields"
+    text: "I still need an invoice number or a customer name to search for."
+  - code: "unavailable"
+    text: "The ledger is not reachable right now, so I could not search."
+next_actions:
+  - id: "record_payment"
+    label: "Record a payment"
+  - id: "void_invoice"
+    label: "Void an invoice"

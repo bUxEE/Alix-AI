@@ -1,0 +1,30 @@
+{
+  "format": "policy/v1",
+  "policy_id": "clinic-access",
+  "description": "Receptionists and doctors book and cancel; patients only find slots. Contact changes by a patient need explicit confirmation, and nothing is booked at a site that is closed for maintenance.",
+  "role_grants": [
+    { "role": "receptionist", "capabilities": ["appointments.list_slots", "appointments.book", "appointments.cancel", "patients.update_contact"] },
+    { "role": "doctor", "capabilities": ["appointments.list_slots", "appointments.cancel"] },
+    { "role": "patient", "capabilities": ["appointments.list_slots", "patients.update_contact"] }
+  ],
+  "risk_overrides": [],
+  "field_projection": [
+    { "capability_id": "patients.update_contact", "roles": ["patient"], "model_visible_fields": ["phone", "email"] }
+  ],
+  "rules": [
+    {
+      "id": "patient-contact-confirmed",
+      "capabilities": ["patients.update_contact"],
+      "when": { "roles": { "any": ["patient"] } },
+      "then": { "risk_min": 2 },
+      "reason": "A patient changing contact details must see and confirm the exact change."
+    },
+    {
+      "id": "no-booking-at-closed-site",
+      "capabilities": ["appointments.book"],
+      "when": { "workspaces": { "in": ["site-north-closed"] } },
+      "then": { "deny": true },
+      "reason": "The north site is closed for maintenance."
+    }
+  ]
+}

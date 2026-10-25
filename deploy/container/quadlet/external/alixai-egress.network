@@ -1,0 +1,5 @@
+# OPT-IN: a network with a route out, for External provider mode (additive plan, milestone X).
+# NOT part of the default deployment, which denies all outbound traffic (master plan 16.1).
+# Install this file and alixai.pod.d/10-external.conf next to the other units. See README.md "External provider mode".
+[Network]
+NetworkName=alixai-egress

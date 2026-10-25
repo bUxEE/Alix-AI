@@ -1,0 +1,16 @@
+{
+  "type": "confirmation_panel",
+  "preparation_id": "prep_01J0000000000000000000000A",
+  "summary": "Book Dr. Rossi for Anna Verdi on 14 October 2026 at 10:30.",
+  "risk_level": 2,
+  "expires_at": "2026-10-09T08:10:05Z",
+  "confirmation": {
+    "mode": "explicit",
+    "bindings": [
+      "preparation_id",
+      "principal",
+      "session",
+      "data_versions"
+    ]
+  }
+}

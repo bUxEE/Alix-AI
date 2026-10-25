@@ -1,0 +1,8 @@
+# Hardening 8.3 experiment: no capabilities at all AND an empty backends directory, so LocalAI has to pull and unpack the
+# digest-pinned backend image itself (the step that could need CHOWN or FOWNER). The gallery file is mounted inside /backends as
+# in compose.spike.yaml. Needs the network (quay.io, docker.io).
+services:
+  localai:
+    cap_add: !override []
+    volumes:
+      - ./data/backends-nocaps:/backends

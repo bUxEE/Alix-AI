@@ -1,0 +1,343 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:bench:decision-result:v1",
+  "title": "Decision-layer benchmark result",
+  "description": "One run of tools/decbench: up to five configurations (deterministic rules only, the qualified sub-1B scorer, the CLM-8B scorer, direct controller routing, scorer followed by the controller when needed) on identical fixtures of one corpus (master plan 7.5, 8.3, 8.5, 17.3). The decision layer is optional, bounded, non-generative and non-authoritative; a score is advice that the deterministic adapter re-resolves, never an authorisation. Every key is present in every result: a value that is unknown or does not apply is an explicit null, never an omitted key. Metrics are {passed, total, rate} where passed always counts the CORRECT behaviour (higher is better) and rate is null when total is 0. Every case stays in its denominator. Every result is emulated (a profile is a resource cap on a larger machine, never certified). Results from the fake scorer are synthetic and measure the harness, not a model. Latency is reported as nearest-rank percentiles with the sample count and no mean. The numbers a fake run cannot produce (audio, RAM, load times, concurrent workloads, evictions) are null unless supplied from a live run. The schema is self-contained (no $ref into other schemas). Rules that need arithmetic (aggregates equal to what the cases say, call counts, consistency of each case) are enforced by 'tools/decbench check', not here.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version", "run_id", "timestamp", "duration_ms", "git", "host", "profile", "emulated", "synthetic",
+    "container_limits", "scorer", "controller", "corpus", "config", "live", "configurations"
+  ],
+  "properties": {
+    "format_version": { "const": 1 },
+    "run_id": {
+      "description": "Unique id of the run: 'run_' and a 26 character ULID.",
+      "type": "string",
+      "pattern": "^run_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "timestamp": {
+      "description": "When the run started, UTC (RFC 3339).",
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "duration_ms": { "type": "number", "minimum": 0 },
+    "git": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sha", "dirty"],
+      "properties": {
+        "sha": { "anyOf": [{ "type": "string", "pattern": "^[0-9a-f]{40}$" }, { "type": "null" }] },
+        "dirty": { "type": ["boolean", "null"] }
+      }
+    },
+    "host": {
+      "description": "The machine that ran the tool. A scorer on another machine or in a container is not described here.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["logical_cores", "os", "arch"],
+      "properties": {
+        "logical_cores": { "type": "integer", "minimum": 1 },
+        "os": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "arch": { "type": "string", "minLength": 1, "maxLength": 32 }
+      }
+    },
+    "profile": {
+      "description": "The emulated hardware profile: lite, balanced, high (the higher-memory profile) or experimental-4g.",
+      "enum": ["lite", "balanced", "high", "experimental-4g"]
+    },
+    "emulated": {
+      "description": "Always true: a profile is a resource cap on a machine larger than the profile, so the numbers are evidence for qualified-emulated and never for certified.",
+      "const": true
+    },
+    "synthetic": {
+      "description": "True when the scorer is the fake: the numbers measure the harness, not a model.",
+      "type": "boolean"
+    },
+    "container_limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mem_mb", "cpus", "source"],
+      "properties": {
+        "mem_mb": { "type": "integer", "minimum": 1 },
+        "cpus": { "type": "number", "exclusiveMinimum": 0 },
+        "source": { "const": "profile-definition" }
+      }
+    },
+    "scorer": {
+      "description": "The scorer behind configurations 2, 3 and 5, or the --scorer kind with provider, model and revision 'none' when no configuration of the run used a scorer.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "provider_id", "model_id", "model_revision", "artifact_sha256", "artifact_hash_source"],
+      "properties": {
+        "kind": { "enum": ["fake", "localai", "clm"] },
+        "provider_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "model_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "model_revision": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "artifact_sha256": { "anyOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
+        "artifact_hash_source": { "enum": ["computed", "none"] }
+      }
+    },
+    "controller": {
+      "description": "Where the controller numbers (latency of a controller call) come from. The controller is never a live model in this tool: scripted is a synthetic stand-in, supplied is a measured per-call latency from a live run. The size of the proposal it would generate is always an estimate (bytes divided by three).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "latency_ms"],
+      "properties": {
+        "source": { "enum": ["scripted", "supplied"] },
+        "latency_ms": { "type": ["number", "null"], "minimum": 0 }
+      }
+    },
+    "corpus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sha256", "cases_total"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "cases_total": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["min_confidence", "timeout_ms", "cache_entries", "percentile_method", "calibration_bins"],
+      "properties": {
+        "min_confidence": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "timeout_ms": { "type": "integer", "minimum": 1 },
+        "cache_entries": { "type": "integer", "minimum": 0 },
+        "percentile_method": { "const": "nearest-rank" },
+        "calibration_bins": { "const": 10 }
+      }
+    },
+    "live": {
+      "description": "Numbers measured elsewhere and supplied by the operator; null when not supplied. memory_reserve_mb is derived (the profile cap minus peak_rss_mb and resident_model_mb) and is null unless both were supplied. cache_evictions and concurrent_workloads belong to the live benchmark and are null in a harness run.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "first_audio_ms", "peak_rss_mb", "resident_model_mb", "memory_reserve_mb", "cold_load_ms", "warm_load_ms",
+        "cache_evictions", "concurrent_workloads"
+      ],
+      "properties": {
+        "first_audio_ms": { "type": ["number", "null"], "minimum": 0 },
+        "peak_rss_mb": { "type": ["number", "null"], "minimum": 0 },
+        "resident_model_mb": { "type": ["number", "null"], "minimum": 0 },
+        "memory_reserve_mb": { "type": ["number", "null"] },
+        "cold_load_ms": { "type": ["number", "null"], "minimum": 0 },
+        "warm_load_ms": { "type": ["number", "null"], "minimum": 0 },
+        "cache_evictions": { "type": ["integer", "null"], "minimum": 0 },
+        "concurrent_workloads": { "type": ["boolean", "null"] }
+      }
+    },
+    "configurations": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 5,
+      "items": { "$ref": "#/$defs/configuration" }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "ratio": {
+      "description": "passed out of total; rate is null when total is 0.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["passed", "total", "rate"],
+      "properties": {
+        "passed": { "type": "integer", "minimum": 0 },
+        "total": { "type": "integer", "minimum": 0 },
+        "rate": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
+      }
+    },
+    "stats": {
+      "description": "Nearest-rank percentiles of n samples, in milliseconds. There is no mean: below the host timer tick a mean says nothing. Every statistic is null when n is 0.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["n", "p50", "p95", "p99", "max"],
+      "properties": {
+        "n": { "type": "integer", "minimum": 0 },
+        "p50": { "type": ["number", "null"], "minimum": 0 },
+        "p95": { "type": ["number", "null"], "minimum": 0 },
+        "p99": { "type": ["number", "null"], "minimum": 0 },
+        "max": { "type": ["number", "null"], "minimum": 0 }
+      }
+    },
+    "category": {
+      "enum": [
+        "exact_command", "paraphrase", "confirmation", "cancellation", "correction", "ambiguous_entity",
+        "rag_operation", "unauthorised", "prompt_injection", "untrusted_document", "out_of_distribution", "scorer_failure"
+      ]
+    },
+    "language": { "enum": ["en", "it"] },
+    "fallbackReason": {
+      "enum": [
+        "disabled", "unavailable", "timeout", "malformed_output", "low_confidence", "calibration_failed",
+        "ood_unsupported_shape", "model_mismatch", "tenant_mismatch", "policy_conflict", "candidate_set_rejected",
+        "resource_gate", "unsupported_runtime"
+      ]
+    },
+    "metricSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cases", "task_completion", "capability_selection", "candidate_selection", "confirmation_accuracy",
+        "cancellation_accuracy", "correction_accuracy", "in_scope_acceptance", "out_of_scope_rejection",
+        "unauthorised_rejection", "injection_resistance", "untrusted_document_handling", "rag_operation",
+        "citation_correctness", "fail_closed", "clarification", "multilingual_quality", "pair_consistency",
+        "controller_calls_avoided", "generated_toks_avoided"
+      ],
+      "properties": {
+        "cases": { "type": "integer", "minimum": 0 },
+        "task_completion": { "$ref": "#/$defs/ratio" },
+        "capability_selection": { "$ref": "#/$defs/ratio" },
+        "candidate_selection": { "$ref": "#/$defs/ratio" },
+        "confirmation_accuracy": { "$ref": "#/$defs/ratio" },
+        "cancellation_accuracy": { "$ref": "#/$defs/ratio" },
+        "correction_accuracy": { "$ref": "#/$defs/ratio" },
+        "in_scope_acceptance": { "$ref": "#/$defs/ratio" },
+        "out_of_scope_rejection": { "$ref": "#/$defs/ratio" },
+        "unauthorised_rejection": { "$ref": "#/$defs/ratio" },
+        "injection_resistance": { "$ref": "#/$defs/ratio" },
+        "untrusted_document_handling": { "$ref": "#/$defs/ratio" },
+        "rag_operation": { "$ref": "#/$defs/ratio" },
+        "citation_correctness": { "$ref": "#/$defs/ratio" },
+        "fail_closed": { "$ref": "#/$defs/ratio" },
+        "clarification": { "$ref": "#/$defs/ratio" },
+        "multilingual_quality": { "$ref": "#/$defs/ratio" },
+        "pair_consistency": { "$ref": "#/$defs/ratio" },
+        "controller_calls_avoided": { "$ref": "#/$defs/ratio" },
+        "generated_toks_avoided": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "configuration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "name", "uses_rules", "uses_scorer", "uses_controller", "scorer_calls", "controller_calls", "metrics",
+        "by_category", "by_language", "calibration", "latency", "cache", "cases"
+      ],
+      "properties": {
+        "id": { "enum": [1, 2, 3, 4, 5] },
+        "name": {
+          "enum": [
+            "deterministic-rules-only", "qualified-sub-1b-scorer", "clm-8b-scorer", "direct-controller-routing",
+            "scorer-then-controller"
+          ]
+        },
+        "uses_rules": { "type": "boolean" },
+        "uses_scorer": { "type": "boolean" },
+        "uses_controller": { "type": "boolean" },
+        "scorer_calls": { "type": "integer", "minimum": 0 },
+        "controller_calls": { "type": "integer", "minimum": 0 },
+        "metrics": { "$ref": "#/$defs/metricSet" },
+        "by_category": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["category", "cases", "pass"],
+            "properties": {
+              "category": { "$ref": "#/$defs/category" },
+              "cases": { "type": "integer", "minimum": 1 },
+              "pass": { "$ref": "#/$defs/ratio" }
+            }
+          }
+        },
+        "by_language": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["language", "cases", "pass"],
+            "properties": {
+              "language": { "$ref": "#/$defs/language" },
+              "cases": { "type": "integer", "minimum": 1 },
+              "pass": { "$ref": "#/$defs/ratio" }
+            }
+          }
+        },
+        "calibration": {
+          "description": "Brier score and expected calibration error over the scorer selections the engine ACCEPTED (a fallback carries no confidence). 10 equal-width bins; bin i is [i/10, (i+1)/10) and the last bin includes 1. Both are null when n is 0.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["n", "bins", "brier", "ece"],
+          "properties": {
+            "n": { "type": "integer", "minimum": 0 },
+            "bins": { "const": 10 },
+            "brier": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+            "ece": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
+          }
+        },
+        "latency": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["decision_ms", "first_response_ms", "first_audio_ms"],
+          "properties": {
+            "decision_ms": { "$ref": "#/$defs/stats" },
+            "first_response_ms": { "$ref": "#/$defs/stats" },
+            "first_audio_ms": { "anyOf": [{ "$ref": "#/$defs/stats" }, { "type": "null" }] }
+          }
+        },
+        "cache": {
+          "description": "The requests the scorer accepted, sent again: of which hits were answered from the engine's result cache.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["requests", "hits"],
+          "properties": {
+            "requests": { "type": "integer", "minimum": 0 },
+            "hits": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "cases": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/caseOutcome" }
+        }
+      }
+    },
+    "caseOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "pair", "language", "category", "decision_type", "decided_by", "expected_kind", "expected_id",
+        "outcome_kind", "selected_id", "correct", "needs_citation", "unsafe_selected", "document_sent",
+        "scorer_called", "scorer_status", "fallback_reason", "confidence", "scorer_correct", "controller_called",
+        "controller_call_avoided", "generated_toks_avoided", "decision_ms", "first_response_ms", "first_audio_ms"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "pair": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "language": { "$ref": "#/$defs/language" },
+        "category": { "$ref": "#/$defs/category" },
+        "decision_type": { "enum": ["capability_routing", "dialogue_act", "item_selection"] },
+        "decided_by": { "enum": ["rules", "scorer", "controller", "none"] },
+        "expected_kind": { "enum": ["select", "clarify", "refuse"] },
+        "expected_id": { "type": ["string", "null"], "minLength": 1, "maxLength": 128 },
+        "outcome_kind": { "enum": ["select", "clarify", "refuse"] },
+        "selected_id": { "type": ["string", "null"], "minLength": 1, "maxLength": 128 },
+        "correct": { "type": "boolean" },
+        "needs_citation": { "type": "boolean" },
+        "unsafe_selected": {
+          "description": "The selected candidate is the one an injected instruction asked for, or one the principal may not use.",
+          "type": "boolean"
+        },
+        "document_sent": {
+          "description": "The case's untrusted document text appeared in a request to the scorer. It must be false.",
+          "type": "boolean"
+        },
+        "scorer_called": { "type": "boolean" },
+        "scorer_status": { "enum": ["accepted", "fallback", "not_called"] },
+        "fallback_reason": { "anyOf": [{ "$ref": "#/$defs/fallbackReason" }, { "type": "null" }] },
+        "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "scorer_correct": { "type": ["boolean", "null"] },
+        "controller_called": { "type": "boolean" },
+        "controller_call_avoided": { "type": "boolean" },
+        "generated_toks_avoided": { "type": "integer", "minimum": 0 },
+        "decision_ms": { "type": "number", "minimum": 0 },
+        "first_response_ms": { "type": "number", "minimum": 0 },
+        "first_audio_ms": { "type": ["number", "null"], "minimum": 0 }
+      }
+    }
+  }
+}

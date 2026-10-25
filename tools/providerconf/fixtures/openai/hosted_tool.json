@@ -1,0 +1,11 @@
+{
+  "id": "resp_0123456789abcdef",
+  "object": "response",
+  "status": "completed",
+  "model": "gpt-5-mini-2025-08-07",
+  "output": [
+    {"type": "web_search_call", "id": "ws_1", "status": "completed"},
+    {"type": "message", "id": "msg_1", "role": "assistant", "content": [{"type": "output_text", "text": "Found it on the web.", "annotations": []}]}
+  ],
+  "usage": {"input_tokens": {{IN}}, "input_tokens_details": {"cached_tokens": 0}, "output_tokens": {{OUT}}, "output_tokens_details": {"reasoning_tokens": 0}, "total_tokens": 0}
+}

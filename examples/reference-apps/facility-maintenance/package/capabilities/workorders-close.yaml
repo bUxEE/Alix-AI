@@ -1,0 +1,213 @@
+id: workorders.close
+version: 1.0.0
+audience: user
+title: Close a work order
+purpose: Close a work order with a resolution, the parts used and the labour hours. The closure is prepared first, its exact effects are shown (including the stock each part falls to and the parts cost), and it is committed only after the user confirms. Committing closes the work order and reduces the site's stock of every part used.
+scope_level: workspace
+permissions:
+- workorders.close
+fields:
+- name: work_order
+  type: entity_ref
+  entity_type: work_order
+  required: true
+  description: The work order to close.
+- name: resolution
+  type: string
+  required: true
+  description: What was done to resolve it, in the technician's words.
+  min_length: 3
+  max_length: 500
+- name: parts_used
+  type: list
+  required: false
+  description: The parts consumed, each written PART-NUMBER:QUANTITY, for example FLT-204:2. Leave it out when no parts were used.
+  item_type: string
+  max_items: 20
+- name: labor_hours
+  type: number
+  required: false
+  description: The hours of labour spent, with at most two decimals. Leave it out when not recorded.
+  minimum: 0
+  maximum: 24
+entity_types:
+  work_order:
+    description: A work order of the site that the caller may see.
+    resolve:
+      endpoint: facility-api
+      openapi_operation_id: resolveWorkOrder
+      result_schema: schemas/resolve.result.schema.json
+ambiguity:
+- id: work_order_multiple
+  field: work_order
+  when: multiple_matches
+  action: ask_user
+  max_choices: 5
+- id: work_order_none
+  field: work_order
+  when: no_match
+  action: reject
+validation:
+- id: work_order_closable
+  fields:
+  - work_order
+  description: The work order must not already be closed.
+  error_code: conflict
+- id: resolution_length
+  fields:
+  - resolution
+  description: The resolution must be 3 to 500 characters of plain text.
+  error_code: validation_failed
+- id: parts_format
+  fields:
+  - parts_used
+  description: Each part must be written PART-NUMBER:QUANTITY with a quantity of 1 to 999, and each part number may appear only once.
+  error_code: validation_failed
+- id: parts_known
+  fields:
+  - parts_used
+  description: Every part number must be in the stock catalogue of the caller's site.
+  error_code: validation_failed
+- id: parts_in_stock
+  fields:
+  - parts_used
+  description: Every part must be in stock in the quantity used.
+  error_code: conflict
+- id: labor_hours_in_range
+  fields:
+  - labor_hours
+  description: The labour hours must be from 0 to 24 with at most two decimals.
+  error_code: validation_failed
+failure_states:
+- code: permission_denied
+  description: The principal's role may not use this capability.
+- code: scope_violation
+  description: A record named is outside the principal's access (another site, another tenant, or work the role may not see), or does not exist. The application does not say which.
+- code: validation_failed
+  description: A value is missing, malformed or out of bounds. Nothing was changed.
+- code: conflict
+  description: A business rule is violated by the current state of the records. Nothing was changed.
+- code: stale
+  description: A record changed after the action was prepared, so the preparation is no longer valid. Nothing was changed; it can be prepared again.
+- code: expired
+  description: The prepared action was not confirmed in time, or was withdrawn. Nothing was changed.
+- code: uncertain_outcome
+  description: The commit response was lost. Whether the change was applied is established through the status operation before anything is retried.
+- code: missing_fields
+  description: A required field was not supplied. Nothing was changed.
+- code: unavailable
+  description: The application's data store cannot be reached. Nothing was changed.
+effect_class: external
+risk_level: 2
+operations:
+  validate:
+    endpoint: facility-api
+    openapi_operation_id: validateCloseWorkOrder
+    result_schema: schemas/workorders.close.validation.result.schema.json
+    timeout_ms: 5000
+  prepare:
+    endpoint: facility-api
+    openapi_operation_id: prepareCloseWorkOrder
+    result_schema: schemas/workorders.close.prepared.result.schema.json
+    timeout_ms: 8000
+  commit:
+    endpoint: facility-api
+    openapi_operation_id: commitCloseWorkOrder
+    result_schema: schemas/workorders.close.receipt.result.schema.json
+    timeout_ms: 15000
+  status:
+    endpoint: facility-api
+    openapi_operation_id: statusCloseWorkOrder
+    result_schema: schemas/workorders.close.receipt.result.schema.json
+    timeout_ms: 5000
+confirmation:
+  mode: explicit
+prepared_action:
+  ttl_seconds: 600
+  invalidated_by:
+  - record_revision
+  - permission_change
+  - user_change
+idempotency:
+  key_source: prepared_action_id
+  window_seconds: 86400
+  on_replay: return_original_receipt
+response_obligations:
+- fact: work_order_id
+  when: always
+  description: The reference of the work order.
+- fact: work_order_title
+  when: prepared
+  description: The title of the work order.
+- fact: parts_summary
+  when: prepared
+  description: The parts that will be used, each with its quantity, or none.
+- fact: parts_cost
+  when: always
+  description: The total cost of the parts used.
+- fact: closed_at
+  when: success
+  description: When the work order was closed.
+next_actions:
+- id: show_remaining_orders
+  after: success
+  capability_id: workorders.list
+doc_refs:
+- wx-field-work_order
+- wx-field-resolution
+- wx-field-parts_used
+- wx-field-labor_hours
+- wx-rule-work_order_closable
+- wx-rule-resolution_length
+- wx-rule-parts_format
+- wx-rule-parts_known
+- wx-rule-parts_in_stock
+- wx-rule-labor_hours_in_range
+- wx-perm-workorders.close
+- wx-failure-permission_denied
+- wx-failure-scope_violation
+- wx-failure-validation_failed
+- wx-failure-conflict
+- wx-failure-stale
+- wx-failure-expired
+- wx-failure-uncertain_outcome
+- wx-failure-missing_fields
+- wx-failure-unavailable
+- wx-risk
+- wx-confirmation
+- wx-outcome-closed
+examples:
+- id: en-close-with-parts
+  language: en
+  test_only: true
+  utterance: 'Close WO-1001: replaced the supply fan belt, used BLT-11:1, 1.5 hours'
+  expected_fields:
+    work_order: WO-1001
+    resolution: Replaced the supply fan belt
+    parts_used:
+    - BLT-11:1
+    labor_hours: 1.5
+- id: en-close-no-parts
+  language: en
+  test_only: true
+  utterance: Close the chiller job, the refrigerant was topped up
+  expected_fields:
+    work_order: chiller
+    resolution: Refrigerant topped up
+- id: it-chiudi-con-ricambi
+  language: it
+  test_only: true
+  utterance: 'Chiudi WO-1001: sostituita la cinghia del ventilatore, usato BLT-11:1, 1,5 ore'
+  expected_fields:
+    work_order: WO-1001
+    resolution: Sostituita la cinghia del ventilatore
+    parts_used:
+    - BLT-11:1
+    labor_hours: 1.5
+- id: it-chiudi-senza-ricambi
+  language: it
+  test_only: true
+  utterance: Chiudi l'intervento sul chiller, ho rabboccato il refrigerante
+  expected_fields:
+    work_order: chiller
+    resolution: Refrigerante rabboccato

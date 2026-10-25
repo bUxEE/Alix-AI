@@ -1,0 +1,42 @@
+data: {"type":"RUN_STARTED","threadId":"ses_test_01","runId":"run_form"}
+
+data: {"type":"STATE_DELTA","delta":[{"op":"add","path":"/alixai","value":{"pending":null}}]}
+
+data: {"type":"STEP_STARTED","stepName":"interpreting"}
+
+id: 0
+data: {"type":"STEP_FINISHED","stepName":"interpreting"}
+
+data: {"type":"STEP_STARTED","stepName":"validating"}
+
+id: 1
+data: {"type":"STEP_FINISHED","stepName":"validating"}
+
+data: {"type":"STEP_STARTED","stepName":"generating"}
+
+id: 2
+data: {"type":"STEP_FINISHED","stepName":"generating"}
+
+data: {"type":"STEP_STARTED","stepName":"verifying"}
+
+id: 3
+data: {"type":"STEP_FINISHED","stepName":"verifying"}
+
+id: 4
+data: {"type":"CUSTOM","name":"alixai.directive","value":{"turn_id":"trn_01J00000000000000000000001","capability_id":"items.create","act":"ask_missing","facts":[],"must_state":[],"missing_fields":["size"],"invalid_fields":[],"next_question":{"field":"size","answer_kind":"choice","choices":[{"choice_id":"small","label":"small","value":{"kind":"text","value":"small"}},{"choice_id":"medium","label":"medium","value":{"kind":"text","value":"medium"}},{"choice_id":"large","label":"large","value":{"kind":"text","value":"large"}}]},"allowed_suggestions":[],"confirmation":{"mode":"none","bindings":[]},"permitted_next_actions":[],"sources":[]}}
+
+id: 5
+data: {"type":"ACTIVITY_SNAPSHOT","messageId":"act_trn_01J00000000000000000000001_b1","activityType":"alixai.block.clarification_choices","content":{"type":"clarification_choices","field":"size","answer_kind":"choice","allow_free_text":true,"choices":[{"choice_id":"small","label":"small","value":{"kind":"text","value":"small"}},{"choice_id":"medium","label":"medium","value":{"kind":"text","value":"medium"}},{"choice_id":"large","label":"large","value":{"kind":"text","value":"large"}}]}}
+
+data: {"type":"TEXT_MESSAGE_START","messageId":"msg_trn_01J00000000000000000000001_1","role":"assistant"}
+
+id: 6
+data: {"type":"TEXT_MESSAGE_CONTENT","messageId":"msg_trn_01J00000000000000000000001_1","delta":"Which size?"}
+
+data: {"type":"TEXT_MESSAGE_END","messageId":"msg_trn_01J00000000000000000000001_1"}
+
+data: {"type":"STATE_DELTA","delta":[{"op":"replace","path":"/alixai/pending","value":{"capabilityId":"items.create","collectedFields":[{"name":"name","origin":"user_turn"},{"name":"quantity","origin":"user_turn"}],"expiresAt":"2026-10-02T12:30:00Z","kind":"clarification","missingFields":["size"],"phase":"","question":{"answerKind":"choice","choices":[{"id":"small","label":"small"},{"id":"medium","label":"medium"},{"id":"large","label":"large"}],"field":"size"}}}]}
+
+id: 7
+data: {"type":"RUN_FINISHED","threadId":"ses_test_01","runId":"run_form","result":{"finishReason":"awaiting_input","turnId":"trn_01J00000000000000000000001"},"outcome":{"type":"success"}}
+

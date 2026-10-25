@@ -1,0 +1,164 @@
+terms:
+- id: asset
+  entity_type: asset
+  labels:
+    en:
+      preferred: asset
+      synonyms:
+      - equipment
+      - machine
+      - unit
+      avoid:
+      - device
+      definition: 'A piece of equipment of a site that is maintained: an air handling unit, a chiller, a pump or a generator. It has a tag such as AHU-200 and is either active or decommissioned.'
+    it:
+      preferred: attrezzatura
+      synonyms:
+      - impianto
+      - macchina
+      - apparecchiatura
+      avoid:
+      - dispositivo
+      definition: 'Un''apparecchiatura di una sede che viene mantenuta: un''unità di trattamento aria, un refrigeratore, una pompa o un generatore. Ha una sigla come AHU-200 ed è attiva oppure dismessa.'
+- id: work_order
+  entity_type: work_order
+  labels:
+    en:
+      preferred: work order
+      synonyms:
+      - job
+      - ticket
+      - WO
+      avoid:
+      - task
+      definition: 'A request to maintain or repair one asset, with a reference such as WO-1001, a priority and a status: open, assigned or closed.'
+    it:
+      preferred: ordine di lavoro
+      synonyms:
+      - intervento
+      - ticket
+      - OdL
+      - WO
+      avoid:
+      - compito
+      definition: 'Una richiesta di manutenzione o riparazione di una attrezzatura, con un riferimento come WO-1001, una priorità e uno stato: aperto, assegnato o chiuso.'
+- id: technician
+  entity_type: technician
+  labels:
+    en:
+      preferred: technician
+      synonyms:
+      - engineer
+      - tech
+      definition: A person who carries out work orders at a site. A technician has a trade and at most five open work orders at a time.
+    it:
+      preferred: tecnico
+      synonyms:
+      - manutentore
+      - operatore
+      definition: Una persona che esegue gli ordini di lavoro in una sede. Un tecnico ha un mestiere e al massimo cinque ordini di lavoro aperti per volta.
+- id: part
+  labels:
+    en:
+      preferred: part
+      synonyms:
+      - spare part
+      - component
+      definition: A spare part kept in the site's stock, identified by a part number such as FLT-204. Closing a work order with parts reduces the stock.
+    it:
+      preferred: ricambio
+      synonyms:
+      - pezzo di ricambio
+      - componente
+      definition: Un pezzo di ricambio tenuto a scorta nella sede, identificato da un codice come FLT-204. Chiudere un ordine di lavoro con dei ricambi riduce la scorta.
+- id: site
+  labels:
+    en:
+      preferred: site
+      synonyms:
+      - campus
+      - depot
+      - facility
+      definition: One physical location of the operator. Its assets, technicians, parts and work orders are the only records a request at that site can reach.
+    it:
+      preferred: sede
+      synonyms:
+      - stabilimento
+      - deposito
+      definition: Un luogo fisico dell'operatore. Le sue attrezzature, i suoi tecnici, i ricambi e gli ordini di lavoro sono i soli record che una richiesta in quella sede può raggiungere.
+- id: priority
+  labels:
+    en:
+      preferred: priority
+      synonyms:
+      - urgency
+      definition: 'How soon a work order must be dealt with: low, normal, high or urgent.'
+    it:
+      preferred: priorità
+      synonyms:
+      - urgenza
+      definition: 'Quanto presto va trattato un ordine di lavoro: bassa, normale, alta o urgente.'
+- id: step_up
+  labels:
+    en:
+      preferred: step-up check
+      synonyms:
+      - extra verification
+      definition: A stronger check the supervisor completes in the Facility Maintenance app, signed in with their own passcode, before an asset can be decommissioned. The assistant cannot complete it.
+    it:
+      preferred: verifica rafforzata
+      synonyms:
+      - controllo aggiuntivo
+      definition: Un controllo più forte che il supervisore completa nell'app Facility Maintenance, con il proprio codice, prima di poter dismettere una attrezzatura. L'assistente non può completarlo.
+- id: decommissioning
+  labels:
+    en:
+      preferred: decommission
+      synonyms:
+      - retire
+      - take out of service
+      - scrap
+      definition: To take an asset out of service for good. Only a supervisor can start it, only for an asset with no open work orders, and it is completed in the Facility Maintenance app after a step-up check.
+    it:
+      preferred: dismettere
+      synonyms:
+      - dismetti
+      - dismissione
+      - mettere fuori servizio
+      - ritirare
+      definition: Mettere una attrezzatura fuori servizio in modo definitivo. Solo un supervisore può avviarlo, solo per una attrezzatura senza ordini di lavoro aperti, e si completa nell'app Facility Maintenance dopo una verifica rafforzata.
+- id: assignment
+  labels:
+    en:
+      preferred: assignment
+      synonyms:
+      - assign
+      - assigned
+      - reassign
+      definition: Giving a work order to one technician, who then carries it out. A work order that has a technician is assigned; one that has none is open.
+    it:
+      preferred: assegnazione
+      synonyms:
+      - assegna
+      - assegnare
+      - assegnato
+      - assegnati
+      - assegnata
+      definition: Dare un ordine di lavoro a un tecnico, che poi lo esegue. Un ordine di lavoro che ha un tecnico è assegnato; uno che non ne ha è aperto.
+- id: closure
+  labels:
+    en:
+      preferred: closing
+      synonyms:
+      - close
+      - closed
+      - close out
+      definition: Finishing a work order by recording what was done, the parts used and the hours worked.
+    it:
+      preferred: chiusura
+      synonyms:
+      - chiudi
+      - chiudere
+      - chiuso
+      - chiusi
+      definition: Terminare un ordine di lavoro registrando cosa è stato fatto, i ricambi usati e le ore lavorate.

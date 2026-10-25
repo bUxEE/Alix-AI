@@ -1,0 +1,111 @@
+{
+  "id": "catalog.find_title",
+  "version": "1.0.0",
+  "audience": "user",
+  "title": "Find a title",
+  "purpose": "Search the catalogue of the user's branch for titles that match some words and report which of them can be borrowed now.",
+  "scope_level": "workspace",
+  "permissions": [
+    "catalog.read"
+  ],
+  "fields": [
+    {
+      "name": "query",
+      "type": "string",
+      "required": true,
+      "description": "Words from the title, the author or the subject to search for.",
+      "min_length": 2,
+      "max_length": 200
+    },
+    {
+      "name": "available_only",
+      "type": "boolean",
+      "required": false,
+      "description": "List only titles that can be borrowed right now.",
+      "default": {
+        "source": "literal",
+        "value": false
+      }
+    },
+    {
+      "name": "max_results",
+      "type": "integer",
+      "required": false,
+      "description": "How many titles to list.",
+      "minimum": 1,
+      "maximum": 20,
+      "default": {
+        "source": "literal",
+        "value": 5
+      }
+    }
+  ],
+  "entity_types": {},
+  "ambiguity": [],
+  "validation": [
+    {
+      "id": "query_not_blank",
+      "fields": [
+        "query"
+      ],
+      "description": "The query must contain at least two characters that are not spaces.",
+      "error_code": "validation_failed"
+    }
+  ],
+  "failure_states": [
+    {
+      "code": "validation_failed",
+      "description": "The query is blank or too short, so no search was run."
+    },
+    {
+      "code": "unavailable",
+      "description": "The catalogue service cannot be reached. No result is available and none is guessed."
+    }
+  ],
+  "effect_class": "none",
+  "risk_level": 0,
+  "operations": {
+    "read": {
+      "endpoint": "library-mcp",
+      "mcp_tool": "find_title",
+      "result_schema": "schemas/find-title.result.schema.json",
+      "timeout_ms": 5000
+    }
+  },
+  "confirmation": {
+    "mode": "none"
+  },
+  "response_obligations": [
+    {
+      "fact": "search.count",
+      "when": "success",
+      "description": "How many titles matched."
+    },
+    {
+      "fact": "search.titles",
+      "when": "success",
+      "description": "The matching titles with their availability at the user's branch."
+    }
+  ],
+  "next_actions": [
+    {
+      "id": "reserve_found_title",
+      "after": "success",
+      "capability_id": "reservations.create"
+    }
+  ],
+  "doc_refs": [
+    "cft-field-query",
+    "cft-field-available-only",
+    "cft-field-max-results",
+    "cft-rule-query-not-blank",
+    "cft-perm-catalog-read",
+    "cft-fail-validation-failed",
+    "cft-fail-unavailable",
+    "cft-risk",
+    "cft-confirmation",
+    "cft-outcome-found",
+    "cft-outcome-none-found"
+  ],
+  "examples": []
+}

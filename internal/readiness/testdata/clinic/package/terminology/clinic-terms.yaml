@@ -1,0 +1,167 @@
+terms:
+  - id: patient
+    entity_type: patient
+    labels:
+      en:
+        preferred: patient
+        synonyms:
+          - client
+        avoid:
+          - customer
+        definition: A person registered at a clinic site, who has a record there and may have appointments.
+      it:
+        preferred: paziente
+        synonyms:
+          - assistito
+        avoid:
+          - cliente
+        definition: Una persona registrata presso una sede della clinica, con una scheda e, se serve, degli appuntamenti.
+  - id: doctor
+    entity_type: doctor
+    labels:
+      en:
+        preferred: doctor
+        synonyms:
+          - physician
+          - Dr
+        definition: A doctor who sees patients at a clinic site. The doctor named by a slot is the one the appointment is with.
+      it:
+        preferred: medico
+        synonyms:
+          - dottore
+          - dottoressa
+          - dott.
+        definition: Un medico che visita i pazienti in una sede della clinica. Il medico di uno slot è quello con cui si svolge l'appuntamento.
+  - id: slot
+    entity_type: slot
+    labels:
+      en:
+        preferred: appointment slot
+        synonyms:
+          - time slot
+          - free appointment
+          - opening
+        avoid:
+          - booking
+        definition: A free time of one doctor at one clinic site that can still be booked. A slot is taken once an appointment is booked into it and is free again when that appointment is cancelled.
+      it:
+        preferred: orario libero
+        synonyms:
+          - slot
+          - disponibilità
+        avoid:
+          - prenotazione
+        definition: Un orario libero di un medico presso una sede, ancora prenotabile. Diventa occupato quando vi si prenota un appuntamento e torna libero se l'appuntamento è annullato.
+  - id: appointment
+    entity_type: appointment
+    labels:
+      en:
+        preferred: appointment
+        synonyms:
+          - visit
+          - booking
+        avoid:
+          - reservation
+        definition: A booked visit of one patient with one doctor at one time of a clinic site. It has a reference such as APT-7K3Q9X and is either booked or cancelled.
+      it:
+        preferred: appuntamento
+        synonyms:
+          - visita
+          - prenotazione
+        avoid:
+          - riserva
+        definition: Una visita prenotata di un paziente con un medico a una certa ora di una sede. Ha un riferimento come APT-7K3Q9X ed è prenotata oppure annullata.
+  - id: clinic_site
+    labels:
+      en:
+        preferred: clinic site
+        synonyms:
+          - site
+          - clinic
+          - branch
+        definition: One physical clinic of a clinic group. Everything a request can reach belongs to its own site.
+      it:
+        preferred: sede
+        synonyms:
+          - clinica
+          - ambulatorio
+        definition: Una clinica fisica di un gruppo. Tutto ciò che una richiesta può raggiungere appartiene alla sua sede.
+  - id: appointment_reference
+    labels:
+      en:
+        preferred: appointment reference
+        synonyms:
+          - booking reference
+          - reference code
+        definition: The short code (APT- followed by six letters or digits) that identifies a booked appointment and that the patient quotes at the clinic.
+      it:
+        preferred: riferimento dell'appuntamento
+        synonyms:
+          - codice prenotazione
+          - codice di riferimento
+        definition: Il codice breve (APT- seguito da sei lettere o cifre) che identifica un appuntamento prenotato e che il paziente cita in clinica.
+  - id: phone_number
+    labels:
+      en:
+        preferred: phone number
+        synonyms:
+          - phone
+          - telephone number
+          - mobile number
+          - mobile
+        definition: The number a clinic uses to call or text a patient, as it is kept on the patient's record.
+      it:
+        preferred: numero di telefono
+        synonyms:
+          - telefono
+          - numero di cellulare
+          - cellulare
+        definition: Il numero con cui la clinica chiama o scrive a un paziente, così come è registrato nella scheda del paziente.
+  - id: email_address
+    labels:
+      en:
+        preferred: email address
+        synonyms:
+          - email
+          - e-mail
+        definition: The address a clinic uses to write to a patient, as it is kept on the patient's record.
+      it:
+        preferred: indirizzo email
+        synonyms:
+          - email
+          - e-mail
+          - indirizzo di posta elettronica
+          - posta elettronica
+        definition: L'indirizzo con cui la clinica scrive a un paziente, così come è registrato nella scheda del paziente.
+  - id: contact_details
+    labels:
+      en:
+        preferred: contact details
+        synonyms:
+          - contact information
+          - contact info
+        definition: The phone number and the email address kept on a patient's record.
+      it:
+        preferred: recapiti
+        synonyms:
+          - recapito
+          - dati di contatto
+        definition: Il numero di telefono e l'indirizzo email registrati nella scheda di un paziente.
+  - id: date_of_birth
+    labels:
+      en:
+        preferred: date of birth
+        synonyms:
+          - birth date
+          - birthday
+          - born
+          - dob
+        definition: The day a patient was born. With a name it narrows a patient search to one person.
+      it:
+        preferred: data di nascita
+        synonyms:
+          - nascita
+          - nato
+          - nata
+          - compleanno
+        definition: Il giorno in cui è nato un paziente. Insieme al nome restringe la ricerca a una sola persona.

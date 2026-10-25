@@ -1,0 +1,145 @@
+# AlixAI optional CLM sidecar: a vLLM server for the frozen Qwen3-8B encoder plus the CLM service (ADR 0029 option 4,
+# ADR 0030 provisional preference). OPTIONAL, bounded, non-generative and non-authoritative: it scores a bounded
+# set of authorised candidates and writes no text; with it stopped or removed AlixAI behaves as it does without it.
+#
+#   - both images are the same CPU image pinned by digest (README.md "Pinned versions"); no GPU, no device mapping
+#   - only the CLM service publishes a port, on 127.0.0.1; the encoder has no published port and sits on an
+#     internal network (no route out, no route in); the CLM service is the only container that reaches it
+#   - the CLM service waits for a healthy encoder (depends_on service_healthy); there is NO one-shot setup container:
+#     the checks and the optional model fetch live in entrypoint.sh of the two main services (owner rule)
+#   - the registry's revision and sha256 are checked against config/pins.txt, and every model byte against the pins,
+#     before anything is served; a mismatch exits 78 and nothing starts
+#   - data lives in bind mounts, never named or anonymous volumes
+#
+# Resource profiles are override files: -f compose.yaml -f compose.balanced.yaml  (or compose.highmem.yaml).
+# Plain `docker compose` / `podman compose` syntax only; no Docker-only extensions.
+
+name: alixai-clm
+
+services:
+  vllm:
+    # tag is informational, the digest is what is pulled. Multi-arch index (amd64 + arm64), vLLM v0.31.0 CPU build.
+    image: docker.io/vllm/vllm-openai-cpu:v0.31.0@sha256:495c84fe30f3572b83a78100a1e8ba423dbb77fc532ecefebe114e6b77327bd9
+    container_name: alixai-clm-vllm
+    entrypoint: ["/bin/bash", "/alixai/entrypoint.sh"]
+    command: ["vllm"]
+    # No `ports:` on purpose. clm-serve (v0.1.0) sends no key to its embedder, so a vLLM --api-key would break it;
+    # the encoder is protected by the network instead: it is on `encoder_net` only, which is internal.
+    networks:
+      - encoder_net
+    environment:
+      # --- CPU only. No accelerator of any kind (an AMD GPU in particular must never be used) ---
+      VLLM_TARGET_DEVICE: cpu
+      CUDA_VISIBLE_DEVICES: "-1"
+      HIP_VISIBLE_DEVICES: "-1"
+      ROCR_VISIBLE_DEVICES: "-1"
+      # --- telemetry off, offline hub ---
+      VLLM_NO_USAGE_STATS: "1"
+      VLLM_DO_NOT_TRACK: "1"
+      DO_NOT_TRACK: "1"
+      HF_HUB_OFFLINE: "1"
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      TRANSFORMERS_OFFLINE: "1"
+      # --- threads: no pinning (a CPU quota does not shrink the visible cores), the pool is sized by OMP_NUM_THREADS ---
+      VLLM_CPU_OMP_THREADS_BIND: nobind
+      OMP_NUM_THREADS: ${CLM_VLLM_THREADS:-4}
+      # GiB of KV cache reserved for the encoder; embeddings of at most 2048 tokens need little
+      VLLM_CPU_KVCACHE_SPACE: ${CLM_VLLM_KV_GIB:-2}
+      # --- read-only root file system: every cache lives on the tmpfs below ---
+      HOME: /tmp/home
+      VLLM_CACHE_ROOT: /tmp/vllm-cache
+      # --- registry and pins (entrypoint.sh) ---
+      ALIXAI_ENCODER_REGISTRY_ID: ${ALIXAI_ENCODER_REGISTRY_ID:-qwen3-8b}
+      ALIXAI_FETCH_MODELS: "false"
+    volumes:
+      # the frozen encoder, bf16 safetensors, ~15.3 GiB; filled by fetch.sh on the host or by compose.fetch.yaml
+      - ./data/encoder:/models/encoder:ro
+      - ../../../models/registry:/registry:ro
+      - ./config/pins.txt:/alixai/pins.txt:ro
+      - ./entrypoint.sh:/alixai/entrypoint.sh:ro
+    tmpfs:
+      - /tmp:size=2g
+    read_only: true
+    shm_size: 1gb
+    healthcheck:
+      # /health needs no key. start_period covers re-hashing ~16 GB at every start plus the model load.
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60m
+    # a refused start (exit 78) is a configuration error: three tries, then it stays down
+    restart: on-failure:3
+    stop_grace_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    labels:
+      ai.alixai.component: clm-encoder
+      ai.alixai.profile: unconstrained
+
+  clm:
+    image: docker.io/vllm/vllm-openai-cpu:v0.31.0@sha256:495c84fe30f3572b83a78100a1e8ba423dbb77fc532ecefebe114e6b77327bd9
+    container_name: alixai-clm
+    entrypoint: ["/bin/bash", "/alixai/entrypoint.sh"]
+    command: ["clm"]
+    depends_on:
+      vllm:
+        condition: service_healthy
+    networks:
+      - encoder_net
+      - edge_net
+    ports:
+      # loopback only: AlixAI is the one client (master plan 16.1)
+      - "127.0.0.1:${CLM_PORT:-8700}:8700"
+    environment:
+      CUDA_VISIBLE_DEVICES: "-1"
+      HIP_VISIBLE_DEVICES: "-1"
+      ROCR_VISIBLE_DEVICES: "-1"
+      DO_NOT_TRACK: "1"
+      HF_HUB_OFFLINE: "1"
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      OMP_NUM_THREADS: ${CLM_CLM_THREADS:-2}
+      MKL_NUM_THREADS: ${CLM_CLM_THREADS:-2}
+      # --- authentication: one shared key (hardening.md); empty is refused unless ALIXAI_CLM_ALLOW_NO_KEY=true ---
+      CLM_API_KEY: ${CLM_API_KEY:-}
+      ALIXAI_CLM_ALLOW_NO_KEY: ${ALIXAI_CLM_ALLOW_NO_KEY:-false}
+      # --- bounded embedding cache of the service: an absolute size (a bare fraction would be read as device memory) ---
+      CLM_ACTION_CACHE: ${CLM_ACTION_CACHE:-256MiB}
+      HOME: /tmp/home
+      ALIXAI_CLM_REGISTRY_ID: ${ALIXAI_CLM_REGISTRY_ID:-clm-v0.1-8b}
+      ALIXAI_ENCODER_REGISTRY_ID: ${ALIXAI_ENCODER_REGISTRY_ID:-qwen3-8b}
+      ALIXAI_FETCH_MODELS: "false"
+    volumes:
+      # the 75 MB CLM head and the pinned contrastive-lm wheel
+      - ./data/clm:/models/clm:ro
+      - ../../../models/registry:/registry:ro
+      - ./config/pins.txt:/alixai/pins.txt:ro
+      - ./entrypoint.sh:/alixai/entrypoint.sh:ro
+    tmpfs:
+      - /tmp:size=512m
+    read_only: true
+    healthcheck:
+      # /health needs no key; it must report the service up AND the encoder reachable
+      test: ["CMD", "python3", "-c", "import json, urllib.request; d = json.load(urllib.request.urlopen('http://127.0.0.1:8700/health', timeout=5)); raise SystemExit(0 if d.get('ok') and d.get('embedder') else 1)"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 10m
+    restart: on-failure:3
+    stop_grace_period: 15s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    labels:
+      ai.alixai.component: clm-service
+      ai.alixai.profile: unconstrained
+
+networks:
+  # no route out and none in: the encoder cannot download, phone home or be reached from the host
+  encoder_net:
+    internal: true
+  # the CLM service's own network: carries the loopback publish only
+  edge_net: {}

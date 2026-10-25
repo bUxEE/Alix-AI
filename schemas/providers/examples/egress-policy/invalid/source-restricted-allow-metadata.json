@@ -1,0 +1,24 @@
+{
+  "policy_id": "epol_01J0000000000000000000000A",
+  "revision": 1,
+  "level": "source",
+  "target": {
+    "deployment_id": "dep_main",
+    "application_id": "app_crm",
+    "tenant_id": "ten_42",
+    "workspace_id": "wsp_sales",
+    "source_id": "src_01J0000000000000000000000S"
+  },
+  "enabled": true,
+  "source_mode": "allow_metadata",
+  "allowed_providers": ["openai"],
+  "allowed_models": [
+    { "provider_id": "openai", "model_id": "gpt-4.1-mini" }
+  ],
+  "allowed_classes": ["public"],
+  "allowed_regions": ["us", "eu"],
+  "updated_at": "2026-10-02T08:30:00Z",
+  "updated_by": "usr_admin",
+  "source_class": "restricted",
+  "approval": { "approved_by": "usr_admin", "approved_at": "2026-10-02T08:30:00Z" }
+}

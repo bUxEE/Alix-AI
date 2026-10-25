@@ -1,0 +1,142 @@
+{
+  "name": "chart",
+  "description": "A declarative chart block (data, not executable code; its numbers are in the directive's facts) as a generative-UI activity of type alixai.block.chart, beside the text. Recorded through the hub and read back from the run's events route.",
+  "protocol": "AG-UI 1.0 (@ag-ui/core 1.0.1)",
+  "source": "hub",
+  "request": {
+    "method": "GET",
+    "path": "/v1/agui/threads/ses_test_01/runs/run_chart/events"
+  },
+  "response": {
+    "status": 200,
+    "content_type": "text/event-stream",
+    "sse_file": "chart.sse",
+    "ids": [
+      "0",
+      "1",
+      "2",
+      "3"
+    ],
+    "event_types": [
+      "RUN_STARTED",
+      "CUSTOM",
+      "ACTIVITY_SNAPSHOT",
+      "TEXT_MESSAGE_START",
+      "TEXT_MESSAGE_CONTENT",
+      "TEXT_MESSAGE_END",
+      "RUN_FINISHED"
+    ],
+    "events": [
+      {
+        "type": "RUN_STARTED",
+        "threadId": "ses_test_01",
+        "runId": "run_chart"
+      },
+      {
+        "type": "CUSTOM",
+        "name": "alixai.directive",
+        "value": {
+          "turn_id": "trn_01J00000000000000000000001",
+          "capability_id": "appointments.book",
+          "act": "present_result",
+          "facts": [
+            {
+              "field": "booked_monday",
+              "value": {
+                "kind": "integer",
+                "value": 12
+              }
+            },
+            {
+              "field": "booked_tuesday",
+              "value": {
+                "kind": "integer",
+                "value": 18
+              }
+            },
+            {
+              "field": "booked_wednesday",
+              "value": {
+                "kind": "integer",
+                "value": 9
+              }
+            }
+          ],
+          "must_state": [],
+          "missing_fields": [],
+          "invalid_fields": [],
+          "allowed_suggestions": [],
+          "confirmation": {
+            "mode": "none",
+            "bindings": []
+          },
+          "permitted_next_actions": [],
+          "sources": []
+        }
+      },
+      {
+        "type": "ACTIVITY_SNAPSHOT",
+        "messageId": "act_trn_01J00000000000000000000001_b1",
+        "activityType": "alixai.block.chart",
+        "content": {
+          "type": "chart",
+          "title": "Appointments per weekday",
+          "description": "Bar chart of booked appointments per weekday: Monday 12, Tuesday 18, Wednesday 9.",
+          "mark": "bar",
+          "data": [
+            {
+              "booked": 12,
+              "weekday": "Mon"
+            },
+            {
+              "booked": 18,
+              "weekday": "Tue"
+            },
+            {
+              "booked": 9,
+              "weekday": "Wed"
+            }
+          ],
+          "encoding": {
+            "x": {
+              "field": "weekday",
+              "type": "nominal",
+              "title": "Weekday"
+            },
+            "y": {
+              "field": "booked",
+              "type": "quantitative",
+              "title": "Booked"
+            }
+          }
+        }
+      },
+      {
+        "type": "TEXT_MESSAGE_START",
+        "messageId": "msg_trn_01J00000000000000000000001_1",
+        "role": "assistant"
+      },
+      {
+        "type": "TEXT_MESSAGE_CONTENT",
+        "messageId": "msg_trn_01J00000000000000000000001_1",
+        "delta": "Tuesday is the busiest day."
+      },
+      {
+        "type": "TEXT_MESSAGE_END",
+        "messageId": "msg_trn_01J00000000000000000000001_1"
+      },
+      {
+        "type": "RUN_FINISHED",
+        "threadId": "ses_test_01",
+        "runId": "run_chart",
+        "result": {
+          "finishReason": "completed",
+          "turnId": "trn_01J00000000000000000000001"
+        },
+        "outcome": {
+          "type": "success"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "synthetic": true,
+  "note": "Every name, number and address is made up. Principals are linked to their own patient or doctor record by reference; given_name, family_name, name and reference fix what the audit's conversations call a record (Maria Rossi, APT-7K3Q9X), and the application invents the rest.",
+  "records": [
+    { "ref": "doctor-rec-a1", "entity_type": "doctor", "workspace": "site-a1", "principal": "doctor-a1", "name": "Dr. Anna Verdi" },
+    { "ref": "doctor-rec-a2", "entity_type": "doctor", "workspace": "site-a2" },
+    { "ref": "doctor-rec-b1", "entity_type": "doctor", "workspace": "site-b1" },
+    { "ref": "patient-rec-a1", "entity_type": "patient", "workspace": "site-a1", "principal": "patient-a1", "given_name": "Maria", "family_name": "Rossi" },
+    { "ref": "patient-rec-a1b", "entity_type": "patient", "workspace": "site-a1", "principal": "patient-a1b", "given_name": "Luca", "family_name": "Ferri" },
+    { "ref": "patient-rec-a2", "entity_type": "patient", "workspace": "site-a2", "given_name": "Chiara", "family_name": "Bianchi" },
+    { "ref": "patient-rec-b1", "entity_type": "patient", "workspace": "site-b1", "given_name": "Paolo", "family_name": "Neri" },
+    { "ref": "slot-a1", "entity_type": "slot", "workspace": "site-a1", "principal": "doctor-a1" },
+    { "ref": "slot-a1b", "entity_type": "slot", "workspace": "site-a1", "principal": "doctor-a1" },
+    { "ref": "slot-a2", "entity_type": "slot", "workspace": "site-a2" },
+    { "ref": "slot-b1", "entity_type": "slot", "workspace": "site-b1" },
+    { "ref": "appt-a1", "entity_type": "appointment", "workspace": "site-a1", "principal": "patient-a1", "reference": "APT-7K3Q9X" },
+    { "ref": "appt-a2", "entity_type": "appointment", "workspace": "site-a2" },
+    { "ref": "appt-b1", "entity_type": "appointment", "workspace": "site-b1" }
+  ]
+}

@@ -1,0 +1,90 @@
+# Model registry entry (schemas/models/registry-entry.schema.json, revision 2). One file per model; the file name is the id.
+# Optional decision layer (master plan 8.5, ADR 0029): optional, bounded, non-generative and non-authoritative. Written by task D-11, reviewed 2026-10-08.
+# Every key is present; null means not yet known or not yet measured. Nothing is measured here: measurements wait for D-08 / M5-09.
+id: laya-multilingual
+name: "Laya multilingual (mmBERT-base)"
+version: "0.3"
+status: candidate
+roles:
+  - "decision-scorer"
+capabilities:
+  - "decision-scoring"
+upstream:
+  repo_url: https://huggingface.co/convaiinnovations/laya-multilingual
+  revision: 1720e3e3357cfe1e281542e223f8273b0890ca34
+artifact:
+  format: safetensors
+  repo_url: https://huggingface.co/convaiinnovations/laya-multilingual
+  filename: model.safetensors
+  revision: 1720e3e3357cfe1e281542e223f8273b0890ca34
+  size_bytes: 643835514
+  sha256: 9d628fd971b700382ac6f65920a86f149777b2e748e0c955fb3b19695aa8f204
+  quantized_by: convaiinnovations
+  first_party: true
+  checked_on: "2026-10-08"
+licence:
+  spdx: Apache-2.0
+  url: https://huggingface.co/convaiinnovations/laya-multilingual/blob/1720e3e3357cfe1e281542e223f8273b0890ca34/README.md
+  redistribution_notes: "Apache-2.0, declared in the model card metadata at the pinned commit; the repository has no LICENSE file, so the licence text itself was not seen (unverified). First-party weights, unmodified. AlixAI does not bundle weights: the operator fetches the pinned file. Final sign-off is the human licence review (D-H01, M5-H02)."
+quantization:
+  scheme: F16
+  nominal_bits: 16
+backend:
+  runtime: localai
+  name: vllm-cpp
+  allowed_runtime_versions: []
+hardware:
+  minimum:
+    cpu_cores: null
+    ram_mb: null
+    accelerator: null
+  recommended:
+    cpu_cores: null
+    ram_mb: null
+    accelerator: null
+memory:
+  peak_rss_mb: null
+  steady_rss_mb: null
+context:
+  native_max_tokens: 1024
+  budget_tokens: null
+  kv_cache_mb: null
+load_time:
+  cold_ms: null
+  warm_ms: null
+performance:
+  latency_ms_p50: null
+  latency_ms_p95: null
+  ttft_ms_p50: null
+  tokens_per_second: null
+languages:
+  declared: ["en", "it"]
+  claimed_count: 100
+  qualified: []
+scores:
+  task: null
+  tool: null
+  rag: null
+  safety: null
+measurement:
+  profile: null
+  emulated: null
+  results_path: null
+  measured_on: null
+fallback:
+  model_id: null
+  degraded_mode: deterministic-routing
+  notes: "Deterministic rules, the controller and typed forms (the zero-model option) serve the decision. With the layer off, unavailable or failing, every flow gives the same outcome through the deterministic controller (ADR 0029)."
+last_efficiency_review:
+  date: "2026-10-08"
+  evidence_path: docs/operations/resource-budgets.md
+default_for: []
+scorer:
+  architecture: non-autoregressive-encoder
+  max_options: 20
+notes:
+  - "Role: benchmark candidate and the Italian-capable small scorer, a constrained-profile fallback and never the primary decision model (master plan 8.2, ADR 0029). Status candidate, default_for empty. Italian is among the card's listed languages but is not qualified by AlixAI."
+  - "Pin: the standalone repository convaiinnovations/laya-multilingual, revision 1720e3e3357cfe1e281542e223f8273b0890ca34 (lastModified 2026-10-03T18:00:08Z), model.safetensors 643835514 bytes, sha256 9d628fd971b700382ac6f65920a86f149777b2e748e0c955fb3b19695aa8f204 (hub LFS oid, equal to multilingual/model.safetensors inside the laya repository), fetched 2026-10-08 from https://huggingface.co/api/models/convaiinnovations/laya-multilingual/tree/1720e3e3357cfe1e281542e223f8273b0890ca34. The hub reports 321908998 parameters, F16."
+  - "Architecture (model card of the laya repository, fetched 2026-10-08): mmBERT-base, 322M parameters, context 1024 tokens (up to 8192 with max_len set), about 2.2x faster than the English checkpoint on the vendor's benchmark, 100+ languages (claimed_count 100 is that lower bound). The option count 20 is the vendor figure for the English entry applied here as an unverified assumption (the multilingual head budget is 256 tokens). LocalAI lists no separate gallery entry for it (only laya-vllm-cpp), so runtime support is unverified and backend.allowed_runtime_versions is empty."
+  - "CPU feasibility: the weights are 643835514 bytes (614 MiB), over the 300 MiB lite scorer row of docs/operations/resource-budgets.md; no latency or memory was measured by AlixAI. Vendor numbers (a T4 GPU, unspecified CPU) are not evidence."
+  - "The scorer is advisory: it only scores a bounded set of authorised candidates and every selected id is re-resolved by the deterministic adapter; it never authorises, validates, prepares, confirms or commits (master plan 3, 8.5)."

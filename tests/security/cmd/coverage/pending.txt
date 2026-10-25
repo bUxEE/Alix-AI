@@ -1,0 +1,9 @@
+# SEC ids the coverage tool accepts without a test, each with the reason.
+#
+#   SEC-NNN pending <task> <reason>   the test belongs to a task that has not landed yet
+#   SEC-NNN defect  <gap>  <reason>   the control itself is missing or wrong in code outside the security suite's scope
+#
+# Both kinds print on every run and fail -strict (the release view). A listed id whose test now exists fails
+# the default run until its line is removed here, so this file can only shrink. A control that exists but is
+# wrong does not need a line: its test calls secutil.Known and the tool lists it as a DEFECT by itself.
+#

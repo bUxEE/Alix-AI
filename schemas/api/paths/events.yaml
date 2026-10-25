@@ -1,0 +1,275 @@
+# Application events reach sessions (master plan 9.3 item 4 and 11.3, ADR 0035). Implemented by
+# internal/gateway/routes_v1_events.go over adapters/events (the signed intake) and internal/sessions (ApplyEvent). An
+# event can only INVALIDATE: it voids a pending preparation, clears what was derived from stale facts and tells the
+# sessions it changed. It never prepares, confirms or commits an action and never calls a tool.
+#
+# The design record of the session-level announcement is in docs/integration/conversation-objects.md.
+paths:
+  /v1/events:
+    post:
+      operationId: deliverApplicationEvent
+      tags: [sessions]
+      summary: Deliver a signed application event
+      description: |
+        The host application tells AlixAI that something changed, so that state AlixAI holds about it is
+        invalidated and the sessions it concerns are told. The body is the delivery of the event adapter
+        (adapters/events): the event and exactly ONE detached Ed25519 signature over the canonical JSON (RFC 8785) of
+        the event as received, by a key registered for the application. A delivery with no signature is
+        `unauthenticated`, with several `schema_invalid`; a signature valid for more than 15 minutes is refused. The
+        body is at most 64 KiB.
+
+        **What authenticates and scopes it.** The request carries a context token like every `/v1` request, and the
+        token's application is the one thing taken from it: it picks the application whose keys are tried (an
+        application whose package is not active serves nothing, `quarantined`). The signature authenticates the event.
+        The tenant and workspace an event is about, and so the sessions it reaches, come ONLY from the signed
+        payload: the token's own tenant, workspace, principal and session, the URL, the query and the headers never
+        name or widen a scope. An event for another application than the token's is `scope_violation` even when its
+        signature is genuine.
+
+        **Replay.** The event `id` is remembered until its signature expires; a second delivery of the same event is
+        acknowledged with `status: duplicate` and changes nothing, whatever signature it carries.
+
+        **What the sessions see.** Each session the event changed is told with a notice (a failed turn of two events:
+        a `stale` error that says nothing was committed, and `done` failed) and an announcement on
+        `GET /v1/sessions/{session_id}/events`. A `5xx`/`503` means the event was not applied (or not recorded) and
+        should be delivered again: applying is idempotent.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplicationEventDelivery'
+      responses:
+        '200':
+          description: The event was applied, or had already been applied.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationEventReceipt'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '413':
+          $ref: ../openapi.yaml#/components/responses/PayloadTooLarge
+        '415':
+          $ref: ../openapi.yaml#/components/responses/UnsupportedMediaType
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/sessions/{session_id}/events:
+    parameters:
+      - $ref: '#/components/parameters/AnnouncementSessionId'
+      - $ref: '#/components/parameters/AnnouncementCursor'
+      - $ref: '#/components/parameters/AnnouncementLastEventId'
+    get:
+      operationId: streamSessionAnnouncements
+      tags: [sessions]
+      summary: Learn that an application event changed the session
+      description: |
+        A server-sent event stream of the announcements of the token's session. A client learns the id of a turn it
+        started; it can never learn the id of the notice turn an application event opened for its session, so this
+        stream carries it: each announcement is `id: <seq>`, `event: state_changed`, `data: <announcement JSON on one
+        line>`, naming the event and the notice turn. Read the notice with
+        `GET /v1/sessions/{session_id}/turns/{turn_id}/events` under a fresh token (a failed turn: a `stale` error
+        event and `done`). The announcement is a hint, never the truth: it is kept in memory only as long as the
+        notice turn is (a few minutes), bounded and lost with the process, and what is pending is always
+        `GET /v1/sessions/{session_id}/pending`.
+
+        The response starts with a `retry:` hint; idle periods carry `: keep-alive` comments; the stream follows
+        live announcements until the client disconnects. Retained announcements after the cursor are sent first
+        (`Last-Event-ID` or `cursor`, the later wins; none is every retained one). Announcements are numbered from a
+        time-based value (the Unix time in seconds when the session's feed began) and the numbers only increase, so a
+        cursor older than the feed (one kept from before a restart) replays the feed from its start. A cursor that is
+        not a sequence number or is ahead of the stream is `400`; a session that already has four open streams is
+        `429`.
+
+        The scope is the verified token's, whole, and the session in the path must be the token's. Context tokens are
+        single use: every open needs a fresh one, so a browser `EventSource` is not usable under header
+        authentication; use a fetch-based reader.
+      responses:
+        '200':
+          description: The announcements of the session.
+          content:
+            text/event-stream:
+              description: One server-sent event per announcement.
+              schema:
+                type: string
+                description: |
+                  A `retry:` line, then `id: <seq>`, `event: state_changed`, `data: <SessionAnnouncement JSON>`
+                  frames.
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '429':
+          $ref: ../openapi.yaml#/components/responses/TooManyRequests
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+components:
+  parameters:
+    AnnouncementSessionId:
+      name: session_id
+      in: path
+      required: true
+      description: The session id the context token carries. Any other value is `scope_violation`.
+      schema:
+        type: string
+        pattern: '^[A-Za-z0-9_.-]{1,128}$'
+    AnnouncementCursor:
+      name: cursor
+      in: query
+      required: false
+      description: The `seq` of the last announcement the client received; the stream continues with the next one.
+      schema:
+        type: string
+        pattern: '^[0-9]{1,10}$'
+    AnnouncementLastEventId:
+      name: Last-Event-ID
+      in: header
+      required: false
+      description: |
+        The `id` (the `seq`) of the last announcement the client received, as an `EventSource` sends it on reconnect.
+        With `cursor` as well, the later of the two wins.
+      schema:
+        type: string
+        pattern: '^[0-9]{1,10}$'
+  schemas:
+    ApplicationEventDelivery:
+      type: object
+      additionalProperties: false
+      required: [event, signatures]
+      properties:
+        event:
+          $ref: '#/components/schemas/ApplicationEvent'
+        signatures:
+          type: array
+          description: Exactly one signature. None is unauthenticated; more than one is `schema_invalid`.
+          minItems: 1
+          maxItems: 1
+          items:
+            $ref: '#/components/schemas/ApplicationEventSignature'
+    ApplicationEvent:
+      type: object
+      description: |
+        The signed event. Every member that decides what it does is in it, so the signature covers all of it. An
+        unknown member is refused, never ignored.
+      additionalProperties: false
+      required: [format, id, type, kind, application_id, tenant_id, workspace_id]
+      properties:
+        format:
+          const: alixai.application-event.v1
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: Identifies the event; deliveries are deduplicated by it.
+        type:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: '^[a-z0-9][a-z0-9._:-]*$'
+          description: 'The host''s name for the event ("invoice.paid"): a short label shown in the notice, never interpreted.'
+        kind:
+          type: string
+          enum: [record_revision, application_event, permission_change, principal_change]
+        application_id:
+          type: string
+          description: Must be the application of the context token.
+        tenant_id:
+          type: string
+        workspace_id:
+          type: string
+        entities:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [entity_type, entity_id]
+            properties:
+              entity_type:
+                type: string
+              entity_id:
+                type: string
+              version:
+                type: string
+        capabilities:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+        everything:
+          type: boolean
+          description: 'The host cannot say more, so this applies to all pending state of the workspace.'
+        principal_id:
+          type: string
+          description: 'Restricts the event to one principal''s sessions; required for `principal_change`.'
+    ApplicationEventSignature:
+      type: object
+      additionalProperties: false
+      required: [key_id, algorithm, signature, signed_at, expires_at]
+      properties:
+        key_id:
+          type: string
+        algorithm:
+          const: ed25519
+        signature:
+          type: string
+        signed_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+          description: At most 15 minutes after `signed_at`; the event id is remembered until then.
+    ApplicationEventReceipt:
+      type: object
+      additionalProperties: false
+      required: [event_id, status, sessions, notified, notify_failed]
+      properties:
+        event_id:
+          type: string
+        status:
+          type: string
+          enum: [applied, duplicate]
+        sessions:
+          type: integer
+          minimum: 0
+          description: How many sessions the event changed.
+        notified:
+          type: integer
+          minimum: 0
+        notify_failed:
+          type: integer
+          minimum: 0
+          description: Sessions that could not be told. Their state is invalidated all the same.
+    SessionAnnouncement:
+      type: object
+      additionalProperties: false
+      required: [seq, type, event_id, event_type, kind, turn_id, at]
+      properties:
+        seq:
+          type: integer
+          minimum: 1
+          description: |
+            Numbers the announcements of one session from a time-based value (the Unix time in seconds when the
+            session's feed began) and only increases; the SSE `id` and the resume cursor.
+        type:
+          const: state_changed
+        event_id:
+          type: string
+        event_type:
+          type: string
+        kind:
+          type: string
+        turn_id:
+          type: string
+          description: The notice turn, readable with `GET /v1/sessions/{session_id}/turns/{turn_id}/events`.
+        at:
+          type: string
+          format: date-time

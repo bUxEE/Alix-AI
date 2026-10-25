@@ -1,0 +1,62 @@
+capability_id: assets.decommission
+language: en
+contract_version: 1.0.0
+terminology:
+- asset
+- step_up
+- site
+- decommissioning
+field_prompts:
+- field: asset
+  label: Asset
+  prompt: Which asset should be decommissioned? Name it or give its tag.
+  examples:
+  - GEN-90
+- field: reason
+  label: Reason
+  prompt: Why is it being retired? A sentence is enough.
+  examples:
+  - Replaced last month
+clarifications:
+- rule_id: asset_multiple
+  prompt: More than one asset matches {input.asset}. Which one do you mean?
+corrections:
+  acknowledgement: Okay, I have changed that.
+  correctable_fields:
+  - asset
+  - reason
+  prepared_action_invalidated: That changes the request, so the earlier reference no longer applies. I will prepare it again.
+cancellations:
+  acknowledgement: Okay, I stopped. Nothing was decommissioned.
+confirmations:
+  request: Decommissioning {asset_name} ({asset_tag}) can only be completed in the Facility Maintenance app after a step-up check, under reference {step_up_reference}. Shall I prepare it?
+  declined: Okay, I did not prepare anything.
+  expired: That request is no longer valid, so nothing was prepared. I can prepare it again if you like.
+  step_up_required: I cannot decommission {asset_name} ({asset_tag}) myself. Open the Facility Maintenance app, sign in and complete the step-up check for request {step_up_reference}.
+success:
+- outcome: decommissioned
+  text: '{asset_name} has been decommissioned in the Facility Maintenance app.'
+failures:
+- code: permission_denied
+  text: You are not allowed to do that, so nothing was changed.
+- code: scope_violation
+  text: 'I cannot do that: the record is not available to you. Nothing was changed.'
+- code: validation_failed
+  text: 'I could not prepare that: give a reason of 10 to 300 characters. Nothing was changed.'
+- code: conflict
+  text: 'I could not prepare that: the asset is already decommissioned or still has open work orders. Nothing was changed.'
+- code: stale
+  text: A record changed after I prepared this, so I did not apply it. Nothing was changed; I can prepare it again.
+- code: expired
+  text: This was not confirmed in time, or it was withdrawn, so nothing was changed.
+- code: step_up_required
+  text: This can only be completed in the Facility Maintenance app after a step-up check. Nothing was decommissioned.
+- code: uncertain_outcome
+  text: I could not confirm whether this was applied. I will check before doing anything else, so please do not ask for it again yet.
+- code: missing_fields
+  text: I still need a few details before I can do that. Nothing was changed.
+- code: unavailable
+  text: The maintenance system is not reachable right now, so nothing was changed.
+next_actions:
+- id: show_orders_blocking
+  label: Show the work orders

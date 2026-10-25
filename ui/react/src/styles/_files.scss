@@ -1,0 +1,125 @@
+@use "mixins" as *;
+
+.alix-files {
+  @include enter;
+  display: grid;
+  gap: var(--alixai-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--alixai-font);
+  color: var(--alixai-text);
+
+  &__item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--alixai-space-3);
+    padding: var(--alixai-space-2) var(--alixai-space-3);
+    border: 1px solid var(--alixai-border);
+    border-radius: var(--alixai-radius-md);
+    background: var(--alixai-surface);
+    font-size: var(--alixai-text-sm);
+
+    &[data-state="error"] {
+      border-color: var(--alixai-danger);
+    }
+  }
+
+  &__preview {
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    overflow: hidden;
+    border-radius: var(--alixai-radius-sm);
+    background: var(--alixai-surface-sunken);
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  // The kind fits the 3rem preview box ("Document", "Documento"): smaller than a tag, and clipped rather than spilling out.
+  &__kind {
+    @include tag;
+    max-width: 100%;
+    padding: 0 2px;
+    overflow: hidden;
+    font-size: calc(var(--alixai-text-xs) * 0.78);
+    text-overflow: ellipsis;
+  }
+
+  &__body {
+    display: grid;
+    min-width: 0;
+  }
+
+  &__name {
+    overflow: hidden;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__meta {
+    color: var(--alixai-text-muted);
+    font-size: var(--alixai-text-xs);
+  }
+
+  &__error {
+    color: var(--alixai-danger);
+    font-size: var(--alixai-text-xs);
+  }
+
+  &__remove {
+    @include button-base;
+    min-height: 2rem;
+    padding: 0 var(--alixai-space-3);
+  }
+}
+
+.alix-composer {
+  display: grid;
+  gap: var(--alixai-space-3);
+  font-family: var(--alixai-font);
+  color: var(--alixai-text);
+
+  &__input {
+    @include visually-hidden;
+  }
+
+  &__pick {
+    @include button-base;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: max-content;
+  }
+
+  &__input:focus-visible + &__pick {
+    outline: 2px solid var(--alixai-focus);
+    outline-offset: 2px;
+  }
+
+  &[data-disabled] &__pick {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  &__errors {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--alixai-danger);
+    font-size: var(--alixai-text-sm);
+  }
+
+  &__hint {
+    margin: 0;
+    color: var(--alixai-text-muted);
+    font-size: var(--alixai-text-xs);
+  }
+}

@@ -1,0 +1,247 @@
+# Operations (master plan 14.2 "Operations"): queue status, provider/model status and the audit export under
+# authorization. Implemented by internal/gateway/routes_ops.go over internal/diag and internal/audit.
+#
+# The host authorises each operation by putting its capability in the context token (`capability_scopes`):
+#
+#   ops.queue.read      read the queue counts of the caller's own application, tenant and workspace
+#   ops.providers.read  read the status of the model roles
+#   audit.export        export the audit events of the caller's own application, tenant and workspace
+#
+# The match is exact (no wildcard, no role stands in), and a token that lacks the capability is
+# `permission_denied` before anything is read. A deployment may add a rule of its own on top; it can only refuse.
+# An application whose package is not active serves no operations (`quarantined`). While the server has no
+# operations service wired, every route here answers `unavailable`: never an empty success.
+#
+# What this API does not carry: the deployment-wide queue, resource usage, the Prometheus text and the diagnostics
+# bundle (configuration, versions, health, recent errors). A token minted by a host application must not read the
+# counts of other applications or the deployment's configuration, so that view is the operator's: it is served on a
+# loopback-only listener and the diagnostics bundle also needs the operator credential. Nothing here, and nothing
+# behind it, ever sends a metric, a bundle or a usage report anywhere (master plan 3, rule 3).
+paths:
+  /v1/ops/queue:
+    get:
+      operationId: getQueueStatus
+      tags: [operations]
+      summary: Queue status of the caller's own scope
+      description: |
+        The job queue as the caller's own application, tenant and workspace see it: for each of the six priority
+        classes (master plan 17.1, most urgent first) the configured workers and depth limit and the number of jobs
+        pending, running, succeeded, failed and cancelled. Succeeded, failed and cancelled count the finished jobs
+        still retained. Other applications, tenants and workspaces are never counted. Needs `ops.queue.read`.
+      responses:
+        '200':
+          description: The queue status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueReport'
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/ops/providers:
+    get:
+      operationId: getProviderStatus
+      tags: [operations]
+      summary: Provider and model status
+      description: |
+        The model roles (controller, router, embedder, reranker and the voice roles): whether a provider is
+        configured for each, which runtime and version serve it, its health and, when it is not `ok`, the stable
+        degradation code and what the service does instead (master plan 18). `status` is the summary: `unavailable`
+        when the controller cannot answer, `degraded` when any other configured role is not `ok`. Reasons are
+        redacted. Needs `ops.providers.read`.
+      responses:
+        '200':
+          description: The provider and model status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderReport'
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/ops/audit/export:
+    post:
+      operationId: exportAuditEvents
+      tags: [operations]
+      summary: Export the caller's own audit events
+      description: |
+        Streams the audit events of the caller's own application, tenant and workspace as JSON lines
+        (`application/x-ndjson`), oldest first: one audit event per line exactly as stored (already redacted, and
+        verifiable against its hash), then a last line, an `AuditExportTrailer` `{"complete": true, "events": N}`.
+        The status is sent with the first byte, so a refusal is an ordinary error response and nothing is sent; a
+        failure half way is told by the missing trailer. The export is itself recorded in the audit log before the
+        first event is read, and refused if it cannot be recorded. The body is optional; `types` keeps only those
+        event types, `since` (inclusive) and `until` (exclusive) bound the time of the event. Needs `audit.export`.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuditExportRequest'
+      responses:
+        '200':
+          description: The export.
+          content:
+            application/x-ndjson:
+              schema:
+                type: string
+                description: |
+                  Lines of JSON, each an audit event except the last, which is an `AuditExportTrailer`.
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '413':
+          $ref: ../openapi.yaml#/components/responses/PayloadTooLarge
+        '415':
+          $ref: ../openapi.yaml#/components/responses/UnsupportedMediaType
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+components:
+  schemas:
+    QueueClass:
+      type: object
+      additionalProperties: false
+      required: [class, priority, workers, max_depth, pending, running, succeeded, failed, cancelled]
+      properties:
+        class:
+          type: string
+          enum: [auth_commit, turn, rag_query, app_read, ingest, maintenance]
+          description: The priority class (master plan 17.1).
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 6
+          description: The rank of the class, 1 the most urgent.
+        workers:
+          type: integer
+          minimum: 0
+          description: The configured workers of the class.
+        max_depth:
+          type: integer
+          minimum: 0
+          description: The configured limit on pending jobs of the class.
+        pending:
+          type: integer
+          minimum: 0
+          description: Waiting jobs, including retries still in back-off.
+        running:
+          type: integer
+          minimum: 0
+        succeeded:
+          type: integer
+          minimum: 0
+          description: Finished jobs still retained.
+        failed:
+          type: integer
+          minimum: 0
+          description: Failed jobs still retained.
+        cancelled:
+          type: integer
+          minimum: 0
+          description: Cancelled jobs still retained.
+        oldest_ready_age_ms:
+          type: integer
+          minimum: 0
+          description: |
+            How long the longest-waiting ready job has been eligible to run. Only the deployment-wide view knows
+            it, so it is absent here.
+    QueueReport:
+      type: object
+      additionalProperties: false
+      required: [at, classes]
+      properties:
+        at:
+          type: string
+          format: date-time
+        classes:
+          type: array
+          description: All six classes, most urgent first.
+          items:
+            $ref: '#/components/schemas/QueueClass'
+    ProviderRole:
+      type: object
+      additionalProperties: false
+      required: [role, configured, status]
+      properties:
+        role:
+          type: string
+          enum: [controller, router, embedder, reranker, stt, tts, vad]
+        configured:
+          type: boolean
+          description: Whether a provider is registered for the role.
+        provider:
+          type: string
+          description: The runtime that serves the role ("localai", "fake"), when it names itself.
+        status:
+          type: string
+          enum: [ok, degraded, unavailable]
+          description: An unconfigured role is `unavailable`.
+        reason:
+          type: string
+          description: A short explanation when the role is not `ok` (redacted).
+        version:
+          type: string
+          description: The runtime version the adapter observed.
+        since:
+          type: string
+          format: date-time
+          description: When the status last changed.
+        effect:
+          type: string
+          description: The stable degradation code, set when the role is not `ok`.
+        behavior:
+          type: string
+          description: What the service does instead, set when the role is not `ok` (master plan 18).
+    ProviderReport:
+      type: object
+      additionalProperties: false
+      required: [status, roles]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded, unavailable]
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProviderRole'
+    AuditExportRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        types:
+          type: array
+          maxItems: 64
+          description: Keep only these event types (dotted lower-case names such as `action.committed`).
+          items:
+            type: string
+        since:
+          type: string
+          format: date-time
+          description: Inclusive lower bound of the time of the event.
+        until:
+          type: string
+          format: date-time
+          description: Exclusive upper bound of the time of the event. Must be after `since`.
+    AuditExportTrailer:
+      type: object
+      additionalProperties: false
+      required: [complete, events]
+      properties:
+        complete:
+          const: true
+        events:
+          type: integer
+          minimum: 0
+          description: How many events were exported.

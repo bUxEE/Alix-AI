@@ -1,0 +1,491 @@
+@use "../../src/styles/mixins";
+
+// The showcase shell's look. It is built from the kit's own tokens (`--alix-*`, set by AlixProvider's `.alix-root`), so the
+// shell and the components switch scheme together and the kit's design stays the one on show. Layout is done with the kit's
+// utility classes in the markup; what is here is colour, borders, sizes, motion and pseudo-states. Every class is
+// `alix-demo-*`. No layout media query: narrow and wide screens differ through the kit's `alix-d-md-*` and `alix-col-*` utilities.
+
+// ---- the page behind the provider (overscroll, scrollbar gutter) ----
+html {
+  color-scheme: light;
+  background: oklch(0.985 0.004 85);
+
+  @media (prefers-color-scheme: dark) {
+    &:not([data-theme="light"]) {
+      color-scheme: dark;
+      background: oklch(0.2 0.008 85);
+    }
+  }
+
+  &[data-theme="dark"] {
+    color-scheme: dark;
+    background: oklch(0.2 0.008 85);
+  }
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes alix-demo-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes alix-demo-breathe {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+// ---- shell ----
+.alix-demo-app {
+  min-height: 100dvh;
+}
+
+.alix-demo-viewport {
+  min-height: 100dvh;
+}
+
+.alix-demo-sidebar {
+  position: sticky;
+  top: 0;
+  width: 272px;
+  height: 100dvh;
+  overflow-y: auto;
+  border-inline-end: 1px solid var(--alix-border);
+  background: var(--alix-surface);
+}
+
+.alix-demo-sidebar-foot {
+  margin-top: auto;
+}
+
+.alix-demo-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  border-bottom: 1px solid var(--alix-border);
+  background: var(--alix-surface);
+}
+
+.alix-demo-brand {
+  color: inherit;
+  text-decoration: none;
+  line-height: 1.2;
+
+  @include mixins.focus-ring;
+}
+
+// The mark: the AlixAI icon (docs/assets/brand/alix-icon.svg), at its own proportions.
+.alix-demo-mark {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.alix-demo-main {
+  width: 100%;
+  max-width: 1480px;
+  padding: clamp(16px, 3.2vw, 44px);
+}
+
+// ---- navigation ----
+.alix-demo-nav-link {
+  padding: 9px 10px;
+  border-radius: var(--alix-radius-md);
+  color: var(--alix-text);
+  text-decoration: none;
+  transition: background-color var(--alix-dur-fast) ease, color var(--alix-dur-fast) ease;
+
+  @include mixins.focus-ring;
+  @include mixins.hover {
+    background: var(--alix-surface-2);
+  }
+
+  &[aria-current="page"] {
+    background: var(--alix-accent-soft);
+
+    .alix-demo-nav-icon {
+      color: var(--alix-accent);
+    }
+  }
+}
+
+.alix-demo-nav-icon {
+  margin-top: 1px;
+  color: var(--alix-text-muted);
+  transition: color var(--alix-dur-fast) ease;
+}
+
+.alix-demo-nav-hint {
+  margin-top: 1px;
+  line-height: 1.35;
+}
+
+.alix-demo-nav-row {
+  margin-inline: -4px;
+  padding: 2px 4px 6px;
+  scrollbar-width: none;
+}
+
+.alix-demo-nav-pill {
+  padding: 6px 12px 6px 10px;
+  border: 1px solid var(--alix-border);
+  border-radius: 999px;
+  color: var(--alix-text);
+  font-size: var(--alix-fs-sm);
+  white-space: nowrap;
+  text-decoration: none;
+
+  @include mixins.focus-ring;
+
+  &[aria-current="page"] {
+    border-color: transparent;
+    background: var(--alix-accent-soft);
+
+    .alix-demo-nav-icon {
+      color: var(--alix-accent);
+    }
+  }
+}
+
+// ---- segmented switches (language, scheme, gallery options) ----
+.alix-demo-segmented {
+  gap: 2px;
+  width: fit-content;
+  padding: 3px;
+  border: 1px solid var(--alix-border);
+  border-radius: var(--alix-radius-md);
+  background: var(--alix-surface-2);
+}
+
+.alix-demo-segment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--alix-text-muted);
+  font: inherit;
+  cursor: pointer;
+
+  @include mixins.pressable;
+  @include mixins.focus-ring;
+  @include mixins.hover {
+    color: var(--alix-text);
+  }
+
+  &[aria-checked="true"] {
+    background: var(--alix-surface);
+    color: var(--alix-text);
+    box-shadow: var(--alix-shadow);
+  }
+}
+
+.alix-demo-btn-xs {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: var(--alix-fs-xs);
+}
+
+// ---- mock status ----
+.alix-demo-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--alix-text-muted);
+}
+
+.alix-demo-dot-ok {
+  background: var(--alix-success);
+  box-shadow: 0 0 0 3px var(--alix-success-soft);
+}
+
+.alix-demo-dot-down {
+  background: var(--alix-danger);
+  box-shadow: 0 0 0 3px var(--alix-danger-soft);
+}
+
+.alix-demo-dot-checking {
+  background: var(--alix-warning);
+  animation: alix-demo-breathe 1.2s ease-in-out infinite;
+  animation-play-state: var(--alix-shimmer);
+}
+
+// ---- section frame ----
+.alix-demo-section {
+  animation: alix-demo-rise var(--alix-dur-slow) var(--alix-ease-out) both;
+}
+
+.alix-demo-eyebrow {
+  letter-spacing: 0.01em;
+  color: var(--alix-accent);
+}
+
+.alix-demo-title {
+  font-size: clamp(1.5rem, 1.15rem + 1.1vw, 2.125rem);
+  font-weight: 650;
+  line-height: 1.12;
+  letter-spacing: -0.022em;
+  text-wrap: balance;
+}
+
+.alix-demo-lede {
+  max-width: 70ch;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.alix-demo-subtitle {
+  font-size: var(--alix-fs-md);
+  font-weight: 620;
+  letter-spacing: -0.005em;
+}
+
+// ---- chat ----
+.alix-demo-chat-row {
+  align-items: stretch;
+}
+
+.alix-demo-chat-panel {
+  height: clamp(560px, calc(100dvh - 210px), 860px);
+}
+
+.alix-demo-rail {
+  min-width: 260px;
+}
+
+.alix-demo-prompt {
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--alix-radius-md);
+  background: transparent;
+  color: var(--alix-text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: background-color var(--alix-dur-fast) ease, border-color var(--alix-dur-fast) ease;
+
+  @include mixins.pressable;
+  @include mixins.focus-ring;
+  @include mixins.hover {
+    border-color: var(--alix-border);
+    background: var(--alix-surface);
+
+    .alix-demo-prompt-go {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: progress;
+  }
+}
+
+.alix-demo-prompt-index {
+  min-width: 2ch;
+  padding-top: 2px;
+}
+
+.alix-demo-prompt-go {
+  margin-top: 2px;
+  margin-inline-start: auto;
+  color: var(--alix-accent);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity var(--alix-dur-fast) ease, transform var(--alix-dur-base) var(--alix-ease-out);
+}
+
+.alix-demo-stagger {
+  animation: alix-demo-rise var(--alix-dur-slow) var(--alix-ease-out) both;
+  animation-delay: calc(var(--alix-demo-i, 0) * 28ms);
+}
+
+.alix-demo-attachment {
+  width: 260px;
+  max-width: 100%;
+}
+
+.alix-demo-log-entry {
+  animation: alix-demo-rise var(--alix-dur-base) var(--alix-ease-out) both;
+}
+
+// ---- the demo's flowchart renderer ----
+.alix-demo-flow {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  font-family: var(--alix-font);
+  font-size: 12.5px;
+}
+
+.alix-demo-flow-node {
+  rect,
+  polygon {
+    fill: var(--alix-surface);
+    stroke: var(--alix-border-strong);
+    stroke-width: 1.25;
+  }
+
+  text {
+    fill: var(--alix-text);
+    font-weight: 560;
+  }
+}
+
+.alix-demo-flow-edges path {
+  stroke: var(--alix-text-muted);
+  stroke-width: 1.25;
+}
+
+.alix-demo-flow-back {
+  stroke-dasharray: 4 4;
+}
+
+.alix-demo-flow-head {
+  fill: var(--alix-text-muted);
+}
+
+.alix-demo-flow-label {
+  rect {
+    fill: var(--alix-surface-2);
+    stroke: var(--alix-border);
+  }
+
+  text {
+    fill: var(--alix-text-muted);
+    font-size: 11px;
+  }
+}
+
+// ---- conversations ----
+.alix-demo-list-card {
+  min-height: 420px;
+}
+
+.alix-demo-detail {
+  min-height: 420px;
+}
+
+.alix-demo-quote {
+  max-width: 64ch;
+  padding: 12px 14px;
+  border-radius: var(--alix-radius-md);
+  background: var(--alix-surface-2);
+  line-height: 1.55;
+}
+
+.alix-demo-empty {
+  max-width: 40ch;
+}
+
+// ---- voice ----
+.alix-demo-voice-stage {
+  min-height: 480px;
+  overflow: hidden;
+}
+
+// ---- files ----
+.alix-demo-file-row {
+  padding-inline: 8px;
+  border: 0;
+  border-radius: var(--alix-radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: background-color var(--alix-dur-fast) ease;
+
+  @include mixins.focus-ring;
+  @include mixins.hover {
+    background: var(--alix-surface-2);
+  }
+
+  &[aria-pressed="true"] {
+    background: var(--alix-accent-soft);
+  }
+}
+
+.alix-demo-file-kind {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--alix-radius-sm);
+  background: var(--alix-surface-2);
+  color: var(--alix-text-muted);
+  font-size: 10px;
+  font-weight: 640;
+  letter-spacing: 0.02em;
+
+  &[data-kind="image"] {
+    background: var(--alix-accent-soft);
+    color: var(--alix-accent);
+  }
+
+  &[data-kind="pdf"] {
+    background: var(--alix-danger-soft);
+    color: var(--alix-danger);
+  }
+
+  &[data-kind="text"] {
+    background: var(--alix-warning-soft);
+    color: var(--alix-warning);
+  }
+}
+
+.alix-demo-pdf {
+  display: block;
+  height: 460px;
+  border: 0;
+  background: var(--alix-surface-2);
+}
+
+.alix-demo-code {
+  max-height: 320px;
+  border-radius: var(--alix-radius-md);
+  background: var(--alix-surface-2);
+  line-height: 1.5;
+}
+
+.alix-demo-list-enter-active {
+  transition: opacity var(--alix-dur-base) var(--alix-ease-out), transform var(--alix-dur-base) var(--alix-ease-out);
+}
+
+.alix-demo-list-leave-active {
+  transition: opacity var(--alix-dur-fast) ease;
+}
+
+.alix-demo-list-enter-from {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+.alix-demo-list-leave-to {
+  opacity: 0;
+}
+
+// ---- blocks gallery ----
+.alix-demo-gallery-row {
+  align-items: flex-start;
+  row-gap: 32px;
+}
+
+.alix-demo-specimen-name {
+  color: var(--alix-accent);
+  font-weight: 560;
+}

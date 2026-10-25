@@ -1,0 +1,53 @@
+id: "ledger-contracts"
+type: "application_document_api"
+title: "Customer contracts"
+description: "The contracts of each team, kept by the ledger and served read-only by its document API: payment terms, late fees and invoicing rules. Synthetic text."
+languages:
+  - "en"
+  - "it"
+owner:
+  name: "Finance Operations (synthetic)"
+  contact: "finance@ledger.example.test"
+scope:
+  application_id: "ledger"
+  tenant:
+    mode: "request"
+  workspace:
+    mode: "request"
+root:
+  kind: "api"
+  url: "http://127.0.0.1:7422"
+include:
+  - "contracts/*.md"
+exclude: []
+credential_ref: "cred:ledger-docs"
+formats:
+  - "text/markdown"
+limits:
+  max_file_bytes: 1048576
+  max_total_bytes: 52428800
+  max_files: 500
+sync:
+  method: "event"
+  interval_seconds: 3600
+  event:
+    endpoint: "ledger-events"
+    event_type: "contract.updated"
+deletion:
+  purge_after_hours: 0
+  on_source_removed: "purge"
+parser:
+  ocr: "disabled"
+  max_pages_per_file: 200
+  timeout_seconds: 30
+citation:
+  kind: "alixai_preview"
+egress:
+  entries:
+    - "ledger-docs-loopback"
+retention:
+  derived_data_days: null
+  import_originals: false
+  audit:
+    record_access: true
+    retention_days: 365

@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "facility-maintenance"
+version = "1.0.0"
+description = "Synthetic facility-maintenance application: the second neutral AlixAI reference application (FastAPI, OpenAPI transport)."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+# Capped at the versions the tests ran against: the FastAPI and Starlette surface moves fast, and a
+# reference application that must verify on a later day should not drift with it.
+dependencies = [
+  "fastapi>=0.162,<0.163",
+  "starlette>=1.10,<1.11",
+  "uvicorn>=0.54,<1",
+  "pyyaml>=6.0.3,<7",
+]
+
+[project.optional-dependencies]
+test = [
+  "pytest>=9,<10",
+  "httpx>=0.28.1,<0.29",
+  "jsonschema>=4.26,<5",
+]
+
+[project.scripts]
+facility-maintenance = "facility_maintenance.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+facility_maintenance = ["openapi.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = ["ignore:Using `httpx` with `starlette.testclient`:UserWarning"]

@@ -1,0 +1,9 @@
+# Hardening 8.4 experiment: strict backend integrity on an EMPTY backends directory (LocalAI skips the install of a backend
+# that is already present, so a populated directory would prove nothing). The gallery file is mounted inside /backends as in
+# compose.spike.yaml.
+services:
+  localai:
+    environment:
+      LOCALAI_REQUIRE_BACKEND_INTEGRITY: "true"
+    volumes:
+      - ./data/backends-empty:/backends

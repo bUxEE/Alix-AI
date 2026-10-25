@@ -1,0 +1,90 @@
+# Model registry entry (schemas/models/registry-entry.schema.json, revision 2). One file per model; the file name is the id.
+# Optional decision layer (master plan 8.5, ADR 0029): optional, bounded, non-generative and non-authoritative. Written by task D-11, reviewed 2026-10-08.
+# Every key is present; null means not yet known or not yet measured. Nothing is measured here: measurements wait for D-08 / M5-09.
+id: qwen3-8b
+name: "Qwen3-8B frozen encoder (bf16 safetensors)"
+version: "3"
+status: candidate
+roles:
+  - "decision-encoder"
+capabilities:
+  - "encoding"
+upstream:
+  repo_url: https://huggingface.co/Qwen/Qwen3-8B
+  revision: b968826d9c46dd6066d109eabc6255188de91218
+artifact:
+  format: safetensors
+  repo_url: https://huggingface.co/Qwen/Qwen3-8B
+  filename: model-00001-of-00005.safetensors
+  revision: b968826d9c46dd6066d109eabc6255188de91218
+  size_bytes: 3996250744
+  sha256: 31d6a825ae35f11fb85b195b4c42c146c051e446433125a215336abdf95cbf5f
+  quantized_by: Qwen
+  first_party: true
+  checked_on: "2026-10-08"
+licence:
+  spdx: Apache-2.0
+  url: https://huggingface.co/Qwen/Qwen3-8B/blob/b968826d9c46dd6066d109eabc6255188de91218/LICENSE
+  redistribution_notes: "Apache-2.0, declared by the model card metadata and the LICENSE file (11343 bytes) at the pinned commit. First-party weights, unmodified. AlixAI does not bundle weights: the operator fetches the pinned file. Final sign-off is the human licence review (D-H01, M5-H02)."
+quantization:
+  scheme: BF16
+  nominal_bits: 16
+backend:
+  runtime: vllm
+  name: vllm
+  allowed_runtime_versions: []
+hardware:
+  minimum:
+    cpu_cores: null
+    ram_mb: null
+    accelerator: null
+  recommended:
+    cpu_cores: null
+    ram_mb: null
+    accelerator: null
+memory:
+  peak_rss_mb: null
+  steady_rss_mb: null
+context:
+  native_max_tokens: 32768
+  budget_tokens: null
+  kv_cache_mb: null
+load_time:
+  cold_ms: null
+  warm_ms: null
+performance:
+  latency_ms_p50: null
+  latency_ms_p95: null
+  ttft_ms_p50: null
+  tokens_per_second: null
+languages:
+  declared: []
+  claimed_count: null
+  qualified: []
+scores:
+  task: null
+  tool: null
+  rag: null
+  safety: null
+measurement:
+  profile: null
+  emulated: null
+  results_path: null
+  measured_on: null
+fallback:
+  model_id: null
+  degraded_mode: deterministic-routing
+  notes: "A frozen encoder is a dependency of a bi-encoder scorer, never a selected model. Without it the scorer is unavailable and the deterministic baseline serves."
+last_efficiency_review:
+  date: "2026-10-08"
+  evidence_path: docs/efficiency/D-08.md
+default_for: []
+notes:
+  - "Role: the frozen encoder under CLM-v0.1-8B (entry clm-v0.1-8b lists this entry as a frozen-encoder dependency). It is never the default for a role or profile (the schema and the loader refuse it) and it generates nothing in this use."
+  - "One entry stands for a directory of files. artifact.filename names shard 1 of 5 because the registry records one file; the other shards are pinned at the same revision in deploy/container/clm/config/pins.txt (D-06), which the sidecar entrypoint re-hashes at every start. Shard sha256 (hub LFS oid, fetched 2026-10-08 at the pinned commit): 2 = 5991236cea6fe21f3d43cab0f0e84448734fbbe0789816202989f2ddc9d18282 (3993160032 bytes), 3 = c5185c4794be2d8a9784d5753c9922db38df478ce11f9ed0b415b7304d896836 (3959604768), 4 = b5ee7de71fbf17db3d5704e0c8f2bc7d005ca9e1d7ca2aeb19827b0cfcaa917a (3187841392), 5 = 20c2d6366ab85c90786ccdd829cd2b9e7d30ef3b2ebbb998280e7e4014b542ff (1244659840). models.Verify checks shard 1 only; verifying the full set stays the entrypoint's job."
+  - "Size: the five shards total 16381516776 bytes (15622 MiB) and the hub reports 8190735360 BF16 parameters (https://huggingface.co/api/models/Qwen/Qwen3-8B, fetched 2026-10-08). Resident memory is unmeasured; the weights alone are about 15.6 GiB, so the encoder cannot sit inside the lite (5811 MiB) or balanced (12134 MiB) container budget unquantised (docs/operations/resource-budgets.md section 4.4). A quantised encoder is a different artefact and would need its own entry and CLM evidence."
+  - "Context: the card gives 32768 tokens natively and 131072 with YaRN (README at the pinned commit). context.budget_tokens 2048 is the CLM state limit (states over 2048 tokens are truncated, CLM repo README, reviewed 2026-10-02), not a measurement."
+  - "Languages: the card claims 100+ languages and dialects without a list; claimed_count stays null because \"100+\" is not a number. Unqualified by AlixAI."
+  - "Runtime: vLLM serves the encoder for the CLM service (CLM README, reviewed 2026-10-02). backend.allowed_runtime_versions is empty: no vLLM version was run here, so every runtime version is denied (fail closed)."
+  - "The scorer is advisory: it only scores a bounded set of authorised candidates and every selected id is re-resolved by the deterministic adapter; it never authorises, validates, prepares, confirms or commits (master plan 3, 8.5)."
+  - "D-08 (2026-10-08, emulated): pinned files fetched and sha256-verified on the host (16.4 GB, about 9 minutes at 30 MB/s). Balanced profile, encoder cap 14 GiB / 6 CPU: container memory climbed 0.2 -> 13742 MiB in 166 s during load (cap 14336 MiB), host free RAM fell from 19 GiB to 2.3 GiB, the process was gone 6 s later and the encoder never became healthy; resource_gate, no load time, latency or dtype measured (docs/evidence/d-decision/rss/balanced-sidecar.csv). Higher-memory profile not measured. Status stays candidate; nothing defaults to it (ADR 0031)."

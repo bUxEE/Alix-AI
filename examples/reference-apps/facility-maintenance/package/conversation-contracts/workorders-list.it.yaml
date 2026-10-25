@@ -1,0 +1,70 @@
+capability_id: workorders.list
+language: it
+contract_version: 1.0.0
+terminology:
+- work_order
+- asset
+- technician
+- priority
+- site
+- assignment
+field_prompts:
+- field: status
+  label: Stato
+  prompt: 'Quale stato vuoi: aperto, assegnato, chiuso o qualsiasi?'
+  examples:
+  - aperto
+- field: priority
+  label: Priorità
+  prompt: Solo una priorità? Bassa, normale, alta o urgente. Puoi saltare.
+  examples:
+  - urgente
+- field: asset
+  label: Attrezzatura
+  prompt: Solo una attrezzatura? Dimmi il nome o la sigla. Puoi saltare.
+  examples:
+  - AHU-200
+- field: technician
+  label: Tecnico
+  prompt: Solo il lavoro di un tecnico? Dimmi il nome. Puoi saltare.
+  examples:
+  - Marco Bianchi
+- field: max_results
+  label: Quanti
+  prompt: Quanti ordini di lavoro devo elencare al massimo? Fino a 10.
+  examples:
+  - '5'
+clarifications:
+- rule_id: asset_multiple
+  prompt: Più di una attrezzatura corrisponde a {input.asset}. Quale intendi?
+- rule_id: technician_multiple
+  prompt: Più di un tecnico corrisponde a {input.technician}. Quale intendi?
+corrections:
+  acknowledgement: D'accordo, l'ho modificato.
+  correctable_fields:
+  - status
+  - priority
+  - asset
+  - technician
+  - max_results
+cancellations:
+  acknowledgement: D'accordo, mi sono fermato. Non ho cercato nulla.
+success:
+- outcome: work_orders_found
+  text: 'Ho trovato {work_order_count} ordini di lavoro (stato: {search_status}): {work_order_summary}.'
+- outcome: none_found
+  text: 'Non ho trovato ordini di lavoro (stato: {search_status}). Sono {work_order_count} risultati.'
+failures:
+- code: permission_denied
+  text: Non hai il permesso di farlo, quindi non ho cambiato nulla.
+- code: scope_violation
+  text: 'Non posso farlo: il record non è disponibile per te. Non ho cambiato nulla.'
+- code: validation_failed
+  text: 'Non ho potuto elencarli: chiedi da 1 a 10 ordini di lavoro e, se sei un tecnico, solo il tuo lavoro. Non ho cercato nulla.'
+- code: unavailable
+  text: Il sistema di manutenzione al momento non è raggiungibile, quindi non ho cambiato nulla.
+next_actions:
+- id: assign_listed
+  label: Assegna uno di questi ordini di lavoro
+- id: close_listed
+  label: Chiudi uno di questi ordini di lavoro

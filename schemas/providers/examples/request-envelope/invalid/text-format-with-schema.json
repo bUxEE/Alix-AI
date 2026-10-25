@@ -1,0 +1,65 @@
+{
+  "envelope_id": "envl_01J0000000000000000000000E",
+  "created_at": "2026-10-02T09:00:00Z",
+  "provider": {
+    "profile_id": "pprf_01J0000000000000000000000P",
+    "provider_id": "openai",
+    "model_id": "gpt-4.1-mini",
+    "model_version": "2025-04-14"
+  },
+  "role": "language_realization",
+  "payload": {
+    "instructions": "Say what the directive states. State only the listed facts.",
+    "messages": [
+      {
+        "role": "user",
+        "parts": [
+          {
+            "type": "text",
+            "text": "{\"act\":\"report_outcome\",\"facts\":[{\"field\":\"starts_at\",\"value\":\"2026-10-06T10:00\"}]}",
+            "internal": {
+              "category": "dialogue_directive",
+              "classification": "internal",
+              "size_bytes": 120
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool_result",
+        "parts": [
+          {
+            "type": "text",
+            "text": "{\"status\":\"committed\",\"receipt\":\"rcpt_X\"}",
+            "internal": {
+              "category": "action_receipt",
+              "classification": "internal",
+              "size_bytes": 120
+            }
+          }
+        ]
+      }
+    ],
+    "tools": [],
+    "response_format": {
+      "kind": "text",
+      "strict": false,
+      "schema": { "type": "object" }
+    },
+    "limits": { "max_output_toks": 1024, "timeout_ms": 30000 }
+  },
+  "internal": {
+    "subject": {
+      "application_id": "app_crm",
+      "tenant_id": "ten_42",
+      "workspace_id": "wsp_sales",
+      "principal_id": "usr_77",
+      "session_id": "ses_9"
+    },
+    "trace_id": "trc_001",
+    "channel": "interactive",
+    "reservation_id": "rsv_01J0000000000000000000000V",
+    "payload_bytes": 2048,
+    "estimated_toks_in": 900
+  }
+}

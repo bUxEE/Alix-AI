@@ -1,0 +1,36 @@
+# Resource profile "balanced": 16g RAM / 8 CPU for the whole sidecar. Override on top of compose.yaml:
+#   docker compose --env-file .env -f compose.yaml -f compose.balanced.yaml up -d
+#
+# EMULATED: these are cgroup caps on the containers, not a certified machine. Every number measured under this
+# file is labelled "emulated", never "certified" (master plan 7.4). mem_limit == memswap_limit disables swap per
+# container (master plan 7.4 "avoid swap"). The thread settings equal the CPU share of the container: under a CPU
+# quota a thread pool sized to the host's core count would be throttled.
+#
+# Split: encoder 14g / 6 CPU, CLM service 2g / 2 CPU (sum 16g / 8 CPU).
+#
+# EXPECTED NOT TO FIT. The Qwen3-8B bf16 weights are 16,381,516,776 bytes (~15.3 GiB, README.md "Pinned versions")
+# and the encoder needs more than its weights, so 14g cannot hold them. The file exists so the resource gate
+# (fallback reason resource_gate) is measured, not assumed; D-08 records the outcome. No claim is made that this
+# profile runs the sidecar.
+
+services:
+  vllm:
+    mem_limit: 14g
+    memswap_limit: 14g
+    cpus: 6
+    environment:
+      OMP_NUM_THREADS: "6"
+      VLLM_CPU_KVCACHE_SPACE: ${CLM_VLLM_KV_GIB:-1}
+    labels:
+      ai.alixai.profile: balanced
+      ai.alixai.evidence: emulated
+  clm:
+    mem_limit: 2g
+    memswap_limit: 2g
+    cpus: 2
+    environment:
+      OMP_NUM_THREADS: "2"
+      MKL_NUM_THREADS: "2"
+    labels:
+      ai.alixai.profile: balanced
+      ai.alixai.evidence: emulated

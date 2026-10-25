@@ -1,0 +1,268 @@
+@use "mixins" as *;
+
+// The settings editor (the settings panel given the user's own document) and the integration audit panel.
+
+.alix-settings {
+  &__form {
+    display: grid;
+    gap: var(--alixai-space-4);
+  }
+
+  &__sections {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+    align-items: start;
+    gap: var(--alixai-space-3);
+  }
+
+  &__fieldset {
+    display: grid;
+    gap: var(--alixai-space-3);
+    min-width: 0;
+    margin: 0;
+    padding: var(--alixai-space-3) var(--alixai-space-4) var(--alixai-space-4);
+    border: 1px solid var(--alixai-border);
+    border-radius: var(--alixai-radius-md);
+    background: var(--alixai-surface);
+  }
+
+  &__legend {
+    padding: 0 var(--alixai-space-1);
+    color: var(--alixai-text-muted);
+    font-size: var(--alixai-text-xs);
+    font-weight: 650;
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--alixai-space-2);
+  }
+
+  &__button {
+    @include button-base;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--alixai-space-2);
+
+    &[data-variant="primary"] {
+      @include button-primary;
+    }
+  }
+
+  &__danger {
+    @include button-base;
+    justify-self: start;
+    border-color: var(--alixai-danger);
+    color: var(--alixai-danger);
+  }
+}
+
+.alix-switch {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--alixai-space-3);
+  cursor: pointer;
+
+  &[data-disabled] {
+    cursor: not-allowed;
+  }
+
+  &__text {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  &__label {
+    font-size: var(--alixai-text-sm);
+    font-weight: 600;
+  }
+
+  &__hint {
+    margin: 0;
+    color: var(--alixai-text-muted);
+    font-size: var(--alixai-text-xs);
+  }
+
+  &__input {
+    @include focus-ring;
+    position: relative;
+    flex: none;
+    width: 2.25rem;
+    height: 1.25rem;
+    margin: 0;
+    border-radius: 999px;
+    background: var(--alixai-border-strong);
+    appearance: none;
+    cursor: inherit;
+    transition: background-color var(--alixai-duration-fade) ease;
+
+    &::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 1rem;
+      height: 1rem;
+      border-radius: 50%;
+      background: var(--alixai-surface);
+      transition: transform var(--alixai-duration-enter) var(--alixai-ease-out);
+    }
+
+    &:checked {
+      background: var(--alixai-accent);
+    }
+
+    &:checked::after {
+      transform: translateX(1rem);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+    }
+
+    @include reduced-motion {
+      &::after {
+        transition: none;
+      }
+    }
+  }
+}
+
+.alix-field {
+  display: grid;
+  gap: var(--alixai-space-1);
+
+  &__label {
+    font-size: var(--alixai-text-sm);
+    font-weight: 600;
+  }
+
+  &__control {
+    @include focus-ring;
+    min-height: 2.25rem;
+    padding: 0 var(--alixai-space-2);
+    border: 1px solid var(--alixai-border-strong);
+    border-radius: var(--alixai-radius-sm);
+    background: var(--alixai-surface);
+    color: var(--alixai-text);
+    font: inherit;
+    font-size: var(--alixai-text-sm);
+  }
+}
+
+.alix-audit {
+  display: grid;
+  gap: var(--alixai-space-3);
+  color: var(--alixai-text);
+  font-family: var(--alixai-font);
+  line-height: var(--alixai-leading);
+
+  &__title {
+    margin: 0;
+    font-size: var(--alixai-text-md);
+    font-weight: 650;
+  }
+
+  &__body {
+    display: grid;
+    gap: var(--alixai-space-3);
+  }
+
+  &__summary,
+  &__finding {
+    display: grid;
+    gap: var(--alixai-space-2);
+    padding: var(--alixai-space-3) var(--alixai-space-4);
+    border: 1px solid var(--alixai-border);
+    border-radius: var(--alixai-radius-md);
+    background: var(--alixai-surface);
+  }
+
+  &__findings,
+  &__roles {
+    display: grid;
+    gap: var(--alixai-space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--alixai-space-2);
+  }
+
+  &__tag {
+    @include tag;
+
+    &[data-tone="ok"] {
+      @include tag(var(--alixai-ok), var(--alixai-ok-soft));
+    }
+
+    &[data-tone="warn"] {
+      @include tag(var(--alixai-warn), var(--alixai-warn-soft));
+    }
+
+    &[data-tone="danger"] {
+      @include tag(var(--alixai-danger), var(--alixai-danger-soft));
+    }
+  }
+
+  &__code {
+    color: var(--alixai-text-muted);
+    font-family: var(--alixai-font-mono);
+    font-size: var(--alixai-text-xs);
+  }
+
+  &__message {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  &__remedy {
+    margin: 0;
+    color: var(--alixai-text-muted);
+    font-size: var(--alixai-text-sm);
+    overflow-wrap: anywhere;
+  }
+
+  &__providers {
+    display: grid;
+    gap: var(--alixai-space-2);
+  }
+
+  &__subtitle {
+    margin: 0;
+    color: var(--alixai-text-muted);
+    font-size: var(--alixai-text-xs);
+    font-weight: 650;
+  }
+
+  &__roles {
+    gap: 0;
+    border: 1px solid var(--alixai-border);
+    border-radius: var(--alixai-radius-md);
+    background: var(--alixai-surface);
+  }
+
+  &__role {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--alixai-space-2);
+    padding: var(--alixai-space-2) var(--alixai-space-4);
+    border-top: 1px solid var(--alixai-border);
+    font-size: var(--alixai-text-sm);
+    font-weight: 600;
+
+    &:first-child {
+      border-top: 0;
+    }
+  }
+}

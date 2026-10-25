@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:decision:decision-request:v1",
+  "title": "DecisionRequest",
+  "description": "The input of the optional decision scorer (docs/architecture/decision-layer.md section 4, scoreDecision): tenant, application and session, the conversation-contract version, the minimum bounded state, the allowed next actions, the authorised candidate set, the locale and a deadline. It carries only what the scorer needs for one bounded ranking: never unrestricted application data, undeclared files, arbitrary RAG text or uncontrolled user instructions. It is built by the core after deterministic scope, authentication, permission and freshness checks, so nothing in it grants anything, and it is never sent to an external provider.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tenant_id",
+    "application_id",
+    "session_id",
+    "contract_version",
+    "decision_type",
+    "schema_version",
+    "bounded_state",
+    "allowed_next_actions",
+    "candidate_set",
+    "locale",
+    "deadline"
+  ],
+  "properties": {
+    "tenant_id": {
+      "description": "The tenant the request is bound to. A result for another tenant is rejected with tenant_mismatch.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+    },
+    "application_id": {
+      "description": "The application the request is bound to.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+    },
+    "session_id": {
+      "description": "The conversation session the request belongs to.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+    },
+    "contract_version": {
+      "description": "The version of the application signed conversation contract the candidates and actions were derived from. Compared for equality only.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/opaqueVersion"
+    },
+    "decision_type": {
+      "description": "The kind of bounded choice requested.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:decision:shared:v1#/$defs/decisionType"
+    },
+    "schema_version": {
+      "description": "The version of the decision-type contract this request follows.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:decision:shared:v1#/$defs/schemaVersion"
+    },
+    "bounded_state": {
+      "description": "The minimum conversation state needed for this ranking, as flat values keyed by field name (at most 32). Host data, size-bounded; the scorer reads it and cannot change it.",
+      "x-alixai-authority": "host",
+      "type": "object",
+      "maxProperties": 32,
+      "propertyNames": {
+        "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+      },
+      "additionalProperties": {
+        "$ref": "urn:alixai:schema:decision:shared:v1#/$defs/boundedScalar"
+      }
+    },
+    "allowed_next_actions": {
+      "description": "The next steps the core permits in the current state, after policy. Context for the ranking only: the scorer cannot add one, and listing a step here does not execute it.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "maxItems": 16,
+      "items": { "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/permittedNextAction" }
+    },
+    "candidate_set": {
+      "description": "The bounded set of authorised candidates to rank.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:decision:candidate-set:v1"
+    },
+    "locale": {
+      "description": "The language of the turn, so a multilingual scorer ranks in the right one.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:decision:shared:v1#/$defs/locale"
+    },
+    "deadline": {
+      "description": "The instant after which the result is no longer wanted. A scorer that cannot answer by then yields the fallback reason timeout and the controller path runs.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    }
+  }
+}

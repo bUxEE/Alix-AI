@@ -1,0 +1,95 @@
+@use "mixins" as *;
+
+.alix-citations {
+  @include enter;
+  display: grid;
+  margin: 0;
+  border: 1px solid var(--alixai-border);
+  border-radius: var(--alixai-radius-md);
+  background: var(--alixai-surface);
+  color: var(--alixai-text);
+  font-family: var(--alixai-font);
+  line-height: var(--alixai-leading);
+
+  &__heading {
+    margin: 0;
+    padding: var(--alixai-space-3) var(--alixai-space-4) 0;
+    color: var(--alixai-text-muted);
+    font-size: var(--alixai-text-xs);
+    font-weight: 650;
+  }
+
+  &__list {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__item {
+    display: grid;
+    gap: var(--alixai-space-1);
+    padding: var(--alixai-space-3) var(--alixai-space-4);
+    border-top: 1px solid var(--alixai-border);
+
+    &:first-child {
+      border-top: 0;
+    }
+  }
+
+  &__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--alixai-space-2);
+  }
+
+  &__open {
+    @include pressable;
+    min-height: 1.5rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--alixai-accent);
+    font: inherit;
+    font-weight: 600;
+    text-align: start;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    cursor: pointer;
+  }
+
+  &__name {
+    font-weight: 600;
+  }
+
+  &__version {
+    color: var(--alixai-text-muted);
+    font-family: var(--alixai-font-mono);
+    font-size: var(--alixai-text-xs);
+  }
+
+  &__locator {
+    color: var(--alixai-text-muted);
+    font-size: var(--alixai-text-sm);
+  }
+
+  &__tag {
+    @include tag;
+
+    &[data-tone="warn"] {
+      @include tag(var(--alixai-warn), var(--alixai-warn-soft));
+    }
+
+    &[data-tone="danger"] {
+      @include tag(var(--alixai-danger), var(--alixai-danger-soft));
+    }
+  }
+
+  &__claims {
+    margin: 0;
+    padding-inline-start: var(--alixai-space-4);
+    color: var(--alixai-text-muted);
+    font-size: var(--alixai-text-sm);
+  }
+}

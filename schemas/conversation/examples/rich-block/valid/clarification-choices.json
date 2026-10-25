@@ -1,0 +1,27 @@
+{
+  "type": "clarification_choices",
+  "field": "slot_start",
+  "prompt": "Which time suits you?",
+  "answer_kind": "choice",
+  "allow_free_text": false,
+  "choices": [
+    {
+      "choice_id": "c1",
+      "label": "Tuesday 14 October, 10:30",
+      "value": {
+        "kind": "datetime",
+        "value": "2026-10-14T08:30:00Z",
+        "zone": "Europe/Rome"
+      }
+    },
+    {
+      "choice_id": "c2",
+      "label": "Tuesday 14 October, 11:00",
+      "value": {
+        "kind": "datetime",
+        "value": "2026-10-14T09:00:00Z",
+        "zone": "Europe/Rome"
+      }
+    }
+  ]
+}

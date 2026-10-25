@@ -1,0 +1,27 @@
+{
+  "provider_id": "localai-decision",
+  "model_id": "clm-v0.1-8b",
+  "model_revision": "rev-3",
+  "encoder": {
+    "encoder_id": "qwen3-8b",
+    "revision": "rev-1",
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "files": [
+    {
+      "name": "heads.safetensors",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "size_bytes": 10485760
+    },
+    {
+      "name": "calibration.json",
+      "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "size_bytes": 2048
+    }
+  ],
+  "licence": {
+    "spdx_id": "Apache-2.0",
+    "redistribution": "allowed",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0"
+  }
+}

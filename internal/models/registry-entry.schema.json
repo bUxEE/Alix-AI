@@ -1,0 +1,588 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:models:registry-entry:v1",
+  "title": "Model registry entry",
+  "x-schema-revision": 2,
+  "description": "One model or artefact AlixAI may run (master plan 8.3, 16.3), one YAML file per entry in models/registry/. Every field is present in every entry: a value that is not known or not yet measured is an explicit null, never an omitted key, so the shape of the record cannot silently shrink. Measurements stay null until measured by the benchmark harness (M0-13). The schema is self-contained (no $ref into other schemas) because internal/models embeds a byte-identical copy of this file and a test fails if the two drift. Revision 2 (task D-11) adds the optional decision layer of master plan 8.5: the decision-scorer and decision-encoder roles, the scoring and encoding capabilities, the pytorch artefact format, the high profile, the dependencies list and the scorer block; every revision-1 entry stays valid, which is why the $id keeps its v1 (a change that rejected an old entry would be a v2). Rules that need more than one entry (unique ids, one default per role and profile, fallback references) are enforced by the loader in internal/models, not here.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id", "name", "version", "status", "roles", "capabilities",
+    "upstream", "artifact", "licence", "quantization", "backend",
+    "hardware", "memory", "context", "load_time", "performance",
+    "languages", "scores", "measurement", "fallback",
+    "last_efficiency_review", "default_for", "notes"
+  ],
+  "properties": {
+    "id": {
+      "description": "Stable registry id and the file name stem (<id>.yaml). Lower case, no whitespace, no path separators. Benchmarks and configuration refer to a model by this id.",
+      "$ref": "#/$defs/entryId"
+    },
+    "name": {
+      "description": "Human-readable name for logs and reports.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "pattern": "\\S"
+    },
+    "version": {
+      "description": "The upstream model release or generation label (for example '4.0', '3.5', 'R2'). The exact pinned bytes are identified by artifact.revision and artifact.sha256, not by this label.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "pattern": "\\S"
+    },
+    "status": {
+      "description": "Lifecycle: candidate -> qualified-emulated -> certified. qualified-emulated means it passed the qualification suite in a resource-limited container ('emulated'), never on a certified machine. certified means qualified on real hardware with a pinned hash and evidence. rejected means evaluated and not acceptable; retired means a certified entry that is no longer supported. See the status-conditional rules in allOf.",
+      "type": "string",
+      "enum": ["candidate", "qualified-emulated", "certified", "rejected", "retired"]
+    },
+    "roles": {
+      "description": "What the model is used for (master plan 8.2).",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/role" }
+    },
+    "capabilities": {
+      "description": "Capabilities the upstream model card claims for this model. A claim is not a qualification: scores.* and status record what AlixAI has measured.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": ["chat", "tool-calling", "structured-output", "rag-grounding", "embedding", "reranking", "stt", "tts", "decision-scoring", "encoding"]
+      }
+    },
+    "upstream": {
+      "description": "The model as published by its authors, before any conversion or quantisation.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repo_url", "revision"],
+      "properties": {
+        "repo_url": { "$ref": "#/$defs/httpsUrl" },
+        "revision": {
+          "description": "Commit of the upstream repository the facts in this entry were read at, or null when not recorded.",
+          "$ref": "#/$defs/gitRevisionOrNull"
+        }
+      }
+    },
+    "artifact": {
+      "description": "The exact file the runtime loads. filename, revision and sha256 are what supply-chain verification (master plan 16.3, SEC-063) checks. They are null only while an entry is a candidate and the artefact has not been found or pinned; the status rules in allOf require them for anything beyond candidate.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "repo_url", "filename", "revision", "size_bytes", "sha256", "quantized_by", "first_party", "checked_on"],
+      "properties": {
+        "format": {
+          "type": "string",
+          "enum": ["gguf", "onnx", "safetensors", "pytorch"]
+        },
+        "repo_url": {
+          "description": "Repository that hosts the artefact, or null when none was found.",
+          "oneOf": [{ "$ref": "#/$defs/httpsUrl" }, { "type": "null" }]
+        },
+        "filename": {
+          "description": "Exact file name inside the repository: a single path segment, never a path.",
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+            },
+            { "type": "null" }
+          ]
+        },
+        "revision": {
+          "description": "Commit of the artefact repository the file was read at. Pinned: a branch or tag is not accepted.",
+          "$ref": "#/$defs/gitRevisionOrNull"
+        },
+        "size_bytes": {
+          "description": "Exact size of the file in bytes, or null when unknown.",
+          "oneOf": [{ "type": "integer", "minimum": 1 }, { "type": "null" }]
+        },
+        "sha256": {
+          "description": "Lower-case hex SHA-256 of the file's content. Null only while the entry is a candidate. models.Verify compares the installed file against it and refuses an entry without one.",
+          "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }]
+        },
+        "quantized_by": {
+          "description": "Who produced this file from the upstream weights: the organisation or user that published the file (the model's own organisation for a first-party file). A third-party conversion has to be reviewed as its own supply-chain link.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "\\S"
+        },
+        "first_party": {
+          "description": "True when the artefact is published by the upstream model's own organisation.",
+          "type": "boolean"
+        },
+        "checked_on": {
+          "description": "Date the repository, file name, revision and hash above were last confirmed against the hosting service.",
+          "type": "string",
+          "format": "date"
+        }
+      }
+    },
+    "licence": {
+      "description": "SEC-091: every entry records its licence and what redistribution it permits. All three members are required and non-empty for every status.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["spdx", "url", "redistribution_notes"],
+      "properties": {
+        "spdx": {
+          "description": "SPDX licence identifier (or LicenseRef-...) of the weights.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9.+-]*$"
+        },
+        "url": { "$ref": "#/$defs/httpsUrl" },
+        "redistribution_notes": {
+          "description": "What AlixAI may and may not do with the file (bundle, mirror, convert, quantise) and what notices must travel with it. A human reviews this before a release (M5-H02).",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000,
+          "pattern": "\\S"
+        }
+      }
+    },
+    "quantization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scheme", "nominal_bits"],
+      "properties": {
+        "scheme": {
+          "description": "Quantisation scheme as the file names it (for example Q4_K_M).",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+        },
+        "nominal_bits": {
+          "description": "Nominal bits per weight of the scheme family (a Q4_K_M file mixes 4 and 6 bit blocks and is recorded as 4).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32
+        }
+      }
+    },
+    "backend": {
+      "description": "The runtime that loads the artefact.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runtime", "name", "allowed_runtime_versions"],
+      "properties": {
+        "runtime": {
+          "description": "The serving runtime (for example localai).",
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._-]{0,39}$"
+        },
+        "name": {
+          "description": "The inference backend inside the runtime (for example llama-cpp).",
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._-]{0,39}$"
+        },
+        "allowed_runtime_versions": {
+          "description": "Runtime versions this artefact has been run and qualified with. Empty means none: the version allowlist check in models.Verify denies every runtime version for an entry with an empty list (fail closed).",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]*$"
+          }
+        }
+      }
+    },
+    "hardware": {
+      "description": "Minimum and recommended host, from measurement. Null until measured.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minimum", "recommended"],
+      "properties": {
+        "minimum": { "$ref": "#/$defs/hardwareSpec" },
+        "recommended": { "$ref": "#/$defs/hardwareSpec" }
+      }
+    },
+    "memory": {
+      "description": "Resident set size of the serving process with this model loaded, in MiB. Null until measured.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["peak_rss_mb", "steady_rss_mb"],
+      "properties": {
+        "peak_rss_mb": { "$ref": "#/$defs/nonNegativeNumberOrNull" },
+        "steady_rss_mb": { "$ref": "#/$defs/nonNegativeNumberOrNull" }
+      }
+    },
+    "context": {
+      "description": "Context window facts. native_max_tokens is what the model supports; budget_tokens is what AlixAI actually configures (always far smaller on Lite, because the KV cache grows with it).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["native_max_tokens", "budget_tokens", "kv_cache_mb"],
+      "properties": {
+        "native_max_tokens": { "$ref": "#/$defs/positiveIntegerOrNull" },
+        "budget_tokens": { "$ref": "#/$defs/positiveIntegerOrNull" },
+        "kv_cache_mb": {
+          "description": "KV cache size in MiB at budget_tokens, measured.",
+          "$ref": "#/$defs/nonNegativeNumberOrNull"
+        }
+      }
+    },
+    "load_time": {
+      "description": "Time to load the model into memory, in milliseconds. cold: not in the page cache; warm: in the page cache. Null until measured.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cold_ms", "warm_ms"],
+      "properties": {
+        "cold_ms": { "$ref": "#/$defs/nonNegativeNumberOrNull" },
+        "warm_ms": { "$ref": "#/$defs/nonNegativeNumberOrNull" }
+      }
+    },
+    "performance": {
+      "description": "Latency and throughput on the measured hardware. Null until measured.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["latency_ms_p50", "latency_ms_p95", "ttft_ms_p50", "tokens_per_second"],
+      "properties": {
+        "latency_ms_p50": { "$ref": "#/$defs/nonNegativeNumberOrNull" },
+        "latency_ms_p95": { "$ref": "#/$defs/nonNegativeNumberOrNull" },
+        "ttft_ms_p50": {
+          "description": "Median time to first token in milliseconds.",
+          "$ref": "#/$defs/nonNegativeNumberOrNull"
+        },
+        "tokens_per_second": { "$ref": "#/$defs/nonNegativeNumberOrNull" }
+      }
+    },
+    "languages": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["declared", "claimed_count", "qualified"],
+      "properties": {
+        "declared": {
+          "description": "Languages the upstream model card names. May be empty when the card only gives a count.",
+          "$ref": "#/$defs/languageList"
+        },
+        "claimed_count": {
+          "description": "Number of languages the card claims when it gives a count instead of (or as well as) a list, else null.",
+          "$ref": "#/$defs/positiveIntegerOrNull"
+        },
+        "qualified": {
+          "description": "Languages that passed AlixAI's multilingual suite (master plan 8.4). Empty until qualified.",
+          "$ref": "#/$defs/languageList"
+        }
+      }
+    },
+    "scores": {
+      "description": "Qualification scores in [0, 1] from the fixed regression corpus (master plan 8.3, 8.4). Null until measured.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["task", "tool", "rag", "safety"],
+      "properties": {
+        "task": {
+          "description": "Typed-task and routing success.",
+          "$ref": "#/$defs/unitIntervalOrNull"
+        },
+        "tool": {
+          "description": "Tool-call and schema-valid output success.",
+          "$ref": "#/$defs/unitIntervalOrNull"
+        },
+        "rag": {
+          "description": "Grounded-answer success.",
+          "$ref": "#/$defs/unitIntervalOrNull"
+        },
+        "safety": {
+          "description": "Out-of-scope refusal and prompt-injection resistance.",
+          "$ref": "#/$defs/unitIntervalOrNull"
+        }
+      }
+    },
+    "measurement": {
+      "description": "Provenance of the measured fields above.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profile", "emulated", "results_path", "measured_on"],
+      "properties": {
+        "profile": {
+          "oneOf": [{ "$ref": "#/$defs/profile" }, { "type": "null" }]
+        },
+        "emulated": {
+          "description": "True when measured in a resource-limited container rather than on a real machine of the profile. An emulated result is never a certification.",
+          "type": ["boolean", "null"]
+        },
+        "results_path": {
+          "description": "Repository-relative path of the benchmark result file or directory.",
+          "oneOf": [{ "$ref": "#/$defs/repoPath" }, { "type": "null" }]
+        },
+        "measured_on": {
+          "oneOf": [{ "type": "string", "format": "date" }, { "type": "null" }]
+        }
+      }
+    },
+    "fallback": {
+      "description": "What happens when this model is unavailable, over budget or fails verification (master plan 8.4: deterministic fallback behaviour).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model_id", "degraded_mode", "notes"],
+      "properties": {
+        "model_id": {
+          "description": "Registry id of the model to fall back to, or null. The loader checks that it exists, is not this entry and does not form a cycle.",
+          "oneOf": [{ "$ref": "#/$defs/entryId" }, { "type": "null" }]
+        },
+        "degraded_mode": {
+          "description": "Behaviour when no model (or fallback model) can serve: deterministic-routing = typed forms and rules, no generation; lexical-retrieval = keyword search only, no vectors; refuse = fail closed and report unavailable.",
+          "type": "string",
+          "enum": ["deterministic-routing", "lexical-retrieval", "refuse"]
+        },
+        "notes": {
+          "oneOf": [{ "type": "string", "minLength": 1, "maxLength": 1000 }, { "type": "null" }]
+        }
+      }
+    },
+    "last_efficiency_review": {
+      "description": "Master plan 8.3: date of the last model-efficiency review and the file that records it. Null until a review has been done.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["date", "evidence_path"],
+      "properties": {
+        "date": {
+          "oneOf": [{ "type": "string", "format": "date" }, { "type": "null" }]
+        },
+        "evidence_path": {
+          "description": "Repository-relative path of the review (docs/efficiency/<task>.md) or its evidence.",
+          "oneOf": [{ "$ref": "#/$defs/repoPath" }, { "type": "null" }]
+        }
+      }
+    },
+    "default_for": {
+      "description": "The (role, profile) pairs for which this is the default model. Across the whole registry a pair has at most one default; a rejected or retired entry has none. The loader enforces both.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "profile"],
+        "properties": {
+          "role": { "$ref": "#/$defs/role" },
+          "profile": { "$ref": "#/$defs/profile" }
+        }
+      }
+    },
+    "embedding": {
+      "description": "Embedding model facts. Required when roles contains 'embedding', because the vector dimension fixes the index layout.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dimensions", "max_input_tokens"],
+      "properties": {
+        "dimensions": { "$ref": "#/$defs/positiveIntegerOrNull" },
+        "max_input_tokens": { "$ref": "#/$defs/positiveIntegerOrNull" }
+      }
+    },
+    "dependencies": {
+      "description": "Other registry entries this model cannot run without (master plan 8.5): the frozen encoder under a bi-encoder decision scorer. The loader requires every id to resolve to a registry entry that has the decision-encoder role, is not rejected or retired and is itself pinned (file name, revision and sha256), so a scorer cannot be listed on top of an encoder nobody can verify.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "relation"],
+        "properties": {
+          "id": { "$ref": "#/$defs/entryId" },
+          "relation": {
+            "description": "frozen-encoder: the dependency supplies the encoder whose output this model's heads read.",
+            "type": "string",
+            "enum": ["frozen-encoder"]
+          }
+        }
+      }
+    },
+    "scorer": {
+      "description": "Decision scorer facts (master plan 8.5, ADR 0029). Required when roles contains decision-scorer. A scorer only ranks or scores a bounded set of authorised candidates; it never authorises anything, so nothing here is a permission.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["architecture", "max_options"],
+      "properties": {
+        "architecture": {
+          "description": "non-autoregressive-encoder: one forward pass of an encoder with a classification head; bi-encoder: a frozen encoder plus state and action heads, answers by cosine similarity (requires a frozen-encoder dependency); autoregressive-letter: a causal model that answers with an option letter.",
+          "type": "string",
+          "enum": ["non-autoregressive-encoder", "bi-encoder", "autoregressive-letter"]
+        },
+        "max_options": {
+          "description": "Most options one choice question may carry, as the source states it; null when the source gives no number (unverified). The source is named in notes.",
+          "$ref": "#/$defs/positiveIntegerOrNull"
+        }
+      }
+    },
+    "notes": {
+      "description": "Research and caveat notes: what could not be confirmed, third-party provenance, unverified runtime support. Never a place for secrets.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 1000, "pattern": "\\S" }
+    }
+  },
+  "allOf": [
+    {
+      "description": "qualified-emulated: a model that has been benchmarked has a pinned file and a recorded review.",
+      "if": { "required": ["status"], "properties": { "status": { "const": "qualified-emulated" } } },
+      "then": {
+        "properties": {
+          "artifact": {
+            "properties": {
+              "filename": { "type": "string" },
+              "revision": { "type": "string" },
+              "sha256": { "type": "string" }
+            }
+          },
+          "last_efficiency_review": {
+            "properties": {
+              "date": { "type": "string" },
+              "evidence_path": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "certified (SEC-063, SEC-091): a pinned file with its hash, a licence (required for every status), and evidence. An emulated measurement is never a certification.",
+      "if": { "required": ["status"], "properties": { "status": { "const": "certified" } } },
+      "then": {
+        "properties": {
+          "artifact": {
+            "properties": {
+              "filename": { "type": "string" },
+              "revision": { "type": "string" },
+              "sha256": { "type": "string" }
+            }
+          },
+          "last_efficiency_review": {
+            "properties": {
+              "date": { "type": "string" },
+              "evidence_path": { "type": "string" }
+            }
+          },
+          "measurement": {
+            "properties": {
+              "emulated": { "enum": [false, null] }
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "A rejected or retired entry is nobody's default.",
+      "if": { "required": ["status"], "properties": { "status": { "enum": ["rejected", "retired"] } } },
+      "then": {
+        "properties": {
+          "default_for": { "maxItems": 0 }
+        }
+      }
+    },
+    {
+      "description": "An embedding model declares its vector dimension.",
+      "if": { "required": ["roles"], "properties": { "roles": { "contains": { "const": "embedding" } } } },
+      "then": {
+        "required": ["embedding"],
+        "properties": {
+          "embedding": {
+            "properties": {
+              "dimensions": { "type": "integer" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "A decision scorer declares the scorer block.",
+      "if": { "required": ["roles"], "properties": { "roles": { "contains": { "const": "decision-scorer" } } } },
+      "then": { "required": ["scorer"] }
+    },
+    {
+      "description": "A frozen encoder is a dependency, never a model the registry selects: it is the default for nothing.",
+      "if": { "required": ["roles"], "properties": { "roles": { "contains": { "const": "decision-encoder" } } } },
+      "then": { "properties": { "default_for": { "maxItems": 0 } } }
+    },
+    {
+      "description": "A bi-encoder scorer lists the frozen encoder it reads (the loader then checks the id resolves to a pinned decision-encoder entry).",
+      "if": { "required": ["scorer"], "properties": { "scorer": { "required": ["architecture"], "properties": { "architecture": { "const": "bi-encoder" } } } } },
+      "then": { "required": ["dependencies"], "properties": { "dependencies": { "minItems": 1 } } }
+    },
+    {
+      "description": "A candidate is nobody's decision-scorer default: it has no evidence yet. The loader adds the profile rules (qualified or certified, measured on that profile, a measured peak inside the profile's scorer row).",
+      "if": { "required": ["status"], "properties": { "status": { "const": "candidate" } } },
+      "then": { "properties": { "default_for": { "not": { "contains": { "type": "object", "required": ["role"], "properties": { "role": { "const": "decision-scorer" } } } } } } }
+    },
+    {
+      "description": "No decision scorer runs on experimental-4g (resource-budgets rule R2), so none is its default.",
+      "properties": { "default_for": { "not": { "contains": { "type": "object", "required": ["role", "profile"], "properties": { "role": { "const": "decision-scorer" }, "profile": { "const": "experimental-4g" } } } } } }
+    }
+  ],
+  "$defs": {
+    "entryId": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 63,
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "role": {
+      "type": "string",
+      "enum": ["typed-routing", "conversational-controller", "embedding", "reranker", "stt", "tts", "decision-scorer", "decision-encoder"]
+    },
+    "profile": {
+      "description": "Hardware profiles from master plan section 7: lite (8 GB / 4 CPU certified target), balanced (16 GB / 8 CPU) experimental-4g (4 GB / 4 CPU, never certified) and high (32 GB / 8 CPU, the profile the optional CLM decision scorer is measured on, tools/decbench).",
+      "type": "string",
+      "enum": ["lite", "balanced", "experimental-4g", "high"]
+    },
+    "httpsUrl": {
+      "type": "string",
+      "maxLength": 500,
+      "pattern": "^https://[A-Za-z0-9][A-Za-z0-9.-]*[A-Za-z0-9](:[0-9]{1,5})?(/[A-Za-z0-9._~%!$&()*+,;=:@/-]*)?$"
+    },
+    "gitRevisionOrNull": {
+      "oneOf": [
+        { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        { "type": "null" }
+      ]
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "repoPath": {
+      "description": "A repository-relative path: forward slashes, no leading slash, no empty segments, no '.' or '..' segments.",
+      "type": "string",
+      "maxLength": 300,
+      "pattern": "^([A-Za-z0-9_-][A-Za-z0-9._-]*/)*[A-Za-z0-9_-][A-Za-z0-9._-]*/?$",
+      "not": { "pattern": "(^|/)\\.\\.?(/|$)" }
+    },
+    "languageList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "description": "A BCP 47 language tag, lower-case primary subtag (for example it, en, zh).",
+        "type": "string",
+        "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$"
+      }
+    },
+    "hardwareSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cpu_cores", "ram_mb", "accelerator"],
+      "properties": {
+        "cpu_cores": { "$ref": "#/$defs/positiveIntegerOrNull" },
+        "ram_mb": { "$ref": "#/$defs/positiveIntegerOrNull" },
+        "accelerator": {
+          "description": "Required accelerator, or the string 'none' when the CPU suffices; null when unmeasured.",
+          "oneOf": [{ "type": "string", "minLength": 1, "maxLength": 80 }, { "type": "null" }]
+        }
+      }
+    },
+    "positiveIntegerOrNull": {
+      "oneOf": [{ "type": "integer", "minimum": 1 }, { "type": "null" }]
+    },
+    "nonNegativeNumberOrNull": {
+      "oneOf": [{ "type": "number", "minimum": 0 }, { "type": "null" }]
+    },
+    "unitIntervalOrNull": {
+      "oneOf": [{ "type": "number", "minimum": 0, "maximum": 1 }, { "type": "null" }]
+    }
+  }
+}

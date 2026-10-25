@@ -1,0 +1,322 @@
+{
+  "suite": "core-safety",
+  "description": "Scope isolation, safe execution and a runtime smoke test for the demo library, run against a disposable tenant with synthetic data.",
+  "synthetic": true,
+  "fixtures": {
+    "provisioning": {
+      "create_tenant": {
+        "endpoint": "library-mcp",
+        "mcp_tool": "test_create_tenant"
+      },
+      "seed": {
+        "endpoint": "library-mcp",
+        "mcp_tool": "test_seed"
+      },
+      "cleanup": {
+        "endpoint": "library-mcp",
+        "mcp_tool": "test_cleanup"
+      },
+      "seed_data": "tests/seed/library.json"
+    },
+    "tenants": [
+      {
+        "ref": "network-a",
+        "workspaces": [
+          "branch-1",
+          "branch-2"
+        ]
+      },
+      {
+        "ref": "network-b",
+        "workspaces": [
+          "branch-1"
+        ]
+      }
+    ],
+    "principals": [
+      {
+        "ref": "member-a1",
+        "tenant": "network-a",
+        "workspace": "branch-1",
+        "kind": "human",
+        "roles": [
+          "member"
+        ]
+      },
+      {
+        "ref": "member-a2",
+        "tenant": "network-a",
+        "workspace": "branch-2",
+        "kind": "human",
+        "roles": [
+          "member"
+        ]
+      },
+      {
+        "ref": "visitor-b1",
+        "tenant": "network-b",
+        "workspace": "branch-1",
+        "kind": "human",
+        "roles": [
+          "visitor"
+        ]
+      }
+    ],
+    "records": [
+      {
+        "ref": "title-a1",
+        "entity_type": "title",
+        "tenant": "network-a",
+        "workspace": "branch-1"
+      },
+      {
+        "ref": "title-a2",
+        "entity_type": "title",
+        "tenant": "network-a",
+        "workspace": "branch-2"
+      },
+      {
+        "ref": "title-b1",
+        "entity_type": "title",
+        "tenant": "network-b",
+        "workspace": "branch-1"
+      }
+    ]
+  },
+  "scope_probes": [
+    {
+      "id": "member-reserves-own-branch",
+      "dimension": "workspace",
+      "operation": "prepare",
+      "capability_id": "reservations.create",
+      "principal": "member-a1",
+      "target_record": "title-a1",
+      "expect": "allow"
+    },
+    {
+      "id": "member-cannot-reserve-other-branch",
+      "dimension": "workspace",
+      "operation": "prepare",
+      "capability_id": "reservations.create",
+      "principal": "member-a1",
+      "target_record": "title-a2",
+      "expect": "deny",
+      "error_code": "scope_violation"
+    },
+    {
+      "id": "member-cannot-reserve-other-network",
+      "dimension": "tenant",
+      "operation": "prepare",
+      "capability_id": "reservations.create",
+      "principal": "member-a1",
+      "target_record": "title-b1",
+      "expect": "deny",
+      "error_code": "scope_violation"
+    },
+    {
+      "id": "visitor-cannot-reserve",
+      "dimension": "role",
+      "operation": "prepare",
+      "capability_id": "reservations.create",
+      "principal": "visitor-b1",
+      "target_record": "title-b1",
+      "expect": "deny",
+      "error_code": "permission_denied"
+    },
+    {
+      "id": "member-retrieves-policies",
+      "dimension": "source",
+      "operation": "retrieve",
+      "principal": "member-a1",
+      "expect": "allow"
+    },
+    {
+      "id": "visitor-searches-catalogue",
+      "dimension": "role",
+      "operation": "read",
+      "capability_id": "catalog.find_title",
+      "principal": "visitor-b1",
+      "expect": "allow"
+    },
+    {
+      "id": "search-never-surfaces-other-network-title",
+      "dimension": "tenant",
+      "operation": "read",
+      "capability_id": "catalog.find_title",
+      "principal": "member-a1",
+      "target_record": "title-b1",
+      "expect": "deny",
+      "error_code": "scope_violation"
+    }
+  ],
+  "safety_probes": [
+    {
+      "id": "reserve-confirmed",
+      "capability_id": "reservations.create",
+      "principal": "member-a1",
+      "kind": "confirmed_commit",
+      "expect": {
+        "outcome": "committed_once"
+      }
+    },
+    {
+      "id": "reserve-unconfirmed",
+      "capability_id": "reservations.create",
+      "principal": "member-a1",
+      "kind": "unconfirmed_commit",
+      "expect": {
+        "outcome": "rejected_no_effect",
+        "error_code": "confirmation_required"
+      }
+    },
+    {
+      "id": "reserve-replayed",
+      "capability_id": "reservations.create",
+      "principal": "member-a1",
+      "kind": "replayed_commit",
+      "expect": {
+        "outcome": "original_receipt_returned"
+      }
+    },
+    {
+      "id": "reserve-expired",
+      "capability_id": "reservations.create",
+      "principal": "member-a1",
+      "kind": "expired_preparation",
+      "expect": {
+        "outcome": "rejected_no_effect",
+        "error_code": "expired"
+      }
+    },
+    {
+      "id": "reserve-stale",
+      "capability_id": "reservations.create",
+      "principal": "member-a1",
+      "kind": "stale_record",
+      "expect": {
+        "outcome": "rejected_no_effect",
+        "error_code": "stale"
+      }
+    },
+    {
+      "id": "reserve-cancelled",
+      "capability_id": "reservations.create",
+      "principal": "member-a1",
+      "kind": "cancelled_preparation",
+      "expect": {
+        "outcome": "rejected_no_effect",
+        "error_code": "expired"
+      }
+    },
+    {
+      "id": "reserve-uncertain",
+      "capability_id": "reservations.create",
+      "principal": "member-a1",
+      "kind": "uncertain_commit_recovery",
+      "expect": {
+        "outcome": "recovered_via_status"
+      }
+    }
+  ],
+  "conversation_cases": [
+    {
+      "id": "reserve-missing-date",
+      "language": "en",
+      "capability_id": "reservations.create",
+      "principal": "member-a1",
+      "turns": [
+        {
+          "user": "Please reserve The Leopard for me",
+          "expect": {
+            "act": "ask_missing_field",
+            "missing_fields": [
+              "pickup_date"
+            ]
+          }
+        },
+        {
+          "user": "I will collect it on 2026-11-13",
+          "expect": {
+            "act": "request_confirmation",
+            "fields": {
+              "pickup_date": "2026-11-13"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "cerca-senza-parole",
+      "language": "it",
+      "capability_id": "catalog.find_title",
+      "principal": "member-a1",
+      "turns": [
+        {
+          "user": "Cerca un libro",
+          "expect": {
+            "act": "ask_missing_field",
+            "missing_fields": [
+              "query"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "smoke": {
+    "paths": [
+      {
+        "id": "smoke-text",
+        "path": "text",
+        "principal": "member-a1",
+        "capability_id": "catalog.find_title",
+        "utterance": "Do you have any books about gardening?",
+        "expect": {
+          "audit_events": [
+            "turn.completed"
+          ]
+        }
+      },
+      {
+        "id": "smoke-rag",
+        "path": "rag",
+        "principal": "member-a1",
+        "utterance": "How many days can I keep a book?",
+        "expect": {
+          "audit_events": [
+            "rag.retrieved",
+            "turn.completed"
+          ],
+          "citations": true
+        }
+      },
+      {
+        "id": "smoke-rag-no-evidence",
+        "path": "rag",
+        "principal": "member-a1",
+        "utterance": "What is the library director's home address?",
+        "expect": {
+          "audit_events": [
+            "rag.no_supported_evidence"
+          ],
+          "citations": false
+        }
+      },
+      {
+        "id": "smoke-action",
+        "path": "action",
+        "principal": "member-a1",
+        "capability_id": "reservations.create",
+        "utterance": "Reserve The Leopard for 2026-11-13",
+        "expect": {
+          "audit_events": [
+            "action.prepared",
+            "action.confirmed",
+            "action.committed"
+          ]
+        }
+      }
+    ],
+    "verify_cleanup": true
+  }
+}

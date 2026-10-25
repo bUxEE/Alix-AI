@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:decision:shared:v1",
+  "title": "Shared decision-layer building blocks",
+  "description": "Definitions shared by the decision-layer contracts (docs/architecture/decision-layer.md section 4), referenced as urn:alixai:schema:decision:shared:v1#/$defs/<name>. This file is a definitions library: it constrains nothing on its own. The decision layer is optional, bounded, non-generative and non-authoritative: nothing defined here describes an authorisation, a permission, an approval or a commit, and nothing may be added that does.",
+  "$defs": {
+    "decisionType": {
+      "title": "Decision type",
+      "description": "What kind of bounded choice the scorer is asked to rank (master plan 8.5). capability_routing: which authorised capability a turn concerns. dialogue_act: confirmation, rejection, correction, cancellation or help detection. item_selection: one item of a short authorised list. action_selection: one of the already-permitted next actions. scope_classification: bounded out-of-scope and prompt-injection classification. path_verification: optional verification of an action, tool or response path. A value outside this list is rejected on decode: an unknown decision type fails closed and the controller path is used.",
+      "type": "string",
+      "enum": [
+        "capability_routing",
+        "dialogue_act",
+        "item_selection",
+        "action_selection",
+        "scope_classification",
+        "path_verification"
+      ]
+    },
+    "schemaVersion": {
+      "title": "Decision schema version",
+      "description": "The version of the decision-type contract a request or result follows. Exactly 1 in this release; any other value is rejected on decode, so a request or result from a different contract generation fails closed instead of being read loosely.",
+      "type": "integer",
+      "const": 1
+    },
+    "locale": {
+      "title": "Locale",
+      "description": "A BCP 47 language tag such as it, en or pt-BR (2 to 3 letters, then up to three subtags of 2 to 8 letters or digits), at most 35 characters.",
+      "type": "string",
+      "maxLength": 35,
+      "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8}){0,3}$"
+    },
+    "unitScore": {
+      "title": "Unit score",
+      "description": "A real number from 0 to 1 inclusive.",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "sha256": {
+      "title": "SHA-256 digest",
+      "description": "A SHA-256 digest as 64 lower-case hexadecimal characters.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "boundedScalar": {
+      "title": "Bounded scalar",
+      "description": "A single string (at most 512 characters), number, boolean or null. No nesting.",
+      "type": ["string", "number", "boolean", "null"],
+      "maxLength": 512
+    }
+  }
+}

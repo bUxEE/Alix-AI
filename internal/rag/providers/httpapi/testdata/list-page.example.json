@@ -1,0 +1,16 @@
+{
+  "items": [
+    {
+      "key": "policies/refund.md",
+      "version": "7",
+      "size": 1280,
+      "modified_at": "2026-02-01T09:30:00Z"
+    },
+    {
+      "key": "policies/old.md",
+      "version": "3",
+      "deleted": true
+    }
+  ],
+  "next_cursor": "opaque-cursor-or-null"
+}

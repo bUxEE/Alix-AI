@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:actions:action-receipt:v1",
+  "title": "ActionReceipt",
+  "description": "The durable outcome of an action (master plan 11.2): committed or rejected, stable application record IDs, canonical result facts, queued follow-up status, an audit reference and any uncertainty or partial-failure state. Built by the core from the adapter's Commit or Status result and persisted before it is announced. A verified response may claim completion only when a receipt with status committed exists. The model may verbalise a receipt; it cannot create or alter one: no property is 'model'.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["receipt_id", "preparation_id", "capability_id", "status", "records", "facts", "errors", "audit_ref", "issued_at"],
+  "properties": {
+    "receipt_id": {
+      "description": "ID of this receipt.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/receiptId"
+    },
+    "preparation_id": {
+      "description": "The PreparedAction this receipt answers. Every receipt has one: nothing commits without a preparation.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/preparationId"
+    },
+    "capability_id": {
+      "description": "The capability that was committed or rejected.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/capabilityId"
+    },
+    "status": {
+      "description": "The outcome of the action. committed: the host confirmed the commit. rejected: nothing was applied. queued: accepted for asynchronous completion (see follow_up). partial: part of the action was applied (see errors). uncertain: the outcome could not be determined, even by Status; the user is told so and the action is not retried blindly. Decided by the core from the adapter's DeterministicResult and its own recovery; committed is never inferred from anything but a host ok.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "enum": ["committed", "rejected", "queued", "partial", "uncertain"]
+    },
+    "records": {
+      "description": "Stable application record IDs the action created, changed or cancelled, from the host's result. Empty when status is rejected.",
+      "x-alixai-authority": "host",
+      "type": "array",
+      "maxItems": 256,
+      "items": { "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/recordRef" }
+    },
+    "facts": {
+      "description": "Canonical result facts from the host's result: the only numbers, dates, times, amounts and IDs a response about this outcome may state.",
+      "x-alixai-authority": "host",
+      "type": "array",
+      "maxItems": 256,
+      "items": { "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/fact" }
+    },
+    "errors": {
+      "description": "Why the action was rejected, partial or uncertain: issues relayed from the host's result plus any the core adds itself (for example uncertain_outcome, expired). Empty exactly when status is committed or queued.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "maxItems": 64,
+      "items": { "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/issue" }
+    },
+    "follow_up": {
+      "description": "Status of queued follow-up work the host reported, where applicable. Required when status is queued.",
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/followUp"
+    },
+    "audit_ref": {
+      "description": "Reference to the audit record of the commit attempt.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/auditRef"
+    },
+    "issued_at": {
+      "description": "When the core persisted the receipt.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "status": { "enum": ["committed", "queued"] } },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": { "errors": { "maxItems": 0 } }
+      },
+      "else": {
+        "properties": { "errors": { "minItems": 1 } }
+      }
+    },
+    {
+      "description": "A rejected action created nothing, so no record IDs may suggest otherwise.",
+      "if": {
+        "properties": { "status": { "const": "rejected" } },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": { "records": { "maxItems": 0 } }
+      }
+    },
+    {
+      "if": {
+        "properties": { "status": { "const": "queued" } },
+        "required": ["status"]
+      },
+      "then": { "required": ["follow_up"] }
+    }
+  ]
+}

@@ -1,0 +1,311 @@
+// Controls of the shell: segmented choices, buttons, chips, checkboxes, notes and the small layout helpers sections share.
+
+@mixin press {
+  transition:
+    transform var(--alixai-duration-press) var(--alixai-ease-out),
+    background-color var(--alixai-duration-fade) ease,
+    border-color var(--alixai-duration-fade) ease,
+    color var(--alixai-duration-fade) ease;
+
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--alixai-focus);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &:active:not(:disabled) {
+      transform: none;
+    }
+  }
+}
+
+.demo-segmented {
+  display: grid;
+  gap: 0.375rem;
+
+  &__label {
+    color: var(--alixai-text-muted);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  &__track {
+    display: inline-flex;
+    width: fit-content;
+    max-width: 100%;
+    padding: 2px;
+    border-radius: calc(var(--alixai-radius-md) + 2px);
+    background: var(--alixai-surface-sunken);
+    overflow-x: auto;
+  }
+
+  &__option {
+    @include press;
+    min-height: 1.875rem;
+    padding: 0 0.75rem;
+    border: 0;
+    border-radius: var(--alixai-radius-md);
+    background: transparent;
+    color: var(--alixai-text-muted);
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        color: var(--alixai-text);
+      }
+    }
+
+    &[aria-checked="true"] {
+      background: var(--alixai-surface);
+      color: var(--alixai-text);
+      font-weight: 600;
+      box-shadow: 0 1px 2px color-mix(in oklch, var(--alixai-text) 12%, transparent);
+    }
+  }
+}
+
+.demo-button {
+  @include press;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  padding: 0 0.875rem;
+  border: 1px solid var(--alixai-border-strong);
+  border-radius: var(--alixai-radius-md);
+  background: var(--alixai-surface);
+  color: var(--alixai-text);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover:not(:disabled) {
+      background: var(--alixai-surface-sunken);
+    }
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  &[data-variant="primary"] {
+    border-color: var(--alixai-accent);
+    background: var(--alixai-accent);
+    color: var(--alixai-on-accent);
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover:not(:disabled) {
+        background: var(--alixai-accent-hover);
+      }
+    }
+  }
+
+  &[data-variant="quiet"] {
+    border-color: transparent;
+    background: transparent;
+    color: var(--alixai-text-muted);
+  }
+}
+
+.demo-chip {
+  @include press;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--alixai-border);
+  border-radius: 999px;
+  background: var(--alixai-surface);
+  color: var(--alixai-text);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      border-color: var(--alixai-border-strong);
+    }
+  }
+
+  &[aria-pressed="true"] {
+    border-color: var(--alixai-accent);
+    background: var(--alixai-accent-soft);
+    font-weight: 600;
+  }
+
+  &[data-tone="danger"] {
+    color: var(--alixai-danger);
+  }
+}
+
+.demo-link {
+  @include press;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--alixai-accent);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.demo-icon-button {
+  @include press;
+  display: inline-grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--alixai-radius-sm);
+  background: none;
+  color: var(--alixai-text-muted);
+  cursor: pointer;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background: var(--alixai-surface-sunken);
+      color: var(--alixai-text);
+    }
+  }
+}
+
+.demo-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+
+  input {
+    width: 1rem;
+    height: 1rem;
+    margin: 0;
+    accent-color: var(--alixai-accent);
+  }
+}
+
+.demo-note {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin: 0;
+  padding: 0.625rem 0.875rem;
+  border-radius: var(--alixai-radius-md);
+  background: var(--alixai-surface-sunken);
+  color: var(--alixai-text);
+  font-size: 0.8125rem;
+  animation: demo-in var(--alixai-duration-enter) var(--alixai-ease-out) backwards;
+
+  &[data-tone="warn"] {
+    background: var(--alixai-warn-soft);
+    color: var(--alixai-warn);
+  }
+
+  &[data-tone="danger"] {
+    background: var(--alixai-danger-soft);
+    color: var(--alixai-danger);
+  }
+}
+
+.demo-pulse {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--alixai-accent);
+  animation: demo-breathe 1.2s var(--alixai-ease-in-out) infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@keyframes demo-breathe {
+  50% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+}
+
+// ---- small layout helpers ----
+
+.demo-stack {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+  min-width: 0;
+
+  &--tight {
+    gap: 0.25rem;
+  }
+
+  &--loose {
+    gap: 1.5rem;
+  }
+}
+
+.demo-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  &--wrap {
+    flex-wrap: wrap;
+  }
+
+  &--center {
+    gap: 1.25rem;
+  }
+}
+
+.demo-muted {
+  margin: 0;
+  color: var(--alixai-text-muted);
+  font-size: 0.8125rem;
+}
+
+.demo-eyebrow {
+  margin: 0;
+  color: var(--alixai-text-muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.demo-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1.5rem;
+  margin-bottom: 1rem;
+
+  &__meta {
+    margin: 0 0 0.5rem auto;
+    color: var(--alixai-text-muted);
+    font-size: 0.75rem;
+
+    @media (max-width: 40rem) {
+      margin-left: 0;
+    }
+  }
+}

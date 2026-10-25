@@ -1,0 +1,40 @@
+{
+  "format_version": 1,
+  "id": "rag-v0",
+  "description": "Synthetic multilingual (en, it) RAG evaluation corpus: exact identifiers, tables, conflicting versions, stale, unavailable and deleted sources, per-principal permissions and a second tenant. No real person, company or customer data.",
+  "application": "app_rageval",
+  "tenants": [
+    {"key":"acme","tenant_id":"tn_acme","workspace_id":"ws_main","principals":["usr_alice","usr_bob"]},
+    {"key":"globex","tenant_id":"tn_globex","workspace_id":"ws_main","principals":["usr_carol"]}
+  ],
+  "sources": [
+    {"key":"acme-returns","tenant":"acme","name":"Returns and warranty handbook","language":"en","state":"active","versions":[{"version":"v1","documents":[{"id":"returns-handbook","file":"docs/acme-returns/returns-handbook.md"}]}]},
+    {"key":"acme-refund-policy","tenant":"acme","name":"Refund policy","language":"en","state":"active","versions":[{"version":"v1","documents":[{"id":"refund-policy","file":"docs/acme-refund-policy/refund-policy.v1.md"}]},{"version":"v2","documents":[{"id":"refund-policy","file":"docs/acme-refund-policy/refund-policy.v2.md"}]}]},
+    {"key":"acme-manuale","tenant":"acme","name":"Manuale di installazione Atlas","language":"it","state":"active","versions":[{"version":"v1","documents":[{"id":"installation-manual","file":"docs/acme-manuale/manuale-installazione.md"}]}]},
+    {"key":"acme-garanzia","tenant":"acme","name":"Condizioni di garanzia","language":"it","state":"active","versions":[{"version":"v1","documents":[{"id":"warranty-it","file":"docs/acme-garanzia/garanzia.md"}]}]},
+    {"key":"acme-faq","tenant":"acme","name":"Customer FAQ","language":"en","state":"active","versions":[{"version":"v1","documents":[{"id":"faq-en","file":"docs/acme-faq/faq.md"}]}]},
+    {"key":"acme-faq-it","tenant":"acme","name":"Domande frequenti","language":"it","state":"active","versions":[{"version":"v1","documents":[{"id":"faq-it","file":"docs/acme-faq-it/faq-it.md"}]}]},
+    {"key":"acme-invoices","tenant":"acme","name":"Invoice register 2026","language":"en","state":"active","versions":[{"version":"v1","documents":[{"id":"invoice-register","file":"docs/acme-invoices/invoice-register.md"}]}]},
+    {"key":"acme-ferie","tenant":"acme","name":"Politica ferie","language":"it","state":"active","versions":[{"version":"v1","documents":[{"id":"vacation-policy","file":"docs/acme-ferie/politica-ferie.v1.md"}]},{"version":"v2","documents":[{"id":"vacation-policy","file":"docs/acme-ferie/politica-ferie.v2.md"}]}]},
+    {"key":"acme-sla","tenant":"acme","name":"Service level agreement 2024","language":"en","state":"stale","versions":[{"version":"v1","documents":[{"id":"sla","file":"docs/acme-sla/sla-2024.md"}]}]},
+    {"key":"acme-archive","tenant":"acme","name":"Archive handbook","language":"en","state":"unavailable","versions":[{"version":"v1","documents":[{"id":"archive-handbook","file":"docs/acme-archive/archive-handbook.md"}]}]},
+    {"key":"acme-legacy-wiki","tenant":"acme","name":"Legacy wiki","language":"en","state":"deleted","versions":[{"version":"v1","documents":[{"id":"warehouse-delta","file":"docs/acme-legacy-wiki/warehouse-delta.md"}]}]},
+    {"key":"acme-hr","tenant":"acme","name":"Salary bands","language":"en","state":"active","readers":["usr_alice"],"versions":[{"version":"v1","documents":[{"id":"salary-bands","file":"docs/acme-hr/salary-bands.md"}]}]},
+    {"key":"globex-ops","tenant":"globex","name":"Project Orca","language":"en","state":"active","versions":[{"version":"v1","documents":[{"id":"project-orca","file":"docs/globex-ops/project-orca.md"}]}]},
+    {"key":"acme-shipping","tenant":"acme","name":"Shipping policy","language":"en","state":"active","versions":[{"version":"v1","documents":[{"id":"shipping-policy","file":"docs/acme-shipping/shipping-policy.md"}]}]},
+    {"key":"acme-b2b-returns","tenant":"acme","name":"Business returns","language":"en","state":"active","versions":[{"version":"v1","documents":[{"id":"business-returns","file":"docs/acme-b2b-returns/business-returns.md"}]}]},
+    {"key":"acme-invoices-2025","tenant":"acme","name":"Invoice register 2025","language":"en","state":"active","versions":[{"version":"v1","documents":[{"id":"invoice-register-2025","file":"docs/acme-invoices-2025/invoice-register-2025.md"}]}]},
+    {"key":"acme-manuale-boreal","tenant":"acme","name":"Manuale di installazione Boreal","language":"it","state":"active","versions":[{"version":"v1","documents":[{"id":"boreal-installation","file":"docs/acme-manuale-boreal/boreal-installation.md"}]}]},
+    {"key":"acme-security-faq","tenant":"acme","name":"Security FAQ","language":"en","state":"active","versions":[{"version":"v1","documents":[{"id":"security-faq","file":"docs/acme-security-faq/security-faq.md"}]}]},
+    {"key":"acme-support","tenant":"acme","name":"Support handbook","language":"en","state":"active","versions":[{"version":"v1","documents":[{"id":"support-handbook","file":"docs/acme-support/support-handbook.md"}]}]},
+    {"key":"acme-price-list","tenant":"acme","name":"Price list 2026","language":"en","state":"active","versions":[{"version":"v1","documents":[{"id":"price-list-2026","file":"docs/acme-price-list/price-list-2026.md"}]}]},
+    {"key":"acme-onboarding","tenant":"acme","name":"New hire onboarding","language":"en","state":"active","versions":[{"version":"v1","documents":[{"id":"onboarding","file":"docs/acme-onboarding/onboarding.md"}]}]},
+    {"key":"acme-faq-fatturazione","tenant":"acme","name":"Domande frequenti sulla fatturazione","language":"it","state":"active","versions":[{"version":"v1","documents":[{"id":"faq-billing-it","file":"docs/acme-faq-fatturazione/faq-billing-it.md"}]}]},
+    {"key":"acme-sicurezza-it","tenant":"acme","name":"Sicurezza informatica","language":"it","state":"active","versions":[{"version":"v1","documents":[{"id":"security-it","file":"docs/acme-sicurezza-it/sicurezza.md"}]}]},
+    {"key":"acme-sede-it","tenant":"acme","name":"Orari della sede","language":"it","state":"active","versions":[{"version":"v1","documents":[{"id":"office-it","file":"docs/acme-sede-it/sede.md"}]}]},
+    {"key":"acme-contratti-it","tenant":"acme","name":"Contratti con i clienti","language":"it","state":"active","versions":[{"version":"v1","documents":[{"id":"contracts-it","file":"docs/acme-contratti-it/contratti.md"}]}]},
+    {"key":"globex-hr","tenant":"globex","name":"Vacation policy","language":"en","state":"active","versions":[{"version":"v1","documents":[{"id":"vacation-globex","file":"docs/globex-hr/vacation-globex.md"}]}]},
+    {"key":"globex-warranty","tenant":"globex","name":"Warranty terms","language":"en","state":"active","versions":[{"version":"v1","documents":[{"id":"warranty-globex","file":"docs/globex-warranty/warranty-globex.md"}]}]},
+    {"key":"globex-finance","tenant":"globex","name":"Expense reports","language":"en","state":"active","versions":[{"version":"v1","documents":[{"id":"expenses","file":"docs/globex-finance/expenses.md"}]}]}
+  ]
+}

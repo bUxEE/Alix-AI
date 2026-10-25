@@ -1,0 +1,24 @@
+# OPT-IN: outbound traffic for External provider mode (additive plan, milestone X). NOT part of the default
+# stack, which denies all outbound traffic (master plan 16.1).
+#
+#   docker compose -f compose.yaml -f compose.lite.yaml -f compose.external.yaml up -d
+#
+# What it does: joins the anchor, whose network namespace AlixAI runs in, to a bridge network with a route
+# out. LocalAI stays on its internal network and gets no route out.
+#
+# What it does NOT do: Compose and Docker cannot filter by host name, so this file opens the network layer
+# for the AlixAI process and nothing narrower. "Only the configured provider hosts" is enforced by AlixAI
+# itself: every outbound connection goes through internal/egress, which dials only exact host:port entries
+# of the allowlist configured for External mode and refuses everything else, including addresses a name
+# resolves to that are private or link-local. An operator who wants the same at the network layer adds
+# firewall rules for the provider addresses on the host (README.md "External provider mode").
+#
+# Enabling it makes this deployment network-dependent and subject to the providers' terms of service, data
+# handling and availability. Prompts that the data-egress policy allows leave the machine.
+services:
+  anchor:
+    networks:
+      - egress
+
+networks:
+  egress: {}

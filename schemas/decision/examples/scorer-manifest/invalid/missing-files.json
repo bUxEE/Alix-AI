@@ -1,0 +1,20 @@
+{
+  "provider_id": "localai-decision",
+  "model_id": "clm-v0.1-8b",
+  "model_revision": "rev-3",
+  "encoder": {
+    "encoder_id": "qwen3-8b",
+    "revision": "rev-1",
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "licence": {
+    "spdx_id": "Apache-2.0",
+    "redistribution": "allowed",
+    "url": "https://www.apache.org/licenses/LICENSE-2.0"
+  },
+  "signature": {
+    "algorithm": "ed25519",
+    "key_id": "release-2026-1",
+    "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="
+  }
+}

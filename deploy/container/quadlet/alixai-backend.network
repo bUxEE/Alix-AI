@@ -1,0 +1,5 @@
+# LocalAI <-> anchor. Internal: no route out, no host access, nothing else joins it.
+# Compose counterpart: networks.backend in ../stack/compose.yaml.
+[Network]
+NetworkName=alixai-backend
+Internal=true

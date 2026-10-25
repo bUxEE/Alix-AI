@@ -1,0 +1,18 @@
+# The alixai-smoke entry with a WRONG sha256 (all zeros but the last digit), for the "does LocalAI check the pinned hash of a
+# model that is already on disk?" experiment. Mounted over /configuration/models.yaml by wrong-sha.yaml.
+- name: alixai-smoke
+  backend: llama-cpp
+  context_size: 2048
+  known_usecases:
+    - chat
+  options:
+    - use_jinja:true
+  parameters:
+    model: granite-4.0-350m-Q4_K_M.gguf
+    temperature: 0
+  template:
+    use_tokenizer_template: true
+  download_files:
+    - filename: granite-4.0-350m-Q4_K_M.gguf
+      uri: https://huggingface.co/ibm-granite/granite-4.0-350m-GGUF/resolve/b8208a86a58427e1739265318028eb5895b74bf2/granite-4.0-350m-Q4_K_M.gguf
+      sha256: 0000000000000000000000000000000000000000000000000000000000000001

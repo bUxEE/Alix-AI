@@ -1,0 +1,1 @@
+{"candidates":[{"content":{"role":"model","parts":[{"text":"Here is a picture."},{"inlineData":{"mimeType":"image/svg+xml","data":"PHN2Zz48L3N2Zz4="}}]},"finishReason":"STOP","index":0}],"usageMetadata":{"promptTokenCount":{{IN}},"candidatesTokenCount":{{OUT}}},"modelVersion":"gemini-3.5-flash-lite","responseId":"{{RID}}"}

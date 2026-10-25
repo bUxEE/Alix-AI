@@ -1,0 +1,41 @@
+{
+  "format": "policy/v1",
+  "policy_id": "ledger-limits",
+  "role_grants": [
+    { "role": "accountant", "capabilities": ["invoices.find", "payments.record", "invoices.void"] },
+    { "role": "manager", "capabilities": ["invoices.find", "payments.record", "invoices.void"] },
+    { "role": "viewer", "capabilities": ["invoices.find"] }
+  ],
+  "risk_overrides": [],
+  "field_projection": [],
+  "rules": [
+    {
+      "id": "large-payment-is-privileged",
+      "capabilities": ["payments.record"],
+      "when": { "fields": { "amount_minor": { "gte": 1000000 } } },
+      "then": { "risk_min": 3 },
+      "reason": "Payments of 10,000.00 or more are completed in the application's own UI."
+    },
+    {
+      "id": "only-euro-and-dollar",
+      "capabilities": ["payments.record"],
+      "when": { "fields": { "currency": { "present": true, "not_in": ["EUR", "USD"] } } },
+      "then": { "deny": true },
+      "reason": "Other currencies are handled by the finance team directly."
+    },
+    {
+      "id": "accountant-cannot-void-large",
+      "capabilities": ["invoices.void"],
+      "when": { "roles": { "none": ["manager"] }, "fields": { "total_minor": { "gt": 500000, "lte": 99999999 } } },
+      "then": { "deny": true },
+      "reason": "Voiding a large invoice needs a manager."
+    },
+    {
+      "id": "hide-bank-details-from-model",
+      "capabilities": ["payments.record"],
+      "when": { "roles": { "any": ["viewer", "accountant"] } },
+      "then": { "hide_fields": ["bank_account"] },
+      "reason": "Bank account numbers never enter model context."
+    }
+  ]
+}

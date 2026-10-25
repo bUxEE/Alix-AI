@@ -1,0 +1,39 @@
+data: {"type":"RUN_STARTED","threadId":"ses_test_01","runId":"run_delta"}
+
+data: {"type":"STATE_DELTA","delta":[{"op":"add","path":"/alixai","value":{"pending":null}}]}
+
+data: {"type":"STEP_STARTED","stepName":"interpreting"}
+
+id: 0
+data: {"type":"STEP_FINISHED","stepName":"interpreting"}
+
+data: {"type":"STEP_STARTED","stepName":"validating"}
+
+id: 1
+data: {"type":"STEP_FINISHED","stepName":"validating"}
+
+data: {"type":"STEP_STARTED","stepName":"generating"}
+
+id: 2
+data: {"type":"STEP_FINISHED","stepName":"generating"}
+
+data: {"type":"STEP_STARTED","stepName":"verifying"}
+
+id: 3
+data: {"type":"STEP_FINISHED","stepName":"verifying"}
+
+id: 4
+data: {"type":"CUSTOM","name":"alixai.directive","value":{"turn_id":"trn_01J00000000000000000000001","capability_id":"items.create","act":"ask_missing","facts":[],"must_state":[],"missing_fields":["quantity"],"invalid_fields":[],"next_question":{"field":"quantity","answer_kind":"text"},"allowed_suggestions":[],"confirmation":{"mode":"none","bindings":[]},"permitted_next_actions":[],"sources":[]}}
+
+data: {"type":"TEXT_MESSAGE_START","messageId":"msg_trn_01J00000000000000000000001_1","role":"assistant"}
+
+id: 5
+data: {"type":"TEXT_MESSAGE_CONTENT","messageId":"msg_trn_01J00000000000000000000001_1","delta":"How many?"}
+
+data: {"type":"TEXT_MESSAGE_END","messageId":"msg_trn_01J00000000000000000000001_1"}
+
+data: {"type":"STATE_DELTA","delta":[{"op":"replace","path":"/alixai/pending","value":{"capabilityId":"items.create","collectedFields":[{"name":"name","origin":"user_turn"},{"name":"size","origin":"user_turn"}],"expiresAt":"2026-10-02T12:30:00Z","kind":"clarification","missingFields":["quantity"],"phase":"","question":{"answerKind":"text","field":"quantity"}}}]}
+
+id: 6
+data: {"type":"RUN_FINISHED","threadId":"ses_test_01","runId":"run_delta","result":{"finishReason":"awaiting_input","turnId":"trn_01J00000000000000000000001"},"outcome":{"type":"success"}}
+

@@ -1,0 +1,24 @@
+# Optional override: let the two main services fetch their own pinned files at start (no setup container).
+#   docker compose --env-file .env -f compose.yaml -f compose.fetch.yaml up -d
+#
+# Use it ONCE, for the first start, then drop it: it gives the encoder a route out and mounts the model
+# directories writable. entrypoint.sh downloads only the exact urls of config/pins.txt (https, huggingface.co and
+# files.pythonhosted.org), into .part files, renames a file only after its sha256 matched, then verifies everything
+# as at every start. Where the container does not trust the network's TLS certificates (a TLS-intercepting
+# antivirus, README.md "Fetching on the host"), this fails with an x509 error: run ./fetch.sh on the host instead.
+# The download is the same under every profile: ~16.4 GB (encoder) + ~76 MB (head and wheel).
+
+services:
+  vllm:
+    networks:
+      - encoder_net
+      - edge_net
+    environment:
+      ALIXAI_FETCH_MODELS: "true"
+    volumes:
+      - ./data/encoder:/models/encoder
+  clm:
+    environment:
+      ALIXAI_FETCH_MODELS: "true"
+    volumes:
+      - ./data/clm:/models/clm

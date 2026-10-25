@@ -1,0 +1,26 @@
+{
+  "type": "block",
+  "turn_id": "trn_01J0000000000000000000000A",
+  "seq": 10,
+  "block": {
+    "type": "chart",
+    "title": "Appointments per weekday",
+    "description": "Bar chart of booked appointments per weekday: Monday 12, Tuesday 18, Wednesday 9.",
+    "mark": "bar",
+    "data": {
+      "url": "https://example.test/d.csv"
+    },
+    "encoding": {
+      "x": {
+        "field": "weekday",
+        "type": "nominal",
+        "title": "Weekday"
+      },
+      "y": {
+        "field": "booked",
+        "type": "quantitative",
+        "title": "Booked"
+      }
+    }
+  }
+}

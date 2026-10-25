@@ -1,0 +1,41 @@
+{
+  "format": "txt",
+  "parser": "1.2.0+0730409c",
+  "text": "Quarterly operations note\n\nThe warehouse in Lyon shipped 1,284 parcels in March, up 6% on February.\nTwo carriers account for most of the volume; the third is being phased out.\n\nOpen issues\n- Returns from Spain take 11 days on average.\n- The Lisbon scanner firmware is a version behind.\n\nRésumé of decisions: keep the Lyon night shift, review Madrid in June.\n",
+  "blocks": [
+    {
+      "kind": "paragraph",
+      "start": 0,
+      "end": 25,
+      "text": "Quarterly operations note"
+    },
+    {
+      "kind": "paragraph",
+      "start": 27,
+      "end": 175,
+      "text": "The warehouse in Lyon shipped 1,284 parcels in March, up 6% on February.\nTwo carriers account for most of the volume; the third is being phased out."
+    },
+    {
+      "kind": "paragraph",
+      "start": 177,
+      "end": 285,
+      "text": "Open issues\n- Returns from Spain take 11 days on average.\n- The Lisbon scanner firmware is a version behind."
+    },
+    {
+      "kind": "paragraph",
+      "start": 287,
+      "end": 359,
+      "text": "Résumé of decisions: keep the Lyon night shift, review Madrid in June."
+    }
+  ],
+  "chunks": [
+    {
+      "kind": "paragraph",
+      "text": "Quarterly operations note\n\nThe warehouse in Lyon shipped 1,284 parcels in March, up 6% on February.\nTwo carriers account for most of the volume; the third is being phased out."
+    },
+    {
+      "kind": "paragraph",
+      "text": "Open issues\n- Returns from Spain take 11 days on average.\n- The Lisbon scanner firmware is a version behind.\n\nRésumé of decisions: keep the Lyon night shift, review Madrid in June."
+    }
+  ]
+}

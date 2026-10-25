@@ -1,0 +1,30 @@
+{
+  "ref_id": "cred_01J0000000000000000000000B",
+  "kind": "oauth",
+  "label": null,
+  "binding": {
+    "provider_id": "gemini",
+    "deployment_id": "dep_main",
+    "application_id": "app_crm",
+    "tenant_id": "ten_42",
+    "scopes": ["generative-language.retriever"]
+  },
+  "fingerprint": null,
+  "status": "active",
+  "account": {
+    "account_id": "sub-118273645",
+    "organization_id": null,
+    "project_id": "proj_alix"
+  },
+  "times": {
+    "authorized_at": "2026-10-02T09:00:00Z",
+    "expires_at": "2026-10-02T10:00:00Z",
+    "rotated_at": "2026-10-02T09:30:00Z",
+    "last_validated_at": null,
+    "revoked_at": null
+  },
+  "warnings": [],
+  "created_at": "2026-10-02T09:00:00Z",
+  "updated_at": "2026-10-02T09:30:00Z",
+  "refresh_token": "rt-test-EXAMPLE-NOT-A-KEY"
+}

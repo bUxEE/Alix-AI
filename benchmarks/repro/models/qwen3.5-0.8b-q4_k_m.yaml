@@ -1,0 +1,21 @@
+- name: qwen3.5-0.8b-q4_k_m
+  backend: llama-cpp
+  context_size: 4096
+  known_usecases:
+    - chat
+  options:
+    - use_jinja:true
+  reasoning:
+    disable: true
+  chat_template_kwargs:
+    enable_thinking: false
+  parameters:
+    model: Qwen3.5-0.8B-Q4_K_M.gguf
+    temperature: 0
+  template:
+    use_tokenizer_template: true
+  download_files:
+    - filename: Qwen3.5-0.8B-Q4_K_M.gguf
+      uri: https://huggingface.co/unsloth/Qwen3.5-0.8B-GGUF/resolve/6ab461498e2023f6e3c1baea90a8f0fe38ab64d0/Qwen3.5-0.8B-Q4_K_M.gguf
+      sha256: bd258782e35f7f458f8aced1adc053e6e92e89bc735ba3be89d38a06121dc517
+

@@ -1,0 +1,10 @@
+{
+  "type": "playback.started",
+  "playback_id": "pbk_01J0000000000000000000000A",
+  "turn_id": "trn_01J0000000000000000000000A",
+  "format": {
+    "encoding": "pcm_s16le",
+    "sample_rate": 24000,
+    "channels": 1
+  }
+}

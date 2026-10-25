@@ -1,0 +1,37 @@
+{
+  "type": "table",
+  "caption": "Free slots on 14 October",
+  "columns": [
+    {
+      "key": "Start Time",
+      "label": "Start",
+      "kind": "text"
+    },
+    {
+      "key": "doctor",
+      "label": "Doctor"
+    },
+    {
+      "key": "free",
+      "label": "Free",
+      "kind": "boolean"
+    }
+  ],
+  "rows": [
+    [
+      "10:30",
+      "Dr. Rossi",
+      true
+    ],
+    [
+      "11:00",
+      "Dr. Rossi",
+      false
+    ],
+    [
+      "11:30",
+      null,
+      3
+    ]
+  ]
+}

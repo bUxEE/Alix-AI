@@ -1,0 +1,10 @@
+{
+  "deployment_id": "dep_local",
+  "application_id": "app_crm",
+  "tenant_id": "tnt_acme",
+  "workspace_id": "wsp_sales",
+  "principal_id": "usr_42",
+  "roles": [],
+  "capability_scopes": ["tasks.create"],
+  "session_id": "ses_01J0000000000000000000000A"
+}

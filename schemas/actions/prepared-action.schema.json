@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:actions:prepared-action:v1",
+  "title": "PreparedAction",
+  "description": "A consequential action that has been validated by the host application and prepared by the core, waiting for confirmation (master plan 11.2, 11.4, ADR 0006). Nothing reaches an adapter's Commit unless a PreparedAction exists, is unexpired and still current. The model may verbalise it; it cannot create or alter it: every property is 'alixai' (minted or decided by the core) or 'host' (copied from the adapter's Prepare result), none is 'model'.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "preparation_id",
+    "capability_id",
+    "state",
+    "summary",
+    "effects",
+    "risk_level",
+    "data_versions",
+    "prepared_at",
+    "expires_at",
+    "invalidation_conditions",
+    "confirmation",
+    "idempotency_key"
+  ],
+  "properties": {
+    "preparation_id": {
+      "description": "Opaque preparation ID. A confirmation is bound to it.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/preparationId"
+    },
+    "capability_id": {
+      "description": "The registered capability this action was prepared for.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/capabilityId"
+    },
+    "state": {
+      "description": "Lifecycle state (internal/actions): prepared, confirmed, committing, then committed, rejected, expired, invalidated or uncertain. A preparation announced to the user is prepared.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "enum": ["prepared", "confirmed", "committing", "committed", "rejected", "expired", "invalidated", "uncertain"]
+    },
+    "summary": {
+      "description": "Canonical action summary from the host application's Prepare result.",
+      "x-alixai-authority": "host",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "effects": {
+      "description": "The exact effects and their targets, from the host's Prepare result. The user confirms these.",
+      "x-alixai-authority": "host",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": { "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/effect" }
+    },
+    "risk_level": {
+      "description": "Effective risk level: the platform minimum for the capability, raised (never lowered) by the host's declared level. Always present; a missing level is never read as 0.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/riskLevel"
+    },
+    "data_versions": {
+      "description": "The versions of everything the validation relied on, from the host's Prepare result. Commit re-checks them; any difference makes the preparation stale.",
+      "x-alixai-authority": "host",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": { "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/dataVersion" }
+    },
+    "prepared_at": {
+      "description": "When the core created the preparation.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    },
+    "expires_at": {
+      "description": "When the preparation stops being valid: the earlier of the platform limit and the host's valid_for_seconds, from the core's clock. After this instant a confirmation is rejected with expired.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    },
+    "invalidation_conditions": {
+      "description": "Events that void the preparation before it expires. data_version_changed is always among them.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "data_version_changed",
+          "permission_changed",
+          "principal_changed",
+          "session_ended",
+          "goal_changed",
+          "field_corrected",
+          "application_event",
+          "application_quarantined"
+        ]
+      },
+      "contains": { "const": "data_version_changed" }
+    },
+    "confirmation": {
+      "description": "What must happen before the action may commit.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/confirmationRequirement"
+    },
+    "idempotency_key": {
+      "description": "Key sent with Commit and Status so a repeated or recovered commit produces the same outcome.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/idempotencyKey"
+    }
+  },
+  "allOf": [
+    {
+      "description": "11.4: level 2 and above are never executed without confirmation.",
+      "if": {
+        "properties": { "risk_level": { "enum": [2, 3] } },
+        "required": ["risk_level"]
+      },
+      "then": {
+        "properties": {
+          "confirmation": {
+            "properties": { "mode": { "enum": ["explicit", "step_up"] } }
+          }
+        }
+      }
+    },
+    {
+      "description": "11.4: level 3 needs step-up; the AI cannot complete it alone.",
+      "if": {
+        "properties": { "risk_level": { "const": 3 } },
+        "required": ["risk_level"]
+      },
+      "then": {
+        "properties": {
+          "confirmation": {
+            "properties": { "mode": { "const": "step_up" } }
+          }
+        }
+      }
+    },
+    {
+      "description": "11.4: an external side effect is level 2 or higher.",
+      "if": {
+        "properties": {
+          "effects": {
+            "contains": {
+              "properties": { "external": { "const": true } },
+              "required": ["external"]
+            }
+          }
+        },
+        "required": ["effects"]
+      },
+      "then": {
+        "properties": { "risk_level": { "enum": [2, 3] } }
+      }
+    }
+  ]
+}

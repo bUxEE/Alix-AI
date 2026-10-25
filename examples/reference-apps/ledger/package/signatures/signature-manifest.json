@@ -1,0 +1,235 @@
+{
+  "format": "alixai.signature-manifest/v1",
+  "signed": {
+    "application_id": "ledger",
+    "package_version": "1.0.0",
+    "created_at": "2026-10-02T00:00:00Z",
+    "hash_algorithm": "sha256",
+    "files": [
+      {
+        "path": "alixai.yaml",
+        "sha256": "f05075ef779ba385d97dde3ac926e5da11439518a761b06249ef99041e994014",
+        "size": 3991
+      },
+      {
+        "path": "capabilities/invoices-find.yaml",
+        "sha256": "6ac77eead2682baf94a6837d15554b68bed55f3aeb327e37473db58928b9dbb2",
+        "size": 3511
+      },
+      {
+        "path": "capabilities/invoices-issue.yaml",
+        "sha256": "db6bb527693fc9d5f1bc36c7b3b46e6bc22100692ebc62d481e31a87cf56ccf9",
+        "size": 5986
+      },
+      {
+        "path": "capabilities/invoices-void.yaml",
+        "sha256": "d6675a3774a58ca502a149ce61f1d14d6fb8884bfabfc00a1362839c71ca459b",
+        "size": 5862
+      },
+      {
+        "path": "capabilities/payments-record.yaml",
+        "sha256": "18a46acacc921e3d46b375119cb4182206f93105e2f6e8bc1887fba495952326",
+        "size": 7803
+      },
+      {
+        "path": "capabilities/quotes-draft.yaml",
+        "sha256": "4bfcc7b2abbfa4370a9cd9713102f22077d214e98055737ed77f16828a9da8b0",
+        "size": 7285
+      },
+      {
+        "path": "conversation-contracts/invoices-find.en.yaml",
+        "sha256": "7e16798184d62673c071c6d5063e1b2338006ddef0691ceb22d980de7794540a",
+        "size": 1568
+      },
+      {
+        "path": "conversation-contracts/invoices-find.it.yaml",
+        "sha256": "2e3f3e09e4280846f5fd8db53673751570408610c9674fa5ff7b98d89b6bbfba",
+        "size": 1627
+      },
+      {
+        "path": "conversation-contracts/invoices-issue.en.yaml",
+        "sha256": "77d6991175817e8ca6082c3ecdb290959aa0839edc9aa1e4492534b8311ad2aa",
+        "size": 2646
+      },
+      {
+        "path": "conversation-contracts/invoices-issue.it.yaml",
+        "sha256": "a202b2bd29771dccb8f7a52da56eea659794c33c76169dcc09567cd7bd870667",
+        "size": 2801
+      },
+      {
+        "path": "conversation-contracts/invoices-void.en.yaml",
+        "sha256": "dd8acd35e70928978339fc73daa28dd35c267b53bead182e0a3665f50cc7a219",
+        "size": 2830
+      },
+      {
+        "path": "conversation-contracts/invoices-void.it.yaml",
+        "sha256": "e234dcc1f954d647aa8d94f7771d9bd21519e784dd4e61955bb471fdd4ae7030",
+        "size": 3048
+      },
+      {
+        "path": "conversation-contracts/payments-record.en.yaml",
+        "sha256": "b28280f58d96a816a441de5345016a21d18b4c2e1cd0e6791cc1fe3510914a92",
+        "size": 3319
+      },
+      {
+        "path": "conversation-contracts/payments-record.it.yaml",
+        "sha256": "faae303fdd25a05c3310df2cccd2e04c498b298fedb92c0fe89ee7d4bde9e7d0",
+        "size": 3481
+      },
+      {
+        "path": "conversation-contracts/quotes-draft.en.yaml",
+        "sha256": "2aab3eb593a4e974e26770237f30e029c8b3990171bd5c1f9fb787c7a7b2a169",
+        "size": 2743
+      },
+      {
+        "path": "conversation-contracts/quotes-draft.it.yaml",
+        "sha256": "082ba52586bed3ac29d6a0a997840669087a6101c8bcb1be45a315df49559640",
+        "size": 2928
+      },
+      {
+        "path": "documentation/index.yaml",
+        "sha256": "0515da7ce9fc3def53c5b720316a5f83b9eae9e54c526cbb4eb2bee189fbe810",
+        "size": 36946
+      },
+      {
+        "path": "documentation/invoices/find.md",
+        "sha256": "ecbf6b5b72b660a03bb4024aed6997ee6f14cf28cc3989be9ef5bf927a7cf79e",
+        "size": 3179
+      },
+      {
+        "path": "documentation/invoices/issue.md",
+        "sha256": "72873ab498174de8fd5f7e9bcb2c46e3d59ee63360d9a3bde12815e08fc74add",
+        "size": 5388
+      },
+      {
+        "path": "documentation/invoices/void.md",
+        "sha256": "906b659160a74586fca7d83317fbddeb0a27500b2b9ce7d4a418655006481cd2",
+        "size": 5448
+      },
+      {
+        "path": "documentation/payments/record.md",
+        "sha256": "e361332240c4387cf2e312f13a08b86a4f59498f7e951a756d6295ec537fc9b1",
+        "size": 6448
+      },
+      {
+        "path": "documentation/quotes/draft.md",
+        "sha256": "e65c6b7c7151c6e02b8ff443aa2aac2b4f359545eadd50b7146848daec01c18f",
+        "size": 5984
+      },
+      {
+        "path": "policies/default-access.yaml",
+        "sha256": "07a169265b1dd29fe0ca3524430ec25b57a5b9836b3808d8f049fa066567a086",
+        "size": 1409
+      },
+      {
+        "path": "rag-sources/ledger-contracts.yaml",
+        "sha256": "ace270a62269f0653f15a3bfd0dbd29a5a48a99eda7f2f1b9ea3d5f6e71d57ae",
+        "size": 1163
+      },
+      {
+        "path": "schemas/adapters/ledger-bridge.yaml",
+        "sha256": "48ca59755b701b3d376b353c55534ec6e6160a14412bc6be6ee878c2e31cf69a",
+        "size": 1464
+      },
+      {
+        "path": "schemas/adapters/ledger-events.yaml",
+        "sha256": "f48cae015fa588bece5bc4644c3e1238b3b2e818832ae7e206ff2aca04492092",
+        "size": 580
+      },
+      {
+        "path": "schemas/invoices.find.result.schema.json",
+        "sha256": "bb4a17695fbba2923e303c38132545bf93d5e645709025f60b7ed214d15a7b6a",
+        "size": 13879
+      },
+      {
+        "path": "schemas/invoices.issue.prepared.result.schema.json",
+        "sha256": "e23201b7a9c0394ceeaf6b96b2b9a4d1845e3802a756e9d9fc455a5592761bb1",
+        "size": 12925
+      },
+      {
+        "path": "schemas/invoices.issue.receipt.result.schema.json",
+        "sha256": "0b0e4b2d1947ea62a5e65bd103aa7d46e0a0d1cbfbf3712e874949be0d4d7bcb",
+        "size": 10829
+      },
+      {
+        "path": "schemas/invoices.issue.validation.result.schema.json",
+        "sha256": "32045316dffdc55794b99da33257c31b3509fc57a247efd8544403fceb423553",
+        "size": 9408
+      },
+      {
+        "path": "schemas/invoices.void.prepared.result.schema.json",
+        "sha256": "3b5bd9f5b08807c4840fc1c4a19ed0499927c7eba93462e51bd39bb2a0f6d35f",
+        "size": 12904
+      },
+      {
+        "path": "schemas/invoices.void.receipt.result.schema.json",
+        "sha256": "ad3d59c2d4d32c3f6a6179ac01736abe549da2938dad599a57ff85b0781e47b8",
+        "size": 7943
+      },
+      {
+        "path": "schemas/invoices.void.validation.result.schema.json",
+        "sha256": "b7bdaba02be3adf2540eed85f20f498b72ac1a986f983702cb706c340ecac356",
+        "size": 9412
+      },
+      {
+        "path": "schemas/payments.record.prepared.result.schema.json",
+        "sha256": "c1078dd6920233071a4045ca8da55cd88b72c11c853934abd34845d7bd2e5749",
+        "size": 13258
+      },
+      {
+        "path": "schemas/payments.record.receipt.result.schema.json",
+        "sha256": "5e10ad7594d317f87170843ba75a6934695575e999c511d8d04aa5ebdea46984",
+        "size": 11186
+      },
+      {
+        "path": "schemas/payments.record.validation.result.schema.json",
+        "sha256": "6146a4504f46fe6063105033ff6b6220f10aae09c5ba8b7b7498c7067fdd6899",
+        "size": 9737
+      },
+      {
+        "path": "schemas/quotes.draft.prepared.result.schema.json",
+        "sha256": "865248676c186d3cb2f2f9ac7098e8c7be9eaaf227b989b22b6ff3f6450185ff",
+        "size": 11600
+      },
+      {
+        "path": "schemas/quotes.draft.receipt.result.schema.json",
+        "sha256": "f7227b975304c5339ddb74241315d49789b18c498a4f387d13e11e6f3e6ae69b",
+        "size": 9529
+      },
+      {
+        "path": "schemas/quotes.draft.validation.result.schema.json",
+        "sha256": "c875e6e45e21f4b07f1970453236f05f7ebf7973fffe465ec72786f649c80e63",
+        "size": 8116
+      },
+      {
+        "path": "schemas/resolve.result.schema.json",
+        "sha256": "e4dfcf3c7aaf14ef507c03f2d133e07db14770e87484ee96fda68b8bec3cf415",
+        "size": 6129
+      },
+      {
+        "path": "terminology/ledger-terms.yaml",
+        "sha256": "aaeea8232ba9bf065518d3a27799e0ed23a07a833a36a21a851020f839fb77e1",
+        "size": 3853
+      },
+      {
+        "path": "tests/ledger-safety.yaml",
+        "sha256": "a33af784affd5574db699cb0fe98644e168dac0a54b3be120ca0aa19525bc8d1",
+        "size": 15458
+      },
+      {
+        "path": "tests/seed/ledger.json",
+        "sha256": "fc74f96e51f321be56e143aa6a7c854bdd66c3f4254b9593502ccf5c27a6556e",
+        "size": 1925
+      }
+    ]
+  },
+  "signatures": [
+    {
+      "key_id": "alixai-test-only-publisher",
+      "algorithm": "ed25519",
+      "signature": "fFM7odKcZ9VjtNa7JxFtC4AcsW+BTbSrgjsiPhJ1p/GzWLHvIH4AZUWspkmTOrlWqiAl82yBVeVzraoTm7S0Cw==",
+      "signed_at": "2026-10-02T00:00:00Z",
+      "expires_at": "2036-10-01T00:00:00Z"
+    }
+  ]
+}

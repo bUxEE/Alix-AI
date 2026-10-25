@@ -1,0 +1,27 @@
+# Pinned artefacts of the optional CLM sidecar (deploy/container/clm). One line per file:
+#   role  model-id  revision  sha256  path-under-the-model-directory  url
+# Read by entrypoint.sh, which (a) cross-checks the registry's revision and sha256 against the line named by the
+# registry entry's artifact.filename and (b) re-hashes every file below at every start. Nothing here is fetched
+# from a floating reference: every url names an exact commit (or an exact PyPI file) and every hash was taken from
+# the publisher's own metadata (LFS oid / PyPI digest) or computed over the bytes at that commit on 2026-10-07.
+# Fields are separated by single spaces; a path never contains one.
+#
+# role encoder: Qwen/Qwen3-8B (Apache-2.0), the frozen encoder, bf16 safetensors, commit of 2025-07-26
+encoder qwen3-8b b968826d9c46dd6066d109eabc6255188de91218 f7c4eadfbbf522470667b797a3c89be2524832d2d599797248dc304fff447c30 config.json https://huggingface.co/Qwen/Qwen3-8B/resolve/b968826d9c46dd6066d109eabc6255188de91218/config.json
+encoder qwen3-8b b968826d9c46dd6066d109eabc6255188de91218 2325da0f15bb848e018c5ae071b7943332e9f871d6b60e2ed22ca97d4cb993d2 generation_config.json https://huggingface.co/Qwen/Qwen3-8B/resolve/b968826d9c46dd6066d109eabc6255188de91218/generation_config.json
+encoder qwen3-8b b968826d9c46dd6066d109eabc6255188de91218 8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5 merges.txt https://huggingface.co/Qwen/Qwen3-8B/resolve/b968826d9c46dd6066d109eabc6255188de91218/merges.txt
+encoder qwen3-8b b968826d9c46dd6066d109eabc6255188de91218 31d6a825ae35f11fb85b195b4c42c146c051e446433125a215336abdf95cbf5f model-00001-of-00005.safetensors https://huggingface.co/Qwen/Qwen3-8B/resolve/b968826d9c46dd6066d109eabc6255188de91218/model-00001-of-00005.safetensors
+encoder qwen3-8b b968826d9c46dd6066d109eabc6255188de91218 5991236cea6fe21f3d43cab0f0e84448734fbbe0789816202989f2ddc9d18282 model-00002-of-00005.safetensors https://huggingface.co/Qwen/Qwen3-8B/resolve/b968826d9c46dd6066d109eabc6255188de91218/model-00002-of-00005.safetensors
+encoder qwen3-8b b968826d9c46dd6066d109eabc6255188de91218 c5185c4794be2d8a9784d5753c9922db38df478ce11f9ed0b415b7304d896836 model-00003-of-00005.safetensors https://huggingface.co/Qwen/Qwen3-8B/resolve/b968826d9c46dd6066d109eabc6255188de91218/model-00003-of-00005.safetensors
+encoder qwen3-8b b968826d9c46dd6066d109eabc6255188de91218 b5ee7de71fbf17db3d5704e0c8f2bc7d005ca9e1d7ca2aeb19827b0cfcaa917a model-00004-of-00005.safetensors https://huggingface.co/Qwen/Qwen3-8B/resolve/b968826d9c46dd6066d109eabc6255188de91218/model-00004-of-00005.safetensors
+encoder qwen3-8b b968826d9c46dd6066d109eabc6255188de91218 20c2d6366ab85c90786ccdd829cd2b9e7d30ef3b2ebbb998280e7e4014b542ff model-00005-of-00005.safetensors https://huggingface.co/Qwen/Qwen3-8B/resolve/b968826d9c46dd6066d109eabc6255188de91218/model-00005-of-00005.safetensors
+encoder qwen3-8b b968826d9c46dd6066d109eabc6255188de91218 f9fdbcb91c23971c13ec5d5f2573d2349e8f61f2f049371ec699281748fdb1bc model.safetensors.index.json https://huggingface.co/Qwen/Qwen3-8B/resolve/b968826d9c46dd6066d109eabc6255188de91218/model.safetensors.index.json
+encoder qwen3-8b b968826d9c46dd6066d109eabc6255188de91218 aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4 tokenizer.json https://huggingface.co/Qwen/Qwen3-8B/resolve/b968826d9c46dd6066d109eabc6255188de91218/tokenizer.json
+encoder qwen3-8b b968826d9c46dd6066d109eabc6255188de91218 d5d09f07b48c3086c508b30d1c9114bd1189145b74e982a265350c923acd8101 tokenizer_config.json https://huggingface.co/Qwen/Qwen3-8B/resolve/b968826d9c46dd6066d109eabc6255188de91218/tokenizer_config.json
+encoder qwen3-8b b968826d9c46dd6066d109eabc6255188de91218 ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910 vocab.json https://huggingface.co/Qwen/Qwen3-8B/resolve/b968826d9c46dd6066d109eabc6255188de91218/vocab.json
+#
+# role head: Contrastive-LM/CLM-v0.1-8B (Apache-2.0), the 75 MB state/action projection heads, commit of 2026-09-24
+head clm-v0.1-8b e939398d4556fcd9400c76fa8c5a513202f42b0a b2b4a8c9c2d39263eff78a351eb909a342ce9b3bf21a3f07c1d1bf15f1c4eda5 CLM_v0.1-8B.pt https://huggingface.co/Contrastive-LM/CLM-v0.1-8B/resolve/e939398d4556fcd9400c76fa8c5a513202f42b0a/CLM_v0.1-8B.pt
+#
+# role wheel: contrastive-lm 0.1.0 (Apache-2.0), the CLM service; pure Python, installed with no dependencies
+wheel contrastive-lm 0.1.0 7f3eed12d3aa10173f71bac7e50fc387565b485a2a2fc4c4323af32b1950055f contrastive_lm-0.1.0-py3-none-any.whl https://files.pythonhosted.org/packages/ec/71/8e9476b10bf7f2fe791d80d83bcea15fe43d6c86290b9b12c63eb58daf7b/contrastive_lm-0.1.0-py3-none-any.whl

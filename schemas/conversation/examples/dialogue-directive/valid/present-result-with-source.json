@@ -1,0 +1,50 @@
+{
+  "turn_id": "trn_01J0000000000000000000000A",
+  "capability_id": "appointments.book",
+  "act": "present_result",
+  "facts": [
+    {
+      "field": "cancellation_notice_hours",
+      "value": {
+        "kind": "integer",
+        "value": 24
+      }
+    }
+  ],
+  "must_state": [
+    "cancellation_notice_hours"
+  ],
+  "missing_fields": [],
+  "invalid_fields": [],
+  "allowed_suggestions": [],
+  "confirmation": {
+    "mode": "none",
+    "bindings": []
+  },
+  "permitted_next_actions": [
+    {
+      "action": "cancel",
+      "label": "Cancel booking"
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "claims": [
+        "Appointments can be cancelled free of charge up to 24 hours before the start."
+      ]
+    }
+  ]
+}

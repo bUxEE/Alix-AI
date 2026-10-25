@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Result of validating a reservation",
+  "type": "object",
+  "required": ["status", "problems"],
+  "additionalProperties": false,
+  "properties": {
+    "status": { "enum": ["valid", "invalid"] },
+    "problems": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "required": ["field", "error_code"],
+        "additionalProperties": false,
+        "properties": {
+          "field": { "type": "string", "maxLength": 64 },
+          "error_code": { "enum": ["validation_failed", "conflict"] }
+        }
+      }
+    }
+  }
+}

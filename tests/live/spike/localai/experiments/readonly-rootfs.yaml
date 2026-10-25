@@ -1,0 +1,13 @@
+# Hardening 7 experiment: read-only root filesystem with a tmpfs /tmp, a PID limit and a log-size cap.
+services:
+  localai:
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /run/localai
+    pids_limit: 512
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

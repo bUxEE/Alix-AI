@@ -1,0 +1,12 @@
+{
+  "id": "msg_01FixtureTool0001",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-haiku-4-5-20251001",
+  "content": [
+    {"type": "tool_use", "id": {{CALL_ID}}, "name": {{NAME}}, "input": {{ARGS_RAW}}}
+  ],
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "usage": {"input_tokens": {{IN}}, "output_tokens": {{OUT}}}
+}

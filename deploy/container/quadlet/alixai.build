@@ -1,0 +1,8 @@
+# Builds the service image from a checkout (needs Podman 5.2 or later). Edit the two paths to your checkout.
+# Compose counterpart: build target alixai of deploy/container/alixai/Dockerfile.
+[Build]
+ImageTag=localhost/alixai:local
+File=%h/src/alixai/deploy/container/alixai/Dockerfile
+SetWorkingDirectory=%h/src/alixai
+Target=alixai
+BuildArg=GO_TAGS=

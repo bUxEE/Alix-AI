@@ -1,0 +1,17 @@
+{
+  "capability_id": null,
+  "fields": {},
+  "entity_refs": [
+    {
+      "entity_type": "doctor",
+      "mention": "Dr. Rossi",
+      "candidate_id": "doc_17",
+      "field": "doctor"
+    }
+  ],
+  "intent": "out_of_scope",
+  "uncertainty": {
+    "overall": 0.8
+  },
+  "trace_id": "trc_01J0000000000000000000000M"
+}

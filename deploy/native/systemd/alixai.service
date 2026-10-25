@@ -1,0 +1,89 @@
+# AlixAI native service (M5-02, ADR 0012, master plan 16.2). Needs systemd 247 or later (LoadCredential,
+# ProtectProc). Install steps: ../README.md. Written to systemd.exec(5) and checked statically; not run
+# on a Linux host (ADR 0012, "What was not measured").
+#
+# Identity. DynamicUser gives the service a private, transient uid that owns nothing else on the host and
+# shares nothing with LocalAI, which runs under its own identity (localai.service, or its container). `alixai serve` attaches to
+# that unit through the supervisor (supervisor.runtime: unit): it never starts LocalAI itself (M5-21).
+# State is /var/lib/alixai (0700), configuration is /etc/alixai (read-only to the service), the LocalAI key
+# arrives through systemd's credential store, so it is never in the environment or on the command line.
+#
+# Network. The service dials 127.0.0.1 (LocalAI) and listens on 127.0.0.1 (the gateway refuses anything
+# else without TLS, SEC-093), so the cgroup IP filter allows loopback only. External provider mode needs
+# outbound: widen it in a drop-in (systemctl edit alixai), never in this file.
+# With LocalAI in a container published on 127.0.0.1:8080, some setups (Docker without its userland proxy, some rootless
+# port drivers) rewrite loopback to the bridge address before this filter sees it: if /readyz reports LocalAI unreachable,
+# add the bridge subnet to IPAddressAllow= in the same drop-in.
+[Unit]
+Description=AlixAI service
+After=network.target localai.service
+# A want, not a requirement: the service stays up and says so on /readyz while LocalAI is down (master plan 18). The wanted unit is
+# skipped when /etc/alixai/localai.yaml does not exist, which is the install with LocalAI in a container.
+Wants=localai.service
+ConditionPathExists=/etc/alixai/alixai.yaml
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+# `alixai serve` does not speak sd_notify, so the unit is started when the process has been exec'd;
+# /healthz and /readyz are the readiness signals.
+# The document parser worker, /usr/local/bin/alixai-parser (M5-22, ADR 0014), is installed beside the binary below and started by
+# `alixai serve` once per document; it runs inside this unit's sandbox and caps and needs nothing added here (README.md).
+Type=exec
+ExecStart=/usr/local/bin/alixai serve -config /etc/alixai/alixai.yaml
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=30s
+SyslogIdentifier=alixai
+
+# --- identity and directories ---
+DynamicUser=yes
+StateDirectory=alixai
+StateDirectoryMode=0700
+ConfigurationDirectory=alixai
+UMask=0077
+# Root-owned file /etc/alixai/localai-api-key (mode 0600); the service sees it at
+# /run/credentials/alixai.service/localai-api-key, which is what alixai.yaml's api_key_ref names.
+LoadCredential=localai-api-key:/etc/alixai/localai-api-key
+
+# --- privileges ---
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictSUIDSGID=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+# A deny list: the Go runtime's system calls change between releases, and the document-parser workers install
+# their own seccomp and Landlock layer on top of this one.
+SystemCallFilter=~@mount @swap @reboot @raw-io @module @debug @obsolete @cpu-emulation @clock
+
+# --- filesystem and kernel surface ---
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+
+# --- network: loopback only (see above) ---
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+IPAddressDeny=any
+IPAddressAllow=localhost
+
+# --- resources: the same caps as the container stack's alixai service (master plan 7.4: no swap) ---
+MemoryMax=512M
+MemorySwapMax=0
+CPUQuota=100%
+TasksMax=256
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

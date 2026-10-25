@@ -1,0 +1,30 @@
+{
+  "id": "clinic-default-v1",
+  "description": "One interactive session doing booking and RAG turns at a human pace, plus continuous re-ingestion of the clinic policies source. The booking steps are the read-only turns of the M3-16 conversation corpus (availability.list, patients.find) and one booking that is prepared and then rejected by the harness, never confirmed, so a 7-day run does not use up the clinic's slots. The RAG steps ask about the clinic policies in examples/reference-apps/clinic-booking/package/documentation/policies (en and it).",
+  "interactive": {
+    "enabled": true,
+    "think_ms": 20000,
+    "steps": [
+      { "id": "book-free-en", "class": "booking", "language": "en", "text": "Which appointments are free on 2026-10-14?" },
+      { "id": "rag-lead-time-en", "class": "rag", "language": "en", "text": "How far ahead can an appointment be booked?" },
+      { "id": "book-find-it", "class": "booking", "language": "it", "text": "Cerca la paziente Luca Ferri" },
+      { "id": "rag-cancel-until-it", "class": "rag", "language": "it", "text": "Entro quando si può annullare un appuntamento?" },
+      { "id": "book-free-it", "class": "booking", "language": "it", "text": "Quali visite sono libere il 2026-10-14?" },
+      { "id": "rag-doctor-en", "class": "rag", "language": "en", "text": "Can a doctor book appointments?" },
+      { "id": "book-find-en", "class": "booking", "language": "en", "text": "Find the patient Luca Ferri" },
+      { "id": "rag-reasons-en", "class": "rag", "language": "en", "text": "What are the possible reasons for cancelling an appointment?" },
+      { "id": "book-prepare-en", "class": "booking", "language": "en", "text": "Book Luca Ferri for 2026-10-14 10:30" },
+      { "id": "rag-move-it", "class": "rag", "language": "it", "text": "La clinica sposta gli appuntamenti?" },
+      { "id": "book-week-en", "class": "booking", "language": "en", "text": "Show me the free appointments with Dr Verdi over the next 7 days" },
+      { "id": "rag-confirm-wait-en", "class": "rag", "language": "en", "text": "How long does a booking wait for the confirmation?" }
+    ]
+  },
+  "ingestion": {
+    "enabled": true,
+    "source": "clinic-policies",
+    "op": "rebuild",
+    "pause_ms": 5000,
+    "settle_ms": 2000,
+    "timeout_ms": 600000
+  }
+}

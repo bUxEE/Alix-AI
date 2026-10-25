@@ -1,0 +1,9 @@
+{
+  "type": "clarification",
+  "turn_id": "trn_01J0000000000000000000000A",
+  "seq": 2,
+  "clarification": {
+    "type": "markdown",
+    "text": "Which time?"
+  }
+}

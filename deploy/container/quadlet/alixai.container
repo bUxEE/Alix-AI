@@ -1,0 +1,44 @@
+# The AlixAI service (compose service: alixai). Distroless, user 65532, read-only root filesystem, no capability.
+# It runs in the pod network namespace: loopback to LocalAI and a loopback listener, no route out.
+[Unit]
+Description=AlixAI service
+Requires=alixai-anchor.service
+After=alixai-anchor.service
+
+[Container]
+ContainerName=alixai
+Image=alixai.build
+Pod=alixai.pod
+User=65532
+Group=65532
+ReadOnly=true
+Tmpfs=/tmp:rw,noexec,nosuid,nodev,size=64m
+DropCapability=ALL
+NoNewPrivileges=true
+PidsLimit=256
+PodmanArgs=--memory=512m --memory-swap=512m --cpus=1
+# LOCALAI_API_KEY only; localai.api_key_ref in alixai.yaml reads it from the environment.
+EnvironmentFile=%h/.config/alixai/alixai.env
+Volume=%h/.config/alixai/alixai.yaml:/etc/alixai/alixai.yaml:ro,Z
+# The database, document index, key files and audit log. Owner-only, owned by 65532 (README.md).
+Volume=%h/.local/share/alixai/alixai:/var/lib/alixai:Z
+# AlixAI re-hashes every model it is configured to use before the first request (SEC-063): read-only.
+Volume=%h/.local/share/alixai/localai/models:/models:ro,z
+# /healthz: the process serves. /readyz is the operator signal and may stay 503 until the first model call.
+HealthCmd=/usr/local/bin/alixai-netctl probe http://127.0.0.1:7470/healthz
+HealthInterval=10s
+HealthTimeout=6s
+HealthRetries=6
+HealthStartPeriod=5m
+Notify=healthy
+LogDriver=journald
+Label=ai.alixai.component=alixai
+
+[Service]
+Restart=on-failure
+RestartSec=5s
+TimeoutStartSec=420
+TimeoutStopSec=30
+
+[Install]
+WantedBy=default.target

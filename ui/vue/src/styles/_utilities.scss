@@ -1,0 +1,281 @@
+@use "sass:math";
+
+// Utility classes of the kit, in ONE place. Names carry the `alix-` prefix so a kit embedded in a Vuetify or Tailwind host
+// never collides with the host's own `d-flex` or `ga-3`. The scale is the same 4px scale Vuetify uses (`alix-ga-3` is 12px).
+// Responsive variants (`alix-d-md-flex`, `alix-col-md-6`) are generated here from the breakpoint map: this is the only file
+// that holds a layout media query, so components never write their own.
+
+$breakpoints: (
+  "sm": 600px,
+  "md": 960px,
+  "lg": 1280px,
+);
+$spaces: 0, 1, 2, 3, 4, 5, 6, 8;
+$display: (
+  "none": none,
+  "block": block,
+  "flex": flex,
+  "inline-flex": inline-flex,
+  "grid": grid,
+  "contents": contents,
+);
+
+@mixin utilities($infix) {
+  // Sticks 20px below the top of the scroller: the shorter of two panels side by side stays in view. Use the responsive form
+  // (`alix-sticky-md-top`) so a panel does not slide over the one stacked below it on a narrow screen.
+  .alix-sticky#{$infix}-top {
+    position: sticky;
+    top: 20px;
+    align-self: flex-start;
+  }
+
+  @each $name, $value in $display {
+    .alix-d#{$infix}-#{$name} {
+      display: $value;
+    }
+  }
+
+  .alix-flex#{$infix}-row {
+    flex-direction: row;
+  }
+
+  .alix-flex#{$infix}-column {
+    flex-direction: column;
+  }
+
+  @for $n from 1 through 12 {
+    .alix-col#{$infix}-#{$n} {
+      flex: 0 0 auto;
+      width: math.percentage(math.div($n, 12));
+      max-width: 100%;
+    }
+  }
+}
+
+
+@include utilities("");
+
+@each $name, $min in $breakpoints {
+  @media (min-width: $min) {
+    @include utilities("-#{$name}");
+  }
+}
+
+.alix-flex-wrap {
+  flex-wrap: wrap;
+}
+
+.alix-flex-nowrap {
+  flex-wrap: nowrap;
+}
+
+.alix-flex-grow-1 {
+  flex-grow: 1;
+}
+
+.alix-flex-shrink-0 {
+  flex-shrink: 0;
+}
+
+.alix-flex-1 {
+  flex: 1 1 0;
+}
+
+.alix-align-start {
+  align-items: flex-start;
+}
+
+.alix-align-center {
+  align-items: center;
+}
+
+.alix-align-end {
+  align-items: flex-end;
+}
+
+.alix-align-baseline {
+  align-items: baseline;
+}
+
+.alix-justify-start {
+  justify-content: flex-start;
+}
+
+.alix-justify-center {
+  justify-content: center;
+}
+
+.alix-justify-end {
+  justify-content: flex-end;
+}
+
+.alix-justify-between {
+  justify-content: space-between;
+}
+
+.alix-self-end {
+  align-self: flex-end;
+}
+
+.alix-self-start {
+  align-self: flex-start;
+}
+
+@each $n in $spaces {
+  $px: #{$n * 4}px;
+
+  .alix-ga-#{$n} {
+    gap: $px;
+  }
+
+  .alix-pa-#{$n} {
+    padding: $px;
+  }
+
+  .alix-px-#{$n} {
+    padding-inline: $px;
+  }
+
+  .alix-py-#{$n} {
+    padding-block: $px;
+  }
+
+  .alix-pt-#{$n} {
+    padding-top: $px;
+  }
+
+  .alix-pb-#{$n} {
+    padding-bottom: $px;
+  }
+
+  .alix-ma-#{$n} {
+    margin: $px;
+  }
+
+  .alix-mx-#{$n} {
+    margin-inline: $px;
+  }
+
+  .alix-my-#{$n} {
+    margin-block: $px;
+  }
+
+  .alix-mt-#{$n} {
+    margin-top: $px;
+  }
+
+  .alix-mb-#{$n} {
+    margin-bottom: $px;
+  }
+}
+
+.alix-my-auto {
+  margin-block: auto;
+}
+
+.alix-mx-auto {
+  margin-inline: auto;
+}
+
+.alix-ms-auto {
+  margin-inline-start: auto;
+}
+
+.alix-w-100 {
+  width: 100%;
+}
+
+.alix-h-100 {
+  height: 100%;
+}
+
+.alix-min-w-0 {
+  min-width: 0;
+}
+
+.alix-min-h-0 {
+  min-height: 0;
+}
+
+.alix-position-relative {
+  position: relative;
+}
+
+.alix-overflow-hidden {
+  overflow: hidden;
+}
+
+.alix-overflow-auto {
+  overflow: auto;
+}
+
+.alix-text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.alix-text-center {
+  text-align: center;
+}
+
+.alix-text-end {
+  text-align: end;
+}
+
+.alix-text-muted {
+  color: var(--alix-text-muted);
+}
+
+.alix-text-xs {
+  font-size: var(--alix-fs-xs);
+}
+
+.alix-text-sm {
+  font-size: var(--alix-fs-sm);
+}
+
+.alix-text-lg {
+  font-size: var(--alix-fs-lg);
+}
+
+.alix-font-medium {
+  font-weight: 560;
+}
+
+.alix-font-semibold {
+  font-weight: 640;
+}
+
+.alix-font-mono {
+  font-family: var(--alix-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.alix-text-balance {
+  text-wrap: balance;
+}
+
+.alix-break-word {
+  overflow-wrap: anywhere;
+}
+
+// Visible to assistive technology only.
+.alix-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// A 12-column row for v-row/v-col style layouts: `alix-row` with `alix-col-12 alix-col-md-6` children.
+.alix-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}

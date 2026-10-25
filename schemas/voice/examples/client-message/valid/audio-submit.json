@@ -1,0 +1,9 @@
+{
+  "type": "audio.submit",
+  "format": {
+    "encoding": "pcm_s16le",
+    "sample_rate": 16000,
+    "channels": 1
+  },
+  "audio": "AAAAAAAAAAA="
+}

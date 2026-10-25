@@ -1,0 +1,8 @@
+{
+  "capability_scopes": [
+    "admin.purge"
+  ],
+  "roles": [
+    "admin"
+  ]
+}

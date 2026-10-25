@@ -1,0 +1,12 @@
+# Egress measurement (hardening.md section 8 item 6). Delays LocalAI's start so a packet-capture container that shares
+# this container's network namespace (docker run --net container:alixai-localai ... tcpdump) is attached before the first
+# outbound connection. Only a sleep is added in front of the shipped guard; nothing else in the container changes.
+services:
+  localai:
+    entrypoint:
+      - /bin/bash
+      - -c
+      - 'sleep "$${SPIKE_CAPTURE_DELAY:-10}"; exec /bin/bash /alixai/entrypoint.sh "$$@"'
+      - entrypoint
+    environment:
+      SPIKE_CAPTURE_DELAY: ${SPIKE_CAPTURE_DELAY:-10}

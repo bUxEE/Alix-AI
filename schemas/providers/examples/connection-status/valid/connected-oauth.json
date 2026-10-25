@@ -1,0 +1,24 @@
+{
+  "as_of": "2026-10-02T09:00:00Z",
+  "provider": {
+    "profile_id": "pprf_01J0000000000000000000000P",
+    "provider_id": "openai",
+    "model_id": "gpt-4.1-mini",
+    "model_version": "2025-04-14"
+  },
+  "lifecycle": "qualified",
+  "state": "connected",
+  "kind": "oauth",
+  "account": {
+    "account_id": "sub-118273645",
+    "organization_id": null,
+    "project_id": null
+  },
+  "connected_at": "2026-10-02T08:00:05Z",
+  "expires_at": "2026-10-02T10:00:00Z",
+  "warnings": [],
+  "health": "healthy",
+  "last_error_kind": null,
+  "budget_state": "ok",
+  "billing_notice_acknowledged": true
+}

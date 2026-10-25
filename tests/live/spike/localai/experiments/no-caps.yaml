@@ -1,0 +1,4 @@
+# Hardening 8.3 experiment: cap_drop ALL and nothing added back (Docker Compose "!override" replaces the shipped list).
+services:
+  localai:
+    cap_add: !override []

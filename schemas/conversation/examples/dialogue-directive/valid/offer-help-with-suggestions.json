@@ -1,0 +1,42 @@
+{
+  "turn_id": "trn_01J0000000000000000000000A",
+  "capability_id": null,
+  "act": "offer_help",
+  "facts": [],
+  "must_state": [],
+  "missing_fields": [],
+  "invalid_fields": [],
+  "allowed_suggestions": [
+    {
+      "choice_id": "s1",
+      "label": "Book an appointment",
+      "value": {
+        "kind": "identifier",
+        "value": "appointments.book"
+      }
+    },
+    {
+      "choice_id": "s2",
+      "label": "Cancel an appointment",
+      "value": {
+        "kind": "identifier",
+        "value": "appointments.cancel"
+      }
+    }
+  ],
+  "confirmation": {
+    "mode": "none",
+    "bindings": []
+  },
+  "permitted_next_actions": [
+    {
+      "action": "invoke_capability",
+      "capability_id": "appointments.book"
+    },
+    {
+      "action": "invoke_capability",
+      "capability_id": "appointments.cancel"
+    }
+  ],
+  "sources": []
+}

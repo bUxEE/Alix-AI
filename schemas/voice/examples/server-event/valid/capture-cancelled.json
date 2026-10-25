@@ -1,0 +1,5 @@
+{
+  "type": "capture.cancelled",
+  "utterance_id": "utt_01J0000000000000000000000A",
+  "reason": "pack_changed"
+}

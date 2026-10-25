@@ -1,0 +1,286 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:readiness:report:v1",
+  "title": "ReadinessReport",
+  "description": "The result of one readiness scan (master plan 9.5, ADR 0037): a requirements inventory of the project AlixAI is being added to, with the evidence-bound findings behind it. It is ADVISORY: it never certifies, never signs, never activates and never edits a package, and a complete report is not an audit pass; the integration audit (master plan 4.5) still decides activation. It carries no score, grant, permission, approval or pass/fail verdict, and no field may be read as one. With no model the deterministic leg runs alone and the report says so; a model used is labelled with its qualification state. Reports are stored with a hash of their inputs so a later scan can say what changed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "report_id", "advisory", "generated_at", "scanned_root", "inputs_sha256", "catalog_version", "catalog_sha256", "mode", "scan", "checklist", "summary", "findings"],
+  "properties": {
+    "schema_version": {
+      "description": "The contract generation of this document.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/schemaVersion"
+    },
+    "report_id": {
+      "description": "The ID minted for this report.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/typedId"
+    },
+    "advisory": {
+      "description": "Always true: the report is advice to the operator, not a certification and not an audit result.",
+      "x-alixai-authority": "alixai",
+      "type": "boolean",
+      "const": true
+    },
+    "generated_at": {
+      "description": "When the scan finished.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    },
+    "scanned_root": {
+      "description": "The directory the operator named, as the operator wrote it.",
+      "x-alixai-authority": "host",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "inputs_sha256": {
+      "description": "A hash over the scanned files (their relative paths and hashes), the catalog, the scan options and the version of the readiness rules, so an unchanged project gives the same value.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/sha256"
+    },
+    "catalog_version": {
+      "description": "The version of the requirement catalog the scan used.",
+      "x-alixai-authority": "alixai",
+      "type": "integer",
+      "minimum": 1
+    },
+    "catalog_sha256": {
+      "description": "The hash of the requirement catalog the scan used.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/sha256"
+    },
+    "evaluator_version": {
+      "description": "The version of the readiness rules that evaluated the requirements (the scan's detectors, the verifier and the checklist evaluator). It is part of inputs_sha256, so a report made by older rules is not current even when the files are unchanged. Absent in a report from a release that did not record it, which counts as version 1.",
+      "x-alixai-authority": "alixai",
+      "type": "integer",
+      "minimum": 1
+    },
+    "previous_report_id": {
+      "description": "The report this one follows, when the operator re-scanned the same directory. Absent on a first scan.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/typedId"
+    },
+    "mode": {
+      "description": "deterministic_only: no model ran and the report says so. deterministic_and_model: a model proposed findings that the verifier then checked.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "enum": ["deterministic_only", "deterministic_and_model"]
+    },
+    "model": {
+      "description": "The model that proposed findings. Present exactly when the mode is deterministic_and_model.",
+      "x-alixai-authority": "alixai",
+      "$ref": "#/$defs/model"
+    },
+    "model_leg": {
+      "description": "What happened to the optional model leg (master plan 9.5, ADR 0037): whether a model ran, why it did not, and what its output was worth. Absent in a report built without the assist leg. A model that did not run leaves the report deterministic_only and this says why; a model that ran can only have added findings, and the counts show how many of its proposals were dropped and how many tried to change a status a rule decided.",
+      "x-alixai-authority": "alixai",
+      "$ref": "#/$defs/modelLeg"
+    },
+    "scan": {
+      "description": "What the scan covered and what it left out.",
+      "x-alixai-authority": "alixai",
+      "$ref": "#/$defs/scanStats"
+    },
+    "checklist": {
+      "description": "One entry per catalog requirement, in catalog order: the status of each and the findings behind it.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 512,
+      "items": { "$ref": "#/$defs/checklistItem" }
+    },
+    "summary": {
+      "description": "How many checklist entries are in each status.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/summary"
+    },
+    "findings": {
+      "description": "Every finding of the scan, deterministic and model.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "maxItems": 5000,
+      "items": { "$ref": "urn:alixai:schema:readiness:finding:v1" }
+    }
+  },
+  "$defs": {
+    "model": {
+      "description": "The model that proposed findings.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model_id", "runtime", "qualification"],
+      "properties": {
+        "model_id": {
+          "description": "The model that read the excerpts.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "runtime": {
+          "description": "local: a model on the operator-controlled machine, the default. external: a model reached through the data-egress guard, off by default.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "enum": ["local", "external"]
+        },
+        "qualification": {
+          "description": "unqualified: the model is not certified for any task (the Lite controller is uncertified) and its output is labelled unqualified, advisory. qualified: the model passed the qualification the registry records for this use.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "enum": ["unqualified", "qualified"]
+        },
+        "label": {
+          "description": "The label shown beside the model wherever its findings appear. The builder and the store keep it in step with the qualification and nothing else: 'unqualified, advisory' unless the registry shows a qualified status for this use, and even then the findings are advice the verifier has checked. Absent in a report built without the assist leg.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "enum": ["unqualified, advisory", "qualified, advisory"]
+        }
+      }
+    },
+    "modelLeg": {
+      "description": "The state of the model leg. status says whether a model ran: not_configured (none is set up), unavailable (the model could not be reached or timed out), failed (it answered in a way that could not be used), refused (policy, the data-egress guard or the external-mode switch said no, and nothing was sent) or ran. Anything but ran leaves the report deterministic_only, and any model output of a leg that did not run is discarded whole.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "calls", "proposals_received", "dropped_proposals", "attempted_overrides"],
+      "properties": {
+        "status": {
+          "description": "What happened to the leg.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "enum": ["not_configured", "unavailable", "failed", "refused", "ran"]
+        },
+        "prompt_template_sha256": {
+          "description": "The SHA-256 of the fixed prompt template and the closed output schema the model was given. Absent when no prompt was built. It lets a later scan tell that the instructions to the model changed.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/sha256"
+        },
+        "calls": {
+          "description": "How many times the model was called. Zero when it was not.",
+          "x-alixai-authority": "alixai",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 64
+        },
+        "proposals_received": {
+          "description": "How many proposals the model made across all calls, one per requirement it named.",
+          "x-alixai-authority": "alixai",
+          "type": "integer",
+          "minimum": 0
+        },
+        "dropped_proposals": {
+          "description": "How many proposals did not become findings at all: malformed, for an unknown or decided requirement, citing text that looks like an instruction, over the proposal cap or refused by the verifier. A proposal whose evidence did not confirm is not dropped; it is listed as a model_unverified finding.",
+          "x-alixai-authority": "alixai",
+          "type": "integer",
+          "minimum": 0
+        },
+        "attempted_overrides": {
+          "description": "How many of the dropped proposals tried to do more than add a finding: change or restate a status a rule decided, claim any status but found or partial, carry a field outside the closed schema such as a removal, or rest on a project line that reads as an instruction. They are dropped and counted, never applied.",
+          "x-alixai-authority": "alixai",
+          "type": "integer",
+          "minimum": 0
+        },
+        "budget_exhausted": {
+          "description": "True when the token or call budget of the scan stopped the leg before every excerpt was read, so absence of a model finding is not evidence of absence.",
+          "x-alixai-authority": "alixai",
+          "type": "boolean"
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "status": { "const": "ran" } }, "required": ["status"] },
+          "then": { "required": ["prompt_template_sha256"] }
+        }
+      ]
+    },
+    "scanStats": {
+      "description": "Counts for one scan. A truncated scan hit a size or file-count cap, so absence of a finding in it is not evidence of absence.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["files_scanned", "files_skipped", "bytes_scanned", "secret_files_recorded", "values_redacted", "truncated"],
+      "properties": {
+        "files_scanned": {
+          "description": "Files read.",
+          "x-alixai-authority": "alixai",
+          "type": "integer",
+          "minimum": 0
+        },
+        "files_skipped": {
+          "description": "Files not read: dependency and VCS directories, binaries, files over the size cap and files past the file-count cap.",
+          "x-alixai-authority": "alixai",
+          "type": "integer",
+          "minimum": 0
+        },
+        "bytes_scanned": {
+          "description": "Bytes read.",
+          "x-alixai-authority": "alixai",
+          "type": "integer",
+          "minimum": 0
+        },
+        "secret_files_recorded": {
+          "description": "Secret-looking files recorded as present and never read.",
+          "x-alixai-authority": "alixai",
+          "type": "integer",
+          "minimum": 0
+        },
+        "values_redacted": {
+          "description": "Secret-looking values redacted before anything reached the report, the model or a log.",
+          "x-alixai-authority": "alixai",
+          "type": "integer",
+          "minimum": 0
+        },
+        "truncated": {
+          "description": "True when a size or file-count cap stopped the scan early.",
+          "x-alixai-authority": "alixai",
+          "type": "boolean"
+        }
+      }
+    },
+    "checklistItem": {
+      "description": "The status of one requirement and the findings it rests on.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requirement_id", "category", "check_id", "level", "status", "finding_ids"],
+      "properties": {
+        "requirement_id": {
+          "description": "The catalog requirement.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/requirementId"
+        },
+        "category": {
+          "description": "The category of the requirement.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/category"
+        },
+        "check_id": {
+          "description": "The audit check the requirement feeds.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/checkId"
+        },
+        "level": {
+          "description": "Whether the requirement is mandatory or recommended.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/level"
+        },
+        "status": {
+          "description": "The status of the requirement after the findings are combined. Never found on the strength of a model_unverified finding.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/status"
+        },
+        "finding_ids": {
+          "description": "The findings behind the status. Empty when nothing was found.",
+          "x-alixai-authority": "alixai",
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": { "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/findingId" }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "mode": { "const": "deterministic_and_model" } }, "required": ["mode"] },
+      "then": { "required": ["model"] },
+      "else": { "not": { "required": ["model"] } }
+    }
+  ]
+}

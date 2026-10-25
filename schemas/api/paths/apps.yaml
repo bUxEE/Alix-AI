@@ -1,0 +1,282 @@
+# Applications and configuration (master plan 14.2): register and inspect application packages, list
+# capabilities, authenticated health. Implemented by internal/gateway/routes_v1_apps.go.
+#
+# Registration installs a signed package into QUARANTINE and nothing more: no route here, and no function a
+# request can reach, activates a package (the integration audit does, M1-17). A quarantined application
+# serves no traffic. No route accepts a free-form MCP server, API, tool or agent definition.
+paths:
+  /v1/applications:
+    post:
+      operationId: registerApplication
+      tags: [applications]
+      summary: Register an application package (it lands in quarantine)
+      description: |
+        The body is a signed `.tar.gz` application package (docs/integration/application-package.md), sent as
+        `application/gzip`. The token must carry the capability scope `applications.register` and the package
+        must declare the token's application: a token for application A can never install a package of B. The
+        package must be signed by a publisher key the operator registered, have no critical finding and be
+        compatible with this core; otherwise it is refused (422) and nothing is written. The size is limited by
+        gateway.max_body_bytes.
+
+        201 when the package was installed, 200 when the very same content was already installed (its state is
+        returned as it is: registering again never resets a state). The record is `quarantined`.
+      requestBody:
+        required: true
+        content:
+          application/gzip:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: This content was already installed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Registration'
+        '201':
+          description: Installed, quarantined.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Registration'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '413':
+          $ref: ../openapi.yaml#/components/responses/PayloadTooLarge
+        '415':
+          $ref: ../openapi.yaml#/components/responses/UnsupportedMediaType
+        '422':
+          $ref: ../openapi.yaml#/components/responses/Unprocessable
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/applications/{application_id}:
+    get:
+      operationId: getApplication
+      tags: [applications]
+      summary: Inspect the caller's application
+      description: |
+        The installed packages of the token's application with their states, and the application's own health
+        for an active one. Any other application id is `scope_violation`, whether or not it exists.
+      parameters:
+        - name: application_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9_.-]{1,128}$'
+      responses:
+        '200':
+          description: The application.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Application'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/capabilities:
+    get:
+      operationId: listCapabilities
+      tags: [applications]
+      summary: List the capabilities the caller may see
+      description: |
+        The capabilities of the application's active package that the policy gateway exposes to this token (scope,
+        roles, host rules), with the effective risk level and what a commit needs. It is the same exposure the
+        model gets. An application whose package is not active answers `quarantined`.
+      responses:
+        '200':
+          description: The visible capabilities.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapabilityList'
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/health:
+    get:
+      operationId: getHealth
+      tags: [operations]
+      summary: Authenticated health
+      description: The readiness report of /readyz plus the state of the caller's application.
+      responses:
+        '200':
+          description: Ready (possibly degraded).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '503':
+          description: Not ready.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+
+components:
+  schemas:
+    Package:
+      type: object
+      additionalProperties: false
+      required: [manifest_hash, package_version, state, warnings, installed_at, status_changed_at]
+      properties:
+        manifest_hash:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+        package_version:
+          type: string
+        state:
+          type: string
+          enum: [quarantined, active, rejected, superseded]
+        status_reason:
+          type: string
+        signer_key_id:
+          type: string
+        warnings:
+          type: integer
+          minimum: 0
+        audit_report_id:
+          type: string
+        installed_at:
+          type: string
+          format: date-time
+        status_changed_at:
+          type: string
+          format: date-time
+    Registration:
+      type: object
+      additionalProperties: false
+      required: [application_id, package, created, findings]
+      properties:
+        application_id:
+          type: string
+        package:
+          $ref: '#/components/schemas/Package'
+        created:
+          type: boolean
+        findings:
+          type: array
+          description: Warnings and information from the load checks. A package with a critical finding is refused.
+          items:
+            type: object
+            required: [check_id, severity, message, remediation]
+            properties:
+              check_id:
+                type: string
+              severity:
+                type: string
+                enum: [warning, info]
+              capability:
+                type: string
+              path:
+                type: string
+              message:
+                type: string
+              remediation:
+                type: string
+    Application:
+      type: object
+      additionalProperties: false
+      required: [application_id, status, packages]
+      properties:
+        application_id:
+          type: string
+        status:
+          type: string
+          enum: [active, quarantined, rejected, superseded, not_installed]
+        packages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Package'
+        health:
+          type: object
+          additionalProperties: false
+          required: [status]
+          description: The application's own health report; only read for an active application.
+          properties:
+            status:
+              type: string
+              enum: [ok, degraded, unavailable]
+            reason:
+              type: string
+            application_version:
+              type: string
+    CapabilityList:
+      type: object
+      additionalProperties: false
+      required: [capabilities]
+      properties:
+        capabilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/Capability'
+    Capability:
+      type: object
+      additionalProperties: false
+      required: [id, risk_level, requires_confirmation, requires_step_up, fields]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        risk_level:
+          type: integer
+          minimum: 0
+          maximum: 3
+        requires_confirmation:
+          type: boolean
+        requires_step_up:
+          type: boolean
+        fields:
+          type: array
+          items:
+            type: string
+    Health:
+      type: object
+      additionalProperties: false
+      description: The members of the readiness report of /readyz, plus the caller's application.
+      required: [status, ready, roles, checks, application]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded, unavailable]
+        ready:
+          type: boolean
+        roles:
+          type: array
+          items:
+            $ref: ../openapi.yaml#/components/schemas/ReadyRole
+        checks:
+          type: array
+          items:
+            $ref: ../openapi.yaml#/components/schemas/ReadyCheck
+        application:
+          type: object
+          additionalProperties: false
+          required: [application_id, status]
+          properties:
+            application_id:
+              type: string
+            status:
+              type: string
+              enum: [active, quarantined, rejected, superseded, not_installed]

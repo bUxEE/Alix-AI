@@ -1,0 +1,27 @@
+{
+  "evidence_id": "e1",
+  "rank": 0,
+  "chunk_id": "chk_8f3a21c9d04e",
+  "generation_id": "gen_01J0000000000000000000000A",
+  "source_id": "src_01J0000000000000000000000A",
+  "display_name": "Clinic cancellation policy",
+  "version": "rev-12",
+  "locator": {
+    "page": 3,
+    "section": "Late cancellations",
+    "span": {
+      "start": 120,
+      "end": 342
+    }
+  },
+  "availability": "available",
+  "staleness": "current",
+  "open_ref": {
+    "kind": "file",
+    "file_id": "fil_01J0000000000000000000000A"
+  },
+  "text": "Appointments can be cancelled free of charge up to 24 hours before the start. Later cancellations are charged 50 percent of the visit fee.",
+  "est_toks": 34,
+  "source_egress": "allow_excerpt",
+  "source_classification": "internal"
+}

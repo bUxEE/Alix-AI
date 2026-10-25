@@ -1,0 +1,35 @@
+{
+  "budget_id": "bud_01J0000000000000000000000B",
+  "subject": {
+    "kind": "tenant",
+    "application_id": "app_crm",
+    "tenant_id": "ten_42"
+  },
+  "channel": "interactive",
+  "currency": "EUR",
+  "as_of": "2026-10-02T09:00:00Z",
+  "state": "ok",
+  "windows": [
+    {
+      "window": "daily",
+      "starts_at": "2026-10-02T00:00:00Z",
+      "ends_at": "2026-10-03T00:00:00Z",
+      "limit_micro_units": 5000000,
+      "spent_micro_units": 1200000,
+      "reserved_micro_units": 40000,
+      "remaining_micro_units": 3760000.5,
+      "state": "ok"
+    },
+    {
+      "window": "monthly",
+      "starts_at": "2026-10-01T00:00:00Z",
+      "ends_at": "2026-11-01T00:00:00Z",
+      "limit_micro_units": 100000000,
+      "spent_micro_units": 31000000,
+      "reserved_micro_units": 40000,
+      "remaining_micro_units": 68960000,
+      "state": "ok"
+    }
+  ],
+  "local_fallback_available": false
+}

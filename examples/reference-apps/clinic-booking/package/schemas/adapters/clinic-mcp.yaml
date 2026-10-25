@@ -1,0 +1,54 @@
+# Adapter configuration of the MCP endpoint clinic-mcp. Its format is owned by
+# the MCP adapter; the package signs it like every other file.
+#
+# Only the tools listed here are reachable. The server also offers describe,
+# health and inspect (the management tools the adapter and the integration
+# audit use for Describe, Health and Inspect); no capability maps to them and a
+# model never sees them. The test_* tools exist only while the application runs in
+# test support mode: test_create_tenant, test_seed and test_cleanup are the audit's
+# disposable-tenant provisioning (the package's fixtures.provisioning names them), and
+# test_change_record moves the revision counter of one record of a disposable tenant so
+# the audit can show that validate notices a change, and test_inject_fault arms one
+# failure (a dependency down, a commit whose reply is lost) for requests of disposable
+# tenants only. Approved here and mapped by no capability, they cannot be reached by a
+# model.
+#
+# Wire contract of every capability tool:
+#   input    identity  the minimum identity AlixAI sends (application_id,
+#                      tenant_id, workspace_id, principal_id, roles, session_id)
+#            fields    the candidate field values (read, validate, prepare, and
+#                      the resolve_* tools with entity_type, mention, candidate_id)
+#            idempotency_key and prepared   commit
+#            idempotency_key                status
+#   output   structuredContent: the host members of a DeterministicResult
+#            (status, identifiers, values, errors, freshness,
+#            allowed_next_actions, and for prepare also preparation)
+#   A refusal is a result with status rejected, never an MCP tool error.
+#   validate reports, on unchanged data, the freshness.version prepare reported
+#   (a per-record snapshot version, not an ETag and not a site-wide counter).
+server: clinic-mcp
+tools:
+  allow:
+    - availability_list
+    - patients_find
+    - resolve_patient
+    - resolve_doctor
+    - resolve_slot
+    - resolve_appointment
+    - appointments_book_validate
+    - appointments_book_prepare
+    - appointments_book_commit
+    - appointments_book_status
+    - appointments_cancel_validate
+    - appointments_cancel_prepare
+    - appointments_cancel_commit
+    - appointments_cancel_status
+    - patients_update_contact_validate
+    - patients_update_contact_prepare
+    - patients_update_contact_commit
+    - patients_update_contact_status
+    - test_create_tenant
+    - test_seed
+    - test_cleanup
+    - test_change_record
+    - test_inject_fault

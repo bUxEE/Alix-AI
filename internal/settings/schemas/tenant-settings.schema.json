@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:settings:tenant-settings:v1",
+  "title": "Tenant settings",
+  "description": "The settings of one tenant of one application (master plan 14.2): defaults and policy for every user of the tenant. Policy only narrows what the deployment level allows: voice, attachments and history export are off until the deployment level allows them, retention and attachment size are ceilings, a capability any level switches off is off, and extra confirmation takes the lowest threshold. Every member is optional (absent means inherit) and the document is closed: a member that is not listed does not exist. There is no member that enables a tool, names a scope or role, lowers or skips a confirmation, reaches LocalAI or any runtime, selects an external or hybrid mode, changes data egress, holds a credential or raises a budget; a document that names one is refused whole and nothing is stored. The key (application, tenant) comes from the verified token, never from the body.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "default_language": {
+      "description": "The language used when a user states none. Must be one the application's active package supports.",
+      "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/languageTag"
+    },
+    "default_model_profile": {
+      "description": "The approved model and resource profile used when a user states none. Refused unless the operator approved it.",
+      "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/profileId"
+    },
+    "voice": { "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/policyVoice" },
+    "history": { "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/policyHistory" },
+    "privacy": { "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/policyPrivacy" },
+    "attachments": { "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/policyAttachments" },
+    "notifications": { "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/policyNotifications" },
+    "capabilities": {
+      "description": "Capabilities switched off for every user of the tenant. Narrowing only.",
+      "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/capabilitySwitches"
+    },
+    "confirmation": {
+      "description": "Confirmation asked for every user of the tenant in addition to the platform's. Raising only.",
+      "$ref": "urn:alixai:schema:settings:shared:v1#/$defs/confirmationRaise"
+    }
+  }
+}

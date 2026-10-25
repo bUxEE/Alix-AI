@@ -1,0 +1,53 @@
+# Private LocalAI runtime (compose service: localai). Different OS identity from AlixAI (10001 against 65532;
+# rootless Podman maps them to different subuids), read-only root filesystem, no capability, internal network,
+# no PublishPort: the only way to it is the forwarder in the pod. Static hardening flags are in localai.env.
+[Unit]
+Description=AlixAI private LocalAI runtime
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+ContainerName=alixai-localai
+# Same pin as deploy/container/localai/compose.yaml. The tag is informational, the digest is what is pulled.
+Image=docker.io/localai/localai:v4.10.0@sha256:0632c21ddbe440bb71bc7aa744796c227a51658641b216290e86d6894e1c705b
+User=10001
+Group=10001
+ReadOnly=true
+Tmpfs=/tmp
+Tmpfs=/run/localai
+DropCapability=ALL
+NoNewPrivileges=true
+PidsLimit=512
+Network=alixai-backend.network
+NetworkAlias=localai
+# Guard wrapper of M0-08: refuses a weak key, a writable /configuration, an unwritable data dir, debug logging.
+Entrypoint=/bin/bash
+Exec=/alixai/entrypoint.sh run
+EnvironmentFile=%h/.config/alixai/localai.env
+# LOCALAI_API_KEY lives in alixai.env only, mode 0600 (alixai.env.example).
+EnvironmentFile=%h/.config/alixai/alixai.env
+# Provisioned before the first start and read-only here (HC-24). The :z label is shared: AlixAI mounts the same directory.
+Volume=%h/.local/share/alixai/localai/models:/models:ro,z
+Volume=%h/.local/share/alixai/localai/backends:/backends:Z
+Volume=%h/.config/alixai/localai/backend-gallery.yaml:/backends/alixai-backend-gallery.yaml:ro,Z
+Volume=%h/.local/share/alixai/localai/state:/data:Z
+Volume=%h/.config/alixai/localai:/configuration:ro,Z
+Volume=%h/.config/alixai/localai-entrypoint.sh:/alixai/entrypoint.sh:ro,Z
+HealthCmd=curl -fsS -m 5 http://127.0.0.1:8080/readyz
+HealthInterval=15s
+HealthTimeout=10s
+HealthRetries=5
+HealthStartPeriod=10m
+# systemd considers the unit started only when the health check passes: everything ordered after it waits.
+Notify=healthy
+LogDriver=journald
+Label=ai.alixai.component=localai
+
+[Service]
+Restart=on-failure
+RestartSec=10s
+TimeoutStartSec=900
+TimeoutStopSec=40
+
+[Install]
+WantedBy=default.target

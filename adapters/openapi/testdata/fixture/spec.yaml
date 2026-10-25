@@ -1,0 +1,207 @@
+openapi: 3.0.3
+info:
+  title: Fixture items API
+  version: 1.0.0
+# The adapter ignores `servers`: a document cannot name where its requests go.
+servers:
+  - url: http://169.254.169.254:1/latest
+paths:
+  /items/{id}:
+    get:
+      operationId: getItem
+      summary: Read one item.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: X-AlixAI-Identity
+          in: header
+          required: true
+          schema: { type: string }
+      responses: &result_responses
+        "200": { $ref: "#/components/responses/Result" }
+        "403": { $ref: "#/components/responses/Result" }
+        "404": { $ref: "#/components/responses/Result" }
+        "409": { $ref: "#/components/responses/Result" }
+        "422": { $ref: "#/components/responses/Result" }
+        "503": { $ref: "#/components/responses/Result" }
+  /item-drafts/validate:
+    post:
+      operationId: validateItem
+      summary: Check an item name without staging anything.
+      requestBody: { $ref: "#/components/requestBodies/Draft" }
+      responses: *result_responses
+  /item-drafts/prepare:
+    post:
+      operationId: prepareItem
+      summary: Stage the creation of an item.
+      requestBody: { $ref: "#/components/requestBodies/Draft" }
+      responses: *result_responses
+  /items:
+    post:
+      operationId: commitItem
+      summary: Create the prepared item, once per idempotency key.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PreparedAction" }
+      responses: *result_responses
+  /commits/{idempotency_key}:
+    get:
+      operationId: statusItem
+      summary: What was recorded for a key.
+      parameters:
+        - name: idempotency_key
+          in: path
+          required: true
+          schema: { type: string }
+      responses: *result_responses
+    delete:
+      operationId: cancelItem
+      summary: Withdraw pending work for a key.
+      parameters:
+        - name: idempotency_key
+          in: path
+          required: true
+          schema: { type: string }
+      responses: *result_responses
+  /describe:
+    get:
+      operationId: describeApplication
+      responses:
+        "200":
+          description: The contract versions the application speaks.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Open" }
+  /health:
+    get:
+      operationId: getHealth
+      responses:
+        "200":
+          description: Whether the application can serve requests.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Open" }
+  /inspect:
+    get:
+      operationId: inspectApplication
+      parameters:
+        - name: aspects
+          in: query
+          required: false
+          schema:
+            type: array
+            items: { type: string }
+      responses:
+        "200":
+          description: The facts the application exposes.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Open" }
+  /admin/export:
+    get:
+      operationId: exportEverything
+      summary: Not mapped by any capability. It is in the document and must stay unreachable.
+      responses:
+        "200":
+          description: Everything.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Open" }
+  /tenants:
+    post:
+      operationId: createTenant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Open" }
+      responses:
+        "201":
+          description: The tenant exists.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Open" }
+  /tenants/{tenant_id}:
+    delete:
+      operationId: cleanupTenant
+      parameters:
+        - name: tenant_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: The tenant is gone.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Open" }
+        "404":
+          description: There was no such tenant.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Open" }
+components:
+  requestBodies:
+    Draft:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name: { type: string }
+  responses:
+    Result:
+      description: A DeterministicResult as the host states it (operation and capability_id are the core's).
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Result" }
+  schemas:
+    Open:
+      type: object
+    PreparedAction:
+      type: object
+      required: [preparation_id, capability_id, idempotency_key, effects, data_versions]
+      properties:
+        preparation_id: { type: string }
+        capability_id: { type: string }
+        idempotency_key: { type: string }
+        effects: { type: array, items: { type: object } }
+        data_versions: { type: array, items: { type: object } }
+    # Validate, on unchanged data, reports in freshness.version the version Prepare
+    # reported: the snapshot version of the records the action relies on (here, the
+    # version of the item collection of the tenant and workspace), not a per-response
+    # ETag and not a counter that moves with every response. A host that broke it
+    # would make every commit stale; the adapter passes the version through and the
+    # integration audit's probes check it.
+    Result:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [ok, rejected, queued, partial, uncertain, unavailable] }
+        identifiers:
+          type: array
+          items:
+            type: object
+            required: [entity_type, entity_id]
+            properties:
+              entity_type: { type: string }
+              entity_id: { type: string }
+        values:
+          type: array
+          items: { type: object, required: [field, value] }
+        errors:
+          type: array
+          items: { type: object, required: [code, message] }
+        freshness: { type: object }
+        allowed_next_actions: { type: array, items: { type: object } }
+        preparation: { type: object }

@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "finding_id": "fnd_3333333333333333",
+  "requirement_id": "req.deployment.compose_and_ports",
+  "category": "deployment",
+  "status": "contradicted",
+  "source": "deterministic",
+  "check_id": "runtime.inspection",
+  "evidence": [
+    {
+      "path": "compose.yaml",
+      "line_start": 8,
+      "line_end": 9,
+      "file_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "path": "docs/deploy.md",
+      "line_start": 30,
+      "line_end": 31,
+      "file_sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    }
+  ],
+  "summary": "The compose file publishes port 8080 and the deployment guide says 9090.",
+  "remediation": {
+    "en": "Keep one source of truth for ports.",
+    "it": "Mantenere una sola fonte di verita' per le porte."
+  }
+}

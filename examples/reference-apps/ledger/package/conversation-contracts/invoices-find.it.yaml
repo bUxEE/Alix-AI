@@ -1,0 +1,47 @@
+capability_id: "invoices.find"
+language: "it"
+contract_version: "1.0.0"
+terminology:
+  - "invoice"
+  - "customer"
+field_prompts:
+  - field: "query"
+    label: "Fattura o cliente"
+    prompt: "Quale fattura devo cercare? Dammi il numero o una parte del nome del cliente."
+    examples:
+      - "INV-0007"
+      - "Acme"
+  - field: "status"
+    label: "Stato"
+    prompt: "Vuoi solo fatture emesse, pagate in parte, pagate o annullate?"
+  - field: "max_results"
+    label: "Numero di risultati"
+    prompt: "Quante fatture devo elencare al massimo?"
+clarifications: []
+corrections:
+  acknowledgement: "Va bene, cerco di nuovo con questo."
+  correctable_fields:
+    - "query"
+    - "status"
+    - "max_results"
+cancellations:
+  acknowledgement: "Va bene, ho interrotto la ricerca."
+success:
+  - outcome: "found"
+    text: "Ho trovato {invoice_count} fatture corrispondenti: {invoice_summary}"
+failures:
+  - code: "permission_denied"
+    text: "Non hai il permesso di cercare fatture, quindi non ho cercato nulla."
+  - code: "scope_violation"
+    text: "Non posso mostrarla: la fattura non è disponibile per te."
+  - code: "validation_failed"
+    text: "Non ho potuto cercare con questo: dammi almeno due caratteri di un numero di fattura o del nome di un cliente."
+  - code: "missing_fields"
+    text: "Mi serve ancora un numero di fattura o il nome di un cliente da cercare."
+  - code: "unavailable"
+    text: "Il registro non è raggiungibile in questo momento, quindi non ho potuto cercare."
+next_actions:
+  - id: "record_payment"
+    label: "Registrare un pagamento"
+  - id: "void_invoice"
+    label: "Annullare una fattura"

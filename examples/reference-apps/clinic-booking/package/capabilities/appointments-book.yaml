@@ -1,0 +1,216 @@
+id: appointments.book
+version: 1.0.0
+audience: user
+title: Book an appointment
+purpose: Book a free appointment slot of the caller's clinic site for a patient. The booking is prepared first, its exact effects are shown, and it is committed only after the user confirms. Committing holds the slot for the patient and queues a confirmation message to the patient's contact details.
+scope_level: workspace
+permissions:
+  - appointments.book
+fields:
+  - name: patient
+    type: entity_ref
+    entity_type: patient
+    required: true
+    description: The patient the appointment is for.
+  - name: slot
+    type: entity_ref
+    entity_type: slot
+    required: true
+    description: The free appointment slot to book, named by its identifier, by its local date and time, or as the next available one (the application decides which that is).
+  - name: reason
+    type: string
+    required: false
+    sensitive: true
+    description: The reason for the visit, in the patient's words. Optional free text.
+    max_length: 200
+entity_types:
+  patient:
+    description: A patient of the clinic site, as the caller is allowed to see them.
+    resolve:
+      endpoint: clinic-mcp
+      mcp_tool: resolve_patient
+      result_schema: schemas/resolve.result.schema.json
+  slot:
+    description: A free appointment slot of the clinic site.
+    resolve:
+      endpoint: clinic-mcp
+      mcp_tool: resolve_slot
+      result_schema: schemas/resolve.result.schema.json
+ambiguity:
+  - id: patient_multiple
+    field: patient
+    when: multiple_matches
+    action: ask_user
+    max_choices: 5
+  - id: patient_none
+    field: patient
+    when: no_match
+    action: reject
+  - id: slot_multiple
+    field: slot
+    when: multiple_matches
+    action: ask_user
+    max_choices: 5
+  - id: slot_none
+    field: slot
+    when: no_match
+    action: reject
+validation:
+  - id: slot_in_window
+    fields:
+      - slot
+    description: The slot must start at least 60 minutes from now and at most 90 days ahead.
+    error_code: validation_failed
+  - id: slot_free
+    fields:
+      - slot
+    description: The slot must still be free. A slot another booking took is a conflict.
+    error_code: conflict
+  - id: patient_free
+    fields:
+      - patient
+      - slot
+    description: The patient must not already have an appointment that overlaps the slot.
+    error_code: conflict
+failure_states:
+  - code: permission_denied
+    description: The principal's role may not book appointments.
+  - code: scope_violation
+    description: The patient or the slot is outside the principal's access (another site, another clinic group, or a patient the role may not see), or does not exist. The application does not say which.
+  - code: validation_failed
+    description: The slot is too soon or too far ahead, or a value is malformed. Nothing was booked.
+  - code: conflict
+    description: The slot is no longer free, or the patient already has an appointment at that time. Nothing was booked.
+  - code: stale
+    description: The slot or the patient record changed after the booking was prepared, so the preparation is no longer valid. Nothing was booked; it can be prepared again.
+  - code: expired
+    description: The prepared booking was not confirmed in time, or was cancelled. Nothing was booked.
+  - code: uncertain_outcome
+    description: The commit response was lost. Whether the appointment exists is established through the status operation before anything is retried.
+  - code: missing_fields
+    description: A required field (patient or slot) was not supplied. Nothing was booked.
+  - code: unavailable
+    description: The clinic database cannot be reached. Nothing was booked.
+effect_class: external
+risk_level: 2
+operations:
+  validate:
+    endpoint: clinic-mcp
+    mcp_tool: appointments_book_validate
+    result_schema: schemas/appointments.book.validation.result.schema.json
+    timeout_ms: 5000
+  prepare:
+    endpoint: clinic-mcp
+    mcp_tool: appointments_book_prepare
+    result_schema: schemas/appointments.book.prepared.result.schema.json
+    timeout_ms: 8000
+  commit:
+    endpoint: clinic-mcp
+    mcp_tool: appointments_book_commit
+    result_schema: schemas/appointments.book.receipt.result.schema.json
+    timeout_ms: 15000
+  status:
+    endpoint: clinic-mcp
+    mcp_tool: appointments_book_status
+    result_schema: schemas/appointments.book.receipt.result.schema.json
+    timeout_ms: 5000
+confirmation:
+  mode: explicit
+prepared_action:
+  ttl_seconds: 600
+  invalidated_by:
+    - record_revision
+    - permission_change
+    - user_change
+idempotency:
+  key_source: prepared_action_id
+  window_seconds: 86400
+  on_replay: return_original_receipt
+response_obligations:
+  - fact: patient_name
+    when: always
+    description: The name of the patient the appointment is for.
+  - fact: appointment_starts_at
+    when: always
+    description: The local date and time of the appointment.
+  - fact: doctor_name
+    when: prepared
+    description: The doctor the appointment is with.
+  - fact: site_name
+    when: prepared
+    description: The clinic site where the appointment takes place.
+  - fact: appointment_reference
+    when: success
+    description: The appointment reference the patient quotes at the clinic.
+next_actions:
+  - id: cancel_booked_appointment
+    after: success
+    capability_id: appointments.cancel
+  - id: show_other_slots
+    after: failure
+    capability_id: availability.list
+doc_refs:
+  - ab-field-patient
+  - ab-field-slot
+  - ab-field-reason
+  - ab-rule-slot_in_window
+  - ab-rule-slot_free
+  - ab-rule-patient_free
+  - ab-perm-appointments.book
+  - ab-failure-permission_denied
+  - ab-failure-scope_violation
+  - ab-failure-validation_failed
+  - ab-failure-conflict
+  - ab-failure-stale
+  - ab-failure-expired
+  - ab-failure-uncertain_outcome
+  - ab-failure-missing_fields
+  - ab-failure-unavailable
+  - ab-risk
+  - ab-confirmation
+  - ab-outcome-booked
+examples:
+  - id: en-book-by-time
+    language: en
+    test_only: true
+    utterance: Book Maria Rossi for 2026-10-14 10:30
+    expected_fields:
+      patient: Maria Rossi
+      slot: '2026-10-14 10:30'
+  - id: en-book-with-reason
+    language: en
+    test_only: true
+    utterance: Please book me the 2026-10-15 09:00 appointment, it is for a flu shot
+    expected_fields:
+      patient: me
+      slot: '2026-10-15 09:00'
+      reason: flu shot
+  - id: it-prenota-visita
+    language: it
+    test_only: true
+    utterance: Prenota Maria Rossi il 2026-10-14 alle 10:30
+    expected_fields:
+      patient: Maria Rossi
+      slot: '2026-10-14 10:30'
+  - id: en-book-next-available
+    language: en
+    test_only: true
+    utterance: Book Maria Rossi the next available appointment
+    expected_fields:
+      patient: Maria Rossi
+      slot: next available
+  - id: it-prenota-con-motivo
+    language: it
+    test_only: true
+    utterance: Vorrei prenotare la visita del 2026-10-15 alle 09:00 per un controllo
+    expected_fields:
+      patient: me
+      slot: '2026-10-15 09:00'
+      reason: controllo
+  - id: it-prenota-primo-libero
+    language: it
+    test_only: true
+    utterance: Prenota Maria Rossi il primo orario libero
+    expected_fields:
+      patient: Maria Rossi
+      slot: primo orario libero

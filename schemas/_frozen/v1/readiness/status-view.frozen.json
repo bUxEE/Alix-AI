@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:readiness:status-view:v1",
+  "title": "ReadinessStatusView",
+  "description": "The view `alixai readiness status` shows (master plan 9.5, ADR 0037): the checklist re-evaluated against the latest stored report, with what is met, partial, missing, unverified or contradicted and what changed since the report before it. It is a read-only, advisory view: it is not an audit result, and no field in it is a pass, a grant, a permission or an approval.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "advisory", "report_id", "generated_at", "evaluated_at", "inputs_changed", "mode", "summary", "items"],
+  "properties": {
+    "schema_version": {
+      "description": "The contract generation of this document.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/schemaVersion"
+    },
+    "advisory": {
+      "description": "Always true: the view is advice to the operator, not a certification and not an audit result.",
+      "x-alixai-authority": "alixai",
+      "type": "boolean",
+      "const": true
+    },
+    "report_id": {
+      "description": "The stored report the view was evaluated from.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/typedId"
+    },
+    "generated_at": {
+      "description": "When that report was created.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    },
+    "evaluated_at": {
+      "description": "When the checklist was re-evaluated for this view.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    },
+    "previous_report_id": {
+      "description": "The report before the stored one. Absent when there is none.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/typedId"
+    },
+    "inputs_changed": {
+      "description": "True when the project files, the catalog or the scan options no longer hash to the stored report's inputs, so the report is stale and a new scan is due.",
+      "x-alixai-authority": "alixai",
+      "type": "boolean"
+    },
+    "mode": {
+      "description": "deterministic_only: the stored report was made without a model. deterministic_and_model: a model proposed findings that the verifier checked.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "enum": ["deterministic_only", "deterministic_and_model"]
+    },
+    "summary": {
+      "description": "How many items are in each status.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/summary"
+    },
+    "items": {
+      "description": "One entry per catalog requirement, in catalog order.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 512,
+      "items": { "$ref": "#/$defs/item" }
+    }
+  },
+  "$defs": {
+    "item": {
+      "description": "The current status of one requirement and how it changed.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requirement_id", "category", "check_id", "level", "status", "changed"],
+      "properties": {
+        "requirement_id": {
+          "description": "The catalog requirement.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/requirementId"
+        },
+        "category": {
+          "description": "The category of the requirement.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/category"
+        },
+        "check_id": {
+          "description": "The audit check the requirement feeds.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/checkId"
+        },
+        "level": {
+          "description": "Whether the requirement is mandatory or recommended.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/level"
+        },
+        "status": {
+          "description": "The status now.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/status"
+        },
+        "previous_status": {
+          "description": "The status in the report before. Absent when there is no earlier report or the requirement is new.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/status"
+        },
+        "changed": {
+          "description": "True when the status differs from previous_status or the requirement is new since the earlier report.",
+          "x-alixai-authority": "alixai",
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

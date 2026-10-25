@@ -1,0 +1,30 @@
+{
+  "operation": "commit",
+  "capability_id": "reports.export",
+  "status": "queued",
+  "identifiers": [
+    {
+      "entity_type": "export",
+      "entity_id": "exp_55"
+    }
+  ],
+  "values": [],
+  "errors": [],
+  "freshness": {
+    "as_of": "2026-10-09T08:00:00Z",
+    "version": "v42"
+  },
+  "allowed_next_actions": [
+    {
+      "action": "refresh"
+    },
+    {
+      "action": "cancel"
+    }
+  ],
+  "follow_up": {
+    "reference": "exp_job_55",
+    "state": "queued",
+    "as_of": "2026-10-09T08:00:01Z"
+  }
+}

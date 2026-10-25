@@ -1,0 +1,507 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:providers:shared:v1",
+  "title": "Provider building blocks",
+  "description": "Definitions shared by the external provider schemas (additive plan sections 5, 6, 11 and 15), referenced as urn:alixai:schema:providers:shared:v1#/$defs/<name>. This file is a definitions library: it constrains nothing on its own. It depends on nothing outside schemas/common. Object defs label every property with x-alixai-authority by true origin: modelRef is all host (operator supplied), subject all alixai (taken from the verified Scope), providerRef mixes alixai and host members and is used only under alixai containers. Secrets never appear in any provider schema: there is no member that holds a key, a token or a password, only opaque references and masked fingerprints.",
+  "$defs": {
+    "providerId": {
+      "title": "Provider ID",
+      "description": "The stable slug of a hosted provider (openai, anthropic, gemini, meta-llama, ...). Lower case, 1 to 32 characters, never a URL or a path.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+    },
+    "modelId": {
+      "title": "Model ID",
+      "description": "The provider-side model identifier exactly as the provider names it. 1 to 128 characters of letters, digits and . _ : + - ; never a path or a URL.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:+-]{0,127}$"
+    },
+    "modelVersion": {
+      "title": "Model version",
+      "description": "The pinned version or snapshot of a model (for example a dated snapshot id). A profile is bound to this exact value: a changed model version resets qualification (ADR-0028).",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:+-]{0,63}$"
+    },
+    "profileId": {
+      "title": "Provider profile ID",
+      "description": "ID of one provider and model profile in the registry. Minted by the AlixAI core: prefix pprf, an underscore and a 26-character ULID (Crockford base32, upper case). The prefix is inside the 2 to 8 letter range of common ids typedId.",
+      "type": "string",
+      "pattern": "^pprf_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "credentialRefId": {
+      "title": "Credential reference ID",
+      "description": "Opaque ID of a credential held by the credential service. It names a secret; it never contains one. Minted by the AlixAI core: prefix cred, an underscore and a 26-character ULID (Crockford base32, upper case). The prefix is inside the 2 to 8 letter range of common ids typedId.",
+      "type": "string",
+      "pattern": "^cred_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "egressPolicyId": {
+      "title": "Egress policy ID",
+      "description": "ID of one data-egress policy at one level. Minted by the AlixAI core: prefix epol, an underscore and a 26-character ULID (Crockford base32, upper case). The prefix is inside the 2 to 8 letter range of common ids typedId.",
+      "type": "string",
+      "pattern": "^epol_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "egressDecisionId": {
+      "title": "Egress decision ID",
+      "description": "ID of one egress decision. Minted by the AlixAI core: prefix edec, an underscore and a 26-character ULID (Crockford base32, upper case). The prefix is inside the 2 to 8 letter range of common ids typedId.",
+      "type": "string",
+      "pattern": "^edec_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "envelopeId": {
+      "title": "Request envelope ID",
+      "description": "ID of one request envelope. Minted by the AlixAI core: prefix envl, an underscore and a 26-character ULID (Crockford base32, upper case). The prefix is inside the 2 to 8 letter range of common ids typedId.",
+      "type": "string",
+      "pattern": "^envl_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "usageId": {
+      "title": "Usage record ID",
+      "description": "ID of one usage record. Minted by the AlixAI core: prefix usg, an underscore and a 26-character ULID (Crockford base32, upper case). The prefix is inside the 2 to 8 letter range of common ids typedId.",
+      "type": "string",
+      "pattern": "^usg_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "budgetId": {
+      "title": "Budget ID",
+      "description": "ID of one budget. Minted by the AlixAI core: prefix bud, an underscore and a 26-character ULID (Crockford base32, upper case). The prefix is inside the 2 to 8 letter range of common ids typedId.",
+      "type": "string",
+      "pattern": "^bud_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "reservationId": {
+      "title": "Budget reservation ID",
+      "description": "ID of one budget reservation (reserve, settle, release). Minted by the AlixAI core: prefix rsv, an underscore and a 26-character ULID (Crockford base32, upper case). The prefix is inside the 2 to 8 letter range of common ids typedId.",
+      "type": "string",
+      "pattern": "^rsv_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "reportId": {
+      "title": "Conformance report ID",
+      "description": "ID of one provider conformance report. Minted by the AlixAI core: prefix conf, an underscore and a 26-character ULID (Crockford base32, upper case). The prefix is inside the 2 to 8 letter range of common ids typedId.",
+      "type": "string",
+      "pattern": "^conf_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "acknowledgementId": {
+      "title": "Billing notice acknowledgement ID",
+      "description": "ID of one billing notice acknowledgement. Minted by the AlixAI core: prefix ack, an underscore and a 26-character ULID (Crockford base32, upper case). The prefix is inside the 2 to 8 letter range of common ids typedId.",
+      "type": "string",
+      "pattern": "^ack_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "fileId": {
+      "title": "File ID",
+      "description": "Opaque ID of a scoped file reference. Same grammar as urn:alixai:schema:actions:shared:v1#/$defs/fileId, repeated here so the providers area depends on common only. It is not a path and never resolves to one.",
+      "type": "string",
+      "pattern": "^fil_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "sourceId": {
+      "title": "Source ID",
+      "description": "ID of a registered RAG source. Same grammar as urn:alixai:schema:actions:shared:v1#/$defs/sourceId, repeated here so the providers area depends on common only.",
+      "type": "string",
+      "pattern": "^src_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "microUnits": {
+      "title": "Micro-units",
+      "description": "A non-negative amount of money in integer micro-units of the operator currency (1 000 000 micro-units = one unit of that currency). Never a float. Capped at 2^53-1 so every JSON implementation represents it exactly.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "counter": {
+      "title": "Counter",
+      "description": "A non-negative whole number (a count of requests, toks, images, seconds or bytes) capped at 2^53-1.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "currency": {
+      "title": "Currency",
+      "description": "The operator currency of every micro-unit amount: three upper case letters (an ISO 4217 code, or a three letter code the operator defines for credits).",
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "regionCode": {
+      "title": "Region code",
+      "description": "A lower case geographic or residency code: global, a two letter country or area code (us, eu, de), optionally followed by up to three hyphenated sub-region parts (us-east, eu-west-1). The literal unknown is deliberately NOT a region code: an unknown region is stated with residency unknown in a provider profile and is never allowed by a policy (ADR-0026).",
+      "type": "string",
+      "pattern": "^(global|[a-z]{2}(-[a-z0-9]{1,16}){0,3})$"
+    },
+    "sha256": {
+      "title": "SHA-256 digest",
+      "description": "sha256: followed by 64 lower-case hex digits.",
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "reasonCode": {
+      "title": "Reason code",
+      "description": "A fixed machine-readable reason: lower snake_case, never free text and never a quotation of user input or provider output.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "egressMode": {
+      "title": "Egress mode",
+      "description": "What a RAG source may contribute to an external request (additive plan section 8). local_only: never send content externally (the default). allow_excerpt: send only bounded, authorised excerpts. allow_metadata: send titles, IDs and status but no content. deny: exclude the source from the AlixAI capability entirely. Restrictiveness, most restrictive first: deny, local_only, allow_metadata, allow_excerpt. The effective mode is the most restrictive along the chain deployment, application, tenant, workspace, source.",
+      "type": "string",
+      "enum": ["local_only", "allow_excerpt", "allow_metadata", "deny"]
+    },
+    "egressLevel": {
+      "title": "Egress policy level",
+      "description": "The level an egress policy applies at (additive plan section 6), widest first: deployment, application, tenant, workspace, source.",
+      "type": "string",
+      "enum": ["deployment", "application", "tenant", "workspace", "source"]
+    },
+    "deploymentMode": {
+      "title": "Deployment mode",
+      "description": "The product mode of additive plan section 2. local is the default; external and hybrid are opt-in. Switching it never changes the host application integration contract.",
+      "type": "string",
+      "enum": ["local", "external", "hybrid"]
+    },
+    "role": {
+      "title": "External provider role",
+      "description": "A role an external provider profile may serve. The decision-scorer role (router, master plan section 8.5) is deliberately absent: external providers never receive decision requests, so a profile cannot declare it. Mapping to the local registry roles: conversational_controller is conversational-controller, embedding, stt and tts keep their names.",
+      "type": "string",
+      "enum": [
+        "conversational_controller",
+        "language_realization",
+        "vision",
+        "image_generation",
+        "embedding",
+        "stt",
+        "tts"
+      ]
+    },
+    "modality": {
+      "title": "Modality",
+      "description": "An input or output modality of a model.",
+      "type": "string",
+      "enum": ["text", "image", "audio", "file"]
+    },
+    "meterUnit": {
+      "title": "Meter unit",
+      "description": "What usage, quotas and prices are counted in. toks_in and toks_out are the model input and output counters (named toks, never tokens: the log redactor matches the substring token in key names). toks_in_cached is the part of toks_in served from a provider cache. audio_seconds_* are seconds of audio; file_bytes_in is bytes of file content; requests counts calls.",
+      "type": "string",
+      "enum": [
+        "toks_in",
+        "toks_out",
+        "toks_in_cached",
+        "images_in",
+        "images_out",
+        "audio_seconds_in",
+        "audio_seconds_out",
+        "file_bytes_in",
+        "requests"
+      ]
+    },
+    "channel": {
+      "title": "Budget channel",
+      "description": "interactive: a user is waiting. background: queued work such as RAG indexing. Background work has its own budget and quota and cannot consume the interactive one (additive plan section 11.2).",
+      "type": "string",
+      "enum": ["interactive", "background"]
+    },
+    "sendCategory": {
+      "title": "Sendable data category",
+      "description": "A category of data that can be placed in an external request. There is no category for credentials, raw application database content, filesystem paths, database handles or MCP URLs: those are not sendable and have no representation in a request envelope (see blockedCategory).",
+      "type": "string",
+      "enum": [
+        "user_message",
+        "conversation_history",
+        "structured_state",
+        "deterministic_fact",
+        "dialogue_directive",
+        "action_receipt",
+        "rag_excerpt",
+        "rag_metadata",
+        "file_content",
+        "image_content",
+        "audio_content"
+      ]
+    },
+    "blockedCategory": {
+      "title": "Never-sent data category",
+      "description": "A category of data that never leaves the deployment (additive plan section 6.1 and 6.2). The egress guard finds and removes these from a candidate request and records the category, never the content.",
+      "type": "string",
+      "enum": [
+        "credential",
+        "raw_database_content",
+        "filesystem_path",
+        "database_handle",
+        "mcp_url",
+        "local_only_field"
+      ]
+    },
+    "retentionMode": {
+      "title": "Provider data retention",
+      "description": "How long the provider keeps request content, as the provider states it. zero: not retained at all (zero data retention). transient: held only to serve the request. limited: retained for a stated number of days. indefinite: retained without a stated limit. unknown: the provider has not said; policy treats it as the most restrictive value.",
+      "type": "string",
+      "enum": ["zero", "transient", "limited", "indefinite", "unknown"]
+    },
+    "trainingUse": {
+      "title": "Provider training use",
+      "description": "Whether the provider may train on request content, as the provider states it. never: contractually not used. opt_in_only: used only if the account opts in. by_default: used unless the account opts out. unknown: not stated; policy treats it as the most restrictive value.",
+      "type": "string",
+      "enum": ["never", "opt_in_only", "by_default", "unknown"]
+    },
+    "residency": {
+      "title": "Data residency",
+      "description": "How the provider places processing. pinned: processed in the listed regions only. selectable: the account chooses among the listed regions. global: processed anywhere. unknown: not stated. An unknown or global residency never satisfies a policy that lists allowed regions unless global is listed explicitly (ADR-0026).",
+      "type": "string",
+      "enum": ["pinned", "selectable", "global", "unknown"]
+    },
+    "budgetStatus": {
+      "title": "Budget status",
+      "description": "ok: under the warning threshold. warning: at or past the warning threshold. exhausted: a hard stop has been reached and no external call is made.",
+      "type": "string",
+      "enum": ["ok", "warning", "exhausted"]
+    },
+    "providerErrorKind": {
+      "title": "Provider error kind",
+      "description": "The normalised failure of a provider call. Each kind maps to exactly one platform error code (see provider-error): authentication_failed, permission_denied, rate_limited, quota_exceeded, timeout, unavailable, bad_request, context_too_large, content_filtered, unsupported_modality, model_not_found, malformed_response, connection_lost (the request may or may not have reached the provider), internal.",
+      "type": "string",
+      "enum": [
+        "authentication_failed",
+        "permission_denied",
+        "rate_limited",
+        "quota_exceeded",
+        "timeout",
+        "unavailable",
+        "bad_request",
+        "context_too_large",
+        "content_filtered",
+        "unsupported_modality",
+        "model_not_found",
+        "malformed_response",
+        "connection_lost",
+        "internal"
+      ]
+    },
+    "profileLifecycle": {
+      "title": "Profile lifecycle",
+      "description": "candidate: registered, not yet qualified. qualified: production-qualified (bound credential, acknowledged billing notice, passed conformance report for the exact model version). quarantined: held for review, with a reason. retired: no longer used.",
+      "type": "string",
+      "enum": ["candidate", "qualified", "quarantined", "retired"]
+    },
+    "credentialKind": {
+      "title": "Credential kind",
+      "description": "oauth: browser-based OAuth authorization (preferred whenever the provider supports it). api_key: manual API key or token entry, a fallback for providers or deployments without a suitable OAuth flow.",
+      "type": "string",
+      "enum": ["oauth", "api_key"]
+    },
+    "connectionWarning": {
+      "title": "Connection warning",
+      "description": "A condition of a provider connection the operator and the host must see. broader_than_oauth_scopes: a manual key may grant broader access than OAuth scopes. excessive_permissions_reported and unsupported_account_policy: the provider reported them and the connection is quarantined. expiring_soon and rotation_overdue: rotation is due.",
+      "type": "string",
+      "enum": [
+        "broader_than_oauth_scopes",
+        "excessive_permissions_reported",
+        "unsupported_account_policy",
+        "expiring_soon",
+        "rotation_overdue"
+      ]
+    },
+    "safeAccount": {
+      "title": "Safe account identifiers",
+      "description": "Provider-assigned identifiers of the account a credential acts for, safe to show to the host application: never an e-mail address, a name or a secret. Null members are not known.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["account_id", "organization_id", "project_id"],
+      "properties": {
+        "account_id": {
+          "description": "Provider account or subject ID.",
+          "x-alixai-authority": "alixai",
+          "oneOf": [
+            { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:+-]{0,127}$" },
+            { "type": "null" }
+          ]
+        },
+        "organization_id": {
+          "description": "Provider organization ID.",
+          "x-alixai-authority": "alixai",
+          "oneOf": [
+            { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:+-]{0,127}$" },
+            { "type": "null" }
+          ]
+        },
+        "project_id": {
+          "description": "Provider project ID.",
+          "x-alixai-authority": "alixai",
+          "oneOf": [
+            { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:+-]{0,127}$" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "budgetSubject": {
+      "title": "Budget subject",
+      "description": "What a budget applies to: one provider, or a tenant, workspace or principal (additive plan section 11.2), each optionally narrowed to one provider. The ids a kind needs are required and no id wider or narrower than the kind is allowed, so a tenant budget cannot name a workspace.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "description": "provider, tenant, workspace or principal.",
+          "x-alixai-authority": "host",
+          "type": "string",
+          "enum": ["provider", "tenant", "workspace", "principal"]
+        },
+        "provider_id": {
+          "description": "The provider. Required for a provider budget; narrows the others when present.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/providerId"
+        },
+        "application_id": {
+          "description": "The host application.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "tenant_id": {
+          "description": "The tenant.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "workspace_id": {
+          "description": "The workspace.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "principal_id": {
+          "description": "The principal.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        }
+      },
+      "allOf": [
+        {
+          "description": "A provider budget names the provider and nothing narrower.",
+          "if": {
+            "required": ["kind"],
+            "properties": {
+              "kind": { "const": "provider" }
+            }
+          },
+          "then": {
+            "required": ["provider_id"],
+            "properties": {
+              "application_id": false,
+              "tenant_id": false,
+              "workspace_id": false,
+              "principal_id": false
+            }
+          }
+        },
+        {
+          "description": "A tenant budget names application and tenant and nothing narrower.",
+          "if": {
+            "required": ["kind"],
+            "properties": {
+              "kind": { "const": "tenant" }
+            }
+          },
+          "then": {
+            "required": ["application_id", "tenant_id"],
+            "properties": { "workspace_id": false, "principal_id": false }
+          }
+        },
+        {
+          "description": "A workspace budget names application, tenant and workspace and nothing narrower.",
+          "if": {
+            "required": ["kind"],
+            "properties": {
+              "kind": { "const": "workspace" }
+            }
+          },
+          "then": {
+            "required": ["application_id", "tenant_id", "workspace_id"],
+            "properties": { "principal_id": false }
+          }
+        },
+        {
+          "description": "A principal budget names application, tenant, workspace and principal.",
+          "if": {
+            "required": ["kind"],
+            "properties": {
+              "kind": { "const": "principal" }
+            }
+          },
+          "then": { "required": ["application_id", "tenant_id", "workspace_id", "principal_id"] }
+        }
+      ]
+    },
+    "modelRef": {
+      "title": "Model reference",
+      "description": "A provider and model pair as an operator writes it in an allowlist. The version is pinned in the provider profile, not here.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider_id", "model_id"],
+      "properties": {
+        "provider_id": {
+          "description": "The provider.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/providerId"
+        },
+        "model_id": {
+          "description": "The provider-side model identifier.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/modelId"
+        }
+      }
+    },
+    "providerRef": {
+      "title": "Provider reference",
+      "description": "The exact provider, model and version a record is about, plus the profile that carried them. Assembled by the core from the profile.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profile_id", "provider_id", "model_id", "model_version"],
+      "properties": {
+        "profile_id": {
+          "description": "The registry profile.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/profileId"
+        },
+        "provider_id": {
+          "description": "The provider, from the profile.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/providerId"
+        },
+        "model_id": {
+          "description": "The model, from the profile.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/modelId"
+        },
+        "model_version": {
+          "description": "The pinned model version, from the profile.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/modelVersion"
+        }
+      }
+    },
+    "subject": {
+      "title": "Request subject",
+      "description": "The verified context a record is about: a trimmed copy of the Scope with no roles or capability scopes. Every member is taken from the verified Scope by the core.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["application_id", "tenant_id", "workspace_id", "principal_id", "session_id"],
+      "properties": {
+        "application_id": {
+          "description": "The host application.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "tenant_id": {
+          "description": "The tenant.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "workspace_id": {
+          "description": "The workspace.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "principal_id": {
+          "description": "The authenticated principal.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "session_id": {
+          "description": "The conversation session.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        }
+      }
+    }
+  }
+}

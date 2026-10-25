@@ -1,0 +1,11 @@
+# Adapter configuration of the events endpoint ledger-events. The event adapter reads no member
+# of this file; it exists so the endpoint is declared and signed like every other.
+#
+# The ledger signs every event with its events key (Ed25519, detached, over the RFC 8785 canonical
+# JSON of the event) and posts it to AlixAI's event intake. An event can only invalidate state: it
+# never prepares, confirms or commits anything. The signature is valid for at most 15 minutes.
+server: "ledger-events"
+delivery: "webhook"
+signature:
+  algorithm: "ed25519"
+  max_validity_seconds: 900

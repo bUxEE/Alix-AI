@@ -1,0 +1,6 @@
+event: message_delta
+data: {"type": "message_delta", "delta": {"stop_reason": {{STOP}}, "stop_sequence": null}, "usage": {"output_tokens": {{OUT}}}}
+
+event: message_stop
+data: {"type": "message_stop"}
+

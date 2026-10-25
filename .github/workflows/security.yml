@@ -1,0 +1,235 @@
+# AlixAI security workflow (task M5-08; backlog SEC-084, SEC-089, SEC-097 in docs/security/test-backlog.md).
+#
+# What runs here, and why it is separate from ci.yml:
+#   * suite       the fixed security suite (tests/security/...) and the coverage check that every SEC-NNN id of
+#                 docs/security/test-backlog.md has a test (or is explicitly owned by the pentest or a human review)
+#   * govulncheck known vulnerabilities in the dependencies and the standard library, reachability-aware
+#   * gosec       static analysis of the Go code, with the exclusions and their reasons spelled out below
+#   * secret-scan the repository secret scan (TestSecRepoSecretScan): private keys, cloud and VCS tokens, high-entropy
+#                 credentials, tracked .env files. A real key must carry a TEST-ONLY marker in its own content
+#   * fuzz        one short fuzz run per target. `go test -fuzz` takes one package and one target, so each is a matrix
+#                 entry; a crash input is written under testdata/fuzz/<Target>/ in the failing log and must be kept as a
+#                 regression seed
+#
+# Rules this file lives by (the tests/security/supplychain suite and tests/invariants/repo read it):
+#   * Every third-party action is pinned by full commit SHA with its version in a trailing comment, the same ones ci.yml uses.
+#   * No telemetry, no paid service, no secrets, no write permission. gosec and govulncheck run from `@latest` on purpose,
+#     so new rules and newly published advisories apply at once; neither ships in any release artifact.
+#   * A scanner that cannot run is an error. No scan step is `continue-on-error` or followed by `|| true`.
+#   * Scheduled weekly as well as on every change: an advisory is published without any commit of ours.
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # Pure Go everywhere (no cgo), as in ci.yml.
+  CGO_ENABLED: "0"
+  # Seconds of fuzzing per target: short on a change, longer on the weekly run.
+  FUZZTIME: ${{ github.event_name == 'schedule' && '5m' || '30s' }}
+
+jobs:
+  suite:
+    name: security suite and SEC coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go (version from go.mod)
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Keep Go toolchain telemetry off
+        run: go telemetry off
+
+      - name: Security suite
+        run: go test -count=1 ./tests/security/...
+
+      - name: Every SEC id has a test
+        run: go run ./tests/security/cmd/coverage
+
+  govulncheck:
+    name: govulncheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go (version from go.mod)
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Keep Go toolchain telemetry off
+        run: go telemetry off
+
+      - name: govulncheck
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
+  gosec:
+    # Medium severity and above, medium confidence and above, on the product code. This is the first adoption of gosec on
+    # an existing code base, so it starts from a documented baseline: every exclusion below says why it is safe, and a
+    # finding of any other rule, or of an excluded rule in a new place, fails the build.
+    #
+    # Rules excluded everywhere:
+    #   G101  hard-coded credentials: name-based (error-reason strings and header names containing "credential" or
+    #         "token"); the real secret scan is the secret-scan job
+    #   G103  use of unsafe: Windows syscall structures only (job objects, memory status); reviewed with the sandbox
+    #   G104  unhandled errors: low severity; deliberate `_ =` and deferred Close on read paths, and go vet runs in ci.yml
+    #   G115  integer conversions: bounded, reviewed byte and rune arithmetic in parsers and codecs (88 sites); to be
+    #         annotated site by site, then dropped from this list
+    #   G304  file inclusion via variable: operator-configured paths; every attacker-influenced path goes through the
+    #         canonical-path and symlink checks of the fs source provider and the package loader (SEC-015, SEC-059)
+    #
+    # Rules excluded for one path, with the reason:
+    #   G204 internal/supervisor/exec.go, internal/rag/parse/runner.go, adapters/mcp/transport.go: the three subprocess
+    #        launchers by design (supervised LocalAI, the sandboxed parser worker, audited MCP stdio commands); each has
+    #        its own tests (SEC-016, SEC-048, SEC-051)
+    #   G302 internal/rag/parse/runner.go: the worker executable is made owner-executable (0700); internal/trust/sigmanifest.go
+    #        G301/G302: signature files are public and world-readable by design
+    #   G404 internal/store/tx.go (retry jitter), internal/rag/vector/vectortest (fixtures): not security randomness
+    #   G703 internal/cli/cmd_backup.go: a key id typed by the operator on their own command line names a file under the
+    #        operator's own data directory; recorded as a low-severity hardening follow-up
+    #   G704 pkg/sdk-go/agui/proxy.go, deploy/container/alixai/netctl/main.go: the URL is the caller's own configuration
+    #        (SDK proxy target, health-probe address), never request input
+    #   G705 internal/stream/sse.go, internal/gateway/routes_v1_events.go: text/event-stream with nosniff is not HTML
+    #   G118 adapters/native/adapter.go: the cancel function is stored in the adapter and called by Close
+    #   G122 cmd/alixai-conformance: a developer tool walking the integrator's own tree
+    # Whole trees excluded: tools/ (developer tools run by a person, never shipped), tests/ (fixtures and live harnesses),
+    # examples/ (sample applications).
+    name: gosec
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go (version from go.mod)
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Keep Go toolchain telemetry off
+        run: go telemetry off
+
+      - name: gosec
+        run: >-
+          go run github.com/securego/gosec/v2/cmd/gosec@latest
+          -severity=medium -confidence=medium -exclude-generated
+          -exclude=G101,G103,G104,G115,G304
+          -exclude-dir=tools -exclude-dir=tests -exclude-dir=examples
+          -exclude-rules="internal/supervisor/exec\.go:G204;internal/rag/parse/runner\.go:G204,G302;adapters/mcp/transport\.go:G204;internal/trust/sigmanifest\.go:G301,G302;internal/store/tx\.go:G404;internal/rag/vector/vectortest/.*:G404;internal/cli/cmd_backup\.go:G703;pkg/sdk-go/agui/proxy\.go:G704;deploy/container/alixai/netctl/main\.go:G704;internal/stream/sse\.go:G705;internal/gateway/routes_v1_events\.go:G705;adapters/native/adapter\.go:G118;cmd/alixai-conformance/.*:G122,G302"
+          ./...
+
+  secret-scan:
+    # Two scans: the working tree by the repository's own detectors (which also require a TEST-ONLY marker in the content
+    # of any real-looking key), and the whole git history by gitleaks with the default ruleset. The only paths gitleaks
+    # exempts are listed in tests/security/gitleaks.toml: synthetic secrets in tests and fixtures.
+    name: secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out (full history)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Go (version from go.mod)
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Keep Go toolchain telemetry off
+        run: go telemetry off
+
+      - name: Repository secret scan
+        run: go test -count=1 -run '^TestSecRepoSecretScan$' ./tests/security/secrets
+
+      - name: History secret scan (gitleaks)
+        run: >-
+          go run github.com/zricethezav/gitleaks/v8@latest git
+          --no-banner --redact --exit-code 1
+          --config tests/security/gitleaks.toml .
+
+  fuzz:
+    name: fuzz ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { pkg: ./internal/identity/, target: FuzzTokenVerify }
+          - { pkg: ./internal/identity/, target: FuzzSignedPayload }
+          - { pkg: ./internal/apppkg/, target: FuzzPackageLoad }
+          - { pkg: ./internal/blocks/, target: FuzzSanitizeMarkdown }
+          - { pkg: ./internal/blocks/, target: FuzzBlockJSON }
+          - { pkg: ./internal/rag/parse/formats/, target: FuzzParse }
+          - { pkg: ./internal/policy/, target: FuzzParseHostPolicy }
+          - { pkg: ./internal/capabilities/, target: FuzzTokenizeAndMatch }
+          - { pkg: ./internal/rag/answer/, target: FuzzSupport }
+          - { pkg: ./internal/verify/, target: FuzzVerify }
+          - { pkg: ./tests/security/fuzz/, target: FuzzSchemaValidate }
+          - { pkg: ./tests/security/fuzz/, target: FuzzStreamFraming }
+          - { pkg: ./tests/security/fuzz/, target: FuzzMarkdownSanitize }
+          - { pkg: ./tests/security/fuzz/, target: FuzzParseDocument }
+          - { pkg: ./tests/security/fuzz/, target: FuzzFTSQueryBuilder }
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go (version from go.mod)
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Keep Go toolchain telemetry off
+        run: go telemetry off
+
+      - name: Fuzz
+        run: go test -run='^$' -fuzz='^${{ matrix.target }}$' -fuzztime="$FUZZTIME" ${{ matrix.pkg }}
+
+  security-ok:
+    # One stable name for branch protection: anything failed or cancelled makes this job fail.
+    name: security ok
+    if: ${{ always() }}
+    needs: [suite, govulncheck, gosec, secret-scan, fuzz]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fail if any required job did not succeed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "job results: $RESULTS"
+          for r in $RESULTS; do
+            if [ "$r" != "success" ]; then
+              echo "::error::a required job finished as '$r'"
+              exit 1
+            fi
+          done

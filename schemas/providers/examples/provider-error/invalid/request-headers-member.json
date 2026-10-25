@@ -1,0 +1,19 @@
+{
+  "occurred_at": "2026-10-02T09:00:03Z",
+  "provider": {
+    "profile_id": "pprf_01J0000000000000000000000P",
+    "provider_id": "openai",
+    "model_id": "gpt-4.1-mini",
+    "model_version": "2025-04-14"
+  },
+  "kind": "rate_limited",
+  "code": "rate_limited",
+  "retryable": true,
+  "message": "The provider rate limit was reached.",
+  "status": 429,
+  "retry_after_ms": 2000,
+  "outcome_uncertain": false,
+  "attempts": 3,
+  "provider_request_id": "req_8f2c91",
+  "headers": { "Authorization": "Bearer sk-test-EXAMPLE-NOT-A-KEY" }
+}

@@ -1,0 +1,8 @@
+{
+  "code": "scope_missing",
+  "message": "scope level missing: tenant",
+  "retryable": false,
+  "details": {
+    "levels": ["tenant"]
+  }
+}

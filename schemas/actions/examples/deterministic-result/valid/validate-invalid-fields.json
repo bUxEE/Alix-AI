@@ -1,0 +1,24 @@
+{
+  "operation": "validate",
+  "capability_id": "appointments.book",
+  "status": "rejected",
+  "identifiers": [],
+  "values": [],
+  "errors": [
+    {
+      "code": "missing_fields",
+      "field": "reason",
+      "message": "A reason for the visit is required."
+    },
+    {
+      "code": "validation_failed",
+      "field": "slot_date",
+      "message": "The date is in the past."
+    }
+  ],
+  "allowed_next_actions": [
+    {
+      "action": "modify"
+    }
+  ]
+}

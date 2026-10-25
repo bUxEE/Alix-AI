@@ -1,0 +1,29 @@
+{
+  "type": "chart",
+  "description": "Pie chart of appointment types: check-up 60 percent, follow-up 40 percent.",
+  "mark": "pie",
+  "data": [
+    {
+      "kind": "check-up",
+      "share": 0.6
+    },
+    {
+      "kind": "follow-up",
+      "share": 0.4
+    }
+  ],
+  "encoding": {
+    "theta": {
+      "field": "share",
+      "type": "quantitative"
+    },
+    "color": {
+      "field": "kind",
+      "type": "nominal"
+    },
+    "x": {
+      "field": "kind",
+      "type": "nominal"
+    }
+  }
+}

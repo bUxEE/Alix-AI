@@ -1,0 +1,31 @@
+# AlixAI configuration for the native launchd install, read from /usr/local/etc/alixai/alixai.yaml.
+# Every key can also be set by an ALIXAI_<SECTION>_<FIELD> environment variable. Nothing secret lives here.
+
+# Owned by _alixai, mode 0700 (../README.md).
+data_dir: /usr/local/var/lib/alixai
+
+server:
+  # Loopback only. The gateway refuses any other address without TLS (SEC-093); a remote listener is a
+  # reverse proxy on the host that terminates TLS and forwards here.
+  listen: 127.0.0.1:7470
+
+log:
+  level: info
+
+# Context budgets and limits of the deployment profile: lite, balanced or performance.
+profile: lite
+
+localai:
+  # A container published on the host loopback, or the process supervised by the native LocalAI supervisor.
+  endpoint: http://127.0.0.1:8080
+  # Owned by _alixai, mode 0600: the service refuses a key file that group or others can access (SEC-081).
+  api_key_ref: file:/usr/local/etc/alixai/localai-api-key
+  # A LocalAI version AlixAI was not qualified against is reported unavailable (SEC-072).
+  qualified_versions: ["v4.10.0"]
+
+inference:
+  # Provisioned by the operator, root-owned and read-only to both services. AlixAI verifies every listed model
+  # file against the pinned hash of its registry entry before it serves a request (SEC-063).
+  models_dir: /usr/local/var/lib/alixai-models
+  # Empty keeps the inference path off: the service starts, /healthz answers and /readyz says why.
+  models: []

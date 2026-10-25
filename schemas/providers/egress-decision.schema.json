@@ -1,0 +1,399 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:providers:egress-decision:v1",
+  "title": "Egress decision record",
+  "description": "The record of one egress decision, allow or deny, in a form the audit log stores as it is (additive plan section 6.2 step 7, section 6.3). It names the verified subject, the provider and exact model version, the role, the level policies consulted, the checks that ran in order, the outcome with a fixed reason, and the data categories that were sent, withheld or stripped. It carries NO content: no prompt text, no excerpt, no field value, no path, no URL and no free text; every string is an ID, a fixed code or an enum, so the record can be stored, exported and shown unredacted. Every member is decided by the core: the model cannot influence it and cannot override a denial. A denial sends nothing; an allow requires every check to have passed, all four levels to have an enabled policy, and no category to have been sent that the source modes forbid. Key names avoid the substrings the log redactor matches.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decision_id",
+    "decided_at",
+    "subject",
+    "provider",
+    "role",
+    "envelope_id",
+    "outcome",
+    "reason",
+    "levels",
+    "checks",
+    "categories",
+    "sources",
+    "rag_excerpts_included",
+    "fallback_of"
+  ],
+  "properties": {
+    "decision_id": {
+      "description": "Core-minted ID of this decision.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/egressDecisionId"
+    },
+    "decided_at": {
+      "description": "When the decision was made, from the injected clock.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    },
+    "subject": {
+      "description": "The verified context the request ran in.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/subject"
+    },
+    "provider": {
+      "description": "The exact provider, model and version the request was destined for.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/providerRef"
+    },
+    "role": {
+      "description": "The role the request serves.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/role"
+    },
+    "envelope_id": {
+      "description": "The request envelope the decision is about.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/envelopeId"
+    },
+    "outcome": {
+      "description": "allow or deny. The zero decision is a deny. The model cannot change it.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "enum": ["allow", "deny"]
+    },
+    "reason": {
+      "description": "allowed, or the fixed reason of the first failing check.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "enum": [
+        "allowed",
+        "external_disabled",
+        "kill_switch",
+        "profile_not_active",
+        "profile_not_permitted",
+        "provider_not_allowed",
+        "model_not_allowed",
+        "class_not_allowed",
+        "restricted_data",
+        "unclassified_data",
+        "source_local_only",
+        "source_denied",
+        "region_not_allowed",
+        "region_unknown",
+        "envelope_invalid"
+      ]
+    },
+    "code": {
+      "description": "The error code of a denial: always permission_denied. Absent on allow.",
+      "x-alixai-authority": "alixai",
+      "const": "permission_denied"
+    },
+    "levels": {
+      "description": "The policy found at each of the four levels, widest first, as far as evaluation got. A kill switch or a missing level stops evaluation early, so the list can be shorter than four on a denial; an allow has all four.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "items": { "$ref": "#/$defs/levelResult" },
+      "maxItems": 4
+    },
+    "checks": {
+      "description": "The checks that ran, in order. Evaluation stops at the first failed check, so the last entry of a denial is the check that denied it.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "items": { "$ref": "#/$defs/check" },
+      "maxItems": 16
+    },
+    "categories": {
+      "description": "What happened to each data category in the candidate request. Categories only: never content.",
+      "x-alixai-authority": "alixai",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sent", "withheld", "stripped"],
+      "properties": {
+        "sent": {
+          "description": "Categories that went into the request that was (or, on a denial, was not) sent. Empty on a denial.",
+          "x-alixai-authority": "alixai",
+          "type": "array",
+          "items": { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/sendCategory" },
+          "maxItems": 11,
+          "uniqueItems": true
+        },
+        "withheld": {
+          "description": "Categories the policy kept out of the request, for example a rag_excerpt of a local_only source.",
+          "x-alixai-authority": "alixai",
+          "type": "array",
+          "items": { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/sendCategory" },
+          "maxItems": 11,
+          "uniqueItems": true
+        },
+        "stripped": {
+          "description": "Never-sent categories the guard found in the candidate and removed: credentials, raw database content, filesystem paths, database handles, MCP URLs, local-only fields.",
+          "x-alixai-authority": "alixai",
+          "type": "array",
+          "items": { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/blockedCategory" },
+          "maxItems": 6,
+          "uniqueItems": true
+        }
+      }
+    },
+    "sources": {
+      "description": "Each RAG source that contributed to the candidate and what the effective mode did to it.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "items": { "$ref": "#/$defs/sourceDecision" },
+      "maxItems": 64
+    },
+    "rag_excerpts_included": {
+      "description": "True exactly when categories.sent contains rag_excerpt. Shown to the host (additive plan section 6.3).",
+      "x-alixai-authority": "alixai",
+      "type": "boolean"
+    },
+    "fallback_of": {
+      "description": "The decision this one is a recorded fallback for, or null. A fallback happens only when policy names one and is always recorded; it never follows an invalid credential, stale terms, denied egress or an exhausted budget.",
+      "x-alixai-authority": "alixai",
+      "oneOf": [
+        { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/egressDecisionId" },
+        { "type": "null" }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "description": "An allow is reason allowed, carries no code and sent only what passed: every check passed and all four levels have an enabled policy.",
+      "if": {
+        "required": ["outcome"],
+        "properties": {
+          "outcome": { "const": "allow" }
+        }
+      },
+      "then": {
+        "not": { "required": ["code"] },
+        "properties": {
+          "reason": { "const": "allowed" },
+          "levels": {
+            "minItems": 4,
+            "items": {
+              "properties": {
+                "enabled": { "const": true },
+                "policy_id": { "type": "string" }
+              }
+            }
+          },
+          "checks": {
+            "minItems": 1,
+            "items": {
+              "properties": {
+                "passed": { "const": true }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "A deny has a reason other than allowed, the code permission_denied, at least one failed check and sends nothing.",
+      "if": {
+        "required": ["outcome"],
+        "properties": {
+          "outcome": { "const": "deny" }
+        }
+      },
+      "then": {
+        "required": ["code"],
+        "properties": {
+          "reason": {
+            "not": { "const": "allowed" }
+          },
+          "checks": {
+            "contains": {
+              "required": ["passed"],
+              "properties": {
+                "passed": { "const": false }
+              }
+            }
+          },
+          "categories": {
+            "properties": {
+              "sent": { "maxItems": 0 }
+            }
+          },
+          "rag_excerpts_included": { "const": false }
+        }
+      }
+    },
+    {
+      "description": "rag_excerpts_included is true exactly when a rag_excerpt category was sent.",
+      "if": {
+        "required": ["rag_excerpts_included"],
+        "properties": {
+          "rag_excerpts_included": { "const": true }
+        }
+      },
+      "then": {
+        "properties": {
+          "categories": {
+            "properties": {
+              "sent": {
+                "contains": { "const": "rag_excerpt" }
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "categories": {
+            "properties": {
+              "sent": {
+                "not": {
+                  "contains": { "const": "rag_excerpt" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "levelResult": {
+      "description": "The policy found at one level.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["level", "policy_id", "enabled", "source_mode"],
+      "properties": {
+        "level": {
+          "description": "The level.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "enum": ["deployment", "application", "tenant", "workspace"]
+        },
+        "policy_id": {
+          "description": "The policy consulted, or null when the level has none (which means disabled).",
+          "x-alixai-authority": "alixai",
+          "oneOf": [
+            { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/egressPolicyId" },
+            { "type": "null" }
+          ]
+        },
+        "enabled": {
+          "description": "Whether the policy enabled external processing at this level. false when there is no policy.",
+          "x-alixai-authority": "alixai",
+          "type": "boolean"
+        },
+        "source_mode": {
+          "description": "The source mode the policy set, or null when there is no policy.",
+          "x-alixai-authority": "alixai",
+          "oneOf": [
+            { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/egressMode" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "description": "A level without a policy is disabled and sets no mode.",
+          "if": {
+            "required": ["policy_id"],
+            "properties": {
+              "policy_id": { "type": "null" }
+            }
+          },
+          "then": {
+            "properties": {
+              "enabled": { "const": false },
+              "source_mode": { "type": "null" }
+            }
+          }
+        }
+      ]
+    },
+    "check": {
+      "description": "One check that ran.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "passed", "reason"],
+      "properties": {
+        "name": {
+          "description": "Which check. files is the files setting of the policy chain, recorded only for a request that carries an excerpt of an uploaded file; audio is the audio setting, recorded only for a request that carries audio.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "enum": [
+            "kill_switch",
+            "external_enabled",
+            "profile_active",
+            "profile_permitted",
+            "provider_allowlist",
+            "model_allowlist",
+            "region",
+            "classification",
+            "files",
+            "audio",
+            "source_mode",
+            "envelope"
+          ]
+        },
+        "passed": {
+          "description": "Whether it passed.",
+          "x-alixai-authority": "alixai",
+          "type": "boolean"
+        },
+        "reason": {
+          "description": "A fixed machine-readable reason code, never free text.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/reasonCode"
+        }
+      }
+    },
+    "sourceDecision": {
+      "description": "What the effective mode did to one RAG source.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_id", "effective_mode", "outcome"],
+      "properties": {
+        "source_id": {
+          "description": "The source.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/sourceId"
+        },
+        "effective_mode": {
+          "description": "The most restrictive mode along the policy chain.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/egressMode"
+        },
+        "outcome": {
+          "description": "excerpt_included: bounded excerpts went in. metadata_included: titles, IDs and status went in, no content. excluded: nothing from the source went in.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "enum": ["excerpt_included", "metadata_included", "excluded"]
+        }
+      },
+      "allOf": [
+        {
+          "description": "Excerpts go in only under allow_excerpt.",
+          "if": {
+            "required": ["outcome"],
+            "properties": {
+              "outcome": { "const": "excerpt_included" }
+            }
+          },
+          "then": {
+            "properties": {
+              "effective_mode": { "const": "allow_excerpt" }
+            }
+          }
+        },
+        {
+          "description": "Metadata goes in only under allow_excerpt or allow_metadata.",
+          "if": {
+            "required": ["outcome"],
+            "properties": {
+              "outcome": { "const": "metadata_included" }
+            }
+          },
+          "then": {
+            "properties": {
+              "effective_mode": { "enum": ["allow_excerpt", "allow_metadata"] }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

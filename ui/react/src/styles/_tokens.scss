@@ -1,0 +1,110 @@
+// Design tokens of the AlixAI React kit, as CSS custom properties. Every component reads only these, so a host
+// themes the kit by overriding them on any ancestor (or on :root). No colour, size or duration is written anywhere else.
+//
+// Colour strategy: restrained. Neutrals are tinted toward the accent hue (chroma 0.005 to 0.012), one accent, and three
+// semantic hues that always travel with a text label (colour is never the only signal).
+// Scene: someone approving a consequential action in a business app, mid-task, in office light or a dim evening room.
+// Light is the default; dark follows prefers-color-scheme, and data-alixai-theme="light|dark" forces either.
+
+@mixin light {
+  --alixai-surface: oklch(0.992 0.004 190);
+  --alixai-surface-raised: oklch(0.975 0.006 190);
+  --alixai-surface-sunken: oklch(0.945 0.008 190);
+  --alixai-border: oklch(0.89 0.01 190);
+  --alixai-border-strong: oklch(0.78 0.014 190);
+  --alixai-text: oklch(0.24 0.012 200);
+  --alixai-text-muted: oklch(0.47 0.012 200);
+  --alixai-accent: oklch(0.5 0.1 190);
+  --alixai-accent-hover: oklch(0.44 0.1 190);
+  --alixai-on-accent: oklch(0.985 0.004 190);
+  --alixai-accent-soft: oklch(0.94 0.03 190);
+  --alixai-ok: oklch(0.45 0.11 150);
+  --alixai-ok-soft: oklch(0.94 0.04 150);
+  --alixai-warn: oklch(0.47 0.1 70);
+  --alixai-warn-soft: oklch(0.95 0.05 85);
+  --alixai-danger: oklch(0.47 0.16 28);
+  --alixai-danger-hover: oklch(0.41 0.16 28);
+  --alixai-danger-soft: oklch(0.95 0.03 25);
+  --alixai-on-danger: oklch(0.985 0.004 25);
+  --alixai-focus: oklch(0.55 0.15 235);
+  --alixai-chart-1: oklch(0.5 0.1 190);
+  --alixai-chart-2: oklch(0.58 0.13 55);
+  --alixai-chart-3: oklch(0.5 0.1 290);
+  --alixai-chart-4: oklch(0.55 0.11 145);
+  --alixai-chart-5: oklch(0.52 0.13 20);
+  --alixai-chart-6: oklch(0.62 0.06 240);
+}
+
+@mixin dark {
+  --alixai-surface: oklch(0.2 0.01 200);
+  --alixai-surface-raised: oklch(0.245 0.012 200);
+  --alixai-surface-sunken: oklch(0.17 0.01 200);
+  --alixai-border: oklch(0.32 0.014 200);
+  --alixai-border-strong: oklch(0.44 0.016 200);
+  --alixai-text: oklch(0.93 0.006 190);
+  --alixai-text-muted: oklch(0.72 0.01 190);
+  --alixai-accent: oklch(0.74 0.11 190);
+  --alixai-accent-hover: oklch(0.8 0.11 190);
+  --alixai-on-accent: oklch(0.2 0.02 200);
+  --alixai-accent-soft: oklch(0.3 0.05 190);
+  --alixai-ok: oklch(0.78 0.12 150);
+  --alixai-ok-soft: oklch(0.3 0.05 150);
+  --alixai-warn: oklch(0.82 0.11 85);
+  --alixai-warn-soft: oklch(0.32 0.05 85);
+  --alixai-danger: oklch(0.72 0.14 25);
+  --alixai-danger-hover: oklch(0.78 0.14 25);
+  --alixai-danger-soft: oklch(0.31 0.06 25);
+  --alixai-on-danger: oklch(0.2 0.03 25);
+  --alixai-focus: oklch(0.78 0.12 235);
+  --alixai-chart-1: oklch(0.74 0.11 190);
+  --alixai-chart-2: oklch(0.78 0.12 60);
+  --alixai-chart-3: oklch(0.74 0.1 290);
+  --alixai-chart-4: oklch(0.78 0.12 145);
+  --alixai-chart-5: oklch(0.74 0.12 20);
+  --alixai-chart-6: oklch(0.74 0.06 240);
+}
+
+// Shape, rhythm and motion do not change with the theme. Spacing is a 4px scale.
+@mixin scale {
+  --alixai-font: inherit;
+  --alixai-font-mono: ui-monospace, "SFMono-Regular", "Cascadia Mono", Menlo, Consolas, monospace;
+  --alixai-text-xs: 0.75rem;
+  --alixai-text-sm: 0.8125rem;
+  --alixai-text-md: 0.9375rem;
+  --alixai-text-lg: 1.125rem;
+  --alixai-leading: 1.5;
+  --alixai-space-1: 0.25rem;
+  --alixai-space-2: 0.5rem;
+  --alixai-space-3: 0.75rem;
+  --alixai-space-4: 1rem;
+  --alixai-space-5: 1.5rem;
+  --alixai-space-6: 2rem;
+  --alixai-radius-sm: 0.375rem;
+  --alixai-radius-md: 0.625rem;
+  --alixai-radius-lg: 0.875rem;
+  --alixai-target: 2.5rem;
+  --alixai-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --alixai-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --alixai-duration-press: 120ms;
+  --alixai-duration-fade: 160ms;
+  --alixai-duration-enter: 220ms;
+}
+
+:where(:root, .alix-root) {
+  @include scale;
+  @include light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :where(:root:not([data-alixai-theme="light"]), .alix-root:not([data-alixai-theme="light"])) {
+    @include dark;
+  }
+}
+
+:where(:root[data-alixai-theme="dark"], .alix-root[data-alixai-theme="dark"]) {
+  @include dark;
+}
+
+:where(:root[data-alixai-theme="light"], .alix-root[data-alixai-theme="light"]) {
+  @include light;
+}

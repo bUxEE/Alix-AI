@@ -1,0 +1,351 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Result of workorders.close commit and status",
+  "description": "The receipt of a committed action, the same for a repeat of the commit and for a status lookup; or a typed refusal. Status says nothing was recorded in exactly one shape: rejected, one validation_failed on idempotency_key, no identifiers.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status",
+    "identifiers",
+    "values",
+    "errors",
+    "allowed_next_actions"
+  ],
+  "properties": {
+    "status": {
+      "enum": [
+        "ok",
+        "rejected",
+        "unavailable"
+      ]
+    },
+    "identifiers": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entity_type",
+          "entity_id"
+        ],
+        "properties": {
+          "entity_type": {
+            "enum": [
+              "work_order"
+            ]
+          },
+          "entity_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        }
+      }
+    },
+    "values": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "field",
+              "value"
+            ],
+            "properties": {
+              "field": {
+                "const": "work_order_id"
+              },
+              "value": {
+                "$ref": "#/$defs/identifier"
+              },
+              "display": {
+                "type": "string",
+                "maxLength": 2048
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "field",
+              "value"
+            ],
+            "properties": {
+              "field": {
+                "const": "closed_at"
+              },
+              "value": {
+                "$ref": "#/$defs/datetime"
+              },
+              "display": {
+                "type": "string",
+                "maxLength": 2048
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "field",
+              "value"
+            ],
+            "properties": {
+              "field": {
+                "const": "parts_cost"
+              },
+              "value": {
+                "$ref": "#/$defs/money"
+              },
+              "display": {
+                "type": "string",
+                "maxLength": 2048
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "field",
+              "value"
+            ],
+            "properties": {
+              "field": {
+                "const": "parts_count"
+              },
+              "value": {
+                "$ref": "#/$defs/integer"
+              },
+              "display": {
+                "type": "string",
+                "maxLength": 2048
+              }
+            }
+          }
+        ]
+      }
+    },
+    "errors": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "enum": [
+              "conflict",
+              "expired",
+              "internal",
+              "missing_fields",
+              "permission_denied",
+              "scope_missing",
+              "scope_violation",
+              "stale",
+              "unauthenticated",
+              "unavailable",
+              "validation_failed"
+            ]
+          },
+          "field": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        }
+      }
+    },
+    "freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "as_of",
+        "version"
+      ],
+      "properties": {
+        "as_of": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\\.[0-9]{1,9})?Z$"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^rv1-[0-9a-f]{32}$"
+        }
+      }
+    },
+    "allowed_next_actions": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "enum": [
+              "cancel",
+              "confirm",
+              "continue_in_app",
+              "invoke_capability",
+              "retry"
+            ]
+          },
+          "capability_id": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 200
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "text": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "kind": {
+          "const": "text"
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        }
+      }
+    },
+    "integer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "kind": {
+          "const": "integer"
+        },
+        "value": {
+          "type": "integer"
+        }
+      }
+    },
+    "boolean": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "kind": {
+          "const": "boolean"
+        },
+        "value": {
+          "type": "boolean"
+        }
+      }
+    },
+    "identifier": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "kind": {
+          "const": "identifier"
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      }
+    },
+    "decimal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "kind": {
+          "const": "decimal"
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^-?(0|[1-9][0-9]{0,17})(\\.[0-9]{1,9})?$"
+        }
+      }
+    },
+    "money": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "value",
+        "currency"
+      ],
+      "properties": {
+        "kind": {
+          "const": "money"
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^-?(0|[1-9][0-9]{0,17})(\\.[0-9]{1,9})?$"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        }
+      }
+    },
+    "datetime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "kind": {
+          "const": "datetime"
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\\.[0-9]{1,9})?Z$"
+        },
+        "zone": {
+          "type": "string",
+          "maxLength": 64
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+event: response.created
+data: {"type": "response.created", "response": {"id": "resp_0123456789abcdef", "status": "in_progress"}}
+
+event: response.output_item.added
+data: {"type": "response.output_item.added", "output_index": 0, "item": {"type": "function_call", "id": "fc_1", "call_id": {{CALL_ID}}, "name": {{NAME}}, "arguments": ""}}
+

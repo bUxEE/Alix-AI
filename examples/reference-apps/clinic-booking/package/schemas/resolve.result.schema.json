@@ -1,0 +1,298 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Result of an entity resolution (read resolve_patient, resolve_doctor, resolve_slot, resolve_appointment)",
+  "description": "The candidates a mention resolves to, called with the reserved arguments entity_type, mention and candidate_id. identifiers are the candidates (record references of the entity type), in a stable order; the i-th text value named label is the display text of the i-th identifier; candidate_count states how many. Several identifiers are several candidates for the user to choose from. freshness.version is the snapshot version of exactly those records. A record the caller may not see is rejected as scope_violation, never described.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status",
+    "identifiers",
+    "values",
+    "errors",
+    "allowed_next_actions"
+  ],
+  "properties": {
+    "status": {
+      "enum": [
+        "ok",
+        "rejected",
+        "unavailable"
+      ]
+    },
+    "identifiers": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entity_type",
+          "entity_id"
+        ],
+        "properties": {
+          "entity_type": {
+            "enum": [
+              "patient",
+              "doctor",
+              "slot",
+              "appointment"
+            ]
+          },
+          "entity_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        }
+      }
+    },
+    "values": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "field",
+              "value"
+            ],
+            "properties": {
+              "field": {
+                "const": "candidate_count"
+              },
+              "value": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "value"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "integer"
+                  },
+                  "value": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "display": {
+                "type": "string",
+                "maxLength": 2048
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "field",
+              "value"
+            ],
+            "properties": {
+              "field": {
+                "const": "label"
+              },
+              "value": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "value"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "text"
+                  },
+                  "value": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048
+                  }
+                }
+              },
+              "display": {
+                "type": "string",
+                "maxLength": 2048
+              }
+            }
+          }
+        ]
+      }
+    },
+    "errors": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "enum": [
+              "internal",
+              "missing_fields",
+              "permission_denied",
+              "scope_missing",
+              "scope_violation",
+              "unavailable",
+              "validation_failed"
+            ]
+          },
+          "field": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        }
+      }
+    },
+    "freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "as_of",
+        "version"
+      ],
+      "properties": {
+        "as_of": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^rv1-[0-9a-f]{32}$"
+        }
+      }
+    },
+    "allowed_next_actions": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "enum": [
+              "retry"
+            ]
+          },
+          "capability_id": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 200
+          }
+        }
+      }
+    },
+    "preparation": false,
+    "follow_up": false
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "ok"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "freshness"
+        ],
+        "properties": {
+          "errors": {
+            "maxItems": 0
+          },
+          "values": {
+            "allOf": [
+              {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "field"
+                  ],
+                  "properties": {
+                    "field": {
+                      "const": "candidate_count"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "rejected"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "errors": {
+            "minItems": 1
+          },
+          "identifiers": {
+            "maxItems": 0
+          },
+          "values": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "unavailable"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "errors": {
+            "minItems": 1
+          },
+          "identifiers": {
+            "maxItems": 0
+          },
+          "values": {
+            "maxItems": 0
+          }
+        }
+      }
+    }
+  ]
+}

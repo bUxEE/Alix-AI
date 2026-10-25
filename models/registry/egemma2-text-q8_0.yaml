@@ -1,0 +1,88 @@
+# Model registry entry (schemas/models/registry-entry.schema.json). One file per model; the file name is the id.
+# Written by M9-05 (2026-10-08). UNLOADABLE under the pinned LocalAI v4.10.0: its llama.cpp predates the gemma-embedding2 architecture.
+id: egemma2-text-q8_0
+name: "EmbeddingGemma 2 text encoder (Q8_0 GGUF, third-party conversion)"
+version: "2"
+status: candidate
+roles:
+  - "embedding"
+capabilities:
+  - "embedding"
+upstream:
+  repo_url: https://huggingface.co/google/embeddinggemma-2
+  revision: 914f7f89142e33e77833254d9c9b90c3cef7303b
+artifact:
+  format: gguf
+  repo_url: https://huggingface.co/ggml-org/embeddinggemma-2-GGUF
+  filename: embeddinggemma-2-Q8_0.gguf
+  revision: bfcd298762cc34d0357ece5ebdd31791a3a374d8
+  size_bytes: 309855456
+  sha256: 2188ac1deca4b77dffefd603c2776a9d76d9d74ec01841392982ebb840b09135
+  quantized_by: ggml-org
+  first_party: false
+  checked_on: "2026-10-08"
+licence:
+  spdx: Apache-2.0
+  url: https://www.apache.org/licenses/LICENSE-2.0
+  redistribution_notes: "Apache-2.0, declared by the upstream model card (google/embeddinggemma-2, not gated) and by the ggml-org GGUF repository metadata. The GGUF is a derivative conversion and quantisation by a third party (ggml-org): redistribution is permitted provided the Apache-2.0 text and notices accompany it and changes are stated. AlixAI does not bundle weights: an operator fetches the pinned file. Final sign-off is the human licence review."
+quantization:
+  scheme: Q8_0
+  nominal_bits: 8
+backend:
+  runtime: localai
+  name: llama-cpp
+  allowed_runtime_versions: []
+hardware:
+  minimum:
+    cpu_cores: null
+    ram_mb: null
+    accelerator: null
+  recommended:
+    cpu_cores: null
+    ram_mb: null
+    accelerator: null
+memory:
+  peak_rss_mb: null
+  steady_rss_mb: null
+context:
+  native_max_tokens: 8192
+  budget_tokens: null
+  kv_cache_mb: null
+load_time:
+  cold_ms: null
+  warm_ms: null
+performance:
+  latency_ms_p50: null
+  latency_ms_p95: null
+  ttft_ms_p50: null
+  tokens_per_second: null
+languages:
+  declared: []
+  claimed_count: null
+  qualified: []
+scores:
+  task: null
+  tool: null
+  rag: null
+  safety: null
+measurement:
+  profile: null
+  emulated: null
+  results_path: null
+  measured_on: null
+fallback:
+  model_id: granite-embedding-97m-multilingual-r2-q4_k_m
+  degraded_mode: lexical-retrieval
+  notes: "The current default embedder (384 dimensions) stays in service. An index built with this model's 768-dimension vectors is never mixed with vectors from another model; adopting it would need a full re-embed (ADR 0032)."
+last_efficiency_review:
+  date: "2026-10-08"
+  evidence_path: docs/efficiency/M9-05.md
+default_for: []
+embedding:
+  dimensions: 768
+  max_input_tokens: 8192
+notes:
+  - "UNLOADABLE under the pinned runtime (checked 2026-10-08, M9-05). The GGUF declares general.architecture = gemma-embedding2 (header read from the pinned file; hub metadata agrees). LocalAI v4.10.0 builds llama.cpp commit 38a5b42d9a3e82e0a586bcd1caed121f36c87a73 (2026-09-15, backend/cpp/llama-cpp/Makefile at tag v4.10.0), whose src/llama-arch.cpp has gemma-embedding but no gemma-embedding2. Support landed upstream in llama.cpp PR #30054 'model: support embeddinggemma2 (text+vision+audio)', merged 2026-10-06T16:20:31Z. LocalAI v4.11.0 (published 2026-10-02) pins a868c3e3 (2026-10-01) and LocalAI master pins bed0a856 (2026-10-02): both also lack the architecture. allowed_runtime_versions is therefore empty (fail closed). Nothing was loaded or benchmarked."
+  - "Upstream card facts (fetched 2026-10-08, revision 914f7f89, created 2026-09-14): Apache-2.0, not gated, 740M parameters in total (130M backbone + 140M embedder = about 270M text part, plus 170M vision and 300M audio encoders), 768 dimensions (512 to 768 projection) with Matryoshka truncation to 512, 256 and 128, 8192-token window, 100+ languages (pretraining data over 140), MTEB multilingual v2 mean 61.36 and English v2 mean 68.46 as reported by Google (a vendor claim, not an AlixAI measurement). The Q8_0 text-only GGUF has 271,002,648 parameters; the mmproj files in the same repository are the vision and audio parts and are not needed for text embeddings."
+  - "Artefact is third party: ggml-org (ggml-org/embeddinggemma-2-GGUF, created 2026-10-06, 'automatically converted'). The hash is the hub LFS oid at the pinned commit and was not re-hashed locally because the file was not downloaded in full. Other conversions exist (unsloth, prithivMLmods, ngquocvinh) and an ONNX export (onnx-community/embeddinggemma-2-ONNX); none changes the runtime verdict. The pinned llama.cpp-based runtime cannot load any of them."
+  - "Re-evaluate when a LocalAI release pins a llama.cpp at or after PR #30054 (merge commit 4fbc76dec51d0add466f0210855c0596589b60d4), then run the M0-13 style qualification and the M2 EN/IT corpus against Granite Embedding 97M (docs/evidence/m9-embedding/verdict.md). Until then this stays a candidate and nothing defaults to it."

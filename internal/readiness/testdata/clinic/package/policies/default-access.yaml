@@ -1,0 +1,49 @@
+policy_id: default-access
+description: Which role may use which capability of the clinic application, and which fields of each the model may see. The host still reauthorises every call and applies record-level visibility (a patient sees only themselves, a doctor only their patients, a receptionist the whole site).
+role_grants:
+  - role: receptionist
+    capabilities:
+      - appointments.book
+      - appointments.cancel
+      - availability.list
+      - patients.find
+      - patients.update_contact
+  - role: doctor
+    capabilities:
+      - appointments.cancel
+      - availability.list
+      - patients.find
+  - role: patient
+    capabilities:
+      - appointments.book
+      - appointments.cancel
+      - availability.list
+      - patients.find
+      - patients.update_contact
+risk_overrides: []
+field_projection:
+  - capability_id: availability.list
+    model_visible_fields:
+      - date
+      - days
+      - doctor
+      - max_results
+  - capability_id: patients.find
+    model_visible_fields:
+      - query
+      - date_of_birth
+      - max_results
+  - capability_id: appointments.book
+    model_visible_fields:
+      - patient
+      - slot
+      - reason
+  - capability_id: appointments.cancel
+    model_visible_fields:
+      - appointment
+      - reason
+  - capability_id: patients.update_contact
+    model_visible_fields:
+      - patient
+      - phone
+      - email

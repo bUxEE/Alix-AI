@@ -1,0 +1,51 @@
+capability_id: patients.find
+language: en
+contract_version: 1.0.0
+terminology:
+  - patient
+  - clinic_site
+  - date_of_birth
+field_prompts:
+  - field: query
+    label: Patient name
+    prompt: "Which patient should I look for? Give me at least part of the name."
+    examples:
+      - Maria Rossi
+  - field: date_of_birth
+    label: Date of birth
+    prompt: "Do you want to narrow the search with a date of birth? Give it as YYYY-MM-DD."
+    examples:
+      - "1975-11-02"
+  - field: max_results
+    label: Number of results
+    prompt: "How many patients should I list at most?"
+clarifications: []
+corrections:
+  acknowledgement: "Okay, I will search again with the new details."
+  correctable_fields:
+    - query
+    - date_of_birth
+    - max_results
+cancellations:
+  acknowledgement: "Okay, I stopped that search."
+success:
+  - outcome: patients_found
+    text: "I found {patient_count} matching patients: {patient_summary}."
+  - outcome: none_found
+    text: "No patient at your clinic site matches {input.query}. That is {patient_count} results: {patient_summary}."
+failures:
+  - code: permission_denied
+    text: "You are not allowed to look up patients, so I did not search."
+  - code: scope_violation
+    text: "I cannot show that patient: the record is not available to you. Nothing was searched."
+  - code: validation_failed
+    text: "I could not search: the name needs at least two characters and the date of birth cannot be in the future."
+  - code: missing_fields
+    text: "I need the name of the patient to search for. Nothing was searched."
+  - code: unavailable
+    text: "The appointment system is not reachable right now, so I could not search. Nothing was changed."
+next_actions:
+  - id: book_for_patient
+    label: "Book an appointment for one of these patients"
+  - id: update_patient_contact
+    label: "Update the contact details of one of these patients"

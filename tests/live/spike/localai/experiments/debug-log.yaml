@@ -1,0 +1,5 @@
+# HC-34 experiment: what does debug logging print? (Dev only; the deployment uses info.)
+services:
+  localai:
+    environment:
+      LOCALAI_LOG_LEVEL: debug

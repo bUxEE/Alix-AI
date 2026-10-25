@@ -1,0 +1,119 @@
+{
+  "profile_id": "pprf_01J0000000000000000000FXTB",
+  "provider_id": "gemini",
+  "endpoint": "https://generativelanguage.googleapis.com/v1beta",
+  "model_id": "gemini-3.5-flash-lite",
+  "model_version": "unknown",
+  "roles": [
+    "conversational_controller",
+    "language_realization"
+  ],
+  "cred_ref": null,
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "streaming": true,
+  "structured_output": "strict_schema",
+  "tool_calling": {
+    "supported": true,
+    "strict_arguments": true,
+    "parallel_calls": true,
+    "max_tools": 32
+  },
+  "remote_mcp": {
+    "supported": false
+  },
+  "native_features": {
+    "available": [
+      "file_search",
+      "server_tool_loops"
+    ]
+  },
+  "limits": {
+    "max_context_toks": 1048576,
+    "max_output_toks": 65536,
+    "max_request_bytes": 20971520
+  },
+  "image_generation": {
+    "supported": false,
+    "max_images_per_request": null,
+    "output_retention": "unknown"
+  },
+  "voice": {
+    "stt": false,
+    "tts": false,
+    "realtime": false,
+    "audio_retention": "unknown"
+  },
+  "terms": {
+    "retention": "unknown",
+    "retention_days": null,
+    "training_use": "unknown",
+    "terms_url": "https://ai.google.dev/gemini-api/terms",
+    "terms_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "recorded_on": "2026-10-08"
+  },
+  "region": {
+    "residency": "unknown",
+    "processing_regions": [],
+    "compliance": []
+  },
+  "rate_limits": {
+    "requests_per_min": null,
+    "toks_per_min": null,
+    "concurrent_requests": null,
+    "retry": {
+      "max_attempts": 2,
+      "initial_backoff_ms": 500,
+      "max_backoff_ms": 8000,
+      "honors_retry_after": true
+    }
+  },
+  "pricing": {
+    "currency": "USD",
+    "effective_on": "2026-10-08",
+    "source_url": "https://ai.google.dev/gemini-api/docs/pricing",
+    "prices": {
+      "toks_in": {
+        "per_units": 1000000,
+        "micro_units": 300000
+      },
+      "toks_out": {
+        "per_units": 1000000,
+        "micro_units": 2500000
+      }
+    }
+  },
+  "usage_metering": "per_response",
+  "permitted_scopes": [
+    {
+      "application_id": "app_conf"
+    }
+  ],
+  "allowed_data_classes": [
+    "public",
+    "internal"
+  ],
+  "fallback": {
+    "profile_id": null,
+    "on": []
+  },
+  "last_policy_review": "2026-10-08",
+  "review_interval_days": 30,
+  "billing_notice": {
+    "version": "2026-10-08.1",
+    "text": "Gemini API access is tied to a Google Cloud project and that project's quota and billing configuration; a Gemini or Google One consumer subscription does not include API access. Usage is billed to the project (or counts against its free-tier quota), and on the free tier the content you send may be used to improve Google products.",
+    "url": "https://ai.google.dev/gemini-api/docs/billing",
+    "subscription_grants_api_access": false
+  },
+  "billing_notice_ack": null,
+  "last_conformance": null,
+  "lifecycle": "candidate",
+  "created_at": "2026-10-08T08:00:00Z",
+  "updated_at": "2026-10-08T08:00:00Z"
+}

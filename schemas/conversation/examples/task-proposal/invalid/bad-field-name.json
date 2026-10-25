@@ -1,0 +1,12 @@
+{
+  "capability_id": "tasks.create",
+  "fields": {
+    "Due Date": "2026-10-09"
+  },
+  "entity_refs": [],
+  "intent": "task",
+  "uncertainty": {
+    "overall": 0.9
+  },
+  "trace_id": "trc_01J0000000000000000000000K"
+}

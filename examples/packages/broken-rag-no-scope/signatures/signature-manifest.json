@@ -1,0 +1,135 @@
+{
+  "format": "alixai.signature-manifest/v1",
+  "signed": {
+    "application_id": "demo-library",
+    "package_version": "1.0.0",
+    "created_at": "2026-10-01T00:00:00Z",
+    "hash_algorithm": "sha256",
+    "files": [
+      {
+        "path": "alixai.yaml",
+        "sha256": "dc8fd6ccffd96873d4134f7c163373cc3e95b2066569032c1f7a28bb396ad5e5",
+        "size": 2171
+      },
+      {
+        "path": "capabilities/catalog-find-title.yaml",
+        "sha256": "8995e4ea51f0fee9f839b4528409d7eacf9b1ff94b4aa560ad9b0bba40bc31ae",
+        "size": 2484
+      },
+      {
+        "path": "capabilities/reservations-create.yaml",
+        "sha256": "46c6b04e9199fe04f5058ac76e60fa5b1ec685e187ab4618543319fd493efe6b",
+        "size": 4529
+      },
+      {
+        "path": "conversation-contracts/catalog-find-title.en.yaml",
+        "sha256": "7988cebfccaedd2fa688f8ab7810121e28cb58944eaba052b068f7daa99235eb",
+        "size": 1224
+      },
+      {
+        "path": "conversation-contracts/catalog-find-title.it.yaml",
+        "sha256": "9f7bce448ca8f1a2dbaa0f1ffe13565a5d0e7b913ce539270b49f316bec41ad5",
+        "size": 1260
+      },
+      {
+        "path": "conversation-contracts/reservations-create.en.yaml",
+        "sha256": "1f1106e4c4977cf51b8a290d9fe7fe2fa39443c2dce48619b37919d69f76d64c",
+        "size": 2123
+      },
+      {
+        "path": "conversation-contracts/reservations-create.it.yaml",
+        "sha256": "ef52dd5871a2d411f39ef7088d902144204452b1c8ad8bf22af50fa9fc7b1beb",
+        "size": 2222
+      },
+      {
+        "path": "documentation/catalog/find-title.md",
+        "sha256": "af0748ee7cd0800dfac422a8f273876ac694d55588841a212fd663a2527ed330",
+        "size": 1326
+      },
+      {
+        "path": "documentation/index.yaml",
+        "sha256": "e9da0be88b743d6c419bc697c3bda3034edb1bb0fdaa6918c862be12eb720f68",
+        "size": 8871
+      },
+      {
+        "path": "documentation/policies/loans.it.md",
+        "sha256": "33481088b39b8a25569101d56be4276c35ebc4d89b4477b1ac5a65d772e9f75f",
+        "size": 292
+      },
+      {
+        "path": "documentation/policies/loans.md",
+        "sha256": "16f0780d6295c2883da360a234d7aad7bcfa380c3e43dde1f392ba3bab0af44e",
+        "size": 252
+      },
+      {
+        "path": "documentation/reservations/create.md",
+        "sha256": "ddbda22abb0fff96f92dc1e2dac8c5a62c8c6c1b0b5e253a32111bd802d7dfad",
+        "size": 1914
+      },
+      {
+        "path": "policies/default-access.yaml",
+        "sha256": "d84950079d29cd354be33835485fedd0c73d31379146ebd17b846a31c50feff8",
+        "size": 439
+      },
+      {
+        "path": "rag-sources/loan-policies.yaml",
+        "sha256": "01d2a8ff9889bf08e2138a52b248c2eaa5be92d8ab425c7ef855895f05859038",
+        "size": 824
+      },
+      {
+        "path": "schemas/adapters/library-mcp.yaml",
+        "sha256": "6fd4d4b184855faa12824b41ba8be1d1d337c126cfc1af63d3d5a7d22fa312b6",
+        "size": 379
+      },
+      {
+        "path": "schemas/find-title.result.schema.json",
+        "sha256": "ca5a72bbd1e22ad50825918f2a8de9b1d8f49d6b5f44005c56d605fa02ac20c0",
+        "size": 821
+      },
+      {
+        "path": "schemas/reservation.prepared.schema.json",
+        "sha256": "e2787678ea38140e61f10878133c3e2388da19b69147301b3ec7a03681a9cf53",
+        "size": 760
+      },
+      {
+        "path": "schemas/reservation.receipt.schema.json",
+        "sha256": "9779871ff295f724f6b8bff0ee84e03dac79a82e929cd0b7dd20055e0acc50ad",
+        "size": 493
+      },
+      {
+        "path": "schemas/reservation.validation.schema.json",
+        "sha256": "aaf07b2ac0c51040c30938214a17471f6d6f03aecfabb5fa6e828a3309130929",
+        "size": 641
+      },
+      {
+        "path": "schemas/resolve-title.result.schema.json",
+        "sha256": "649b032b160603f4325f254e826ee71f83d86d94c5e65d19031c512fb60fbdb9",
+        "size": 630
+      },
+      {
+        "path": "terminology/library-terms.yaml",
+        "sha256": "dc1957ce83af7e97658a09ccf02af7f97205fd420d8866261134635585799645",
+        "size": 840
+      },
+      {
+        "path": "tests/core-safety.yaml",
+        "sha256": "31004994011b4e0c94c72bf88128537260713e04fdf66782bc45feaa322c204f",
+        "size": 5229
+      },
+      {
+        "path": "tests/seed/library.json",
+        "sha256": "f893ec17c26ee67ed887f7864f279a226ac780b8d294317941dceb2f44a9b363",
+        "size": 179
+      }
+    ]
+  },
+  "signatures": [
+    {
+      "key_id": "alixai-test-only-publisher",
+      "algorithm": "ed25519",
+      "signature": "XzjWfXK12vlNhZSMCfTB9z0ucXLPJhDt2R7jvY/ebH5tkMPJ0a0p64J+JcpBPes01hUbnaCP3l58Z8RPMCzjAw==",
+      "signed_at": "2026-10-01T00:00:00Z",
+      "expires_at": "2036-10-01T00:00:00Z"
+    }
+  ]
+}

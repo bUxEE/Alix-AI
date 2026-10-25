@@ -1,0 +1,40 @@
+capability_id: catalog.find_title
+language: it
+contract_version: 1.0.0
+terminology:
+- title
+field_prompts:
+- field: query
+  label: Parole da cercare
+  prompt: Quale titolo, autore o argomento devo cercare?
+  examples:
+  - giardinaggio per principianti
+  - Calvino
+- field: available_only
+  label: Solo titoli disponibili ora
+  prompt: Devo elencare solo i titoli che puoi prendere in prestito subito?
+- field: max_results
+  label: Numero di risultati
+  prompt: Quanti titoli devo elencare?
+clarifications: []
+corrections:
+  acknowledgement: D'accordo, cerco {input.query} invece.
+  correctable_fields:
+  - query
+  - available_only
+  - max_results
+cancellations:
+  acknowledgement: D'accordo, ho interrotto la ricerca.
+success:
+- outcome: found
+  text: 'Ho trovato {search.count} titoli: {search.titles}.'
+- outcome: none_found
+  text: Non ho trovato titoli per {input.query}. Sono {search.count} risultati.
+failures:
+- code: validation_failed
+  text: Non ho potuto cercare perché {input.query} è troppo breve. Indica almeno due caratteri.
+- code: unavailable
+  text: Il catalogo non è raggiungibile in questo momento, quindi non ho potuto cercare. Non è stato modificato nulla.
+next_actions:
+- id: reserve_found_title
+  label: Prenota uno di questi titoli

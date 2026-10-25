@@ -1,0 +1,76 @@
+# Voice language pack manifest (schema: pack-manifest.schema.json, urn:alixai:schema:voice:language-pack:v1).
+# One file per pack; the file name is the pack id. Every file is pinned by size and sha256. Quality and
+# resource figures were measured by M4-06 (emulated lite profile); status stays candidate because no Lite voice stack passes every gate.
+id: en
+name: "English (Whisper tiny, Piper ljspeech, Silero VAD)"
+version: "1"
+language: en
+status: candidate
+models:
+  stt:
+    name: "Whisper tiny, multilingual, Q5_1 (whisper.cpp ggml)"
+    engine: whisper.cpp
+    registry_id: null
+    files:
+      - name: ggml-tiny-q5_1.bin
+        url: https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny-q5_1.bin
+        revision: 5359861c739e955e79d9a303bcbc70fb988958b1
+        size_bytes: 32152673
+        sha256: 818710568da3ca15689e31a743197b520007872ff9576237bda97bd1b469c3d7
+    licence:
+      spdx: MIT
+      url: https://huggingface.co/ggerganov/whisper.cpp/blob/5359861c739e955e79d9a303bcbc70fb988958b1/README.md
+      redistribution_notes: "MIT, declared by the whisper.cpp model repository card; the upstream OpenAI Whisper weights are MIT as well. The ggml file is a third-party conversion by the whisper.cpp project. AlixAI does not bundle weights: the operator fetches the pinned file. Recorded as found by M4-06 (the file was downloaded and its sha256 verified locally); the sign-off is the M5-H02 human licence review."
+  tts:
+    name: "Piper en_US ljspeech medium"
+    engine: piper
+    registry_id: null
+    files:
+      - name: en_US-ljspeech-medium.onnx
+        url: https://huggingface.co/rhasspy/piper-voices/resolve/c10ece1aade47bb51c153c893d14e5bf8e5b7117/en/en_US/ljspeech/medium/en_US-ljspeech-medium.onnx
+        revision: c10ece1aade47bb51c153c893d14e5bf8e5b7117
+        size_bytes: 63531379
+        sha256: 6f52a751e2349abe7a76735eb09dc1875298c77ea2342ffd2fef79ff81b87f22
+      - name: en_US-ljspeech-medium.onnx.json
+        url: https://huggingface.co/rhasspy/piper-voices/resolve/c10ece1aade47bb51c153c893d14e5bf8e5b7117/en/en_US/ljspeech/medium/en_US-ljspeech-medium.onnx.json
+        revision: c10ece1aade47bb51c153c893d14e5bf8e5b7117
+        size_bytes: 4972
+        sha256: 141d612cc0a95ed7efc1ca936b845c2364967f2e9217c5dbfcf69fc4d6c65860
+    licence:
+      spdx: MIT
+      url: https://huggingface.co/rhasspy/piper-voices/blob/c10ece1aade47bb51c153c893d14e5bf8e5b7117/en/en_US/ljspeech/medium/MODEL_CARD
+      redistribution_notes: "The piper-voices repository declares MIT; the voice model card names its dataset, LJ Speech, as public domain. The Piper ENGINE is GPL-3.0 (ADR 0015): it runs as a separate backend process and is not part of this pack, but shipping it in an image creates redistribution obligations. Final sign-off is the M5-H02 human licence review."
+  vad:
+    name: "Silero VAD v5.1.2 (ggml, served by the whisper.cpp backend with vad_only)"
+    engine: whisper.cpp
+    registry_id: null
+    files:
+      - name: ggml-silero-v5.1.2.bin
+        url: https://huggingface.co/ggml-org/whisper-vad/resolve/9ffd54a1e1ee413ddf265af9913beaf518d1639b/ggml-silero-v5.1.2.bin
+        revision: 9ffd54a1e1ee413ddf265af9913beaf518d1639b
+        size_bytes: 885098
+        sha256: 29940d98d42b91fbd05ce489f3ecf7c72f0a42f027e4875919a28fb4c04ea2cf
+    licence:
+      spdx: MIT
+      url: https://huggingface.co/ggml-org/whisper-vad/blob/9ffd54a1e1ee413ddf265af9913beaf518d1639b/README.md
+      redistribution_notes: "MIT, declared by the ggml-org/whisper-vad repository card (a conversion of the MIT-licensed Silero VAD). AlixAI does not bundle weights. Final sign-off is the M5-H02 human licence review."
+quality:
+  stt_wer: 0.1377
+  tts_time_to_first_audio_ms: 2292
+  tts_real_time_factor: 0.629
+  measurement:
+    profile: lite
+    emulated: true
+    measured_on: "2026-10-04"
+    results_path: docs/evidence/m4-voice/report.md
+resources:
+  disk_bytes: 96574122
+  steady_rss_mb: 681
+  peak_rss_mb: 887
+  cpu_cores: 4
+notes:
+  - "Candidate pack named by ADR 0015, measured by M4-06 (docs/evidence/m4-voice/report.md, pre-registered gates in protocol.md, emulated lite profile: 8 GiB, 4 CPU, LocalAI v4.10.0, three cold-start runs per candidate). Status stays candidate: no complete Lite voice stack passes in English."
+  - "STT: whisper tiny is the smallest rung that passes every STT gate (FLEURS en WER 0.138 against the 0.15 bar, a thin margin on 857 reference words; base would give 0.104 and also passes every gate; both fit the 500 MiB worker budget). The pack moved from base to tiny by the smallest-passing rule; base is the quality step for an operator who wants it. Whisper alone transcribes silence and noise into text (4 of 4 non-speech clips in each language, every size): the VAD in front of it is mandatory, and the VAD passed 8 of 8 non-speech clips with no speech segment."
+  - "TTS: Piper ljspeech medium fails the Lite gates for time to first audio (median 2292 ms against 1500; LocalAI v4.10.0 returns a complete file, the stream request hangs, so the adapter must use tts_no_stream) and for the worker resident set (peak 644 MiB against 300). Round-trip WER 0.070 and real-time factor 0.629 pass. Kokoro v1.0 (kokoros backend) was measured as the challenger and fails the same two gates (796 MiB peak, 1892 ms streamed). On Lite the text answer is returned without audio (master plan 18)."
+  - "resources.* are the sums of the three workers measured one at a time (largest peak of three runs, median steady): an upper bound for the pack active; the Lite co-residency run with whisper tiny, Piper ljspeech and the VAD beside the Granite 1B controller and embedder peaked at 3012 MiB in total with LOCALAI_MAX_ACTIVE_BACKENDS=5 and showed no reload (8 reloads at the shipped default of 2)."
+  - "Pins re-verified 2026-10-04 by M4-06: every file was downloaded host-side and its sha256 matches the pin. The Silero file is the ggml model that LocalAI v4.10.0 serves through the whisper.cpp backend (gallery entry silero-vad-ggml, option vad_only); the silero-vad ONNX backend would need a different file. Licences are recorded as found and are not reviewed here (M5-H02)."

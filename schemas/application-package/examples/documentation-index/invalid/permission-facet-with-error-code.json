@@ -1,0 +1,339 @@
+{
+  "entries": [
+    {
+      "id": "cft-field-query",
+      "capability_id": "catalog.find_title",
+      "facet": "field",
+      "language": "en",
+      "title": "Field: query",
+      "summary": "Words from the title, author or subject. Required, 2 to 200 characters; blank queries are rejected.",
+      "location": {
+        "path": "documentation/catalog/find-title.md",
+        "anchor": "field-query"
+      },
+      "field": "query"
+    },
+    {
+      "id": "cft-field-available-only",
+      "capability_id": "catalog.find_title",
+      "facet": "field",
+      "language": "en",
+      "title": "Field: available_only",
+      "summary": "Optional boolean, default false. When true only titles with a free copy at the branch are listed.",
+      "location": {
+        "path": "documentation/catalog/find-title.md",
+        "anchor": "field-available-only"
+      },
+      "field": "available_only"
+    },
+    {
+      "id": "cft-field-max-results",
+      "capability_id": "catalog.find_title",
+      "facet": "field",
+      "language": "en",
+      "title": "Field: max_results",
+      "summary": "Optional integer 1 to 20, default 5. Caps how many titles are listed.",
+      "location": {
+        "path": "documentation/catalog/find-title.md",
+        "anchor": "field-max-results"
+      },
+      "field": "max_results"
+    },
+    {
+      "id": "cft-rule-query-not-blank",
+      "capability_id": "catalog.find_title",
+      "facet": "validation_rule",
+      "language": "en",
+      "title": "Rule: query_not_blank",
+      "summary": "The query must hold at least two non-space characters, otherwise validation_failed is returned and no search runs.",
+      "location": {
+        "path": "documentation/catalog/find-title.md",
+        "anchor": "rule-query-not-blank"
+      },
+      "rule_id": "query_not_blank"
+    },
+    {
+      "id": "cft-perm-catalog-read",
+      "capability_id": "catalog.find_title",
+      "facet": "permission",
+      "language": "en",
+      "title": "Permission: catalog.read",
+      "summary": "Held by members and visitors. Without it the host refuses the search with permission_denied.",
+      "location": {
+        "path": "documentation/catalog/find-title.md",
+        "anchor": "permission-catalog-read"
+      },
+      "permission": "catalog.read",
+      "error_code": "permission_denied"
+    },
+    {
+      "id": "cft-fail-validation-failed",
+      "capability_id": "catalog.find_title",
+      "facet": "failure_state",
+      "language": "en",
+      "title": "Failure: validation_failed",
+      "summary": "The query was blank or too short. Nothing was searched; the user is asked for a longer query.",
+      "location": {
+        "path": "documentation/catalog/find-title.md",
+        "anchor": "failure-validation-failed"
+      },
+      "error_code": "validation_failed"
+    },
+    {
+      "id": "cft-fail-unavailable",
+      "capability_id": "catalog.find_title",
+      "facet": "failure_state",
+      "language": "en",
+      "title": "Failure: unavailable",
+      "summary": "The catalogue service could not be reached. No result is shown and none is guessed.",
+      "location": {
+        "path": "documentation/catalog/find-title.md",
+        "anchor": "failure-unavailable"
+      },
+      "error_code": "unavailable"
+    },
+    {
+      "id": "cft-risk",
+      "capability_id": "catalog.find_title",
+      "facet": "risk_level",
+      "language": "en",
+      "title": "Risk level 0",
+      "summary": "A read-only search of low-sensitivity catalogue data. It runs after authorization with no confirmation.",
+      "location": {
+        "path": "documentation/catalog/find-title.md",
+        "anchor": "risk"
+      }
+    },
+    {
+      "id": "cft-confirmation",
+      "capability_id": "catalog.find_title",
+      "facet": "confirmation_rule",
+      "language": "en",
+      "title": "Confirmation: none",
+      "summary": "No confirmation is needed because the capability changes nothing.",
+      "location": {
+        "path": "documentation/catalog/find-title.md",
+        "anchor": "confirmation"
+      }
+    },
+    {
+      "id": "cft-outcome-found",
+      "capability_id": "catalog.find_title",
+      "facet": "user_visible_outcome",
+      "language": "en",
+      "title": "Outcome: found",
+      "summary": "The user sees how many titles matched and the list with availability.",
+      "location": {
+        "path": "documentation/catalog/find-title.md",
+        "anchor": "outcome-found"
+      },
+      "outcome": "found"
+    },
+    {
+      "id": "cft-outcome-none-found",
+      "capability_id": "catalog.find_title",
+      "facet": "user_visible_outcome",
+      "language": "en",
+      "title": "Outcome: none_found",
+      "summary": "The user is told that no title matched the words they gave.",
+      "location": {
+        "path": "documentation/catalog/find-title.md",
+        "anchor": "outcome-none-found"
+      },
+      "outcome": "none_found"
+    },
+    {
+      "id": "rc-field-title",
+      "capability_id": "reservations.create",
+      "facet": "field",
+      "language": "en",
+      "title": "Field: title",
+      "summary": "Required entity reference to a catalogue title. Resolved by the host; several matches trigger a clarification.",
+      "location": {
+        "path": "documentation/reservations/create.md",
+        "anchor": "field-title"
+      },
+      "field": "title"
+    },
+    {
+      "id": "rc-field-pickup-date",
+      "capability_id": "reservations.create",
+      "facet": "field",
+      "language": "en",
+      "title": "Field: pickup_date",
+      "summary": "Required date in the branch time zone: today or later, at most 60 days ahead.",
+      "location": {
+        "path": "documentation/reservations/create.md",
+        "anchor": "field-pickup-date"
+      },
+      "field": "pickup_date"
+    },
+    {
+      "id": "rc-field-notes",
+      "capability_id": "reservations.create",
+      "facet": "field",
+      "language": "en",
+      "title": "Field: notes",
+      "summary": "Optional free text up to 300 characters for the desk. Treated as sensitive and withheld from the model by policy.",
+      "location": {
+        "path": "documentation/reservations/create.md",
+        "anchor": "field-notes"
+      },
+      "field": "notes"
+    },
+    {
+      "id": "rc-rule-pickup-date-not-past",
+      "capability_id": "reservations.create",
+      "facet": "validation_rule",
+      "language": "en",
+      "title": "Rule: pickup_date_not_past",
+      "summary": "The pickup date must be between today and 60 days ahead, otherwise validation_failed.",
+      "location": {
+        "path": "documentation/reservations/create.md",
+        "anchor": "rule-pickup-date"
+      },
+      "rule_id": "pickup_date_not_past"
+    },
+    {
+      "id": "rc-rule-title-available",
+      "capability_id": "reservations.create",
+      "facet": "validation_rule",
+      "language": "en",
+      "title": "Rule: title_available",
+      "summary": "A copy must be free at the branch on the pickup date, otherwise conflict.",
+      "location": {
+        "path": "documentation/reservations/create.md",
+        "anchor": "rule-title-available"
+      },
+      "rule_id": "title_available"
+    },
+    {
+      "id": "rc-perm-reservations-write",
+      "capability_id": "reservations.create",
+      "facet": "permission",
+      "language": "en",
+      "title": "Permission: reservations.write",
+      "summary": "Held by members for their own branch. Without it the host returns permission_denied at prepare.",
+      "location": {
+        "path": "documentation/reservations/create.md",
+        "anchor": "permission-reservations-write"
+      },
+      "permission": "reservations.write"
+    },
+    {
+      "id": "rc-fail-permission-denied",
+      "capability_id": "reservations.create",
+      "facet": "failure_state",
+      "language": "en",
+      "title": "Failure: permission_denied",
+      "summary": "The principal may not reserve at this branch. Nothing was reserved.",
+      "location": {
+        "path": "documentation/reservations/create.md",
+        "anchor": "failure-permission-denied"
+      },
+      "error_code": "permission_denied"
+    },
+    {
+      "id": "rc-fail-validation-failed",
+      "capability_id": "reservations.create",
+      "facet": "failure_state",
+      "language": "en",
+      "title": "Failure: validation_failed",
+      "summary": "The pickup date is out of range. Nothing was reserved.",
+      "location": {
+        "path": "documentation/reservations/create.md",
+        "anchor": "failure-validation-failed"
+      },
+      "error_code": "validation_failed"
+    },
+    {
+      "id": "rc-fail-conflict",
+      "capability_id": "reservations.create",
+      "facet": "failure_state",
+      "language": "en",
+      "title": "Failure: conflict",
+      "summary": "No copy is free on the pickup date. Nothing was reserved.",
+      "location": {
+        "path": "documentation/reservations/create.md",
+        "anchor": "failure-conflict"
+      },
+      "error_code": "conflict"
+    },
+    {
+      "id": "rc-fail-stale",
+      "capability_id": "reservations.create",
+      "facet": "failure_state",
+      "language": "en",
+      "title": "Failure: stale",
+      "summary": "Stock changed after prepare. The preparation is void and nothing was reserved; it can be prepared again.",
+      "location": {
+        "path": "documentation/reservations/create.md",
+        "anchor": "failure-stale"
+      },
+      "error_code": "stale"
+    },
+    {
+      "id": "rc-fail-expired",
+      "capability_id": "reservations.create",
+      "facet": "failure_state",
+      "language": "en",
+      "title": "Failure: expired",
+      "summary": "The prepared reservation was not confirmed within 10 minutes or was cancelled. Nothing was reserved.",
+      "location": {
+        "path": "documentation/reservations/create.md",
+        "anchor": "failure-expired"
+      },
+      "error_code": "expired"
+    },
+    {
+      "id": "rc-fail-uncertain-outcome",
+      "capability_id": "reservations.create",
+      "facet": "failure_state",
+      "language": "en",
+      "title": "Failure: uncertain_outcome",
+      "summary": "The commit response was lost. The reservation status is queried before any retry so it cannot be made twice.",
+      "location": {
+        "path": "documentation/reservations/create.md",
+        "anchor": "failure-uncertain-outcome"
+      },
+      "error_code": "uncertain_outcome"
+    },
+    {
+      "id": "rc-risk",
+      "capability_id": "reservations.create",
+      "facet": "risk_level",
+      "language": "en",
+      "title": "Risk level 2",
+      "summary": "A reservation holds stock and notifies the desk, so it is a consequential action: prepared first, then committed.",
+      "location": {
+        "path": "documentation/reservations/create.md",
+        "anchor": "risk"
+      }
+    },
+    {
+      "id": "rc-confirmation",
+      "capability_id": "reservations.create",
+      "facet": "confirmation_rule",
+      "language": "en",
+      "title": "Confirmation: explicit",
+      "summary": "The user must confirm the exact reservation (title, branch, date) before commit; the confirmation expires after 10 minutes.",
+      "location": {
+        "path": "documentation/reservations/create.md",
+        "anchor": "confirmation"
+      }
+    },
+    {
+      "id": "rc-outcome-reserved",
+      "capability_id": "reservations.create",
+      "facet": "user_visible_outcome",
+      "language": "en",
+      "title": "Outcome: reserved",
+      "summary": "The user sees the title, pickup date and the reservation reference to quote at the desk.",
+      "location": {
+        "path": "documentation/reservations/create.md",
+        "anchor": "outcome-reserved"
+      },
+      "outcome": "reserved"
+    }
+  ]
+}

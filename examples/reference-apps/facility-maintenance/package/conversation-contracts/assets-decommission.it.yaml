@@ -1,0 +1,62 @@
+capability_id: assets.decommission
+language: it
+contract_version: 1.0.0
+terminology:
+- asset
+- step_up
+- site
+- decommissioning
+field_prompts:
+- field: asset
+  label: Attrezzatura
+  prompt: Quale attrezzatura va dismessa? Dimmi il nome o la sigla.
+  examples:
+  - GEN-90
+- field: reason
+  label: Motivo
+  prompt: Perché viene dismessa? Basta una frase.
+  examples:
+  - Sostituita il mese scorso
+clarifications:
+- rule_id: asset_multiple
+  prompt: Più di una attrezzatura corrisponde a {input.asset}. Quale intendi?
+corrections:
+  acknowledgement: D'accordo, l'ho modificato.
+  correctable_fields:
+  - asset
+  - reason
+  prepared_action_invalidated: Questo cambia la richiesta, quindi il riferimento precedente non vale più. La preparerò di nuovo.
+cancellations:
+  acknowledgement: D'accordo, mi sono fermato. Non ho dismesso nulla.
+confirmations:
+  request: La dismissione di {asset_name} ({asset_tag}) può essere completata solo nell'app Facility Maintenance dopo una verifica rafforzata, con riferimento {step_up_reference}. Procedo con la preparazione?
+  declined: D'accordo, non ho preparato nulla.
+  expired: Questa richiesta non è più valida, quindi non ho preparato nulla. Posso prepararla di nuovo, se vuoi.
+  step_up_required: Non posso dismettere {asset_name} ({asset_tag}) da solo. Apri l'app Facility Maintenance, accedi e completa la verifica rafforzata per la richiesta {step_up_reference}.
+success:
+- outcome: decommissioned
+  text: '{asset_name} è stato dismesso nell''app Facility Maintenance.'
+failures:
+- code: permission_denied
+  text: Non hai il permesso di farlo, quindi non ho cambiato nulla.
+- code: scope_violation
+  text: 'Non posso farlo: il record non è disponibile per te. Non ho cambiato nulla.'
+- code: validation_failed
+  text: 'Non ho potuto prepararlo: indica un motivo di 10-300 caratteri. Non ho cambiato nulla.'
+- code: conflict
+  text: 'Non ho potuto prepararlo: l''attrezzatura è già dismessa oppure ha ancora ordini di lavoro aperti. Non ho cambiato nulla.'
+- code: stale
+  text: Un record è cambiato dopo che l'avevo preparato, quindi non l'ho applicato. Non ho cambiato nulla; posso prepararlo di nuovo.
+- code: expired
+  text: Non è stato confermato in tempo, oppure è stato ritirato, quindi non ho cambiato nulla.
+- code: step_up_required
+  text: Questo si può completare solo nell'app Facility Maintenance dopo una verifica rafforzata. Non ho dismesso nulla.
+- code: uncertain_outcome
+  text: Non sono riuscito a confermare se è stato applicato. Controllerò prima di fare altro, quindi per ora non chiederlo di nuovo.
+- code: missing_fields
+  text: Mi servono ancora alcuni dettagli prima di poterlo fare. Non ho cambiato nulla.
+- code: unavailable
+  text: Il sistema di manutenzione al momento non è raggiungibile, quindi non ho cambiato nulla.
+next_actions:
+- id: show_orders_blocking
+  label: Mostra gli ordini di lavoro

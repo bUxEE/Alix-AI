@@ -1,0 +1,13 @@
+{
+  "swagger": "2.0",
+  "info": { "title": "Legacy clinic API", "version": "0.9" },
+  "paths": {
+    "/patients": {
+      "get": {
+        "operationId": "findPatients",
+        "responses": { "200": { "description": "ok", "schema": { "$ref": "#/definitions/PatientList" } } }
+      }
+    }
+  },
+  "definitions": { "PatientList": { "type": "object" } }
+}

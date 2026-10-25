@@ -1,0 +1,72 @@
+capability_id: "payments.record"
+language: "en"
+contract_version: "1.0.0"
+terminology:
+  - "invoice"
+  - "payment"
+  - "payment_method"
+  - "customer"
+field_prompts:
+  - field: "invoice"
+    label: "Invoice"
+    prompt: "Which invoice was paid? Give me its number or the customer's name."
+    examples:
+      - "INV-0001"
+      - "Acme Srl"
+  - field: "amount_minor"
+    label: "Amount in minor units"
+    prompt: "How much was received? Give it in minor units of the currency, for example 10000 for 100.00 EUR."
+    examples:
+      - "10000"
+  - field: "currency"
+    label: "Currency"
+    prompt: "Which currency? It must be the invoice's."
+  - field: "paid_on"
+    label: "Date received"
+    prompt: "On which date was the money received? Write it as YYYY-MM-DD, or skip for today."
+    examples:
+      - "2026-10-02"
+  - field: "method"
+    label: "Method"
+    prompt: "How was it paid: bank transfer, card or cash?"
+clarifications:
+  - rule_id: "invoice_multiple"
+    prompt: "More than one invoice matches {input.invoice}. Which one do you mean?"
+corrections:
+  acknowledgement: "Okay, I have changed that."
+  correctable_fields:
+    - "invoice"
+    - "amount_minor"
+    - "currency"
+    - "paid_on"
+    - "method"
+  prepared_action_invalidated: "That changes the payment, so the earlier summary no longer applies. I will prepare it again and ask you to confirm."
+cancellations:
+  acknowledgement: "Okay, I stopped. Nothing was recorded."
+confirmations:
+  request: "Please confirm this payment: {payment_amount} on invoice {invoice_number}. Balance after this payment: {balance_after}. Invoice status afterwards: {invoice_status_after}. The customer will be sent a receipt. Shall I record it?"
+  declined: "Okay, I did not record anything."
+  expired: "That payment is no longer valid, so nothing was recorded. I can prepare it again if you like."
+success:
+  - outcome: "recorded"
+    text: "Done. Payment {payment_reference} of {payment_amount} is recorded on invoice {invoice_number}. Balance remaining: {balance_remaining}. Invoice status: {invoice_status}."
+failures:
+  - code: "permission_denied"
+    text: "You are not allowed to record payments, so nothing was recorded."
+  - code: "scope_violation"
+    text: "I cannot record that: the invoice is not available to you. Nothing was recorded."
+  - code: "validation_failed"
+    text: "I could not record that: the amount is more than the balance, the currency is not the invoice's, or the date is not valid. Nothing was recorded."
+  - code: "missing_fields"
+    text: "I still need the invoice and the amount to record the payment. Nothing was recorded."
+  - code: "conflict"
+    text: "That invoice takes no payment in its current state, or the request clashes with one already recorded. Nothing was recorded."
+  - code: "stale"
+    text: "The invoice changed after I prepared this payment, so I did not record it. Nothing was recorded; I can prepare it again."
+  - code: "expired"
+    text: "That was not confirmed in time, or it was withdrawn, so nothing was recorded."
+  - code: "uncertain_outcome"
+    text: "I could not confirm whether it went through. I will check before doing anything else, so please do not ask for it again yet."
+  - code: "unavailable"
+    text: "The ledger is not reachable right now, so nothing was recorded."
+next_actions: []

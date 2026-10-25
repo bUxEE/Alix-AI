@@ -1,0 +1,6 @@
+// The demo shell. It reads the kit's own tokens (src/styles/_tokens.scss) for colour, type, radius and motion, so the shell and
+// the kit are one theme, and the theme switch only sets data-alixai-theme on <html>. The shell adds layout and a few surfaces.
+// Scene: a product engineer at a desk, trying each scenario in turn, in daylight or a dim evening room: both themes are first class.
+@use "shell";
+@use "controls";
+@use "sections";

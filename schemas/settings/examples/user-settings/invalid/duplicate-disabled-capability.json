@@ -1,0 +1,8 @@
+{
+  "capabilities": {
+    "disabled": [
+      "items.create",
+      "items.create"
+    ]
+  }
+}

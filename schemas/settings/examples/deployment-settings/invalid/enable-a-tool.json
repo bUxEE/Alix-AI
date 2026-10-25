@@ -1,0 +1,7 @@
+{
+  "tools": {
+    "enabled": [
+      "shell.exec"
+    ]
+  }
+}

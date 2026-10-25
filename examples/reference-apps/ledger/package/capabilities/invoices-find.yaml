@@ -1,0 +1,116 @@
+id: "invoices.find"
+version: "1.0.0"
+audience: "user"
+title: "Find an invoice"
+purpose: "Find the invoices of the caller's reach by number or customer name, with their exact totals, balances and states. An accountant or a viewer reaches the invoices of their own team, a manager every team of the organisation. Read-only."
+scope_level: "tenant"
+permissions:
+  - "invoices.read"
+fields:
+  - name: "query"
+    type: "string"
+    required: true
+    description: "An invoice number, an invoice identifier or part of a customer name."
+    min_length: 2
+    max_length: 100
+  - name: "status"
+    type: "enum"
+    required: false
+    description: "Only list invoices in this state."
+    values:
+      - "issued"
+      - "partially_paid"
+      - "paid"
+      - "void"
+  - name: "max_results"
+    type: "integer"
+    required: false
+    description: "How many invoices to list at most."
+    minimum: 1
+    maximum: 10
+    default:
+      source: "literal"
+      value: 5
+entity_types: {}
+ambiguity: []
+validation:
+  - id: "query_not_blank"
+    fields:
+      - "query"
+    description: "The query must contain at least two characters that are not spaces."
+    error_code: "validation_failed"
+failure_states:
+  - code: "permission_denied"
+    description: "The principal's role may not look up invoices."
+  - code: "scope_violation"
+    description: "The record is outside the principal's reach (another team without manager access, or another organisation), or does not exist. The application does not say which."
+  - code: "validation_failed"
+    description: "A value is malformed or breaks one of the rules above. Nothing was searched."
+  - code: "missing_fields"
+    description: "A required field (query) was not supplied. Nothing was searched."
+  - code: "unavailable"
+    description: "The ledger cannot be reached. Nothing was searched."
+effect_class: "none"
+risk_level: 0
+operations:
+  read:
+    endpoint: "ledger-bridge"
+    native_method: "invoices_find"
+    result_schema: "schemas/invoices.find.result.schema.json"
+    timeout_ms: 5000
+confirmation:
+  mode: "none"
+response_obligations:
+  - fact: "invoice_count"
+    when: "success"
+    description: "How many invoices are listed."
+  - fact: "invoice_summary"
+    when: "success"
+    description: "The listed invoices: number, customer and state."
+next_actions:
+  - id: "record_payment"
+    after: "success"
+    capability_id: "payments.record"
+  - id: "void_invoice"
+    after: "success"
+    capability_id: "invoices.void"
+doc_refs:
+  - "if-field-query"
+  - "if-field-status"
+  - "if-field-max_results"
+  - "if-rule-query_not_blank"
+  - "if-perm-invoices.read"
+  - "if-failure-permission_denied"
+  - "if-failure-scope_violation"
+  - "if-failure-validation_failed"
+  - "if-failure-missing_fields"
+  - "if-failure-unavailable"
+  - "if-risk"
+  - "if-confirmation"
+  - "if-outcome-found"
+examples:
+  - id: "en-find-by-number"
+    language: "en"
+    test_only: true
+    utterance: "Show me invoice INV-0001"
+    expected_fields:
+      query: "INV-0001"
+  - id: "en-find-by-customer"
+    language: "en"
+    test_only: true
+    utterance: "Which paid invoices do we have for Acme?"
+    expected_fields:
+      query: "Acme"
+      status: "paid"
+  - id: "it-trova-per-numero"
+    language: "it"
+    test_only: true
+    utterance: "Mostrami la fattura INV-0001"
+    expected_fields:
+      query: "INV-0001"
+  - id: "it-trova-per-cliente"
+    language: "it"
+    test_only: true
+    utterance: "Quali fatture abbiamo per Acme?"
+    expected_fields:
+      query: "Acme"

@@ -1,0 +1,9 @@
+{
+  "type": "transcript.final",
+  "utterance_id": "utt_01J0000000000000000000000A",
+  "text": "book a table",
+  "speaker_hint": {
+    "label": "speaker-2",
+    "confidence": 1.5
+  }
+}

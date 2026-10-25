@@ -1,0 +1,15 @@
+{
+  "file_id": "fil_01J0000000000000000000000C",
+  "name": "policies v3.md",
+  "mime_type": "text/markdown",
+  "size_bytes": 182044,
+  "content_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "owner": "usr_77",
+  "origin": "application",
+  "treatment": "rag_source",
+  "permissions": [
+    "read"
+  ],
+  "previewable": false,
+  "expires_at": "2026-10-10T08:00:00Z"
+}

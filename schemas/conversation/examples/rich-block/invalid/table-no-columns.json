@@ -1,0 +1,22 @@
+{
+  "type": "table",
+  "caption": "Free slots on 14 October",
+  "columns": [],
+  "rows": [
+    [
+      "10:30",
+      "Dr. Rossi",
+      true
+    ],
+    [
+      "11:00",
+      "Dr. Rossi",
+      false
+    ],
+    [
+      "11:30",
+      null,
+      3
+    ]
+  ]
+}

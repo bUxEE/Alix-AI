@@ -1,0 +1,56 @@
+{
+  "outcome": "answered",
+  "claims": [
+    {
+      "text": "Appointments can be cancelled free of charge up to 24 hours before the start.",
+      "citation_indexes": [
+        0
+      ]
+    },
+    {
+      "text": "Cancellations later than that are charged 50 percent of the visit fee.",
+      "citation_indexes": [
+        0,
+        1
+      ]
+    }
+  ],
+  "citations": [
+    {
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "claims": [
+        "Appointments can be cancelled free of charge up to 24 hours before the start.",
+        "Cancellations later than that are charged 50 percent of the visit fee."
+      ]
+    },
+    {
+      "source_id": "src_01J0000000000000000000000B",
+      "display_name": "Pricing table",
+      "version": "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "locator": {
+        "record": "price_2026_standard"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "record",
+        "entity_type": "price_list",
+        "entity_id": "price_2026"
+      },
+      "claims": []
+    }
+  ],
+  "notices": []
+}

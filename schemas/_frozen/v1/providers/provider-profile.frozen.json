@@ -1,0 +1,1009 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:providers:provider-profile:v1",
+  "title": "Provider profile",
+  "description": "One hosted provider and model profile in the registry (additive plan section 5), the typed capability and terms record used to reject an impossible request before any data is sent. The local model registry (schemas/models) describes models AlixAI runs; this schema describes hosted providers and is separate. It carries the provider ID and endpoint, the pinned model ID and version, a credential reference (never the secret), modalities, streaming, the structured-output guarantee, tool calling, remote MCP, limits, file, image and audio handling, image generation, voice, the retention and training terms the provider states, region and compliance, rate limits and retry, pricing metadata and usage-metering support, the permitted applications, tenants and workspaces, the allowed data classes, the fallback, the last policy review date and last conformance report, and the billing notice with its acknowledgement. The content (endpoint, capabilities, terms, pricing, permissions) is supplied by the operator (host); the ID, the credential reference, the lifecycle, the acknowledgement, the conformance report and the timestamps are recorded by the core (alixai). The profile has no member that can hold a secret. Production qualification (lifecycle qualified) requires a bound credential, an acknowledged billing notice and a passed conformance report. Rules that need more than one profile (a fallback that exists, is not this profile and forms no cycle; the report matching the exact model version) are enforced by the registry, not here.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile_id",
+    "provider_id",
+    "endpoint",
+    "model_id",
+    "model_version",
+    "roles",
+    "cred_ref",
+    "modalities",
+    "streaming",
+    "structured_output",
+    "tool_calling",
+    "remote_mcp",
+    "native_features",
+    "limits",
+    "image_generation",
+    "voice",
+    "terms",
+    "region",
+    "rate_limits",
+    "pricing",
+    "usage_metering",
+    "permitted_scopes",
+    "allowed_data_classes",
+    "fallback",
+    "last_policy_review",
+    "review_interval_days",
+    "billing_notice",
+    "billing_notice_ack",
+    "last_conformance",
+    "lifecycle",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "profile_id": {
+      "description": "Profile ID, minted by the core when the profile is registered.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/profileId"
+    },
+    "provider_id": {
+      "description": "The provider.",
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/providerId"
+    },
+    "endpoint": {
+      "description": "The base URL of the provider API: https, or plain http on a loopback address for a local mock or gateway. No credentials, no query string and no fragment: a secret never travels in a URL. Outbound destinations are additionally gated by the network allowlist (internal/egress).",
+      "x-alixai-authority": "host",
+      "type": "string",
+      "maxLength": 300,
+      "pattern": "^(https://[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+(:[0-9]{1,5})?|http://(127\\.0\\.0\\.1|localhost|\\[::1\\])(:[0-9]{1,5})?)(/[A-Za-z0-9._~%!$&'()*+,;=:-]*)*$",
+      "not": { "pattern": "(^|/)\\.\\.(/|$)" }
+    },
+    "model_id": {
+      "description": "The provider-side model identifier.",
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/modelId"
+    },
+    "model_version": {
+      "description": "The exact pinned model version or snapshot. A profile is bound to it: a changed version keeps the profile id, clears the conformance report and resets the profile to candidate, so it is not trusted until the suite passes for the new version (ADR-0028).",
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/modelVersion"
+    },
+    "display_name": {
+      "description": "Optional human-readable name for settings screens.",
+      "x-alixai-authority": "host",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^[^\\x00-\\x1f\\x7f]+$"
+    },
+    "roles": {
+      "description": "The roles the operator intends the model for. The decision-scorer role (router) is not a possible value: external providers never receive decision requests.",
+      "x-alixai-authority": "host",
+      "type": "array",
+      "items": { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/role" },
+      "minItems": 1,
+      "maxItems": 7,
+      "uniqueItems": true
+    },
+    "cred_ref": {
+      "description": "Opaque reference to the credential in the credential service, or null until one is bound. The profile never holds a secret.",
+      "x-alixai-authority": "alixai",
+      "oneOf": [
+        { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/credentialRefId" },
+        { "type": "null" }
+      ]
+    },
+    "modalities": {
+      "description": "Supported input and output modalities.",
+      "x-alixai-authority": "host",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input", "output"],
+      "properties": {
+        "input": {
+          "description": "Modalities the model accepts.",
+          "x-alixai-authority": "host",
+          "type": "array",
+          "items": { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/modality" },
+          "minItems": 1,
+          "maxItems": 4,
+          "uniqueItems": true
+        },
+        "output": {
+          "description": "Modalities the model produces.",
+          "x-alixai-authority": "host",
+          "type": "array",
+          "items": { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/modality" },
+          "minItems": 1,
+          "maxItems": 4,
+          "uniqueItems": true
+        }
+      }
+    },
+    "streaming": {
+      "description": "Whether the model streams responses.",
+      "x-alixai-authority": "host",
+      "type": "boolean"
+    },
+    "structured_output": {
+      "description": "The structured-output guarantee. none: no support. json_mode: valid JSON, no schema guarantee. schema_best_effort: a schema is supplied but conformance is not guaranteed. strict_schema: the provider constrains decoding so output always conforms to the supplied schema. Only strict_schema is a guarantee; the rest need local validation and clarification on failure.",
+      "x-alixai-authority": "host",
+      "type": "string",
+      "enum": ["none", "json_mode", "schema_best_effort", "strict_schema"]
+    },
+    "tool_calling": {
+      "description": "Tool or function calling. AlixAI uses it for proposals only: a provider never executes a tool.",
+      "x-alixai-authority": "host",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["supported", "strict_arguments", "parallel_calls", "max_tools"],
+      "properties": {
+        "supported": {
+          "description": "Whether the model can return tool-call proposals.",
+          "x-alixai-authority": "host",
+          "type": "boolean"
+        },
+        "strict_arguments": {
+          "description": "Whether the provider guarantees arguments conform to the tool schema.",
+          "x-alixai-authority": "host",
+          "type": "boolean"
+        },
+        "parallel_calls": {
+          "description": "Whether it can return several calls in one response.",
+          "x-alixai-authority": "host",
+          "type": "boolean"
+        },
+        "max_tools": {
+          "description": "The most tool definitions one request may carry, or null when not stated.",
+          "x-alixai-authority": "host",
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1024
+            },
+            { "type": "null" }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "description": "Without tool calling there are no strict arguments and no parallel calls.",
+          "if": {
+            "required": ["supported"],
+            "properties": {
+              "supported": { "const": false }
+            }
+          },
+          "then": {
+            "properties": {
+              "strict_arguments": { "const": false },
+              "parallel_calls": { "const": false }
+            }
+          }
+        }
+      ]
+    },
+    "remote_mcp": {
+      "description": "Whether the provider can call a remote MCP server itself. Recorded only: AlixAI never gives a provider an MCP URL (additive plan section 6.2) and never delegates control to it.",
+      "x-alixai-authority": "host",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["supported"],
+      "properties": {
+        "supported": {
+          "description": "Provider-side remote MCP exists.",
+          "x-alixai-authority": "host",
+          "type": "boolean"
+        }
+      }
+    },
+    "native_features": {
+      "description": "Provider-native features that exist. Recorded only: they are never enabled for consequential operations (additive plan section 9) and the profile has no switch that enables them.",
+      "x-alixai-authority": "host",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["available"],
+      "properties": {
+        "available": {
+          "description": "Which provider-native features the provider offers.",
+          "x-alixai-authority": "host",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["agents", "hosted_memory", "file_search", "server_tool_loops"]
+          },
+          "maxItems": 4,
+          "uniqueItems": true
+        }
+      }
+    },
+    "limits": {
+      "description": "Maximum context and output limits and the request size cap.",
+      "x-alixai-authority": "host",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_context_toks", "max_output_toks", "max_request_bytes"],
+      "properties": {
+        "max_context_toks": {
+          "description": "Maximum input context in toks.",
+          "x-alixai-authority": "host",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "max_output_toks": {
+          "description": "Maximum output toks.",
+          "x-alixai-authority": "host",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "max_request_bytes": {
+          "description": "Maximum request body size in bytes.",
+          "x-alixai-authority": "host",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "media": {
+      "description": "File, image and audio handling. Each member is required when the matching modality is declared in modalities.",
+      "x-alixai-authority": "host",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "files": {
+          "description": "File handling.",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/mediaHandling"
+        },
+        "images": {
+          "description": "Image handling.",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/mediaHandling"
+        },
+        "audio": {
+          "description": "Audio handling.",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/mediaHandling"
+        }
+      }
+    },
+    "image_generation": {
+      "description": "Image-generation capability.",
+      "x-alixai-authority": "host",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["supported", "max_images_per_request", "output_retention"],
+      "properties": {
+        "supported": {
+          "description": "Whether the model generates images.",
+          "x-alixai-authority": "host",
+          "type": "boolean"
+        },
+        "max_images_per_request": {
+          "description": "Images per request, or null when not stated.",
+          "x-alixai-authority": "host",
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 64
+            },
+            { "type": "null" }
+          ]
+        },
+        "output_retention": {
+          "description": "How long the provider keeps generated images.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/retentionMode"
+        }
+      }
+    },
+    "voice": {
+      "description": "Voice capability: speech to text, text to speech, realtime.",
+      "x-alixai-authority": "host",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stt", "tts", "realtime", "audio_retention"],
+      "properties": {
+        "stt": {
+          "description": "Speech to text.",
+          "x-alixai-authority": "host",
+          "type": "boolean"
+        },
+        "tts": {
+          "description": "Text to speech.",
+          "x-alixai-authority": "host",
+          "type": "boolean"
+        },
+        "realtime": {
+          "description": "A realtime voice API exists.",
+          "x-alixai-authority": "host",
+          "type": "boolean"
+        },
+        "audio_retention": {
+          "description": "How long the provider keeps audio.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/retentionMode"
+        }
+      }
+    },
+    "terms": {
+      "description": "Data-retention and training-use terms as the provider states them, recorded when the profile was configured. A changed terms_hash quarantines the profile until reviewed (ADR-0028).",
+      "x-alixai-authority": "host",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["retention", "retention_days", "training_use", "terms_url", "terms_hash", "recorded_on"],
+      "properties": {
+        "retention": {
+          "description": "Retention of request content.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/retentionMode"
+        },
+        "retention_days": {
+          "description": "Days retained when retention is limited, else null.",
+          "x-alixai-authority": "host",
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3650
+            },
+            { "type": "null" }
+          ]
+        },
+        "training_use": {
+          "description": "Whether the provider may train on request content.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/trainingUse"
+        },
+        "terms_url": {
+          "description": "The https page the terms were read from, or null.",
+          "x-alixai-authority": "host",
+          "oneOf": [
+            {
+              "type": "string",
+              "maxLength": 300,
+              "pattern": "^https://[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+(:[0-9]{1,5})?(/[A-Za-z0-9._~%!$&'()*+,;=:-]*)*$"
+            },
+            { "type": "null" }
+          ]
+        },
+        "terms_hash": {
+          "description": "SHA-256 of the terms text that was read, so a later change is detectable.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/sha256"
+        },
+        "recorded_on": {
+          "description": "The date the terms were read.",
+          "x-alixai-authority": "host",
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "allOf": [
+        {
+          "description": "Retention days are stated exactly when retention is limited.",
+          "if": {
+            "required": ["retention"],
+            "properties": {
+              "retention": { "const": "limited" }
+            }
+          },
+          "then": {
+            "properties": {
+              "retention_days": { "type": "integer" }
+            }
+          },
+          "else": {
+            "properties": {
+              "retention_days": { "type": "null" }
+            }
+          }
+        }
+      ]
+    },
+    "region": {
+      "description": "Geographic and compliance attributes. An unknown or unlisted region is denied by the egress policy (ADR-0026).",
+      "x-alixai-authority": "host",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["residency", "processing_regions", "compliance"],
+      "properties": {
+        "residency": {
+          "description": "How the provider places processing.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/residency"
+        },
+        "processing_regions": {
+          "description": "Regions the provider may process in. Empty exactly when residency is unknown.",
+          "x-alixai-authority": "host",
+          "type": "array",
+          "items": { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/regionCode" },
+          "maxItems": 32,
+          "uniqueItems": true
+        },
+        "compliance": {
+          "description": "Compliance attestations the provider states.",
+          "x-alixai-authority": "host",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["gdpr_dpa", "soc2_type2", "iso27001", "hipaa_baa", "fedramp", "c5"]
+          },
+          "maxItems": 6,
+          "uniqueItems": true
+        }
+      },
+      "allOf": [
+        {
+          "description": "An unknown residency lists no regions; any other residency lists at least one.",
+          "if": {
+            "required": ["residency"],
+            "properties": {
+              "residency": { "const": "unknown" }
+            }
+          },
+          "then": {
+            "properties": {
+              "processing_regions": { "maxItems": 0 }
+            }
+          },
+          "else": {
+            "properties": {
+              "processing_regions": { "minItems": 1 }
+            }
+          }
+        }
+      ]
+    },
+    "rate_limits": {
+      "description": "The provider rate limits and the retry behaviour AlixAI applies. Null limits are not stated by the provider.",
+      "x-alixai-authority": "host",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requests_per_min", "toks_per_min", "concurrent_requests", "retry"],
+      "properties": {
+        "requests_per_min": {
+          "description": "Requests per minute, or null.",
+          "x-alixai-authority": "host",
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            { "type": "null" }
+          ]
+        },
+        "toks_per_min": {
+          "description": "Input plus output toks per minute, or null.",
+          "x-alixai-authority": "host",
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            { "type": "null" }
+          ]
+        },
+        "concurrent_requests": {
+          "description": "Concurrent requests, or null.",
+          "x-alixai-authority": "host",
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            { "type": "null" }
+          ]
+        },
+        "retry": {
+          "description": "Bounded retry with backoff. Never unbounded and never against a different provider.",
+          "x-alixai-authority": "host",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["max_attempts", "initial_backoff_ms", "max_backoff_ms", "honors_retry_after"],
+          "properties": {
+            "max_attempts": {
+              "description": "Attempts after the first one. 0 disables retry.",
+              "x-alixai-authority": "host",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10
+            },
+            "initial_backoff_ms": {
+              "description": "First backoff.",
+              "x-alixai-authority": "host",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 60000
+            },
+            "max_backoff_ms": {
+              "description": "Longest backoff.",
+              "x-alixai-authority": "host",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 600000
+            },
+            "honors_retry_after": {
+              "description": "Whether the provider Retry-After value is honoured.",
+              "x-alixai-authority": "host",
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "pricing": {
+      "description": "Pricing metadata in integer micro-units.",
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:providers:price-table:v1"
+    },
+    "usage_metering": {
+      "description": "Whether and when the provider reports usage. per_response: in every response. stream_final: in the last event of a stream. none: not reported, usage is estimated and marked so.",
+      "x-alixai-authority": "host",
+      "type": "string",
+      "enum": ["per_response", "stream_final", "none"]
+    },
+    "permitted_scopes": {
+      "description": "The applications, tenants and workspaces that may use this profile. Omitting a narrower level grants every value of that level inside the named parent; there is no wildcard value. Empty permits nobody.",
+      "x-alixai-authority": "host",
+      "type": "array",
+      "items": { "$ref": "#/$defs/scopeGrant" },
+      "maxItems": 256
+    },
+    "allowed_data_classes": {
+      "description": "The data classes this provider may receive at all, before any egress policy. restricted is not a possible value. Empty means none.",
+      "x-alixai-authority": "host",
+      "type": "array",
+      "items": { "$ref": "urn:alixai:schema:providers:data-classification:v1#/$defs/egressEligibleClass" },
+      "maxItems": 3,
+      "uniqueItems": true
+    },
+    "fallback": {
+      "description": "The one fallback the operator names, and the only conditions under which it applies. A fallback is never used for invalid credentials, stale terms, denied egress or an exhausted budget: those conditions cannot be listed. A fallback that happens is recorded.",
+      "x-alixai-authority": "host",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profile_id", "on"],
+      "properties": {
+        "profile_id": {
+          "description": "The fallback profile, or null for none.",
+          "x-alixai-authority": "host",
+          "oneOf": [
+            { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/profileId" },
+            { "type": "null" }
+          ]
+        },
+        "on": {
+          "description": "The conditions that trigger the fallback. Empty exactly when profile_id is null.",
+          "x-alixai-authority": "host",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["unavailable", "timeout", "rate_limited", "unsupported_modality"]
+          },
+          "maxItems": 4,
+          "uniqueItems": true
+        }
+      },
+      "allOf": [
+        {
+          "description": "A named fallback lists at least one trigger; no fallback lists none.",
+          "if": {
+            "required": ["profile_id"],
+            "properties": {
+              "profile_id": { "type": "null" }
+            }
+          },
+          "then": {
+            "properties": {
+              "on": { "maxItems": 0 }
+            }
+          },
+          "else": {
+            "properties": {
+              "on": { "minItems": 1 }
+            }
+          }
+        }
+      ]
+    },
+    "last_policy_review": {
+      "description": "The date an operator last reviewed the provider terms, pricing, retention, region and tool behaviour for this profile.",
+      "x-alixai-authority": "host",
+      "type": "string",
+      "format": "date"
+    },
+    "review_interval_days": {
+      "description": "Days after last_policy_review at which the profile is stale and quarantined. ADR-0028: 30 is a ceiling, a shorter interval is allowed and a longer one is refused.",
+      "x-alixai-authority": "host",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 30
+    },
+    "billing_notice": {
+      "description": "The notice shown at setup: a consumer subscription is not API access. The acknowledgement is recorded separately.",
+      "x-alixai-authority": "host",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "text", "url", "subscription_grants_api_access"],
+      "properties": {
+        "version": {
+          "description": "The notice version.",
+          "x-alixai-authority": "host",
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+        },
+        "text": {
+          "description": "The provider-specific notice text.",
+          "x-alixai-authority": "host",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "url": {
+          "description": "The https billing page of the provider, or null.",
+          "x-alixai-authority": "host",
+          "oneOf": [
+            {
+              "type": "string",
+              "maxLength": 300,
+              "pattern": "^https://[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+(:[0-9]{1,5})?(/[A-Za-z0-9._~%!$&'()*+,;=:-]*)*$"
+            },
+            { "type": "null" }
+          ]
+        },
+        "subscription_grants_api_access": {
+          "description": "Always false: a consumer chat subscription never grants API access. A profile that says otherwise is not representable (additive plan section 4.1).",
+          "x-alixai-authority": "host",
+          "const": false
+        }
+      }
+    },
+    "billing_notice_ack": {
+      "description": "The recorded acknowledgement of the billing notice, or null until an operator has made it.",
+      "x-alixai-authority": "alixai",
+      "oneOf": [
+        { "$ref": "urn:alixai:schema:providers:billing-notice-ack:v1" },
+        { "type": "null" }
+      ]
+    },
+    "last_conformance": {
+      "description": "The last conformance report recorded for this profile, or null when the suite has not run. Qualification needs a passed report whose provider, model_id and model_version equal this profile.",
+      "x-alixai-authority": "alixai",
+      "oneOf": [
+        { "$ref": "urn:alixai:schema:providers:conformance-report:v1" },
+        { "type": "null" }
+      ]
+    },
+    "lifecycle": {
+      "description": "candidate: registered, not yet qualified. qualified: production-qualified. quarantined: held for review, see quarantine_reason. retired: no longer used.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/profileLifecycle"
+    },
+    "quarantine_reason": {
+      "description": "Why the profile is quarantined. Present exactly when lifecycle is quarantined.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "enum": [
+        "stale_review",
+        "terms_changed",
+        "model_version_changed",
+        "conformance_failed",
+        "region_changed",
+        "excessive_permissions",
+        "operator_hold"
+      ]
+    },
+    "created_at": {
+      "description": "When the profile was registered.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    },
+    "updated_at": {
+      "description": "When the profile last changed.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    }
+  },
+  "allOf": [
+    {
+      "description": "Production-qualified needs a bound credential, an acknowledged billing notice and a passed conformance report.",
+      "if": {
+        "required": ["lifecycle"],
+        "properties": {
+          "lifecycle": { "const": "qualified" }
+        }
+      },
+      "then": {
+        "properties": {
+          "cred_ref": { "type": "string" },
+          "billing_notice_ack": { "type": "object" },
+          "last_conformance": {
+            "type": "object",
+            "properties": {
+              "outcome": { "const": "passed" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "A quarantined profile says why; no other lifecycle carries a reason.",
+      "if": {
+        "required": ["lifecycle"],
+        "properties": {
+          "lifecycle": { "const": "quarantined" }
+        }
+      },
+      "then": { "required": ["quarantine_reason"] },
+      "else": {
+        "properties": { "quarantine_reason": false }
+      }
+    },
+    {
+      "description": "Image generation produces images.",
+      "if": {
+        "required": ["image_generation"],
+        "properties": {
+          "image_generation": {
+            "required": ["supported"],
+            "properties": {
+              "supported": { "const": true }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": ["modalities"],
+        "properties": {
+          "modalities": {
+            "required": ["output"],
+            "properties": {
+              "output": {
+                "contains": { "const": "image" }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "Speech to text accepts audio.",
+      "if": {
+        "required": ["voice"],
+        "properties": {
+          "voice": {
+            "required": ["stt"],
+            "properties": {
+              "stt": { "const": true }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": ["modalities"],
+        "properties": {
+          "modalities": {
+            "required": ["input"],
+            "properties": {
+              "input": {
+                "contains": { "const": "audio" }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "Text to speech produces audio.",
+      "if": {
+        "required": ["voice"],
+        "properties": {
+          "voice": {
+            "required": ["tts"],
+            "properties": {
+              "tts": { "const": true }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": ["modalities"],
+        "properties": {
+          "modalities": {
+            "required": ["output"],
+            "properties": {
+              "output": {
+                "contains": { "const": "audio" }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "A profile that accepts or produces image describes its images handling.",
+      "if": {
+        "anyOf": [
+          {
+            "required": ["modalities"],
+            "properties": {
+              "modalities": {
+                "required": ["input"],
+                "properties": {
+                  "input": {
+                    "contains": { "const": "image" }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "required": ["modalities"],
+            "properties": {
+              "modalities": {
+                "required": ["output"],
+                "properties": {
+                  "output": {
+                    "contains": { "const": "image" }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "then": {
+        "required": ["media"],
+        "properties": {
+          "media": { "required": ["images"] }
+        }
+      }
+    },
+    {
+      "description": "A profile that accepts or produces file describes its files handling.",
+      "if": {
+        "anyOf": [
+          {
+            "required": ["modalities"],
+            "properties": {
+              "modalities": {
+                "required": ["input"],
+                "properties": {
+                  "input": {
+                    "contains": { "const": "file" }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "required": ["modalities"],
+            "properties": {
+              "modalities": {
+                "required": ["output"],
+                "properties": {
+                  "output": {
+                    "contains": { "const": "file" }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "then": {
+        "required": ["media"],
+        "properties": {
+          "media": { "required": ["files"] }
+        }
+      }
+    },
+    {
+      "description": "A profile that accepts or produces audio describes its audio handling.",
+      "if": {
+        "anyOf": [
+          {
+            "required": ["modalities"],
+            "properties": {
+              "modalities": {
+                "required": ["input"],
+                "properties": {
+                  "input": {
+                    "contains": { "const": "audio" }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "required": ["modalities"],
+            "properties": {
+              "modalities": {
+                "required": ["output"],
+                "properties": {
+                  "output": {
+                    "contains": { "const": "audio" }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "then": {
+        "required": ["media"],
+        "properties": {
+          "media": { "required": ["audio"] }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "scopeGrant": {
+      "description": "One grant: an application, optionally narrowed to one tenant and then one workspace. Omitting a narrower level grants every value of it inside the parent; no value is a wildcard.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["application_id"],
+      "properties": {
+        "application_id": {
+          "description": "The application.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "tenant_id": {
+          "description": "The tenant, when the grant is narrower than the whole application.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "workspace_id": {
+          "description": "The workspace, when the grant is narrower than the whole tenant. Needs tenant_id.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        }
+      },
+      "dependentRequired": { "workspace_id": ["tenant_id"] }
+    },
+    "mediaHandling": {
+      "description": "How the provider handles one kind of media.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_bytes", "mime_types", "retention"],
+      "properties": {
+        "max_bytes": {
+          "description": "Largest single item in bytes.",
+          "x-alixai-authority": "host",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "mime_types": {
+          "description": "Accepted media types, lower case, for example image/png.",
+          "x-alixai-authority": "host",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 255,
+            "pattern": "^[a-z0-9][a-z0-9!#$&^_.+-]{0,126}/[a-z0-9][a-z0-9!#$&^_.+-]{0,126}$"
+          },
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true
+        },
+        "retention": {
+          "description": "How long the provider keeps this media.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/retentionMode"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,64 @@
+capability_id: workorders.create
+language: it
+contract_version: 1.0.0
+terminology:
+- work_order
+- asset
+- priority
+field_prompts:
+- field: asset
+  label: Attrezzatura
+  prompt: Per quale attrezzatura è il lavoro? Dimmi il nome o la sigla.
+  examples:
+  - AHU-200
+- field: title
+  label: Titolo
+  prompt: Qual è il problema o il lavoro? Basta una frase breve.
+  examples:
+  - La cinghia del ventilatore stride all'avvio
+- field: description
+  label: Dettagli
+  prompt: Qualcosa d'altro da annotare? Puoi saltare.
+- field: priority
+  label: Priorità
+  prompt: 'Quanto è urgente: bassa, normale, alta o urgente? Normale se non dici nulla.'
+  examples:
+  - alta
+clarifications:
+- rule_id: asset_multiple
+  prompt: Più di una attrezzatura corrisponde a {input.asset}. Quale intendi?
+corrections:
+  acknowledgement: D'accordo, l'ho modificato.
+  correctable_fields:
+  - asset
+  - title
+  - description
+  - priority
+  prepared_action_invalidated: Questo cambia l'ordine di lavoro, quindi il riepilogo precedente non vale più. Lo preparerò di nuovo con i nuovi dettagli.
+cancellations:
+  acknowledgement: D'accordo, mi sono fermato. Non ho creato nulla.
+success:
+- outcome: created
+  text: 'Fatto. L''ordine di lavoro {work_order_id} è stato creato per {asset_name}: {work_order_title}, priorità {priority}.'
+failures:
+- code: permission_denied
+  text: Non hai il permesso di farlo, quindi non ho cambiato nulla.
+- code: scope_violation
+  text: 'Non posso farlo: il record non è disponibile per te. Non ho cambiato nulla.'
+- code: validation_failed
+  text: 'Non ho potuto crearlo: il titolo deve essere di 5-120 caratteri. Non ho creato nulla.'
+- code: conflict
+  text: 'Non ho potuto crearlo: l''attrezzatura è dismessa, oppure ha già un ordine di lavoro aperto con questo titolo. Non ho creato nulla.'
+- code: stale
+  text: Un record è cambiato dopo che l'avevo preparato, quindi non l'ho applicato. Non ho cambiato nulla; posso prepararlo di nuovo.
+- code: expired
+  text: Non è stato confermato in tempo, oppure è stato ritirato, quindi non ho cambiato nulla.
+- code: uncertain_outcome
+  text: Non sono riuscito a confermare se è stato applicato. Controllerò prima di fare altro, quindi per ora non chiederlo di nuovo.
+- code: missing_fields
+  text: Mi servono ancora alcuni dettagli prima di poterlo fare. Non ho cambiato nulla.
+- code: unavailable
+  text: Il sistema di manutenzione al momento non è raggiungibile, quindi non ho cambiato nulla.
+next_actions:
+- id: assign_new_order
+  label: Assegna questo ordine di lavoro

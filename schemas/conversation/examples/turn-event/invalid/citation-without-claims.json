@@ -1,0 +1,21 @@
+{
+  "type": "citation",
+  "turn_id": "trn_01J0000000000000000000000A",
+  "seq": 3,
+  "citation": {
+    "source_id": "src_01J0000000000000000000000A",
+    "display_name": "Clinic cancellation policy",
+    "version": "rev-12",
+    "locator": {
+      "page": 3,
+      "section": "Late cancellations"
+    },
+    "availability": "available",
+    "staleness": "current",
+    "open_ref": {
+      "kind": "file",
+      "file_id": "fil_01J0000000000000000000000A"
+    },
+    "claims": []
+  }
+}

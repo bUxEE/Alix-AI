@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:conversation:task-proposal:v1",
+  "title": "TaskProposal",
+  "description": "What the model may propose for a user turn (master plan 11.2): a capability ID, candidate typed fields, candidate entity references, an intent, explicit uncertainty and a trace ID. It is a proposal only: the model cannot manufacture, authorise or alter authoritative fields, and every value is re-validated deterministically. The model-authority properties (everything except trace_id) are the only part the model is asked to produce: the grammar handed to a constrained decoder is this schema with every property that is not 'model' removed, and the core attaches trace_id (authority 'alixai') after the inference call. Fixed-shape objects use additionalProperties false; 'fields' and 'uncertainty.fields' are maps keyed by capability field name, so their keys are constrained with propertyNames and their values with additionalProperties.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["capability_id", "fields", "entity_refs", "intent", "uncertainty", "trace_id"],
+  "properties": {
+    "capability_id": {
+      "description": "The proposed capability, or null when none applies. Checked against the application's registry; an unregistered ID is unknown_capability. Must be non-null for intent task and correction, null for out_of_scope, and may be either for help and cancel (a cancel or help turn may concern no particular capability).",
+      "x-alixai-authority": "model",
+      "anyOf": [
+        { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/capabilityId" },
+        { "type": "null" }
+      ]
+    },
+    "fields": {
+      "description": "Candidate typed field values keyed by field name. Candidates only: the capability's own field schema decides what is valid, and the model's value never becomes a canonical fact by being here.",
+      "x-alixai-authority": "model",
+      "type": "object",
+      "maxProperties": 64,
+      "propertyNames": {
+        "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/candidateValue"
+      }
+    },
+    "entity_refs": {
+      "description": "Candidate references to application entities mentioned in the turn.",
+      "x-alixai-authority": "model",
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "$ref": "#/$defs/entityRef"
+      }
+    },
+    "intent": {
+      "description": "What the user is doing this turn: a new task, a correction of earlier values, cancelling the current goal, asking for help, or something outside the application's scope.",
+      "x-alixai-authority": "model",
+      "type": "string",
+      "enum": ["task", "correction", "cancel", "help", "out_of_scope"]
+    },
+    "uncertainty": {
+      "description": "Explicit uncertainty: the model states what it is not sure of instead of guessing.",
+      "x-alixai-authority": "model",
+      "$ref": "#/$defs/uncertainty"
+    },
+    "ui_action": {
+      "description": "Optional. One call of a UI tool, an instruction to the CLIENT's own screen (CopilotKit frontend actions and generative UI), never to the application. The tool is chosen only among the tools the client declared for this run AND the host registered as UI-only for the application; a name that is not both, that is a capability's name, or that names a prepare or a commit makes the whole proposal fail closed (validation_failed) with nothing executed. The arguments are validated after decoding against the JSON Schema the client declared for the tool and are size-bounded. What the client's screen returns is untrusted data, never authority.",
+      "x-alixai-authority": "model",
+      "$ref": "#/$defs/uiAction"
+    },
+    "trace_id": {
+      "description": "Trace ID of the inference call that produced this proposal. Assigned by the core from the provider call; the model never writes it, so a proposal that arrives with a trace_id the core did not issue is rejected.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/traceId"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "intent": { "enum": ["task", "correction"] } },
+        "required": ["intent"]
+      },
+      "then": {
+        "properties": { "capability_id": { "type": "string" } }
+      }
+    },
+    {
+      "description": "An out-of-scope turn names no capability and carries no candidate data.",
+      "if": {
+        "properties": { "intent": { "const": "out_of_scope" } },
+        "required": ["intent"]
+      },
+      "then": {
+        "properties": {
+          "capability_id": { "type": "null" },
+          "fields": { "maxProperties": 0 },
+          "entity_refs": { "maxItems": 0 }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "scalar": {
+      "description": "A single candidate value.",
+      "type": ["string", "number", "boolean", "null"],
+      "maxLength": 4096
+    },
+    "candidateValue": {
+      "description": "A scalar, a flat list of scalars, or a flat object of scalars. No deeper nesting.",
+      "oneOf": [
+        { "$ref": "#/$defs/scalar" },
+        {
+          "type": "array",
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/scalar" }
+        },
+        {
+          "type": "object",
+          "maxProperties": 32,
+          "propertyNames": {
+            "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+          },
+          "additionalProperties": { "$ref": "#/$defs/scalar" }
+        }
+      ]
+    },
+    "uiAction": {
+      "description": "A proposed call of one UI tool of the client's screen: its name and its arguments. A proposal only: the engine checks the name against the declared and registered tools and the arguments against the declared JSON Schema before anything is emitted.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "arguments"],
+      "properties": {
+        "name": {
+          "description": "The UI tool to call, as the client declared it (letters, digits and _ . : -, at most 64, starting with a letter).",
+          "x-alixai-authority": "model",
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$"
+        },
+        "arguments": {
+          "description": "The arguments of the call: a JSON object, at most 4096 bytes once encoded, valid against the schema the client declared for the tool. Data for the client's screen, never read by the core as a field, an entity or a capability.",
+          "x-alixai-authority": "model",
+          "type": "object",
+          "maxProperties": 32
+        }
+      }
+    },
+    "entityRef": {
+      "description": "A candidate reference to one application entity.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entity_type", "mention"],
+      "properties": {
+        "entity_type": {
+          "description": "The application's entity type.",
+          "x-alixai-authority": "model",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "mention": {
+          "description": "The words in the user turn that refer to the entity.",
+          "x-alixai-authority": "model",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "candidate_id": {
+          "description": "An entity ID the model proposes. A candidate only: it is resolved and authorised by the application adapter.",
+          "x-alixai-authority": "model",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "field": {
+          "description": "The capability field this reference is meant to fill, if any.",
+          "x-alixai-authority": "model",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+        }
+      }
+    },
+    "uncertainty": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["overall"],
+      "properties": {
+        "overall": {
+          "description": "Overall confidence in the proposal, 0 (none) to 1 (certain).",
+          "x-alixai-authority": "model",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "fields": {
+          "description": "Per-field notes keyed by field name, for example why a value is a guess or which of two readings applies.",
+          "x-alixai-authority": "model",
+          "type": "object",
+          "maxProperties": 64,
+          "propertyNames": {
+            "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "maxLength": 512
+          }
+        }
+      }
+    }
+  }
+}

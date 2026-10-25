@@ -1,0 +1,109 @@
+terms:
+  - id: "invoice"
+    entity_type: "invoice"
+    labels:
+      en:
+        preferred: "invoice"
+        synonyms:
+          - "bill"
+        avoid:
+          - "receipt"
+        definition: "A request for payment issued to a customer, with a number such as INV-0001, an exact total, a due date and a state: issued, partially paid, paid or void."
+      it:
+        preferred: "fattura"
+        synonyms:
+          - "conto"
+        avoid:
+          - "ricevuta"
+        definition: "Una richiesta di pagamento emessa a un cliente, con un numero come INV-0001, un totale esatto, una scadenza e uno stato: emessa, pagata in parte, pagata o annullata."
+  - id: "quote"
+    entity_type: "quote"
+    labels:
+      en:
+        preferred: "quote"
+        synonyms:
+          - "quotation"
+          - "estimate"
+        avoid:
+          - "offer"
+        definition: "A priced proposal for a customer with a number such as QUO-0001. A draft quote bills nobody until an invoice is issued from it."
+      it:
+        preferred: "preventivo"
+        synonyms:
+          - "offerta"
+          - "stima"
+        avoid:
+          - "fattura"
+        definition: "Una proposta di prezzo per un cliente con un numero come QUO-0001. Un preventivo in bozza non fattura nessuno finché non se ne emette una fattura."
+  - id: "customer"
+    entity_type: "customer"
+    labels:
+      en:
+        preferred: "customer"
+        synonyms:
+          - "client"
+        avoid:
+          - "supplier"
+        definition: "A company the team bills, with one billing currency. Its quotes and invoices are always in that currency."
+      it:
+        preferred: "cliente"
+        synonyms:
+          - "committente"
+        avoid:
+          - "fornitore"
+        definition: "Un'azienda che il team fattura, con una sola valuta di fatturazione. I suoi preventivi e le sue fatture sono sempre in quella valuta."
+  - id: "payment"
+    labels:
+      en:
+        preferred: "payment"
+        synonyms:
+          - "receipt of funds"
+          - "remittance"
+          - "paid"
+          - "pay"
+        avoid:
+          - "invoice"
+        definition: "Money received on an invoice, in minor units of the invoice's currency, never more than the balance."
+      it:
+        preferred: "pagamento"
+        synonyms:
+          - "incasso"
+          - "versamento"
+          - "pagato"
+          - "pagata"
+          - "pagare"
+        avoid:
+          - "fattura"
+        definition: "Denaro ricevuto su una fattura, in unità minime della valuta della fattura, mai più del saldo."
+  - id: "void_reference"
+    labels:
+      en:
+        preferred: "void reference"
+        synonyms:
+          - "void code"
+        definition: "The code (VOID-, the invoice number and a version) that a manager quotes in the ledger application to finish voiding an invoice."
+      it:
+        preferred: "riferimento di annullamento"
+        synonyms:
+          - "codice di annullamento"
+        definition: "Il codice (VOID-, il numero della fattura e una versione) che un manager indica nell'applicazione del registro per completare l'annullamento di una fattura."
+  - id: "payment_method"
+    labels:
+      en:
+        preferred: "payment method"
+        synonyms:
+          - "bank transfer"
+          - "wire transfer"
+          - "card"
+          - "credit card"
+          - "cash"
+        definition: "How the money of a payment was received: bank transfer, card or cash. When it is not said, a payment is taken as a bank transfer."
+      it:
+        preferred: "metodo di pagamento"
+        synonyms:
+          - "bonifico"
+          - "bonifico bancario"
+          - "carta"
+          - "carta di credito"
+          - "contanti"
+        definition: "Come è stato ricevuto il denaro di un pagamento: bonifico, carta o contanti. Se non viene detto, un pagamento è considerato un bonifico."

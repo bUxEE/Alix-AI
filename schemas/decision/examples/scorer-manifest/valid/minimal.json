@@ -1,0 +1,25 @@
+{
+  "provider_id": "rules-decision",
+  "model_id": "rules-v1",
+  "model_revision": "1",
+  "encoder": {
+    "encoder_id": "none",
+    "revision": "1"
+  },
+  "files": [
+    {
+      "name": "rules.json",
+      "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "size_bytes": 512
+    }
+  ],
+  "licence": {
+    "spdx_id": "MIT",
+    "redistribution": "allowed"
+  },
+  "signature": {
+    "algorithm": "ed25519",
+    "key_id": "release-2026-1",
+    "value": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=="
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "format": "alixai.policy-exposure/v1",
+  "decision_id": "pdec_01M3XZ5YE0VF1A3VM6K82CEN2D",
+  "decided_at": "2026-10-02T09:30:00Z",
+  "phase": "expose",
+  "outcome": "allow",
+  "subject": {
+    "application_id": "demo-library",
+    "tenant_id": "tenant-a",
+    "workspace_id": "ws-1",
+    "principal_id": "user-1",
+    "session_id": "ses-1",
+    "roles": [
+      "member"
+    ]
+  },
+  "package": {
+    "application_id": "demo-library",
+    "version": "1.0.0",
+    "status": "active"
+  },
+  "policies": [
+    {
+      "policy_id": "default-access",
+      "digest": "89026592bcef05c5e9c889aa8fac375324ca2c4b9e5913d91dfdf036b610aec5"
+    }
+  ],
+  "considered": 300,
+  "part": 2,
+  "parts": 2,
+  "outcomes": [
+    {
+      "capability_id": "zzz.last_one",
+      "outcome": "allow",
+      "risk": 0
+    }
+  ]
+}

@@ -1,0 +1,351 @@
+@use "mixins" as *;
+
+// Structured blocks: table, chart, diagram, action card, clarification choices, progress.
+.alix-table,
+.alix-chart,
+.alix-diagram,
+.alix-action-card,
+.alix-choices,
+.alix-progress {
+  font-family: var(--alixai-font);
+  color: var(--alixai-text);
+  line-height: var(--alixai-leading);
+}
+
+.alix-table {
+  @include enter;
+  margin: 0;
+
+  &__caption {
+    padding-bottom: var(--alixai-space-2);
+    color: var(--alixai-text-muted);
+    font-size: var(--alixai-text-sm);
+    text-align: start;
+  }
+
+  &__scroll {
+    overflow: auto;
+    max-height: 24rem;
+    border: 1px solid var(--alixai-border);
+    border-radius: var(--alixai-radius-md);
+    @include focus-ring;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--alixai-text-sm);
+  }
+
+  th,
+  td {
+    padding: var(--alixai-space-2) var(--alixai-space-3);
+    border-bottom: 1px solid var(--alixai-border);
+    text-align: start;
+    vertical-align: top;
+  }
+
+  th {
+    position: sticky;
+    top: 0;
+    background: var(--alixai-surface-sunken);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  [data-kind="number"] {
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@keyframes alix-grow {
+  from {
+    transform: scaleY(0.6);
+    opacity: 0;
+  }
+
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+.alix-chart {
+  @include enter;
+  display: grid;
+  gap: var(--alixai-space-3);
+  margin: 0;
+  padding: var(--alixai-space-4);
+  border: 1px solid var(--alixai-border);
+  border-radius: var(--alixai-radius-md);
+  background: var(--alixai-surface);
+
+  &__title {
+    font-weight: 650;
+  }
+
+  &__description {
+    margin: 0;
+    color: var(--alixai-text-muted);
+    font-size: var(--alixai-text-sm);
+  }
+
+  &__svg {
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  &__axis {
+    stroke: var(--alixai-border-strong);
+    stroke-width: 1;
+  }
+
+  &__label {
+    fill: var(--alixai-text-muted);
+    font-size: 10px;
+  }
+
+  &__mark {
+    fill: var(--series, var(--alixai-chart-1));
+    stroke: none;
+    transform-origin: bottom;
+    transform-box: fill-box;
+    animation: alix-grow var(--alixai-duration-enter) var(--alixai-ease-out) both;
+
+    @include reduced-motion {
+      animation: none;
+    }
+  }
+
+  &__legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--alixai-space-1) var(--alixai-space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--alixai-text-sm);
+
+    li {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--alixai-space-2);
+    }
+  }
+
+  &__swatch {
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 2px;
+    background: var(--series, var(--alixai-chart-1));
+  }
+
+  &__toggle {
+    @include pressable;
+    min-height: 1.75rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--alixai-accent);
+    font: inherit;
+    font-size: var(--alixai-text-sm);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  &__line {
+    fill: none;
+    stroke: var(--series, var(--alixai-chart-1));
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+
+  &__area {
+    fill: var(--series, var(--alixai-chart-1));
+    opacity: 0.16;
+  }
+
+  &__data table {
+    width: 100%;
+    margin-top: var(--alixai-space-2);
+    border-collapse: collapse;
+    font-size: var(--alixai-text-sm);
+
+    th,
+    td {
+      padding: var(--alixai-space-1) var(--alixai-space-3);
+      border-bottom: 1px solid var(--alixai-border);
+      text-align: start;
+    }
+
+    td {
+      font-variant-numeric: tabular-nums;
+    }
+  }
+}
+
+.alix-diagram {
+  @include enter;
+  margin: 0;
+
+  &__source {
+    overflow: auto;
+    margin: 0;
+    padding: var(--alixai-space-3) var(--alixai-space-4);
+    border: 1px solid var(--alixai-border);
+    border-radius: var(--alixai-radius-md);
+    background: var(--alixai-surface-sunken);
+    font-family: var(--alixai-font-mono);
+    font-size: var(--alixai-text-sm);
+    @include focus-ring;
+  }
+
+  &__caption {
+    padding-bottom: var(--alixai-space-2);
+    color: var(--alixai-text-muted);
+    font-size: var(--alixai-text-sm);
+  }
+}
+
+.alix-action-card {
+  @include enter;
+  display: grid;
+  gap: var(--alixai-space-3);
+  padding: var(--alixai-space-4);
+  border: 1px solid var(--alixai-border);
+  border-radius: var(--alixai-radius-md);
+  background: var(--alixai-surface);
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--alixai-space-2);
+  }
+
+  &__action {
+    @include button-base;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: var(--alixai-text-md);
+    font-weight: 650;
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--alixai-space-2);
+  }
+
+  &__action {
+    @include button-base;
+  }
+
+  &__facts {
+    display: grid;
+    grid-template-columns: minmax(0, max-content) minmax(0, 1fr);
+    gap: var(--alixai-space-1) var(--alixai-space-4);
+    margin: 0;
+    font-size: var(--alixai-text-sm);
+
+    > div {
+      display: contents;
+    }
+
+    dt {
+      color: var(--alixai-text-muted);
+    }
+
+    dd {
+      margin: 0;
+      overflow-wrap: anywhere;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+}
+
+.alix-choices {
+  @include enter;
+  display: grid;
+  gap: var(--alixai-space-3);
+
+  &__prompt {
+    margin: 0;
+    font-size: var(--alixai-text-md);
+  }
+
+  &__options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--alixai-space-2);
+  }
+
+  &__option {
+    @include button-base;
+    border-radius: 999px;
+  }
+
+  &__free {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: var(--alixai-space-2);
+  }
+
+  &__label {
+    display: grid;
+    flex: 1 1 14rem;
+    gap: var(--alixai-space-1);
+    font-size: var(--alixai-text-sm);
+    font-weight: 600;
+  }
+
+  &__input {
+    min-height: var(--alixai-target);
+    padding: 0 var(--alixai-space-3);
+    border: 1px solid var(--alixai-border-strong);
+    border-radius: var(--alixai-radius-md);
+    background: var(--alixai-surface);
+    color: inherit;
+    font: inherit;
+    @include focus-ring;
+  }
+
+  &__send {
+    @include button-base;
+    @include button-primary;
+  }
+}
+
+.alix-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--alixai-space-2);
+  margin: 0;
+  color: var(--alixai-text-muted);
+  font-size: var(--alixai-text-sm);
+
+  &::before {
+    content: "";
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--alixai-accent);
+  }
+
+  &[data-state="running"]::before {
+    animation: alix-pulse 1.2s ease-in-out infinite;
+
+    @include reduced-motion {
+      animation: none;
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "advisory": true,
+  "report_id": "rdr_01J0000000000000000000000A",
+  "generated_at": "2026-10-12T09:00:00Z",
+  "evaluated_at": "2026-10-12T10:30:00Z",
+  "previous_report_id": "rdr_01J0000000000000000000000B",
+  "inputs_changed": false,
+  "mode": "deterministic_and_model",
+  "summary": {
+    "found": 1,
+    "partial": 1,
+    "missing": 1,
+    "unverified": 1,
+    "contradicted": 0
+  },
+  "items": []
+}

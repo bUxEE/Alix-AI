@@ -1,0 +1,24 @@
+{
+  "type": "clarification_choices",
+  "field": "patient",
+  "answer_kind": "entity",
+  "allow_free_text": true,
+  "choices": [
+    {
+      "choice_id": "p1",
+      "label": "Anna Verdi, born 1984",
+      "value": {
+        "kind": "identifier",
+        "value": "pat_881"
+      }
+    },
+    {
+      "choice_id": "p2",
+      "label": "Anna Verdi, born 1991",
+      "value": {
+        "kind": "identifier",
+        "value": "pat_902"
+      }
+    }
+  ]
+}

@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:application-package:documentation-index:v1",
+  "title": "Documentation index",
+  "description": "The index of the application documentation shipped in documentation/ (master plan 4.5 check 4), at documentation/index.yaml. For every capability it must hold entries covering seven facets: every field, every validation rule, every permission, every failure state, the risk level, the confirmation rule and every user-visible outcome. The schema fixes the SHAPE of an entry; COVERAGE is the loader's check, so a missing facet fails that one capability with a precise finding instead of making the whole index unreadable. Missing documentation is a failed capability, never an instruction for the model to guess. Authored as YAML; this schema validates the parsed JSON form.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["entries"],
+  "properties": {
+    "entries": {
+      "description": "The documentation entries. At least one. Entry IDs are unique across the index (checked by the loader).",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4096,
+      "items": { "$ref": "#/$defs/entry" }
+    }
+  },
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "capability_id", "facet", "language", "title", "summary", "location"],
+      "properties": {
+        "id": {
+          "description": "The entry ID. Capabilities cite it in doc_refs.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/docId"
+        },
+        "capability_id": {
+          "description": "The capability the entry documents.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/capabilityId"
+        },
+        "facet": {
+          "description": "What the entry documents: field (needs field), validation_rule (needs rule_id), permission (needs permission), failure_state (needs error_code), risk_level, confirmation_rule or user_visible_outcome (needs outcome). risk_level and confirmation_rule take no subject: there is one of each per capability.",
+          "type": "string",
+          "enum": [
+            "field",
+            "validation_rule",
+            "permission",
+            "failure_state",
+            "risk_level",
+            "confirmation_rule",
+            "user_visible_outcome"
+          ]
+        },
+        "language": {
+          "description": "The language of the documentation text. The manifest's default language must be covered for every capability; other languages are optional.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/languageTag"
+        },
+        "title": {
+          "description": "Title of the entry.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/label"
+        },
+        "summary": {
+          "description": "What the documentation says about the subject, in one or two sentences, so the audit can read the claim and not only follow a path.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "pattern": "^[^\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f\\x7f]+$"
+        },
+        "location": {
+          "description": "Where the full documentation is.",
+          "$ref": "#/$defs/location"
+        },
+        "field": {
+          "description": "For facet field: the name of the documented capability field.",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+        },
+        "rule_id": {
+          "description": "For facet validation_rule: the ID of the documented validation rule.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "permission": {
+          "description": "For facet permission: the documented application permission.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/permissionId"
+        },
+        "error_code": {
+          "description": "For facet failure_state: the platform error code of the documented failure state.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/errorCode"
+        },
+        "outcome": {
+          "description": "For facet user_visible_outcome: the outcome ID, matching a success response of the conversation contracts.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "facet": { "const": "field" } }, "required": ["facet"] },
+          "then": {
+            "required": ["field"],
+            "properties": { "rule_id": false, "permission": false, "error_code": false, "outcome": false }
+          }
+        },
+        {
+          "if": { "properties": { "facet": { "const": "validation_rule" } }, "required": ["facet"] },
+          "then": {
+            "required": ["rule_id"],
+            "properties": { "field": false, "permission": false, "error_code": false, "outcome": false }
+          }
+        },
+        {
+          "if": { "properties": { "facet": { "const": "permission" } }, "required": ["facet"] },
+          "then": {
+            "required": ["permission"],
+            "properties": { "field": false, "rule_id": false, "error_code": false, "outcome": false }
+          }
+        },
+        {
+          "if": { "properties": { "facet": { "const": "failure_state" } }, "required": ["facet"] },
+          "then": {
+            "required": ["error_code"],
+            "properties": { "field": false, "rule_id": false, "permission": false, "outcome": false }
+          }
+        },
+        {
+          "if": { "properties": { "facet": { "const": "user_visible_outcome" } }, "required": ["facet"] },
+          "then": {
+            "required": ["outcome"],
+            "properties": { "field": false, "rule_id": false, "permission": false, "error_code": false }
+          }
+        },
+        {
+          "if": { "properties": { "facet": { "enum": ["risk_level", "confirmation_rule"] } }, "required": ["facet"] },
+          "then": {
+            "properties": { "field": false, "rule_id": false, "permission": false, "error_code": false, "outcome": false }
+          }
+        }
+      ]
+    },
+    "location": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path"],
+      "properties": {
+        "path": {
+          "description": "Package-relative path of the document, below documentation/.",
+          "type": "string",
+          "maxLength": 240,
+          "pattern": "^documentation/[A-Za-z0-9_][A-Za-z0-9._-]*(/[A-Za-z0-9_][A-Za-z0-9._-]*)*$"
+        },
+        "anchor": {
+          "description": "Optional heading or element anchor inside the document.",
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,128}$"
+        }
+      }
+    }
+  }
+}

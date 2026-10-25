@@ -1,0 +1,36 @@
+{
+  "policy_id": "stricter-for-children",
+  "description": "Raises the level of extensions for junior accounts and exposes the same fields to every role.",
+  "role_grants": [
+    {
+      "role": "junior_member",
+      "capabilities": [
+        "catalog.find_title",
+        "loans.extend"
+      ]
+    },
+    {
+      "role": "member",
+      "capabilities": [
+        "catalog.find_title",
+        "loans.extend",
+        "reservations.create"
+      ]
+    }
+  ],
+  "risk_overrides": [
+    {
+      "capability_id": "loans.extend",
+      "minimum_risk_level": 2
+    }
+  ],
+  "field_projection": [
+    {
+      "capability_id": "loans.extend",
+      "model_visible_fields": [
+        "loan",
+        "weeks"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "operation": "read",
+  "capability_id": "appointments.list_availability",
+  "status": "ok",
+  "identifiers": [
+    {
+      "entity_type": "slot",
+      "entity_id": "slot_0412"
+    },
+    {
+      "entity_type": "slot",
+      "entity_id": "slot_0413"
+    }
+  ],
+  "values": [
+    {
+      "field": "Slot Date",
+      "value": {
+        "kind": "text",
+        "value": "x"
+      }
+    }
+  ],
+  "errors": [],
+  "freshness": {
+    "as_of": "2026-10-09T08:00:00Z",
+    "version": "v42"
+  },
+  "allowed_next_actions": [
+    {
+      "action": "invoke_capability",
+      "capability_id": "appointments.book",
+      "label": "Book this slot"
+    }
+  ]
+}

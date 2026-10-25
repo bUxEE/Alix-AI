@@ -1,0 +1,177 @@
+@use "mixins" as *;
+
+// What follows a prepared action: the panel the transcript keeps, the step-up card, the receipt and the one-line outcome.
+
+.alix-receipt,
+.alix-prepared,
+.alix-continue {
+  @include enter;
+  display: grid;
+  gap: var(--alixai-space-3);
+  padding: var(--alixai-space-4);
+  border: 1px solid var(--alixai-border);
+  border-radius: var(--alixai-radius-lg);
+  background: var(--alixai-surface);
+  color: var(--alixai-text);
+  font-family: var(--alixai-font);
+  line-height: var(--alixai-leading);
+
+  &__title {
+    margin: 0;
+    font-size: var(--alixai-text-md);
+    font-weight: 650;
+  }
+}
+
+.alix-receipt {
+  &__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--alixai-space-2);
+  }
+
+  &__status {
+    @include tag;
+
+    &[data-tone="ok"] {
+      @include tag(var(--alixai-ok), var(--alixai-ok-soft));
+    }
+
+    &[data-tone="accent"] {
+      @include tag(var(--alixai-accent), var(--alixai-accent-soft));
+    }
+
+    &[data-tone="warn"] {
+      @include tag(var(--alixai-warn), var(--alixai-warn-soft));
+    }
+
+    &[data-tone="danger"] {
+      @include tag(var(--alixai-danger), var(--alixai-danger-soft));
+    }
+  }
+
+  &__facts {
+    display: grid;
+    grid-template-columns: minmax(0, max-content) minmax(0, 1fr);
+    gap: var(--alixai-space-1) var(--alixai-space-4);
+    margin: 0;
+    font-size: var(--alixai-text-sm);
+
+    > div {
+      display: contents;
+    }
+
+    dt {
+      color: var(--alixai-text-muted);
+    }
+
+    dd {
+      margin: 0;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
+  &__errors {
+    display: grid;
+    gap: var(--alixai-space-1);
+    margin: 0;
+    padding: var(--alixai-space-2) var(--alixai-space-3);
+    list-style: none;
+    border-radius: var(--alixai-radius-md);
+    background: var(--alixai-danger-soft);
+    color: var(--alixai-danger);
+    font-size: var(--alixai-text-sm);
+  }
+
+  &__meta {
+    margin: 0;
+    color: var(--alixai-text-muted);
+    font-size: var(--alixai-text-xs);
+  }
+}
+
+.alix-outcome {
+  @include enter;
+  margin: 0;
+  color: var(--alixai-text-muted);
+  font-family: var(--alixai-font);
+  font-size: var(--alixai-text-sm);
+}
+
+.alix-prepared {
+  background: var(--alixai-surface-raised);
+
+  &__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--alixai-space-2) var(--alixai-space-4);
+  }
+
+  &__summary {
+    margin: 0;
+    max-width: 65ch;
+  }
+
+  &[data-risk="2"] .alix-sheet__meter i[data-on] {
+    background: var(--alixai-warn);
+  }
+
+  &[data-risk="3"] .alix-sheet__meter i[data-on] {
+    background: var(--alixai-danger);
+  }
+
+  &__toggle {
+    @include focus-ring;
+    width: fit-content;
+    border-radius: var(--alixai-radius-sm);
+    color: var(--alixai-accent);
+    font-size: var(--alixai-text-sm);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  &__details[open] &__toggle {
+    margin-bottom: var(--alixai-space-2);
+  }
+
+  &__note {
+    margin: 0;
+    color: var(--alixai-text-muted);
+    font-size: var(--alixai-text-xs);
+  }
+}
+
+.alix-continue {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  border-color: var(--alixai-warn);
+  background: var(--alixai-warn-soft);
+
+  &__body {
+    display: grid;
+    gap: var(--alixai-space-1);
+  }
+
+  &__text {
+    margin: 0;
+    max-width: 65ch;
+    font-size: var(--alixai-text-sm);
+  }
+
+  &__button {
+    @include button-base;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--alixai-space-2);
+  }
+
+  @media (max-width: 30rem) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

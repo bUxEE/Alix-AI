@@ -1,0 +1,20 @@
+- name: minicpm5-1b-q4_k_m
+  backend: llama-cpp
+  context_size: 4096
+  known_usecases:
+    - chat
+  options:
+    - use_jinja:true
+  reasoning:
+    disable: true
+  chat_template_kwargs:
+    enable_thinking: false
+  parameters:
+    model: MiniCPM5-1B-Q4_K_M.gguf
+    temperature: 0
+  template:
+    use_tokenizer_template: true
+  download_files:
+    - filename: MiniCPM5-1B-Q4_K_M.gguf
+      uri: https://huggingface.co/openbmb/MiniCPM5-1B-GGUF/resolve/3d55fac80935ae6456986ad2384b5cbcc4d6c948/MiniCPM5-1B-Q4_K_M.gguf
+      sha256: 81b64d05a23b17b34c475f42b3e72fbde62d4b92cc34541f7a8031d0752deafa

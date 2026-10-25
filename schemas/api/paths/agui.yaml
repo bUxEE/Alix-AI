@@ -1,0 +1,379 @@
+# The AG-UI endpoint (master plan 15.6, ADR 0035, docs/integration/agui.md): a run as AG-UI events for a CopilotKit or
+# AG-UI client. Implemented by internal/gateway/routes_v1_agui.go over internal/agui (the mapping, no HTTP) and
+# internal/stream (the resumable event buffer). The same turn and the same authority rules as /v1/sessions: the
+# scope is the context token and nothing else, the thread of a run is the session of the token, and an application
+# whose package is not active serves nothing (`quarantined`).
+#
+# The protocol is the pinned release of @ag-ui/core (protocol 1.0); the events are validated against the schemas
+# vendored in schemas/agui before they are sent. Reasoning, sub-agent and Raw events are never emitted, client-declared
+# tools are never called, a client's context reaches no prompt (until M3-32), and full duplex voice is not claimed.
+# GET /v1/agui/capabilities says so.
+paths:
+  /v1/agui:
+    post:
+      operationId: runAgui
+      tags: [agui]
+      summary: Run an AG-UI agent run and receive its events
+      description: |
+        The body is the AG-UI `RunAgentInput`. Members this API does not read (`parentRunId`, members of a newer
+        protocol version, `forwardedProps` beyond the `alixai` object) are accepted and ignored. Exactly one thing is
+        answered:
+
+        - the last message when its role is `user`: the text (and the pre-uploaded files it names, as `file` content
+          parts whose `source` is `{type: "file", value: <file id of POST /v1/files>}`; inline bytes and URLs are
+          refused), as a turn of the dialogue engine;
+        - `forwardedProps.alixai.choiceId`: the choice of the pending clarification, with no model involved;
+        - `resume`: the answer to an interrupt, `[{interruptId: <preparation id>, status: "resolved", payload:
+          {"approved": true | false}}]` (status `cancelled` declines). Only an explicit `{"approved": true}`
+          approves, and an approval carries the confirmation secret in the `X-AlixAI-Confirmation-Token` request
+          header, never in the body. The same answer in the form of a tool message for the call
+          `alixai_confirm_<preparation id>` is accepted;
+        - no messages and no resume: a **connect** run, which replays the thread's history and state and runs no
+          turn (it needs the host to have put `history.read` in the context token).
+
+        `threadId` must be the session id of the context token. Any other thread, an interrupt of another thread, of
+        another principal or tenant and one that never existed are one and the same `403 scope_violation`.
+
+        **Events.** Server-sent events: each event is `data: <AG-UI event on one line>` followed by a blank line;
+        `id: <seq>` (the seq of the TurnEvent the events were produced for, the resume cursor) is on the LAST event
+        of each TurnEvent, so a client that lost the connection and sends the last id it received always resumes at a
+        TurnEvent boundary. The run ends with `RUN_FINISHED` (outcome `success`, `interrupt` or `cancelled`) or
+        `RUN_ERROR`. A prepared action ends the run with an interrupt outcome; resume it with a new run.
+
+        **The confirmation secret** of the action a run prepared is the `X-AlixAI-Confirmation-Token` response header,
+        sent only when the run's account was shown in full and ended in its interrupt. It is in no event and no body.
+        The host backend's SDK agent keeps it per thread and preparation and sends it back on the resume; the browser
+        never holds it. A retry of the run and every reconnect replay the events and never send the secret again.
+
+        **Retry.** A run is identified by `(threadId, runId)`. The same `runId` after the run has finished returns
+        the recorded run (the buffered events, from the start) and never runs a second turn; while the first request is
+        still running it is `409 conflict` (`details.reason: run_in_progress`). A new `runId` is a new turn.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AguiRunAgentInput'
+      responses:
+        '200':
+          description: The AG-UI events of the run.
+          headers:
+            X-AlixAI-Confirmation-Token:
+              description: |
+                The single-use confirmation secret of the action this run prepared, when its account ended in an
+                interrupt that asks for the confirmation. Sent to the host backend's SDK agent only.
+              schema:
+                type: string
+          content:
+            text/event-stream:
+              description: One server-sent event per AG-UI event.
+              schema:
+                type: string
+                description: |
+                  A sequence of `data: <AG-UI event JSON>` frames, with `id: <seq>` on the last event of each TurnEvent;
+                  the `data` of each validates against the `Event` definition of schemas/agui/ag-ui-core.json.
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '409':
+          $ref: ../openapi.yaml#/components/responses/Conflict
+        '410':
+          $ref: ../openapi.yaml#/components/responses/Gone
+        '413':
+          $ref: ../openapi.yaml#/components/responses/PayloadTooLarge
+        '415':
+          $ref: ../openapi.yaml#/components/responses/UnsupportedMediaType
+        '428':
+          description: |
+            A resume that approves a preparation without the confirmation secret in the `X-AlixAI-Confirmation-Token`
+            header (`confirmation_required`). Nothing was committed.
+          content:
+            application/json:
+              schema:
+                $ref: ../openapi.yaml#/components/schemas/Error
+        '429':
+          $ref: ../openapi.yaml#/components/responses/TooManyRequests
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/agui/capabilities:
+    get:
+      operationId: getAguiCapabilities
+      tags: [agui]
+      summary: What the AG-UI endpoint claims
+      description: |
+        The AG-UI protocol version and release implemented, the event types emitted and not emitted, the AG-UI
+        `AgentCapabilities` object, the identifiers of the features that are not claimed (`notClaimed`: reasoning,
+        sub-agents, Raw events, chunk forms, predictive state updates, inline attachments, model-generated suggestions,
+        full duplex voice, and, until the task that implements them, client tools and client context) and the
+        features whose input is accepted and inert (`pending`, with the task that will make them work in
+        `supported_by`). A client reads this instead of assuming. Same identity and active-application rules as every
+        route.
+      responses:
+        '200':
+          description: The capabilities document.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AguiCapabilities'
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/agui/threads/{thread_id}/runs/{run_id}/events:
+    parameters:
+      - $ref: '#/components/parameters/AguiThreadId'
+      - $ref: '#/components/parameters/AguiRunId'
+      - $ref: '#/components/parameters/AguiEventsCursor'
+      - $ref: '#/components/parameters/AguiLastEventId'
+    get:
+      operationId: streamAguiRunEvents
+      tags: [agui]
+      summary: Read the events of a run again, from a cursor
+      description: |
+        The events of a run the caller made, mapped again from the buffered TurnEvents of the stream hub, so that a
+        client that lost its connection continues without the turn being run again: this route only reads. The
+        mapping is a pure function of the run's context and the buffered TurnEvents, so the events are byte for byte
+        those the run sent, and the confirmation secret is never sent again.
+
+        **Transport.** Server-sent events by default (`data: <event>` lines, `id: <seq>` on the last event of each
+        TurnEvent). A request with `Upgrade: websocket` is served as a WebSocket: one text message per event, exactly
+        the data line of the SSE event, server to client only (a message from the client closes the connection),
+        subprotocol `alixai.agui.v1`, a normal closure (1000) after the last event. The socket carries no ids, so a
+        WebSocket reader that must resume passes the `cursor` it learned over SSE, or starts again from the beginning.
+        A browser's `Origin` must be the request's own host: no CORS header is ever sent.
+
+        **Resume.** The cursor is the `seq` of the last TurnEvent the client has (`Last-Event-ID` or `cursor`; the
+        later wins); the response is the events after it. No cursor is the start. A malformed cursor, or one ahead
+        of the stream, is `400`; one behind the retained window is `410`; one at the end of a finished run is `204`
+        (stop reconnecting). A run that does not exist, one of another principal and one past its retention are the
+        same `403` (`scope_violation`, `details.reason: turn_not_visible`); a run whose first request is still
+        running is `409 conflict`. A context token is single use: every reconnect needs a fresh one.
+      responses:
+        '200':
+          description: The events of the run after the cursor.
+          content:
+            text/event-stream:
+              description: One server-sent event per AG-UI event.
+              schema:
+                type: string
+        '101':
+          description: 'The connection is upgraded to a WebSocket (the request carried `Upgrade: websocket`).'
+        '204':
+          description: 'The cursor is at the end of a finished run: the client has every event. Stop reconnecting.'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '409':
+          $ref: ../openapi.yaml#/components/responses/Conflict
+        '410':
+          $ref: ../openapi.yaml#/components/responses/Gone
+        '429':
+          $ref: ../openapi.yaml#/components/responses/TooManyRequests
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/agui/threads/{thread_id}/runs/{run_id}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/AguiThreadId'
+      - $ref: '#/components/parameters/AguiRunId'
+    post:
+      operationId: cancelAguiRun
+      tags: [agui]
+      summary: Stop a run that is still in flight
+      description: |
+        Cancels the request that runs the turn: the engine stops, no confirmation is presented and nothing is
+        committed. The response of the run's own request then ends with `RUN_FINISHED` and the `cancelled` outcome.
+        A run that is a resume was already confirmed by the user, and a commit that has begun is not undone: cancel
+        leaves nothing committed unless the user had already confirmed. A run that has already finished has nothing
+        to stop (`finished`): the receipt it has stands, and a prepared action it left pending is declined by a
+        resume with status `cancelled`. A run that is not the caller's, or does not exist, is the same `403` as for
+        the events route.
+      responses:
+        '200':
+          description: The cancel was recorded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AguiCancelResult'
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+components:
+  parameters:
+    AguiThreadId:
+      name: thread_id
+      in: path
+      required: true
+      description: 'The thread of the run: the session id the context token carries. Any other value is `scope_violation`.'
+      schema:
+        type: string
+        pattern: '^[A-Za-z0-9_.-]{1,128}$'
+    AguiRunId:
+      name: run_id
+      in: path
+      required: true
+      description: |
+        The `runId` of the run. A run that is not visible in the caller's scope (unknown, another principal's, past its
+        retention) is `scope_violation`.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+    AguiEventsCursor:
+      name: cursor
+      in: query
+      required: false
+      description: |
+        The `seq` of the last TurnEvent the client has: the `id` of the last SSE event it received. For a fetch-based
+        reader and for a WebSocket. Not given: the start of the run.
+      schema:
+        type: string
+        pattern: '^[0-9]{1,10}$'
+    AguiLastEventId:
+      name: Last-Event-ID
+      in: header
+      required: false
+      description: The `id` of the last event the client received, as an `EventSource` sends it. With `cursor` as well, the later wins.
+      schema:
+        type: string
+        pattern: '^[0-9]{1,10}$'
+
+  schemas:
+    AguiRunAgentInput:
+      type: object
+      description: |
+        The AG-UI `RunAgentInput` (schemas/agui/ag-ui-core.json, `RunAgentInput`), as far as AlixAI reads it. Everything in it
+        is data from the client: it is never a capability, a permission, a scope or an instruction.
+      required: [threadId, runId, messages]
+      properties:
+        threadId:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: The session id of the context token.
+        runId:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: Identifies the run on its thread; the same id after the run finished returns the recorded run.
+        parentRunId:
+          type: string
+          description: Accepted and ignored.
+        state:
+          description: |
+            The client's shared state. An object makes the run update only `/alixai` of it (STATE_DELTA); anything
+            else makes the first state event a STATE_SNAPSHOT. Untrusted, bounded data.
+        messages:
+          type: array
+          maxItems: 200
+          items:
+            type: object
+          description: |
+            The conversation as the client holds it. The last user message is the utterance and nothing else of it is
+            read as an instruction; the session store is the record of the conversation. An empty list with no
+            `resume` is a connect run.
+        tools:
+          type: array
+          maxItems: 32
+          items:
+            type: object
+          description: UI declarations of the client. Accepted, never called, never a capability (until M3-32 they are not read further).
+        context:
+          type: array
+          maxItems: 32
+          items:
+            type: object
+          description: The page's readable context. Untrusted, bounded, fenced data that reaches no prompt (until M3-32).
+        forwardedProps:
+          description: 'Only the object `alixai` is read: `choiceId` answers the pending clarification, `language` is a BCP 47 tag.'
+        resume:
+          type: array
+          maxItems: 1
+          items:
+            type: object
+            required: [interruptId, status]
+            properties:
+              interruptId:
+                type: string
+                description: The preparation id of the interrupt.
+              status:
+                type: string
+                enum: [resolved, cancelled]
+              payload:
+                description: 'Exactly `{"approved": true}` or `{"approved": false}` for a resolved interrupt.'
+      additionalProperties: true
+
+    AguiPendingFeature:
+      type: object
+      additionalProperties: false
+      required: [feature, behaviour, supported_by]
+      properties:
+        feature:
+          type: string
+        behaviour:
+          type: string
+        supported_by:
+          type: string
+          description: The task of the plan that makes the feature work.
+
+    AguiCapabilities:
+      type: object
+      additionalProperties: false
+      required: [protocolVersion, package, eventsEmitted, eventsNotEmitted, notClaimed, agent, pending]
+      properties:
+        protocolVersion:
+          type: string
+          description: The AG-UI protocol version implemented.
+        package:
+          type: string
+          description: The release of the AG-UI schemas the events are validated against.
+        eventsEmitted:
+          type: array
+          items:
+            type: string
+        eventsNotEmitted:
+          type: array
+          items:
+            type: string
+        notClaimed:
+          type: array
+          items:
+            type: string
+          description: Stable identifiers of the features that are not claimed, `voice_full_duplex` among them.
+        agent:
+          type: object
+          description: The AG-UI `AgentCapabilities` object of the release.
+        pending:
+          type: array
+          items:
+            $ref: '#/components/schemas/AguiPendingFeature'
+
+    AguiCancelResult:
+      type: object
+      additionalProperties: false
+      required: [thread_id, run_id, status]
+      properties:
+        thread_id:
+          type: string
+        run_id:
+          type: string
+        status:
+          type: string
+          enum: [cancelling, finished]
+          description: |
+            `cancelling`: the run was in flight and has been told to stop (its own response ends with the cancelled
+            outcome). `finished`: the run had already ended.

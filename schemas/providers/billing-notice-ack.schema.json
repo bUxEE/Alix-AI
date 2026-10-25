@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:providers:billing-notice-ack:v1",
+  "title": "Billing notice acknowledgement",
+  "description": "The recorded acknowledgement of a provider billing notice (additive plan section 4.1): a consumer subscription (ChatGPT, Claude, Gemini or Meta consumer AI plans) is a different product from API access, so setup of a provider cannot complete until an authorised operator has seen the notice of that profile and confirmed both statements. It records who acknowledged, when, which notice version and the digest of the exact notice text shown, and the deployment, application and tenant it applies to. The two confirmations are const true: an acknowledgement that does not confirm them is not representable. Every member is recorded by the core from the verified Scope; a client cannot supply an acknowledgement.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "ack_id",
+    "profile_id",
+    "provider_id",
+    "notice_version",
+    "notice_digest",
+    "scope",
+    "confirmations",
+    "acknowledged_by",
+    "acknowledged_at"
+  ],
+  "properties": {
+    "ack_id": {
+      "description": "Acknowledgement ID.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/acknowledgementId"
+    },
+    "profile_id": {
+      "description": "The provider profile whose billing notice was acknowledged.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/profileId"
+    },
+    "provider_id": {
+      "description": "The provider.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/providerId"
+    },
+    "notice_version": {
+      "description": "The version of the billing notice shown, as in the profile billing_notice.version. A new notice version needs a new acknowledgement.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+    },
+    "notice_digest": {
+      "description": "SHA-256 of the exact notice text that was shown, so a later edit of the text under the same version is detectable.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/sha256"
+    },
+    "scope": {
+      "description": "What the acknowledgement covers: the deployment, and optionally one application or one tenant of it. A tenant needs its application.",
+      "x-alixai-authority": "alixai",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["deployment_id"],
+      "properties": {
+        "deployment_id": {
+          "description": "The AlixAI installation.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "application_id": {
+          "description": "The host application, when the acknowledgement is not deployment-wide.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "tenant_id": {
+          "description": "The tenant, when the acknowledgement is not application-wide.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        }
+      },
+      "dependentRequired": { "tenant_id": ["application_id"] }
+    },
+    "confirmations": {
+      "description": "The two statements the operator confirmed. Both are always true on a recorded acknowledgement.",
+      "x-alixai-authority": "alixai",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["consumer_subscription_is_not_api_access", "separate_api_billing_understood"],
+      "properties": {
+        "consumer_subscription_is_not_api_access": {
+          "description": "Confirmed: a consumer chat subscription is not API access and is not used.",
+          "x-alixai-authority": "alixai",
+          "const": true
+        },
+        "separate_api_billing_understood": {
+          "description": "Confirmed: provider API usage is billed separately by the provider.",
+          "x-alixai-authority": "alixai",
+          "const": true
+        }
+      }
+    },
+    "acknowledged_by": {
+      "description": "The authorised operator, from the verified Scope.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+    },
+    "acknowledged_at": {
+      "description": "When the acknowledgement was recorded.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    }
+  }
+}

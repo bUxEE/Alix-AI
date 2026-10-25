@@ -1,0 +1,4 @@
+# Blank issues are off so every report carries the information triage needs.
+# Security vulnerabilities must NOT be filed here: see SECURITY.md in the repository root and
+# report privately (placeholder contact security@TBD until the real address is set in M5-H03).
+blank_issues_enabled: false

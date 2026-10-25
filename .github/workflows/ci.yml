@@ -1,0 +1,257 @@
+# AlixAI continuous integration: build, vet, tests, supply chain and repository rules.
+#
+# Rules this file lives by:
+#   * Every third-party action is pinned by full commit SHA with its version in a trailing comment.
+#     The `policy` job fails the build if one is not.
+#   * No telemetry, no paid service, no secrets. The workflow only needs `contents: read`.
+#   * Go is pure Go: build and test run with CGO_ENABLED=0. Only the dedicated race job turns cgo on,
+#     because the race detector needs it (Linux runner, gcc present).
+#   * The TypeScript and Python SDK jobs are conditional: their steps run only once
+#     `sdk/typescript/package.json` / `sdk/python/pyproject.toml` exist (hashFiles detection).
+#
+# A failing check is a failing build. A tool that cannot run is reported as an error, never silently
+# skipped. In particular, `go vet`, `go test` and govulncheck fail on a module with no Go packages,
+# so `ci ok` stays red until the first package lands; that is intentional, not a broken workflow.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # Pure Go everywhere except the race job (see below).
+  CGO_ENABLED: "0"
+
+jobs:
+  go:
+    name: go (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    defaults:
+      run:
+        # Git Bash on the Windows runner, so the same commands run on both systems.
+        shell: bash
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go (version from go.mod)
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Keep Go toolchain telemetry off
+        run: go telemetry off
+
+      - name: Show toolchain
+        run: |
+          go version
+          go env CGO_ENABLED GOOS GOARCH
+
+      - name: Verify module checksums
+        run: go mod verify
+
+      - name: Build
+        run: go build ./...
+
+      - name: gofmt
+        run: test -z "$(gofmt -l $(go list -f '{{.Dir}}' ./...))"
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test -timeout 40m ./...
+
+  race:
+    # The race detector needs cgo, so this is the one place CGO_ENABLED=1 is used.
+    name: go test -race (ubuntu-latest, cgo)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CGO_ENABLED: "1"
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go (version from go.mod)
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Keep Go toolchain telemetry off
+        run: go telemetry off
+
+      - name: Test with the race detector
+        run: go test -race -timeout 80m ./...
+
+  supply-chain:
+    # Vulnerability scan and dependency licence allow-list.
+    # Both tools are developer-side checks that run from `@latest` on purpose, so newly published
+    # advisories and licence classifications apply at once; neither ships in any release artifact.
+    # govulncheck reads the public Go vulnerability database and sends no project data.
+    name: vulnerabilities and licences
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go (version from go.mod)
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Keep Go toolchain telemetry off
+        run: go telemetry off
+
+      - name: govulncheck
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
+      - name: Dependency licence allow-list
+        # Two modules are checked by hand because go-licenses' classifier does not recognise their text: modernc.org/mathutil
+        # (BSD-3-Clause) and github.com/segmentio/asm (MIT No Attribution, from v1.2). Re-check their LICENSE when they change.
+        run: >-
+          go run github.com/google/go-licenses@latest check ./...
+          --allowed_licenses=Apache-2.0,MIT,BSD-2-Clause,BSD-3-Clause,ISC,MPL-2.0
+          --ignore modernc.org/mathutil
+          --ignore github.com/segmentio/asm
+
+  typescript:
+    # Runs only once the TypeScript SDK exists. The SDK's package.json must declare
+    # "packageManager": "pnpm@<exact version>" and the repository must carry pnpm-lock.yaml;
+    # otherwise this job fails, because an unpinned toolchain is not a reproducible build.
+    name: typescript sdk
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Detect TypeScript SDK
+        id: sdk
+        if: ${{ hashFiles('sdk/typescript/package.json') != '' }}
+        run: echo "present=true" >> "$GITHUB_OUTPUT"
+
+      - name: Set up pnpm (version from the SDK's packageManager field)
+        if: ${{ steps.sdk.outputs.present == 'true' }}
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          package_json_file: sdk/typescript/package.json
+
+      - name: Set up Node.js
+        if: ${{ steps.sdk.outputs.present == 'true' }}
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Install dependencies (frozen lockfile)
+        if: ${{ steps.sdk.outputs.present == 'true' }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        if: ${{ steps.sdk.outputs.present == 'true' }}
+        run: pnpm --filter ./sdk/typescript run typecheck
+
+      - name: Test
+        if: ${{ steps.sdk.outputs.present == 'true' }}
+        run: pnpm --filter ./sdk/typescript run test
+
+  python:
+    # Runs only once the Python SDK exists.
+    name: python sdk (${{ matrix.python }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.13"]
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Detect Python SDK
+        id: sdk
+        if: ${{ hashFiles('sdk/python/pyproject.toml') != '' }}
+        run: echo "present=true" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Python
+        if: ${{ steps.sdk.outputs.present == 'true' }}
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install SDK and pytest
+        if: ${{ steps.sdk.outputs.present == 'true' }}
+        working-directory: sdk/python
+        run: python -m pip install -e . pytest
+
+      - name: pytest
+        if: ${{ steps.sdk.outputs.present == 'true' }}
+        working-directory: sdk/python
+        run: python -m pytest
+
+  policy:
+    # Repository policy that a pull request must not be able to loosen by accident.
+    name: workflow policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Every action is pinned by full commit SHA with a version comment
+        run: |
+          bad=$(grep -rnE '^[[:space:]]*(-[[:space:]]+)?uses:' .github/workflows \
+            | grep -vE 'uses:[[:space:]]+[A-Za-z0-9._/-]+@[0-9a-f]{40}[[:space:]]+#[[:space:]]*v?[0-9][^[:space:]]*[[:space:]]*$' || true)
+          if [ -n "$bad" ]; then
+            echo "::error::Unpinned action reference (need owner/repo@<40-hex sha> # vX.Y.Z):"
+            echo "$bad"
+            exit 1
+          fi
+
+  ci-ok:
+    # One stable name for branch protection. Conditional jobs report success when they have
+    # nothing to do; anything failed or cancelled makes this job fail.
+    name: ci ok
+    if: ${{ always() }}
+    needs: [go, race, supply-chain, typescript, python, policy]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fail if any required job did not succeed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "job results: $RESULTS"
+          for r in $RESULTS; do
+            if [ "$r" != "success" ]; then
+              echo "::error::a required job finished as '$r'"
+              exit 1
+            fi
+          done

@@ -1,0 +1,110 @@
+{
+  "name": "@alixai/copilotkit-adapter",
+  "version": "1.0.0",
+  "description": "Optional CopilotKit and AG-UI adapter for AlixAI: AlixAIAgent for CopilotRuntime, runtime helpers and React helpers for the confirmation card, citations, attachments and structured blocks.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "packageManager": "pnpm@12.3.4",
+  "engines": {
+    "node": ">=22"
+  },
+  "sideEffects": [
+    "./dist/telemetry-off.js",
+    "./dist/runtime.js",
+    "./dist/runtime-express.js"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./runtime": {
+      "types": "./dist/runtime.d.ts",
+      "import": "./dist/runtime.js"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/react/index.js"
+    },
+    "./telemetry-off": {
+      "types": "./dist/telemetry-off.d.ts",
+      "import": "./dist/telemetry-off.js"
+    },
+    "./package.json": "./package.json",
+    "./runtime/express": {
+      "types": "./dist/runtime-express.d.ts",
+      "import": "./dist/runtime-express.js"
+    }
+  },
+  "files": [
+    "dist",
+    "compat"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
+    "compat": "node compat/run.mjs"
+  },
+  "dependencies": {
+    "@alixai/sdk": "workspace:*"
+  },
+  "peerDependencies": {
+    "@ag-ui/client": "1.0.1",
+    "@ag-ui/core": "1.0.1",
+    "@copilotkit/react-core": ">=1.76.0",
+    "@copilotkit/react-ui": ">=1.76.0",
+    "@copilotkit/runtime": ">=1.76.0",
+    "react": "^18 || ^19",
+    "react-dom": "^18 || ^19",
+    "rxjs": "^7.8.1"
+  },
+  "peerDependenciesMeta": {
+    "@ag-ui/client": {
+      "optional": true
+    },
+    "@ag-ui/core": {
+      "optional": true
+    },
+    "@copilotkit/react-core": {
+      "optional": true
+    },
+    "@copilotkit/react-ui": {
+      "optional": true
+    },
+    "@copilotkit/runtime": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    },
+    "rxjs": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@ag-ui/client": "1.0.1",
+    "@ag-ui/core": "1.0.1",
+    "@copilotkit/react-core": "1.76.0",
+    "@copilotkit/react-ui": "1.76.0",
+    "@copilotkit/runtime-client-gql": "1.76.0",
+    "@copilotkit/runtime": "1.76.0",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "jsdom": "^30.1.3",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "rxjs": "7.8.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5",
+    "zod": "^3.25.76"
+  }
+}

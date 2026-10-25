@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:rag:index-generation:v1",
+  "title": "IndexGeneration",
+  "description": "The status of one index generation of a source (master plan 12.3, 14.2 'invalidate/rebuild a generation'). A generation is built per source from one set of component versions (parser, OCR, chunker, embedder); a changed component creates a new generation, which becomes active only after validation, and the previous one is retained until then, so there is never a moment without a serving generation once one existed. Every member is computed by the core, so every member is 'alixai'. The state decides which timestamps exist: a generation that is building, validating or failed was never active; an active generation has an activation time and no retirement; a superseded one has both; an invalidated one has a retirement and is never retrievable. A generation whose embedder is null has no embeddings and serves FTS-only results, which carry the reduced_semantic_recall notice. That embedded_chunks never exceeds chunks is checked by the core.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["generation_id", "source_id", "state", "components", "counts", "created_at", "activated_at", "retired_at"],
+  "properties": {
+    "generation_id": {
+      "description": "ID of this generation.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:rag:shared:v1#/$defs/generationId"
+    },
+    "source_id": {
+      "description": "The source this generation indexes.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/sourceId"
+    },
+    "state": {
+      "description": "Lifecycle. building: being filled. validating: complete and being checked before activation. active: serves queries (at most one per source). superseded: replaced by a newer active generation, retained for rollback until purged. failed: could not be built or did not validate, never served. invalidated: withdrawn by an operator or a detected problem, never retrievable again, kept only until a rebuild replaces it.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "enum": ["building", "validating", "active", "superseded", "failed", "invalidated"]
+    },
+    "components": {
+      "description": "The component versions this generation was built with.",
+      "x-alixai-authority": "alixai",
+      "$ref": "#/$defs/components"
+    },
+    "counts": {
+      "description": "What the generation holds.",
+      "x-alixai-authority": "alixai",
+      "$ref": "#/$defs/counts"
+    },
+    "created_at": {
+      "description": "When the build started.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    },
+    "activated_at": {
+      "description": "When the generation became active, or null if it never did.",
+      "x-alixai-authority": "alixai",
+      "oneOf": [
+        { "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp" },
+        { "type": "null" }
+      ]
+    },
+    "retired_at": {
+      "description": "When it stopped serving (superseded) or was withdrawn (invalidated), or null while it has not.",
+      "x-alixai-authority": "alixai",
+      "oneOf": [
+        { "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp" },
+        { "type": "null" }
+      ]
+    },
+    "error": {
+      "description": "Present when the generation failed, and may be present when it was invalidated: the typed, non-sensitive reason.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:error:v1"
+    }
+  },
+  "$defs": {
+    "components": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["parser", "ocr", "chunker", "embedder"],
+      "properties": {
+        "parser": {
+          "description": "The parser.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:rag:shared:v1#/$defs/componentVersion"
+        },
+        "ocr": {
+          "description": "The OCR engine, or null when the source's policy runs no OCR.",
+          "x-alixai-authority": "alixai",
+          "oneOf": [
+            { "$ref": "urn:alixai:schema:rag:shared:v1#/$defs/componentVersion" },
+            { "type": "null" }
+          ]
+        },
+        "chunker": {
+          "description": "The structure-aware chunker.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:rag:shared:v1#/$defs/componentVersion"
+        },
+        "embedder": {
+          "description": "The embedding model, or null when the profile runs without one (FTS only).",
+          "x-alixai-authority": "alixai",
+          "oneOf": [
+            { "$ref": "urn:alixai:schema:rag:shared:v1#/$defs/componentVersion" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["documents", "chunks", "embedded_chunks"],
+      "properties": {
+        "documents": {
+          "description": "Source items (at their indexed versions) in the generation.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:rag:shared:v1#/$defs/count"
+        },
+        "chunks": {
+          "description": "Chunks in the FTS index.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:rag:shared:v1#/$defs/count"
+        },
+        "embedded_chunks": {
+          "description": "Chunks that also have an embedding. Embeddings are queued work, so this can trail chunks while a generation builds.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:rag:shared:v1#/$defs/count"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "state": { "enum": ["building", "validating", "failed"] } }, "required": ["state"] },
+      "then": {
+        "properties": {
+          "activated_at": { "type": "null" },
+          "retired_at": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "state": { "const": "active" } }, "required": ["state"] },
+      "then": {
+        "properties": {
+          "activated_at": { "type": "string" },
+          "retired_at": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "state": { "const": "superseded" } }, "required": ["state"] },
+      "then": {
+        "properties": {
+          "activated_at": { "type": "string" },
+          "retired_at": { "type": "string" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "state": { "const": "invalidated" } }, "required": ["state"] },
+      "then": { "properties": { "retired_at": { "type": "string" } } }
+    },
+    {
+      "if": { "properties": { "state": { "const": "failed" } }, "required": ["state"] },
+      "then": { "required": ["error"] }
+    },
+    {
+      "if": {
+        "properties": { "components": { "properties": { "embedder": { "type": "null" } }, "required": ["embedder"] } },
+        "required": ["components"]
+      },
+      "then": {
+        "properties": { "counts": { "properties": { "embedded_chunks": { "const": 0 } } } }
+      }
+    }
+  ]
+}

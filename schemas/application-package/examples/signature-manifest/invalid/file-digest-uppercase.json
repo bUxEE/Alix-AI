@@ -1,0 +1,130 @@
+{
+  "format": "alixai.signature-manifest/v1",
+  "signed": {
+    "application_id": "demo-library",
+    "package_version": "1.0.0",
+    "created_at": "2026-10-02T09:00:00Z",
+    "hash_algorithm": "sha256",
+    "files": [
+      {
+        "path": "alixai.yaml",
+        "sha256": "338F1FCFFA78BA2743F87B2F9D5F6F6ACD2C5C45938A1A5DAEB854457BBFADBD",
+        "size": 400
+      },
+      {
+        "path": "capabilities/catalog-find-title.yaml",
+        "sha256": "95c9c3d133f7ad941154abdd146ab5983461cd08a1000b872ffcb0858f4762e1",
+        "size": 537
+      },
+      {
+        "path": "capabilities/reservations-create.yaml",
+        "sha256": "0fc2aea4ac81ef522af41d8d7a8e04666c4a8c235160b39e23a068db77985356",
+        "size": 674
+      },
+      {
+        "path": "conversation-contracts/catalog-find-title.en.yaml",
+        "sha256": "1c7ab80c06eb10fb5f4c1bc02b2d922d7706aa6e6b4ca29e9e36f68db29a65f4",
+        "size": 811
+      },
+      {
+        "path": "conversation-contracts/catalog-find-title.it.yaml",
+        "sha256": "20b7b116c8fa6f165726b526f425d1824eae687f668f1d78505424f1745ed517",
+        "size": 948
+      },
+      {
+        "path": "conversation-contracts/reservations-create.en.yaml",
+        "sha256": "8cb9100f948f86ed771a47df8a3c7b97a0372ec3d1a9da27b907900fb447ef70",
+        "size": 1085
+      },
+      {
+        "path": "conversation-contracts/reservations-create.it.yaml",
+        "sha256": "33767f3811cd7da2749973a313f9def7426ba942a2d7a0fae9d35c4a5bf937f8",
+        "size": 1222
+      },
+      {
+        "path": "documentation/catalog/find-title.md",
+        "sha256": "1387caccdc4f89c4fd0714a107081f2426b02826ffc22a36a79e781a065081a7",
+        "size": 1359
+      },
+      {
+        "path": "documentation/index.yaml",
+        "sha256": "4b5d438ca0932ebff88dc6bd904e7baa44529f48f9c92dccca6ad935f92f60f6",
+        "size": 1496
+      },
+      {
+        "path": "documentation/policies/loan-period.md",
+        "sha256": "c2d399a774dc5da3204dbf9935f649465e1d550fd8fceaaf8c73d4444d90fb0c",
+        "size": 1633
+      },
+      {
+        "path": "documentation/reservations/create.md",
+        "sha256": "8568731231fa067de7ab0521e4247de182ac5ea6d942ec5f7e4d61efc8c08b8d",
+        "size": 1770
+      },
+      {
+        "path": "policies/default-access.yaml",
+        "sha256": "a3faea329c89a58adbb724db4930bc19f349e209f6de0f1808925a140dcbf369",
+        "size": 1907
+      },
+      {
+        "path": "rag-sources/loan-policies.yaml",
+        "sha256": "b228fd45ab72bd5765eca6e435250f404b890f74c228dadcbbc4cacf996262f9",
+        "size": 2044
+      },
+      {
+        "path": "schemas/adapters/library-mcp.yaml",
+        "sha256": "7463ec9bc5a50ad5af21d9baa72533a0bf07036c34f9f9dc71a2e1759b8a9fa8",
+        "size": 2181
+      },
+      {
+        "path": "schemas/find-title.result.schema.json",
+        "sha256": "3bb4cc87ebf49e2795ef2ba08e337a4809ff781d0e5969bcf476251393422dab",
+        "size": 2318
+      },
+      {
+        "path": "schemas/reservation.prepared.schema.json",
+        "sha256": "4382ae92fa2e8d484815c9da5b3166ead173e3111c85ebe4e6cc144715751b77",
+        "size": 2455
+      },
+      {
+        "path": "schemas/reservation.receipt.schema.json",
+        "sha256": "4b985f7080af68076eeb61bb8dc4a27d41638b596e1a12df1c2b6606f74d8f3c",
+        "size": 2592
+      },
+      {
+        "path": "schemas/reservation.validation.schema.json",
+        "sha256": "8ad4d85cce9f71b720e84d931ff00e3433c6e5686b86e4a26a58395c7668f4f0",
+        "size": 2729
+      },
+      {
+        "path": "schemas/resolve-title.result.schema.json",
+        "sha256": "2db74a0a622f3f9a65c2c80930a198d92268b202b928a78eed48dcfa0120e5ce",
+        "size": 2866
+      },
+      {
+        "path": "terminology/library-terms.yaml",
+        "sha256": "fda9a042a704fda314db5bd394576f071dbb0aa26edee1ffca16edb38addc583",
+        "size": 3003
+      },
+      {
+        "path": "tests/core-safety.yaml",
+        "sha256": "86980714817d868c7deb0c465a538c974489fc38d50b452cd14174429467899b",
+        "size": 3140
+      },
+      {
+        "path": "tests/seed/library.json",
+        "sha256": "84ec07c538aa81817481ebf341681bb708639dc62761aa8a5104f578942645b7",
+        "size": 3277
+      }
+    ]
+  },
+  "signatures": [
+    {
+      "key_id": "demo-library-publisher-2026",
+      "algorithm": "ed25519",
+      "signature": "Rz7akOSLT7731uGIGgS5wVvJStp7j4qMKd3FPOA4UlESxXp/dl+RTYrPf4mpf6buPV9QFkv25poRIPnMdATnDg==",
+      "signed_at": "2026-10-02T09:05:00Z",
+      "expires_at": "2027-10-02T09:05:00Z"
+    }
+  ]
+}

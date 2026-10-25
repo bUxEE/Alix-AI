@@ -1,0 +1,88 @@
+{
+  "format": "policy/v1",
+  "policy_id": "conditional-access",
+  "description": "Members search and reserve as in default-access, with two conditional rules: a reservation by a visitor-grade token is denied, and a reservation for a branch under stock take is raised to a higher risk level.",
+  "role_grants": [
+    {
+      "role": "member",
+      "capabilities": [
+        "catalog.find_title",
+        "reservations.create"
+      ]
+    },
+    {
+      "role": "visitor",
+      "capabilities": [
+        "catalog.find_title"
+      ]
+    }
+  ],
+  "risk_overrides": [],
+  "field_projection": [
+    {
+      "capability_id": "reservations.create",
+      "roles": [
+        "member"
+      ],
+      "model_visible_fields": [
+        "title",
+        "pickup_date"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "reservations-need-reserve-scope",
+      "capabilities": [
+        "reservations.create"
+      ],
+      "when": {
+        "scopes": {
+          "none": [
+            "reservations.create"
+          ]
+        }
+      },
+      "then": {
+        "deny": true
+      },
+      "reason": "A context token that does not carry the reservations.create scope must never reach the capability, even for a member."
+    },
+    {
+      "id": "stock-take-branch-confirmed",
+      "capabilities": [
+        "reservations.create"
+      ],
+      "when": {
+        "workspaces": {
+          "in": [
+            "branch-stock-take"
+          ]
+        }
+      },
+      "then": {
+        "risk_min": 3
+      },
+      "reason": "Reservations at a branch that is counting its stock need the strongest confirmation."
+    },
+    {
+      "id": "hide-notes-when-titled",
+      "capabilities": [
+        "reservations.create"
+      ],
+      "when": {
+        "fields": {
+          "title": {
+            "present": true
+          }
+        }
+      },
+      "then": {
+        "hide_fields": [
+          "notes"
+        ]
+      },
+      "reason": "The free-text notes field is never shown to the model."
+    }
+  ]
+}

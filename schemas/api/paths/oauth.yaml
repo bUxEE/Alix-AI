@@ -1,0 +1,176 @@
+# OAuth (additive plan 11.1; milestone X): browser-based OAuth 2.x Authorization Code with PKCE for provider connections.
+# Implemented by internal/gateway/routes_v1_providers.go, with the same operator gate, scope rules and wiring as the
+# providers area.
+#
+# The flow. The host application calls `start` with the redirect URI it controls (a loopback URI on a port it bound, or a
+# registered HTTPS redirect) and opens the returned `authorization_url` in the user's browser. The provider sends the
+# browser back to the redirect URI; the host application relays what it received to `callback` with a FRESH context token
+# of the same principal (tokens are single use). The state is single use and expiring, the redirect URI is bound to the
+# flow, the PKCE verifier never leaves the server and the tokens go only to the credential service. The response of
+# `start` holds the authorization URL (state, challenge and nonce; no verifier, no token) and the consent the host shows
+# (provider, account, scopes and what they reach). The callback answers with the connection status only.
+paths:
+  /v1/oauth/{provider}/start:
+    post:
+      operationId: startProviderOAuth
+      tags: [oauth]
+      summary: Start the OAuth authorization of a provider
+      description: |
+        Prepares the consent for the requested capabilities (the smallest set of provider scopes they map to) and begins the authorization. A provider without OAuth for API access answers `validation_failed` with `details.reason` `manual_fallback`: use the manual credential route. Operator only (a tenant administrator of the deployment's own configuration unless said otherwise); `permission_denied` for everybody else, before the body is read.
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          description: The provider id (for example `openai`).
+          schema:
+            type: string
+            pattern: '^[a-z][a-z0-9_-]{0,31}$'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OAuthStartRequest'
+      responses:
+        '200':
+          description: The authorization URL and the consent to show.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthStarted'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '409':
+          $ref: ../openapi.yaml#/components/responses/Conflict
+        '413':
+          $ref: ../openapi.yaml#/components/responses/PayloadTooLarge
+        '415':
+          $ref: ../openapi.yaml#/components/responses/UnsupportedMediaType
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/oauth/callback:
+    post:
+      operationId: completeProviderOAuth
+      tags: [oauth]
+      summary: Complete an OAuth authorization
+      description: |
+        Passes the redirect the browser followed to the OAuth engine, with the token's scope (which must be the scope that started the flow, principal included). A state that is unknown, replayed, expired or issued to another scope is refused and spent; nothing is stored unless every check passed. The code and the state are never echoed or logged. Operator only (a tenant administrator of the deployment's own configuration unless said otherwise); `permission_denied` for everybody else, before the body is read.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OAuthCallbackRequest'
+      responses:
+        '200':
+          description: The connection status of the new connection.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthConnectionStatus'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '409':
+          $ref: ../openapi.yaml#/components/responses/Conflict
+        '413':
+          $ref: ../openapi.yaml#/components/responses/PayloadTooLarge
+        '415':
+          $ref: ../openapi.yaml#/components/responses/UnsupportedMediaType
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+components:
+  schemas:
+    OAuthConnectionStatus:
+      $ref: ../../providers/connection-status.schema.json
+    OAuthStartRequest:
+      type: object
+      additionalProperties: false
+      required: [capabilities, redirect_uri]
+      properties:
+        capabilities:
+          type: array
+          minItems: 1
+          maxItems: 64
+          items:
+            type: string
+          description: The capabilities to connect for; the engine requests the smallest set of provider scopes they map to.
+        redirect_uri:
+          type: string
+          maxLength: 512
+          description: Where the provider sends the browser back. Bound to the flow and checked again at the callback.
+        reauthorize:
+          type: string
+          description: An existing connection to renew (re-consent or account switch).
+        switch_account:
+          type: boolean
+        label:
+          type: string
+          maxLength: 128
+    OAuthStarted:
+      type: object
+      additionalProperties: false
+      required: [authorization_url, redirect_uri, expires_at, consent]
+      properties:
+        authorization_url:
+          type: string
+          description: Open this in the user's browser. It holds the state, the PKCE challenge and the nonce, never a token or a verifier.
+        redirect_uri:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+        consent:
+          type: object
+          additionalProperties: false
+          required: [provider_name, account, scopes, data_access, reauthorization, switch_account]
+          properties:
+            provider_name:
+              type: string
+            account:
+              type: object
+              description: The known account when re-authorizing, otherwise null members (the user picks it at the provider).
+              additionalProperties: true
+            scopes:
+              type: array
+              items:
+                type: object
+                additionalProperties: false
+                required: [name, description, data_access]
+                properties:
+                  name:
+                    type: string
+                  description:
+                    type: string
+                  data_access:
+                    type: string
+            data_access:
+              type: array
+              items:
+                type: string
+            reauthorization:
+              type: boolean
+            switch_account:
+              type: boolean
+    OAuthCallbackRequest:
+      type: object
+      additionalProperties: false
+      required: [redirect_uri, query]
+      properties:
+        redirect_uri:
+          type: string
+          maxLength: 512
+          description: The redirect URI the browser arrived on, without the query.
+        query:
+          type: string
+          maxLength: 4096
+          description: The query string of the redirect (`code`, `state`, `error`, `iss`).

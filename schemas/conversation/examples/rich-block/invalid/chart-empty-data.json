@@ -1,0 +1,19 @@
+{
+  "type": "chart",
+  "title": "Appointments per weekday",
+  "description": "Bar chart of booked appointments per weekday: Monday 12, Tuesday 18, Wednesday 9.",
+  "mark": "bar",
+  "data": [],
+  "encoding": {
+    "x": {
+      "field": "weekday",
+      "type": "nominal",
+      "title": "Weekday"
+    },
+    "y": {
+      "field": "booked",
+      "type": "quantitative",
+      "title": "Booked"
+    }
+  }
+}

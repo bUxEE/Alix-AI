@@ -1,0 +1,118 @@
+{
+  "decision_id": "edec_01J0000000000000000000000D",
+  "decided_at": "2026-10-02T09:00:00Z",
+  "subject": {
+    "application_id": "app_crm",
+    "tenant_id": "ten_42",
+    "workspace_id": "wsp_sales",
+    "principal_id": "usr_77",
+    "session_id": "ses_9"
+  },
+  "provider": {
+    "profile_id": "pprf_01J0000000000000000000000P",
+    "provider_id": "openai",
+    "model_id": "gpt-4.1-mini",
+    "model_version": "2025-04-14"
+  },
+  "role": "conversational_controller",
+  "envelope_id": "envl_01J0000000000000000000000E",
+  "outcome": "allow",
+  "reason": "allowed",
+  "levels": [
+    {
+      "level": "deployment",
+      "policy_id": "epol_01J0000000000000000000000A",
+      "enabled": true,
+      "source_mode": "allow_excerpt"
+    },
+    {
+      "level": "application",
+      "policy_id": "epol_01J0000000000000000000000A",
+      "enabled": false,
+      "source_mode": "allow_excerpt"
+    },
+    {
+      "level": "tenant",
+      "policy_id": "epol_01J0000000000000000000000A",
+      "enabled": true,
+      "source_mode": "allow_excerpt"
+    },
+    {
+      "level": "workspace",
+      "policy_id": "epol_01J0000000000000000000000A",
+      "enabled": true,
+      "source_mode": "allow_excerpt"
+    }
+  ],
+  "checks": [
+    {
+      "name": "kill_switch",
+      "passed": true,
+      "reason": "passed"
+    },
+    {
+      "name": "external_enabled",
+      "passed": true,
+      "reason": "passed"
+    },
+    {
+      "name": "profile_active",
+      "passed": true,
+      "reason": "passed"
+    },
+    {
+      "name": "profile_permitted",
+      "passed": true,
+      "reason": "passed"
+    },
+    {
+      "name": "provider_allowlist",
+      "passed": true,
+      "reason": "passed"
+    },
+    {
+      "name": "model_allowlist",
+      "passed": true,
+      "reason": "passed"
+    },
+    {
+      "name": "region",
+      "passed": true,
+      "reason": "passed"
+    },
+    {
+      "name": "classification",
+      "passed": true,
+      "reason": "passed"
+    },
+    {
+      "name": "source_mode",
+      "passed": true,
+      "reason": "passed"
+    },
+    {
+      "name": "envelope",
+      "passed": true,
+      "reason": "passed"
+    }
+  ],
+  "categories": {
+    "sent": ["user_message", "structured_state", "rag_excerpt"],
+    "withheld": ["rag_metadata"],
+    "stripped": ["filesystem_path"]
+  },
+  "sources": [
+    {
+      "source_id": "src_01J0000000000000000000000S",
+      "effective_mode": "allow_excerpt",
+      "outcome": "excerpt_included"
+    },
+    {
+      "source_id": "src_01J0000000000000000000000T",
+      "effective_mode": "local_only",
+      "outcome": "excluded"
+    }
+  ],
+  "rag_excerpts_included": true,
+  "fallback_of": null
+}

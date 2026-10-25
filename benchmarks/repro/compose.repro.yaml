@@ -1,0 +1,18 @@
+# Reproduction override, appended after deploy/container/localai/compose.yaml and compose.<profile>.yaml
+# by benchmarks/repro/reproduce.sh. It changes only what a reproduction must control:
+#
+#   - the model definition: ONLY the model of the run is mounted over /configuration/models.yaml, so
+#     LocalAI downloads that one file and fails closed unless its sha256 matches (the definitions are the
+#     benchmarks/repro/models/<id>.yaml files named by manifest.json);
+#   - the three data directories, so a re-run does not download the model and the backend again.
+#
+# It adds no port, no image and no capability: image digest, loopback-only publishing, the API key,
+# every disabled upstream surface and the profile's memory/CPU caps all come from the shipped files.
+# REPRO_MODELS_CONFIG and REPRO_DATA are set by reproduce.sh (absolute paths).
+services:
+  localai:
+    volumes:
+      - ${REPRO_MODELS_CONFIG:?set REPRO_MODELS_CONFIG to the model definition of the run}:/configuration/models.yaml:ro
+      - ${REPRO_DATA:?set REPRO_DATA to the data directory}/models:/models
+      - ${REPRO_DATA}/backends:/backends
+      - ${REPRO_DATA}/state:/data

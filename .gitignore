@@ -1,0 +1,42 @@
+.worktrees/
+node_modules/
+plan/node_modules/
+/bin/
+/dist/
+*.exe
+*.db
+*.db-wal
+*.db-shm
+/data/
+deploy/container/**/data/
+*.env
+!*.env.example
+.env.*
+!.env.example
+benchmarks/tmp/
+.DS_Store
+__pycache__/
+.venv/
+coverage/
+!tests/security/cmd/coverage/
+
+# Kept out of the published source tree: internal planning material, raw evidence and raw benchmark results.
+# A checkout that still holds them on disk keeps them ignored (tracked files are unaffected by these rules).
+/plan/
+/CLAUDE.md
+/AlixAI_Standalone_Master_Plan.md
+/AlixAI_External_Provider_Mode_Additive_Plan.md
+/Alix_CLM8B_AlixAI_Planning_Integration_Prompt.md
+/docs/planning/
+/benchmarks/results/
+/tools/gates/
+/tests/gates/
+# docs/evidence: only the summary reports (*.md) are published; directories are re-included so the rule can reach them.
+/docs/evidence/**
+!/docs/evidence/**/
+!/docs/evidence/**/*.md
+
+# Local tooling and scratch
+.vscode/
+.claude/
+ui/demo-mock/.voice-cache/

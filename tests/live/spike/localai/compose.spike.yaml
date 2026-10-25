@@ -1,0 +1,20 @@
+# M0-13 spike override. Use after the shipped files, from deploy/container/localai:
+#
+#   docker compose --env-file <env> -f compose.yaml -f compose.lite.yaml \
+#     -f ../../../tests/live/spike/localai/compose.spike.yaml up -d
+#
+# Relative paths below resolve against deploy/container/localai (the project directory).
+#
+# 1. The backend gallery file must live INSIDE the backends directory. LocalAI v4.10.0 refuses a file:// gallery
+#    outside its base path ("path is outside of trusted root": pkg/downloader/uri.go ReadWithAuthorizationAndCallback
+#    checks the gallery file against the backends path), so the shipped file:///configuration/backend-gallery.yaml
+#    never loads and no backend is installed. The gallery file is mounted read-only inside /backends.
+#    The fix is now in deploy/container/localai/compose.yaml (M0-18); this override is redundant and kept so the recorded spike stays reproducible.
+# 2. The candidate models (config/models.yaml carries only the smoke model).
+services:
+  localai:
+    environment:
+      LOCALAI_BACKEND_GALLERIES: '[{"name":"alixai-pinned","url":"file:///backends/alixai-backend-gallery.yaml"}]'
+    volumes:
+      - ./config/backend-gallery.yaml:/backends/alixai-backend-gallery.yaml:ro
+      - ../../../tests/live/spike/localai/models.yaml:/configuration/models.yaml:ro

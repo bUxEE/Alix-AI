@@ -1,0 +1,117 @@
+{
+  "format": "alixai.policy-decision/v1",
+  "decision_id": "pdec_01M3XZ5YE0VF1A3VM6K7EQPTAD",
+  "decided_at": "2026-10-02T09:30:00Z",
+  "phase": "expose",
+  "outcome": "allow",
+  "subject": {
+    "application_id": "demo-library",
+    "tenant_id": "tenant-a",
+    "workspace_id": "ws-1",
+    "principal_id": "user-1",
+    "session_id": "ses-1",
+    "roles": [
+      "member"
+    ],
+    "capability_scopes": [
+      "catalog.find_title",
+      "loans.extend",
+      "members.delete_account",
+      "reservations.create"
+    ]
+  },
+  "capability_id": "reservations.create",
+  "package": {
+    "application_id": "demo-library",
+    "version": "1.0.0",
+    "status": "active"
+  },
+  "policies": [
+    {
+      "policy_id": "stricter-for-children",
+      "digest": "89026592bcef05c5e9c889aa8fac375324ca2c4b9e5913d91dfdf036b610aec5"
+    }
+  ],
+  "checks": [
+    {
+      "name": "request",
+      "passed": true,
+      "reason": "well_formed"
+    },
+    {
+      "name": "scope",
+      "passed": true,
+      "reason": "scope_complete"
+    },
+    {
+      "name": "package_active",
+      "passed": true,
+      "reason": "package_active"
+    },
+    {
+      "name": "application_match",
+      "passed": true,
+      "reason": "application_matches"
+    },
+    {
+      "name": "tenant_workspace_match",
+      "passed": true,
+      "reason": "tenant_and_workspace_match"
+    },
+    {
+      "name": "capability_declared",
+      "passed": true,
+      "reason": "capability_declared"
+    },
+    {
+      "name": "audience",
+      "passed": true,
+      "reason": "audience_user"
+    },
+    {
+      "name": "token_scope",
+      "passed": true,
+      "reason": "capability_in_token_scope"
+    },
+    {
+      "name": "role_grant",
+      "passed": true,
+      "reason": "role_granted",
+      "rule_id": "stricter-for-children"
+    },
+    {
+      "name": "host_rules",
+      "passed": true,
+      "reason": "no_rule_denied"
+    },
+    {
+      "name": "field_visibility",
+      "passed": true,
+      "reason": "required_fields_visible"
+    }
+  ],
+  "risk": {
+    "declared": 2,
+    "platform_floor": 2,
+    "host_minimum": 0,
+    "effective": 4,
+    "effect_class": "external",
+    "raised_by": []
+  },
+  "requires": {
+    "confirmation": true,
+    "step_up": false
+  },
+  "visible_fields": [
+    "title",
+    "pickup_date"
+  ],
+  "withheld_fields": [
+    {
+      "field": "notes",
+      "reason": "not_projected"
+    }
+  ],
+  "rules_applied": [],
+  "rules_deferred": []
+}

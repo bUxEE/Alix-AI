@@ -1,0 +1,14 @@
+# Adapter configuration of the MCP endpoint library-mcp. Its format is owned
+# by the MCP adapter; the package signs it like every other file.
+server: library-mcp
+tools:
+  allow:
+    - find_title
+    - resolve_title
+    - validate_reservation
+    - prepare_reservation
+    - commit_reservation
+    - reservation_status
+    - test_create_tenant
+    - test_seed
+    - test_cleanup

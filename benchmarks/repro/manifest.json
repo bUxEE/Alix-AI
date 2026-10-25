@@ -1,0 +1,252 @@
+{
+  "format_version": 1,
+  "id": "m5-routing-v0",
+  "title": "Final Lite model selection and 4 GB re-run (M5-09), routing-v0, emulated",
+  "published_from": "docs/evidence/m5-models/run-manifest.jsonl",
+  "runtime": {
+    "compose": "deploy/container/localai/compose.yaml",
+    "image": "docker.io/localai/localai:v4.10.0@sha256:0632c21ddbe440bb71bc7aa744796c227a51658641b216290e86d6894e1c705b",
+    "version": "v4.10.0",
+    "backend": "llama-cpp",
+    "backend_gallery": {
+      "path": "deploy/container/localai/config/backend-gallery.yaml",
+      "sha256": "dab98c8a79915ebbf47c6d6b0b682ad0e6a30a4827f2cc146a58fc0e82043794"
+    },
+    "override": "benchmarks/repro/compose.repro.yaml"
+  },
+  "profiles": {
+    "lite": {
+      "cli": "lite",
+      "compose": "deploy/container/localai/compose.lite.yaml",
+      "mem_limit": "8g",
+      "cpus": 4,
+      "mem_mb": 8192
+    },
+    "balanced": {
+      "cli": "balanced",
+      "compose": "deploy/container/localai/compose.balanced.yaml",
+      "mem_limit": "16g",
+      "cpus": 8,
+      "mem_mb": 16384
+    },
+    "experimental-4g": {
+      "cli": "4g",
+      "compose": "deploy/container/localai/compose.4g.yaml",
+      "mem_limit": "4g",
+      "cpus": 4,
+      "mem_mb": 4096
+    }
+  },
+  "bench": {
+    "tool": "tools/bench",
+    "role": "controller",
+    "provider": "localai",
+    "constraint": "grammar",
+    "prompt_id": "bench-prompt-v1",
+    "prompt_sha256": "31fe03ba8d46674e4c5e90913f296afdd709831b8cf1a6d43c28491385e54ae4",
+    "context_toks": 4096,
+    "max_toks": 256,
+    "warmup": 1,
+    "timeout": "3m",
+    "temperature": 0,
+    "sample_interval": "2s",
+    "percentile_method": "nearest-rank"
+  },
+  "corpora": [
+    {
+      "id": "routing-v0",
+      "path": "tests/performance/corpus/routing-v0.jsonl",
+      "sha256": "f9c95640bac5ffdbe0e86c4a00d398d50d41893b499e00a59ea332ceeb3c15ab",
+      "cases": 80
+    }
+  ],
+  "models": [
+    {
+      "filename": "granite-4.0-350m-Q4_K_M.gguf",
+      "size_bytes": 236985760,
+      "sha256": "771c588a49607f274a2bba3185733607ebe6f74b996ab90e2d6bee0d98bcec52",
+      "id": "granite-4.0-350m-q4_k_m",
+      "definition": "benchmarks/repro/models/granite-4.0-350m-q4_k_m.yaml",
+      "quantization": "Q4_K_M"
+    },
+    {
+      "filename": "Qwen3.5-0.8B-Q4_K_M.gguf",
+      "size_bytes": 532517120,
+      "sha256": "bd258782e35f7f458f8aced1adc053e6e92e89bc735ba3be89d38a06121dc517",
+      "id": "qwen3.5-0.8b-q4_k_m",
+      "definition": "benchmarks/repro/models/qwen3.5-0.8b-q4_k_m.yaml",
+      "quantization": "Q4_K_M"
+    },
+    {
+      "filename": "granite-4.0-1b-Q4_K_M.gguf",
+      "size_bytes": 1023645440,
+      "sha256": "22ec0f9cc99a90185312de3c882c84e7bd6789bdd050389844380a01a831d7f1",
+      "id": "granite-4.0-1b-q4_k_m",
+      "definition": "benchmarks/repro/models/granite-4.0-1b-q4_k_m.yaml",
+      "quantization": "Q4_K_M"
+    },
+    {
+      "filename": "MiniCPM5-1B-Q4_K_M.gguf",
+      "size_bytes": 688065920,
+      "sha256": "81b64d05a23b17b34c475f42b3e72fbde62d4b92cc34541f7a8031d0752deafa",
+      "id": "minicpm5-1b-q4_k_m",
+      "definition": "benchmarks/repro/models/minicpm5-1b-q4_k_m.yaml",
+      "quantization": "Q4_K_M"
+    },
+    {
+      "filename": "Qwen3.5-2B-Q4_K_M.gguf",
+      "size_bytes": 1280835840,
+      "sha256": "aaf42c8b7c3cab2bf3d69c355048d4a0ee9973d48f16c731c0520ee914699223",
+      "id": "qwen3.5-2b-q4_k_m",
+      "definition": "benchmarks/repro/models/qwen3.5-2b-q4_k_m.yaml",
+      "quantization": "Q4_K_M"
+    }
+  ],
+  "runs": [
+    {
+      "id": "granite-4.0-350m-q4_k_m-lite-A",
+      "model": "granite-4.0-350m-q4_k_m",
+      "profile": "lite",
+      "config": "A",
+      "gate": false,
+      "corpus": "routing-v0",
+      "result": "benchmarks/results/m5/localai_granite-4.0-350m-q4_k_m_lite_run_01m4bv9tfvdytpcycazztz1y4k.json",
+      "result_sha256": "36690a4d22527a8afdd37dbda4724d55240bb233a966c79a0abae4235ded78e9"
+    },
+    {
+      "id": "granite-4.0-350m-q4_k_m-lite-G",
+      "model": "granite-4.0-350m-q4_k_m",
+      "profile": "lite",
+      "config": "G",
+      "gate": true,
+      "corpus": "routing-v0",
+      "result": "benchmarks/results/m5/localai_granite-4.0-350m-q4_k_m_lite_run_01m4bvh5k8a8m1cjsx8vhe7t59.json",
+      "result_sha256": "5789b547e964b9b83eec47381c06b1e1f11012330418c5e7afb886ce3482f4e6"
+    },
+    {
+      "id": "qwen3.5-0.8b-q4_k_m-lite-A",
+      "model": "qwen3.5-0.8b-q4_k_m",
+      "profile": "lite",
+      "config": "A",
+      "gate": false,
+      "corpus": "routing-v0",
+      "result": "benchmarks/results/m5/localai_qwen3.5-0.8b-q4_k_m_lite_run_01m4bwqbxacwbwwfy46x21knge.json",
+      "result_sha256": "85c9512ad240685f2566f13aa0343a5b480b184df4fa2d8fe1b63a60ac1f486f"
+    },
+    {
+      "id": "qwen3.5-0.8b-q4_k_m-lite-G",
+      "model": "qwen3.5-0.8b-q4_k_m",
+      "profile": "lite",
+      "config": "G",
+      "gate": true,
+      "corpus": "routing-v0",
+      "result": "benchmarks/results/m5/localai_qwen3.5-0.8b-q4_k_m_lite_run_01m4bxft8qvpxfbndt24wkrhs2.json",
+      "result_sha256": "f70bf93d48458c76e7bb43be5320c73b336e7f9519c008257a52b4f46657a7a8"
+    },
+    {
+      "id": "granite-4.0-1b-q4_k_m-lite-A",
+      "model": "granite-4.0-1b-q4_k_m",
+      "profile": "lite",
+      "config": "A",
+      "gate": false,
+      "corpus": "routing-v0",
+      "result": "benchmarks/results/m5/localai_granite-4.0-1b-q4_k_m_lite_run_01m4bym8x4hnf5xdhnf173jrt7.json",
+      "result_sha256": "512e7461706ad1fac94521c705c5b5397d56a625010c01110641106f963f7146"
+    },
+    {
+      "id": "granite-4.0-1b-q4_k_m-lite-G",
+      "model": "granite-4.0-1b-q4_k_m",
+      "profile": "lite",
+      "config": "G",
+      "gate": true,
+      "corpus": "routing-v0",
+      "result": "benchmarks/results/m5/localai_granite-4.0-1b-q4_k_m_lite_run_01m4bzd2cccrvph8r3rwfbeg64.json",
+      "result_sha256": "be00073e8f117be8ff7e7faab38cfb6453988acb6289dadc56907f37bc0e7204"
+    },
+    {
+      "id": "minicpm5-1b-q4_k_m-lite-A",
+      "model": "minicpm5-1b-q4_k_m",
+      "profile": "lite",
+      "config": "A",
+      "gate": false,
+      "corpus": "routing-v0",
+      "result": "benchmarks/results/m5/localai_minicpm5-1b-q4_k_m_lite_run_01m4c2d1qpnsv2ve5tn4b33tj9.json",
+      "result_sha256": "78131e3dd740cbc8a7ad88dca4291eb91ff343c5c16891496d90480f7f852241"
+    },
+    {
+      "id": "minicpm5-1b-q4_k_m-lite-G",
+      "model": "minicpm5-1b-q4_k_m",
+      "profile": "lite",
+      "config": "G",
+      "gate": true,
+      "corpus": "routing-v0",
+      "result": "benchmarks/results/m5/localai_minicpm5-1b-q4_k_m_lite_run_01m4c3d4048fbw6zjv2qkc1k6n.json",
+      "result_sha256": "a482bf2e0f7ed89241f3dd753f91345fa7f07b1027009a8cb91e99c5953f17af"
+    },
+    {
+      "id": "qwen3.5-2b-q4_k_m-balanced-A",
+      "model": "qwen3.5-2b-q4_k_m",
+      "profile": "balanced",
+      "config": "A",
+      "gate": false,
+      "corpus": "routing-v0",
+      "result": "benchmarks/results/m5/localai_qwen3.5-2b-q4_k_m_balanced_run_01m4c699w9anftfx02sdyhtzpc.json",
+      "result_sha256": "a93d42decedc8e7ef0f153ec3e7774d4af3332c07e4cb59ed3fd1648b25f23b6"
+    },
+    {
+      "id": "qwen3.5-2b-q4_k_m-balanced-G",
+      "model": "qwen3.5-2b-q4_k_m",
+      "profile": "balanced",
+      "config": "G",
+      "gate": true,
+      "corpus": "routing-v0",
+      "result": "benchmarks/results/m5/localai_qwen3.5-2b-q4_k_m_balanced_run_01m4c6yvtj0wb3zcnhhnyc144d.json",
+      "result_sha256": "16ff425d52c7fdd773a01609a7adb41bfc72d310afc8f852886f22a42891a423"
+    },
+    {
+      "id": "granite-4.0-350m-q4_k_m-4g-A",
+      "model": "granite-4.0-350m-q4_k_m",
+      "profile": "experimental-4g",
+      "config": "A",
+      "gate": false,
+      "corpus": "routing-v0",
+      "result": "benchmarks/results/m5/localai_granite-4.0-350m-q4_k_m_experimental-4g_run_01m4c784p0w1d3gkd2vnm35ddn.json",
+      "result_sha256": "f6ec8965806ee3197a88665d7bebb0a6a16469f383bc82d9999beb26f542d360"
+    },
+    {
+      "id": "granite-4.0-350m-q4_k_m-4g-G",
+      "model": "granite-4.0-350m-q4_k_m",
+      "profile": "experimental-4g",
+      "config": "G",
+      "gate": true,
+      "corpus": "routing-v0",
+      "result": "benchmarks/results/m5/localai_granite-4.0-350m-q4_k_m_experimental-4g_run_01m4c7csq7ztvm7yk5k986ger9.json",
+      "result_sha256": "7729406e22a7664a84f9a7ab7439aa051fee4cb5199179d35fff0e53b982ccb0"
+    },
+    {
+      "id": "qwen3.5-0.8b-q4_k_m-4g-A",
+      "model": "qwen3.5-0.8b-q4_k_m",
+      "profile": "experimental-4g",
+      "config": "A",
+      "gate": false,
+      "corpus": "routing-v0",
+      "result": "benchmarks/results/m5/localai_qwen3.5-0.8b-q4_k_m_experimental-4g_run_01m4c82b0fxp878yw932x5zknr.json",
+      "result_sha256": "b212d7435d6752e66342697b212fafe1870fb6e2481de32e58cb53dca71fb121"
+    },
+    {
+      "id": "qwen3.5-0.8b-q4_k_m-4g-G",
+      "model": "qwen3.5-0.8b-q4_k_m",
+      "profile": "experimental-4g",
+      "config": "G",
+      "gate": true,
+      "corpus": "routing-v0",
+      "result": "benchmarks/results/m5/localai_qwen3.5-0.8b-q4_k_m_experimental-4g_run_01m4c8gwqzjhdww01k5dmtpsnm.json",
+      "result_sha256": "a236c4b4dc92bab5d01f8e21c84fea4fde38f508d17d8ca4f27e84590b746ec9"
+    }
+  ],
+  "tolerances": {
+    "quality_rate": 0.05,
+    "latency_rel": 0.5,
+    "memory_rel": 0.25
+  }
+}

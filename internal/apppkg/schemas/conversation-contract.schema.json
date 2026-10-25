@@ -1,0 +1,233 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:application-package:conversation-contract:v1",
+  "title": "Conversation contract",
+  "description": "The signed, versioned conversational contract of ONE capability in ONE language (master plan 4.5 check 5): the terminology it uses, a prompt for every required field, clarification questions, corrections, cancellations, confirmations, success and failure responses and the labels of permitted next actions. One file per capability and language under conversation-contracts/. Every ordinary (audience user) capability needs one in each language the manifest supports; a missing one fails the capability. The wording here is fixed text with {fact.path} placeholders: AlixAI fills it from deterministic facts, so no business fact is ever invented by the model. Authored as YAML; this schema validates the parsed JSON form.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "capability_id",
+    "language",
+    "contract_version",
+    "terminology",
+    "field_prompts",
+    "clarifications",
+    "corrections",
+    "cancellations",
+    "success",
+    "failures",
+    "next_actions"
+  ],
+  "properties": {
+    "capability_id": {
+      "description": "The capability this contract belongs to.",
+      "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/capabilityId"
+    },
+    "language": {
+      "description": "The language of every text in this file. Must be one of the manifest's supported languages. The pair (capability_id, language) is unique in the package.",
+      "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/languageTag"
+    },
+    "contract_version": {
+      "description": "The version of this conversation contract (semver). Wording changes bump it; it is covered by the package signature like every file.",
+      "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/semver"
+    },
+    "terminology": {
+      "description": "IDs of the terms (terminology/ files) this contract's wording relies on. Every ID must exist and have a label in this contract's language. May be empty.",
+      "type": "array",
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": { "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug" }
+    },
+    "field_prompts": {
+      "description": "A prompt for each field of the capability, in the language of the contract. Every required field of the capability needs one (checked by the loader); optional fields may have one. Field names are unique within the list.",
+      "type": "array",
+      "maxItems": 64,
+      "items": { "$ref": "#/$defs/fieldPrompt" }
+    },
+    "clarifications": {
+      "description": "The clarification questions, one per ambiguity rule of the capability that has action ask_user. Rule IDs are unique within the list. May be empty when the capability has no such rule.",
+      "type": "array",
+      "maxItems": 64,
+      "items": { "$ref": "#/$defs/clarification" }
+    },
+    "corrections": {
+      "description": "How a user corrects an earlier answer.",
+      "$ref": "#/$defs/corrections"
+    },
+    "cancellations": {
+      "description": "How a user cancels the task, and the acknowledgement.",
+      "$ref": "#/$defs/cancellations"
+    },
+    "confirmations": {
+      "description": "The confirmation wording. Required when the capability's confirmation mode is not none (checked by the loader); omitted for a read-only capability.",
+      "$ref": "#/$defs/confirmations"
+    },
+    "success": {
+      "description": "The success responses, one per user-visible outcome. At least one. Outcome IDs are unique within the list and must match the user_visible_outcome entries of the documentation index. Every response_obligation of the capability that applies on success must appear as a placeholder in at least one of them.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": { "$ref": "#/$defs/successResponse" }
+    },
+    "failures": {
+      "description": "The failure responses, one per failure state of the capability. At least one. A failure state without a response here fails the capability: AlixAI never falls back to a generic success-looking message.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": { "$ref": "#/$defs/failureResponse" }
+    },
+    "next_actions": {
+      "description": "The labels of the capability's permitted next actions in this language: one per entry of the capability's next_actions. May be empty when the capability has none.",
+      "type": "array",
+      "maxItems": 16,
+      "items": { "$ref": "#/$defs/nextActionLabel" }
+    }
+  },
+  "$defs": {
+    "fieldPrompt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["field", "label", "prompt"],
+      "properties": {
+        "field": {
+          "description": "The capability field the prompt is for.",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+        },
+        "label": {
+          "description": "The user-facing name of the field in this language.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/label"
+        },
+        "prompt": {
+          "description": "The question asked when the field is missing or invalid.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/template"
+        },
+        "examples": {
+          "description": "Optional example answers shown to the user. Display only: never used to fill a field.",
+          "type": "array",
+          "maxItems": 5,
+          "items": { "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/label" }
+        }
+      }
+    },
+    "clarification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rule_id", "prompt"],
+      "properties": {
+        "rule_id": {
+          "description": "The ID of an ambiguity rule of the capability.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "prompt": {
+          "description": "The clarification question. The candidate choices are rendered by AlixAI from deterministic results, not written here.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/template"
+        }
+      }
+    },
+    "corrections": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["acknowledgement", "correctable_fields"],
+      "properties": {
+        "acknowledgement": {
+          "description": "What AlixAI says when it applies a correction.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/template"
+        },
+        "correctable_fields": {
+          "description": "The fields a user may correct. Only these. May be empty, which disables corrections for the capability.",
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName" }
+        },
+        "prepared_action_invalidated": {
+          "description": "What AlixAI says when a correction invalidates an already prepared action, so the action is prepared again. Required by the loader when the capability has a prepare operation.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/template"
+        }
+      }
+    },
+    "cancellations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["acknowledgement"],
+      "properties": {
+        "acknowledgement": {
+          "description": "What AlixAI says after the task is cancelled. Cancelling a prepared action discards it; nothing is committed.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/template"
+        }
+      }
+    },
+    "confirmations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["request", "declined", "expired"],
+      "properties": {
+        "request": {
+          "description": "The confirmation request shown with the exact prepared effects. Must use placeholders for the facts the prepared action returns, so the user confirms the real effects and not the model's paraphrase.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/template"
+        },
+        "declined": {
+          "description": "What AlixAI says when the user declines.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/template"
+        },
+        "expired": {
+          "description": "What AlixAI says when the prepared action expired or was invalidated before confirmation.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/template"
+        },
+        "step_up_required": {
+          "description": "What AlixAI says when the user must complete the action in the application's authenticated UI or with a stronger credential. Required by the loader when the capability's confirmation mode is step_up.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/template"
+        }
+      }
+    },
+    "successResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome", "text"],
+      "properties": {
+        "outcome": {
+          "description": "The user-visible outcome ID (for example reserved, found, none_found).",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "text": {
+          "description": "The response text with {fact.path} placeholders for the canonical facts.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/template"
+        }
+      }
+    },
+    "failureResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "text"],
+      "properties": {
+        "code": {
+          "description": "The platform error code of the failure state this response covers.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/errorCode"
+        },
+        "application_code": {
+          "description": "The application code of the failure state, when the capability distinguishes several failures with the same platform code.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "text": {
+          "description": "The failure response. It must state that the operation did not complete when it did not; it never reads as a success.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/template"
+        }
+      }
+    },
+    "nextActionLabel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label"],
+      "properties": {
+        "id": {
+          "description": "The ID of a next action of the capability.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+        },
+        "label": {
+          "description": "The text of the suggestion shown to the user.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/label"
+        }
+      }
+    }
+  }
+}

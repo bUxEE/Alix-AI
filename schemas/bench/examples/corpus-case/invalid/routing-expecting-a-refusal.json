@@ -1,0 +1,72 @@
+{
+  "id": "rt-en-01",
+  "language": "en",
+  "category": "routing",
+  "today": "2026-10-12",
+  "catalogue": [
+    {
+      "id": "bookings.create",
+      "description": "Book a table",
+      "fields": [
+        {
+          "name": "party_size",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "date",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "time",
+          "type": "time",
+          "required": true
+        },
+        {
+          "name": "customer_name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "notes",
+          "type": "string",
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "bookings.cancel",
+      "description": "Cancel a booking",
+      "fields": [
+        {
+          "name": "booking_ref",
+          "type": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "menu.search",
+      "description": "Search the menu",
+      "fields": [
+        {
+          "name": "query",
+          "type": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "hours.get",
+      "description": "Opening hours",
+      "fields": []
+    }
+  ],
+  "text": "I'd like to book a table.",
+  "expected": {
+    "capability_id": null,
+    "intent": "out_of_scope",
+    "fields": {}
+  }
+}

@@ -1,0 +1,27 @@
+# Model definitions LocalAI loads at start (LOCALAI_MODELS_CONFIG_FILE). LocalAI's own preload
+# downloads every download_files entry into /models before the API binds, verifying sha256 and
+# failing closed on a mismatch. No init container, no wrapper-script download.
+#
+# This file is mounted read-only. To add or swap a model: pin the source revision, compute the
+# file's sha256, add an entry, restart. Model files come from an operator-approved source only
+# (master plan 16.1, 16.3); never an unpinned URL and never an entry without sha256.
+#
+# alixai-smoke is the M0 plumbing/smoke model, not the model registry's choice for any profile.
+# IBM Granite 4.0 350M, Apache-2.0, Q4_K_M, 236,985,760 bytes. Source repo commit
+# b8208a86a58427e1739265318028eb5895b74bf2, resolved 2026-10-02.
+- name: alixai-smoke
+  backend: llama-cpp
+  context_size: 2048
+  known_usecases:
+    - chat
+  options:
+    - use_jinja:true
+  parameters:
+    model: granite-4.0-350m-Q4_K_M.gguf
+    temperature: 0
+  template:
+    use_tokenizer_template: true
+  download_files:
+    - filename: granite-4.0-350m-Q4_K_M.gguf
+      uri: https://huggingface.co/ibm-granite/granite-4.0-350m-GGUF/resolve/b8208a86a58427e1739265318028eb5895b74bf2/granite-4.0-350m-Q4_K_M.gguf
+      sha256: 771c588a49607f274a2bba3185733607ebe6f74b996ab90e2d6bee0d98bcec52

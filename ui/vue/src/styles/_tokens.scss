@@ -1,0 +1,143 @@
+// Design tokens of the AlixAI Vue kit. Every value is a CSS custom property on `.alix-root`, so a host themes the kit by
+// overriding `--alix-*` on any ancestor (or on `.alix-root` itself) and never edits a component. Nothing here reaches the
+// host page: the custom properties exist only under `.alix-root`.
+//
+// Colour strategy: restrained. Warm-tinted neutrals and one accent (pine). Danger, warning and success are semantic only.
+// Neutrals are never pure black or pure white. Light is the default; dark follows the system unless `data-theme` says so.
+
+@mixin light {
+  --alix-bg: oklch(0.985 0.004 85);
+  --alix-surface: oklch(0.996 0.003 85);
+  --alix-surface-2: oklch(0.962 0.006 85);
+  --alix-surface-3: oklch(0.93 0.008 85);
+  --alix-border: oklch(0.88 0.009 85);
+  --alix-border-strong: oklch(0.74 0.012 85);
+  --alix-text: oklch(0.24 0.012 85);
+  --alix-text-muted: oklch(0.46 0.012 85);
+  --alix-accent: oklch(0.47 0.1 165);
+  --alix-accent-hover: oklch(0.42 0.1 165);
+  --alix-accent-contrast: oklch(0.985 0.01 165);
+  --alix-accent-soft: oklch(0.945 0.03 165);
+  --alix-danger: oklch(0.5 0.19 27);
+  --alix-danger-soft: oklch(0.95 0.03 27);
+  --alix-warning: oklch(0.52 0.12 70);
+  --alix-warning-soft: oklch(0.955 0.045 80);
+  --alix-success: oklch(0.47 0.11 150);
+  --alix-success-soft: oklch(0.95 0.035 150);
+  --alix-focus: oklch(0.55 0.14 165);
+  --alix-scrim: oklch(0.985 0.004 85 / 0.7);
+  --alix-shadow: 0 1px 2px oklch(0.3 0.02 85 / 0.06), 0 8px 24px -12px oklch(0.3 0.02 85 / 0.14);
+  --alix-chart-1: oklch(0.5 0.1 165);
+  --alix-chart-2: oklch(0.58 0.13 55);
+  --alix-chart-3: oklch(0.5 0.09 250);
+  --alix-chart-4: oklch(0.6 0.12 15);
+  --alix-chart-5: oklch(0.62 0.1 95);
+  --alix-chart-6: oklch(0.45 0.05 85);
+}
+
+@mixin dark {
+  --alix-bg: oklch(0.2 0.008 85);
+  --alix-surface: oklch(0.235 0.009 85);
+  --alix-surface-2: oklch(0.275 0.01 85);
+  --alix-surface-3: oklch(0.32 0.011 85);
+  --alix-border: oklch(0.36 0.011 85);
+  --alix-border-strong: oklch(0.52 0.012 85);
+  --alix-text: oklch(0.93 0.008 85);
+  --alix-text-muted: oklch(0.72 0.01 85);
+  --alix-accent: oklch(0.74 0.12 165);
+  --alix-accent-hover: oklch(0.8 0.12 165);
+  --alix-accent-contrast: oklch(0.2 0.02 165);
+  --alix-accent-soft: oklch(0.3 0.04 165);
+  --alix-danger: oklch(0.72 0.16 27);
+  --alix-danger-soft: oklch(0.3 0.06 27);
+  --alix-warning: oklch(0.8 0.12 80);
+  --alix-warning-soft: oklch(0.31 0.05 80);
+  --alix-success: oklch(0.78 0.12 150);
+  --alix-success-soft: oklch(0.3 0.045 150);
+  --alix-focus: oklch(0.78 0.12 165);
+  --alix-scrim: oklch(0.2 0.008 85 / 0.7);
+  --alix-shadow: 0 1px 2px oklch(0.1 0.01 85 / 0.4), 0 8px 24px -12px oklch(0.1 0.01 85 / 0.6);
+  --alix-chart-1: oklch(0.74 0.12 165);
+  --alix-chart-2: oklch(0.78 0.12 55);
+  --alix-chart-3: oklch(0.74 0.09 250);
+  --alix-chart-4: oklch(0.76 0.11 15);
+  --alix-chart-5: oklch(0.8 0.1 95);
+  --alix-chart-6: oklch(0.7 0.04 85);
+}
+
+@mixin more-contrast {
+  --alix-border: var(--alix-border-strong);
+  --alix-text-muted: var(--alix-text);
+}
+
+@mixin reduced-motion {
+  --alix-dur-press: 1ms;
+  --alix-dur-fast: 1ms;
+  --alix-dur-base: 1ms;
+  --alix-dur-slow: 1ms;
+  --alix-shimmer: paused;
+}
+
+.alix-root {
+  // Typography: the system stack by default (no font is fetched). A host sets `--alix-font` to its own face.
+  --alix-font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --alix-font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --alix-text-scale: 1;
+  --alix-fs-xs: calc(0.75rem * var(--alix-text-scale));
+  --alix-fs-sm: calc(0.8125rem * var(--alix-text-scale));
+  --alix-fs-md: calc(0.9375rem * var(--alix-text-scale));
+  --alix-fs-lg: calc(1.125rem * var(--alix-text-scale));
+  --alix-radius-sm: 8px;
+  --alix-radius-md: 12px;
+  --alix-radius-lg: 18px;
+  // Motion: strong ease-out curves, short durations. Reduced motion collapses every duration.
+  --alix-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --alix-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --alix-dur-press: 120ms;
+  --alix-dur-fast: 160ms;
+  --alix-dur-base: 220ms;
+  --alix-dur-slow: 320ms;
+  --alix-shimmer: running;
+  @include light;
+
+  color: var(--alix-text);
+  background: var(--alix-bg);
+  font-family: var(--alix-font);
+  font-size: var(--alix-fs-md);
+  line-height: 1.5;
+  box-sizing: border-box;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: inherit;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    &:not([data-theme="light"]) {
+      @include dark;
+    }
+  }
+
+  &[data-theme="dark"] {
+    @include dark;
+  }
+
+  @media (prefers-contrast: more) {
+    @include more-contrast;
+  }
+
+  &[data-contrast="more"] {
+    @include more-contrast;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    @include reduced-motion;
+  }
+
+  &[data-reduced-motion="true"] {
+    @include reduced-motion;
+  }
+}

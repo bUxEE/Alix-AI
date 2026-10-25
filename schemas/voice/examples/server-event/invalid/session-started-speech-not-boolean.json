@@ -1,0 +1,9 @@
+{
+  "type": "session.started",
+  "voice_session_id": "vss_01J0000000000000000000000A",
+  "session_id": "ses-xyz-5521",
+  "speech": "yes",
+  "retain_raw_audio": false,
+  "max_chunk_bytes": 65536,
+  "max_audio_bytes": 8388608
+}

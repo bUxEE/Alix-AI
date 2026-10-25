@@ -1,0 +1,57 @@
+capability_id: "invoices.issue"
+language: "it"
+contract_version: "1.0.0"
+terminology:
+  - "invoice"
+  - "quote"
+  - "customer"
+field_prompts:
+  - field: "quote"
+    label: "Preventivo"
+    prompt: "Quale preventivo devo fatturare? Dammi il numero o il nome del cliente."
+    examples:
+      - "QUO-0001"
+      - "Acme Srl"
+  - field: "due_days"
+    label: "Giorni alla scadenza"
+    prompt: "Tra quanti giorni scade la fattura? Puoi saltare."
+clarifications:
+  - rule_id: "quote_multiple"
+    prompt: "Più preventivi corrispondono a {input.quote}. Quale intendi?"
+corrections:
+  acknowledgement: "Va bene, l'ho cambiato."
+  correctable_fields:
+    - "quote"
+    - "due_days"
+  prepared_action_invalidated: "Questo cambia la fattura, quindi il riepilogo precedente non vale più. La preparo di nuovo e ti chiedo di confermare."
+cancellations:
+  acknowledgement: "Va bene, ho interrotto. Non ho emesso nulla."
+confirmations:
+  request: "Conferma questa fattura: {invoice_total} per {customer_name} dal preventivo {quote_number}, con scadenza il {invoice_due_on}. Il cliente riceverà la fattura e il preventivo sarà chiuso. La emetto?"
+  declined: "Va bene, non ho emesso nulla."
+  expired: "Questa fattura non è più valida, quindi non ho emesso nulla. Posso prepararla di nuovo se vuoi."
+success:
+  - outcome: "issued"
+    text: "Fatto. La fattura {invoice_number} per {customer_name} di {invoice_total} è stata emessa dal preventivo {quote_number} con scadenza il {invoice_due_on}."
+failures:
+  - code: "permission_denied"
+    text: "Non hai il permesso di emettere fatture, quindi non ho emesso nulla."
+  - code: "scope_violation"
+    text: "Non posso farlo: il preventivo non è disponibile per te. Non ho emesso nulla."
+  - code: "validation_failed"
+    text: "Non ho potuto emetterla: il preventivo ha superato l'ultimo giorno di validità oppure la scadenza è fuori intervallo. Non ho emesso nulla."
+  - code: "missing_fields"
+    text: "Mi serve ancora sapere quale preventivo fatturare. Non ho emesso nulla."
+  - code: "conflict"
+    text: "Quel preventivo è già stato fatturato, quindi non ho emesso nulla."
+  - code: "stale"
+    text: "Il preventivo è cambiato dopo che avevo preparato la fattura, quindi non l'ho emessa. Non ho emesso nulla; posso prepararla di nuovo."
+  - code: "expired"
+    text: "Non è stato confermato in tempo, oppure è stato ritirato, quindi non ho emesso nulla."
+  - code: "uncertain_outcome"
+    text: "Non sono riuscito a confermare se l'operazione è andata a buon fine. Controllo prima di fare altro, quindi per ora non chiederla di nuovo."
+  - code: "unavailable"
+    text: "Il registro non è raggiungibile in questo momento, quindi non ho emesso nulla."
+next_actions:
+  - id: "record_payment"
+    label: "Registrare un pagamento su questa fattura"

@@ -1,0 +1,168 @@
+# Decision layer (master plan 8.5 and 14.2 "Operations", docs/architecture/decision-layer.md section 8): a safe,
+# read-only status of the optional decision layer and an operator-only configuration. Implemented by
+# internal/gateway/routes_v1_decision.go over a DecisionService the composition root provides.
+#
+# The layer is optional, bounded, non-generative and non-authoritative: it scores a short list of candidates that
+# were already authorised and never authorises, validates, prepares, confirms or commits anything. So nothing here
+# is an authorisation result. The status reports aggregate state only: no score, threshold, gate, candidate, key or
+# tenant datum, and no counter can be read as permission to do anything. It is the D-02 schema
+# (schemas/decision/decision-status.schema.json), and `rejected_count` is always the sum of `fallback_counts`.
+#
+# Scope. The application, tenant, workspace and principal are the verified single-use context token and nothing a
+# path, a query or a body says: these routes take no identifier at all, a query string is `validation_failed`, and
+# every body is a closed object. Counters are kept and read per application and tenant.
+#
+# Who may call. The status needs the exact capability `decision.status.read` in the token. The configuration is for
+# operators of the deployment, decided from the deployment's own configuration, never from a role or a capability
+# scope a token asserts; with no operator configured nobody passes (`permission_denied`, before any body is read). The
+# settings API has no member and no route that reads or changes any of it. A threshold is never accepted below the
+# platform floor, which is reported as `platform_floor`. An application whose package is not active answers
+# `quarantined`; while the server has no decision service wired every route answers `unavailable`, never an empty
+# success.
+paths:
+  /v1/decision/status:
+    get:
+      operationId: getDecisionStatus
+      tags: [decision]
+      summary: Decision-layer status of the caller's own scope
+      description: |
+        Which decision provider and model are configured, in what mode (`off`, `shadow` or `advisory`), how often the
+        layer fell back and why, and how many results were accepted and rejected since the counters started, for the
+        caller's own application and tenant. Advisory aggregate state only: never an authorisation, a score or a
+        commit result. Needs `decision.status.read`.
+      responses:
+        '200':
+          description: The status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionStatus'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/decision/config:
+    get:
+      operationId: getDecisionConfig
+      tags: [decision]
+      summary: Read the decision-layer configuration (operator only)
+      description: |
+        The configuration of every approved profile of the caller's application, and the platform floor under which no
+        threshold is ever accepted. Operator only: `permission_denied` for everybody else.
+      responses:
+        '200':
+          description: The configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionConfig'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+    put:
+      operationId: putDecisionConfig
+      tags: [decision]
+      summary: Enable, shadow or disable one profile and set its threshold (operator only)
+      description: |
+        Sets the `mode` of one profile (`off` disables the layer for it) and, when given, its `min_confidence`
+        threshold. A threshold below `platform_floor` is `validation_failed` with `details.reason`
+        `below_platform_floor` and nothing is changed; leaving it out keeps the profile's current threshold. A profile
+        the deployment does not approve is `validation_failed`. The change is audited. Operator only: `permission_denied`
+        for everybody else, before the body is read.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionConfigUpdate'
+      responses:
+        '200':
+          description: The profile as it now stands.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionConfigResult'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '415':
+          $ref: ../openapi.yaml#/components/responses/UnsupportedMediaType
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+components:
+  schemas:
+    DecisionStatus:
+      $ref: ../../decision/decision-status.schema.json
+    DecisionProfileConfig:
+      type: object
+      additionalProperties: false
+      required: [profile, mode, min_confidence]
+      description: One profile's configuration.
+      properties:
+        profile:
+          type: string
+          pattern: '^[a-z][a-z0-9_-]{0,31}$'
+          description: The approved resource profile.
+        mode:
+          type: string
+          enum: [off, shadow, advisory]
+          description: off disables the layer for the profile; shadow records without using; advisory lets gated results inform interpretation.
+        min_confidence:
+          type: number
+          minimum: 0.5
+          maximum: 1
+          description: The calibrated-confidence floor of the profile; never below `platform_floor`.
+    DecisionConfig:
+      type: object
+      additionalProperties: false
+      required: [platform_floor, profiles]
+      properties:
+        platform_floor:
+          type: number
+          minimum: 0.5
+          maximum: 1
+          description: The lowest `min_confidence` the platform accepts.
+        profiles:
+          type: array
+          items:
+            $ref: '#/components/schemas/DecisionProfileConfig'
+    DecisionConfigUpdate:
+      type: object
+      additionalProperties: false
+      required: [profile, mode]
+      properties:
+        profile:
+          type: string
+          pattern: '^[a-z][a-z0-9_-]{0,31}$'
+        mode:
+          type: string
+          enum: [off, shadow, advisory]
+        min_confidence:
+          type: number
+          maximum: 1
+          description: Not below `platform_floor`. Left out keeps the current threshold.
+    DecisionConfigResult:
+      type: object
+      additionalProperties: false
+      required: [platform_floor, profile]
+      properties:
+        platform_floor:
+          type: number
+          minimum: 0.5
+          maximum: 1
+        profile:
+          $ref: '#/components/schemas/DecisionProfileConfig'

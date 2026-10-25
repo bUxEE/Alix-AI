@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Receipt of a committed reservation, or its status",
+  "type": "object",
+  "required": ["status", "prepared_id"],
+  "additionalProperties": false,
+  "properties": {
+    "status": { "enum": ["committed", "not_found", "failed"] },
+    "prepared_id": { "type": "string", "maxLength": 64 },
+    "reservation_reference": { "type": "string", "maxLength": 64 },
+    "pickup_date": { "type": "string", "format": "date" }
+  }
+}

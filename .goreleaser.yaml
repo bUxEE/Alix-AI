@@ -1,0 +1,89 @@
+# GoReleaser configuration for the native packages (M5-02, ADR 0012, master plan 6). Needs GoReleaser v2.6 or later.
+#
+# Two static, pure-Go binaries per target (CGO_ENABLED=0, -trimpath, no VCS stamping), so the same commit gives the
+# same bytes on any builder: the service (alixai) and the document parser worker (alixai-parser, M5-22). Four targets,
+# no more: Linux amd64 and arm64, Windows amd64, macOS arm64. Every archive holds both binaries side by side at its root
+# and the service definitions of deploy/native (systemd unit, launchd plist, Windows service notes).
+#
+# The worker is a separate executable the service starts once per document in a sandbox (ADR 0014: a Windows Job Object;
+# Linux rlimits, Landlock and seccomp; fail closed). The service finds it NEXT TO ITSELF (parse.DefaultWorkerPath), so
+# the two files must be installed into one directory; rag_ingest.parser.worker_path overrides that. The worker is built
+# with no build tags: the parsertest tag adds fault-injection formats that must never ship. It has no version stamp: its
+# version is a constant of the code, checked against the service at the handshake.
+#
+# Local check, nothing published:
+#   goreleaser release --snapshot --clean --skip=publish
+#
+# Publishing is the release pipeline's job (M5-03: signing, SBOM, the signed manifest); `release` is disabled here so a
+# stray `goreleaser release` cannot create a GitHub release.
+version: 2
+project_name: alixai
+
+# The commit's own timestamp stamps every file, so archives do not depend on the build time.
+metadata:
+  mod_timestamp: "{{ .CommitTimestamp }}"
+
+builds:
+  - id: alixai
+    main: ./cmd/alixai
+    binary: alixai
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+      - -buildvcs=false
+    ldflags:
+      - -s -w
+      - -X github.com/buxee/alix-ai/internal/version.Version={{ .Version }}
+      - -X github.com/buxee/alix-ai/internal/version.Commit={{ .FullCommit }}
+      - -X github.com/buxee/alix-ai/internal/version.Date={{ .CommitDate }}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    targets:
+      - linux_amd64
+      - linux_arm64
+      - windows_amd64
+      - darwin_arm64
+
+  # The parser worker (M5-22, ADR 0014). Same flags and targets as the service, so the reproducible-build rules of M5-03
+  # (-trimpath, -s -w, the commit timestamp) hold for it too. No `tags`, no `-X`: see the header.
+  - id: alixai-parser
+    main: ./cmd/alixai-parser
+    binary: alixai-parser
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+      - -buildvcs=false
+    ldflags:
+      - -s -w
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    targets:
+      - linux_amd64
+      - linux_arm64
+      - windows_amd64
+      - darwin_arm64
+
+archives:
+  - id: alixai
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: "alixai_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - NOTICE
+      - deploy/native/**/*
+
+checksum:
+  name_template: SHA256SUMS
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ .Version }}-snapshot-{{ .ShortCommit }}"
+
+changelog:
+  disable: true
+
+release:
+  disable: true

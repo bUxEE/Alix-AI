@@ -1,0 +1,55 @@
+name: Feature request
+description: Propose a new capability or a change in behaviour.
+title: "[feature] "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        AlixAI is application-bound, headless and strictly self-hosted. Every feature is checked
+        against the project's non-negotiable rules (see README.md and CONTRIBUTING.md) and needs a recorded
+        efficiency review before it is complete. Describe the problem first; the solution can follow.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do, and what stops you today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behaviour
+      description: What should AlixAI do? Include the typed inputs and outputs if you can.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Including doing it in the host application, or with deterministic code instead of a model.
+  - type: textarea
+    id: resources
+    attributes:
+      label: Expected resource cost
+      description: >-
+        Rough CPU, RAM, storage and latency impact, and whether it can stay unloaded when unused.
+        The 4 GB profile must remain possible.
+  - type: textarea
+    id: safety
+    attributes:
+      label: Authority and safety impact
+      description: >-
+        Does it add a capability, read data, or cause a side effect? Which permission and tenant
+        scope apply, and what must be confirmed before it commits?
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and the roadmap and did not find a duplicate.
+          required: true
+        - label: This needs no telemetry, hosted service or paid dependency.
+          required: true
+        - label: I understand a material change may need an ADR before it is accepted.
+          required: true

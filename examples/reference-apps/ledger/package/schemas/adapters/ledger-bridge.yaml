@@ -1,0 +1,26 @@
+# Adapter configuration of the native endpoint ledger-bridge. Its format is owned by the native
+# adapter (adapters/native); the package signs it like every other file.
+#
+# The application key is a shared per-application secret of at least 32 bytes, given to the
+# ledger process and to AlixAI out of band. It is never in this file: only a reference to where
+# AlixAI reads it (an env: or file: reference; the credential service of milestone X will resolve
+# cred: references). Both ends prove they hold it in a mutual handshake and every frame is sealed
+# with a session MAC. Frames are authenticated, not encrypted: the bridge listens on loopback only.
+#
+# Only the native methods listed in the capabilities are reachable, plus the protocol's own
+# (describe, health, inspect) and the provisioning operations below. The provisioning
+# operations are management operations of the disposable-tenant audit: no capability maps them,
+# and the ledger declares them only when it runs in test support mode. approve_step_up is the
+# fourth: the audit's way to complete the level 3 void in a disposable tenant, as the manager
+# would in the application's own interface (it records the approval ApproveVoid records, for
+# the same checks). The production ledger has no such operation.
+server: "ledger-bridge"
+key:
+  id: "ledger-bridge-1"
+  ref: "env:LEDGER_BRIDGE_KEY"
+management:
+  provisioning:
+    - "create_tenant"
+    - "seed"
+    - "cleanup"
+    - "approve_step_up"

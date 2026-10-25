@@ -1,0 +1,17 @@
+{
+  "disposition": "fallback",
+  "fallback_reason": "candidate_set_rejected",
+  "provider_id": "localai-decision",
+  "contract_version": "2026-10-01.3",
+  "decision_type": "capability_routing",
+  "schema_version": 1,
+  "tenant_id": "tenant-acme",
+  "application_id": "app-booking",
+  "selections": [],
+  "ood_status": "not_evaluated",
+  "latency_ms": 0,
+  "cache_status": "bypassed",
+  "trace_id": "trace-7f3b",
+  "audit_ref": "aud_01J0000000000000000000000A",
+  "issued_at": "2026-10-07T09:30:01Z"
+}

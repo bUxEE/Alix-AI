@@ -1,0 +1,105 @@
+{
+  "operation": "prepare",
+  "capability_id": "appointments.book",
+  "status": "ok",
+  "identifiers": [
+    {
+      "entity_type": "slot",
+      "entity_id": "slot_0412"
+    }
+  ],
+  "values": [
+    {
+      "field": "doctor",
+      "value": {
+        "kind": "text",
+        "value": "Dr. Rossi"
+      }
+    },
+    {
+      "field": "slot_date",
+      "value": {
+        "kind": "date",
+        "value": "2026-10-14"
+      },
+      "display": "Tuesday 14 October 2026"
+    },
+    {
+      "field": "slot_start",
+      "value": {
+        "kind": "time",
+        "value": "10:30"
+      }
+    }
+  ],
+  "errors": [],
+  "freshness": {
+    "as_of": "2026-10-09T08:00:00Z",
+    "version": "v42"
+  },
+  "allowed_next_actions": [
+    {
+      "action": "confirm"
+    },
+    {
+      "action": "reject"
+    },
+    {
+      "action": "modify",
+      "label": "Change the time"
+    }
+  ],
+  "preparation": {
+    "summary": "Book Dr. Rossi for Anna Verdi on 14 October 2026 at 10:30.",
+    "effects": [
+      {
+        "operation": "create",
+        "entity_type": "appointment",
+        "description": "Create an appointment with Dr. Rossi on 14 October 2026 at 10:30.",
+        "changes": [
+          {
+            "field": "slot_date",
+            "value": {
+              "kind": "date",
+              "value": "2026-10-14"
+            },
+            "display": "Tuesday 14 October 2026"
+          },
+          {
+            "field": "slot_start",
+            "value": {
+              "kind": "time",
+              "value": "10:30"
+            }
+          },
+          {
+            "field": "patient_id",
+            "value": {
+              "kind": "identifier",
+              "value": "pat_881"
+            }
+          }
+        ],
+        "external": false
+      },
+      {
+        "operation": "send",
+        "entity_type": "notification",
+        "description": "Email a booking confirmation to anna.verdi@example.test.",
+        "changes": [
+          {
+            "field": "recipient",
+            "value": {
+              "kind": "text",
+              "value": "anna.verdi@example.test"
+            }
+          }
+        ],
+        "external": true
+      }
+    ],
+    "data_versions": [],
+    "declared_risk_level": 2,
+    "valid_for_seconds": 600
+  }
+}

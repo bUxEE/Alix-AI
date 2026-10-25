@@ -1,0 +1,126 @@
+{
+  "synthetic": true,
+  "note": "Every name, number and tag is made up. Principals are linked to their own technician record by reference; the work orders point at their asset and technician records by ref. The application invents nothing else, and stocks every site with its standard parts catalogue.",
+  "records": [
+    {
+      "ref": "tec-a1",
+      "entity_type": "technician",
+      "workspace": "site-a1",
+      "principal": "tech-a1",
+      "name": "Marco Bianchi",
+      "trade": "HVAC"
+    },
+    {
+      "ref": "tec-a1b",
+      "entity_type": "technician",
+      "workspace": "site-a1",
+      "principal": "tech-a1b",
+      "name": "Giulia Ferri",
+      "trade": "electrical"
+    },
+    {
+      "ref": "tec-a2",
+      "entity_type": "technician",
+      "workspace": "site-a2",
+      "name": "Sara Gallo",
+      "trade": "plumbing"
+    },
+    {
+      "ref": "tec-b1",
+      "entity_type": "technician",
+      "workspace": "site-b1",
+      "name": "Paolo Neri",
+      "trade": "HVAC"
+    },
+    {
+      "ref": "ast-a1",
+      "entity_type": "asset",
+      "workspace": "site-a1",
+      "name": "Backup generator",
+      "tag": "GEN-90",
+      "category": "power"
+    },
+    {
+      "ref": "ast-a1b",
+      "entity_type": "asset",
+      "workspace": "site-a1",
+      "name": "Air handling unit",
+      "tag": "AHU-200",
+      "category": "hvac"
+    },
+    {
+      "ref": "ast-a2",
+      "entity_type": "asset",
+      "workspace": "site-a2",
+      "name": "Pump",
+      "tag": "PMP-30",
+      "category": "pumps"
+    },
+    {
+      "ref": "ast-b1",
+      "entity_type": "asset",
+      "workspace": "site-b1",
+      "name": "Chiller",
+      "tag": "CHL-500",
+      "category": "hvac"
+    },
+    {
+      "ref": "wo-a1",
+      "entity_type": "work_order",
+      "workspace": "site-a1",
+      "asset": "ast-a1b",
+      "title": "Return air damper sticks",
+      "description": "The return air damper does not open fully.",
+      "priority": "normal",
+      "status": "open"
+    },
+    {
+      "ref": "wo-a1b",
+      "entity_type": "work_order",
+      "workspace": "site-a1",
+      "asset": "ast-a1b",
+      "title": "Supply fan vibration above limit",
+      "description": "Vibration alarm on the supply fan at full speed.",
+      "priority": "high",
+      "status": "assigned",
+      "technician": "tec-a1b"
+    },
+    {
+      "ref": "wo-a1c",
+      "entity_type": "work_order",
+      "workspace": "site-a1",
+      "asset": "ast-a1b",
+      "title": "Replace clogged return filter",
+      "description": "Differential pressure alarm on the return filter.",
+      "priority": "normal",
+      "status": "closed",
+      "technician": "tec-a1b",
+      "resolution": "Replaced the return filter; differential pressure back to 120 Pa.",
+      "labor_hours": 0.75,
+      "parts": [
+        "FLT-204:2"
+      ],
+      "closed_at": "2026-09-10T14:30:00Z"
+    },
+    {
+      "ref": "wo-a2",
+      "entity_type": "work_order",
+      "workspace": "site-a2",
+      "asset": "ast-a2",
+      "title": "Pump seal weeping",
+      "description": "Water drips at the mechanical seal.",
+      "priority": "normal",
+      "status": "open"
+    },
+    {
+      "ref": "wo-b1",
+      "entity_type": "work_order",
+      "workspace": "site-b1",
+      "asset": "ast-b1",
+      "title": "Chilled water temperature drifts",
+      "description": "Supply temperature rises during the afternoon.",
+      "priority": "urgent",
+      "status": "open"
+    }
+  ]
+}

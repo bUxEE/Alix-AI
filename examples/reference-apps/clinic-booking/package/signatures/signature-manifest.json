@@ -1,0 +1,240 @@
+{
+  "format": "alixai.signature-manifest/v1",
+  "signed": {
+    "application_id": "clinic-booking",
+    "package_version": "1.0.0",
+    "created_at": "2026-10-02T00:00:00Z",
+    "hash_algorithm": "sha256",
+    "files": [
+      {
+        "path": "alixai.yaml",
+        "sha256": "6b60f3d923d4a26cca59bd30285ea371e8a9d83698221e88a975318494c4b682",
+        "size": 3065
+      },
+      {
+        "path": "capabilities/appointments-book.yaml",
+        "sha256": "f4825e1af43109255e8c9a9a655b98767f86e6dddca95445d9c96e00ea1a0921",
+        "size": 7178
+      },
+      {
+        "path": "capabilities/appointments-cancel.yaml",
+        "sha256": "6ce303a8b870d0689f5bfbe618aa4fb3a5145e97b3e43b2ffc20d1ea92102fbf",
+        "size": 5779
+      },
+      {
+        "path": "capabilities/availability-list.yaml",
+        "sha256": "25bfecb26e6b0deb51fcd48658e47b58fa7010e773e9b52e9954691aabf73437",
+        "size": 4157
+      },
+      {
+        "path": "capabilities/patients-find.yaml",
+        "sha256": "4e0a1c7360a813833706b7f2d30e7b8fa2254eb79e2475cce248c5b2fb500654",
+        "size": 3676
+      },
+      {
+        "path": "capabilities/patients-update-contact.yaml",
+        "sha256": "14623e3efd9def4ad97a7fb6dc3a15ec3b987d32b7a0b22150307ab609555c55",
+        "size": 5693
+      },
+      {
+        "path": "conversation-contracts/appointments-book.en.yaml",
+        "sha256": "e4cfdd06dc7040bb40da6911b2774531b1cb22a26ce8fa182999a68e29c740f7",
+        "size": 3308
+      },
+      {
+        "path": "conversation-contracts/appointments-book.it.yaml",
+        "sha256": "26e4cb654cd213e033912718dd6fb48609f49b0f0f20ff2059c10f7520027700",
+        "size": 3503
+      },
+      {
+        "path": "conversation-contracts/appointments-cancel.en.yaml",
+        "sha256": "10f9a881990acb67c53a0431b74be80a2bf03ffc0db4f361429c3266e573a2b8",
+        "size": 2897
+      },
+      {
+        "path": "conversation-contracts/appointments-cancel.it.yaml",
+        "sha256": "df3bd7c343edbe522cb3197d3f888df41bc384427a4cee97dfebfa1c99593b25",
+        "size": 3077
+      },
+      {
+        "path": "conversation-contracts/availability-list.en.yaml",
+        "sha256": "16d08954dc9aa8f4aa954b70d9332eedcfb3c7984b42047cb96095aeea428adf",
+        "size": 1789
+      },
+      {
+        "path": "conversation-contracts/availability-list.it.yaml",
+        "sha256": "ce90105246ddbdf721fee06284390028b97f908e39ff19cc81367472d1d35ed2",
+        "size": 1849
+      },
+      {
+        "path": "conversation-contracts/patients-find.en.yaml",
+        "sha256": "be0f9dd255a994605d669c5000da8b8434568051a5658a36a43c9c398cff200c",
+        "size": 1882
+      },
+      {
+        "path": "conversation-contracts/patients-find.it.yaml",
+        "sha256": "ae42dbdd8e205020d2428d0012e609d82b7f934d1e0cdb1120c8673e381194fc",
+        "size": 1949
+      },
+      {
+        "path": "conversation-contracts/patients-update-contact.en.yaml",
+        "sha256": "ffc161dc2732f5ac1c965da96f01974c008a73e3e821a82b8da4fe83a2234ede",
+        "size": 2495
+      },
+      {
+        "path": "conversation-contracts/patients-update-contact.it.yaml",
+        "sha256": "e469e4352b02efa665dcade415c3bd33b18e55cf31961180b64dd05549fa0a39",
+        "size": 2703
+      },
+      {
+        "path": "documentation/appointments/book.md",
+        "sha256": "f823712ba12878e4618bdd01a9b012859115c1458ec4742689c10625633081f0",
+        "size": 6512
+      },
+      {
+        "path": "documentation/appointments/cancel.md",
+        "sha256": "314b40af9cc1399d8302983c4081b4a38d2dad0fe2de503a461e4f9f1575a8ae",
+        "size": 5789
+      },
+      {
+        "path": "documentation/availability/list.md",
+        "sha256": "12c163235ab198396f8166ee9a37a04b76cb4154fbf91aa0e26ea8abc34f3888",
+        "size": 3734
+      },
+      {
+        "path": "documentation/index.yaml",
+        "sha256": "f41596e4b18866a712b59a05d063f928339e7c87e1a0bc356f5235aa021eb081",
+        "size": 33328
+      },
+      {
+        "path": "documentation/patients/find.md",
+        "sha256": "34eb5bf2ad64391eb30135ef61422713a9bf5623462879032faa5707d19f7c85",
+        "size": 3749
+      },
+      {
+        "path": "documentation/patients/update-contact.md",
+        "sha256": "3d8d6ae734340571964fa1e3aae6fa7d03035e737b15ef0e97c81c75d25f9496",
+        "size": 5816
+      },
+      {
+        "path": "documentation/policies/booking-rules.it.md",
+        "sha256": "078c2f4daedbc6381eb6d678763441ef929e917c539ebc1f3a0a289aeb25995f",
+        "size": 2078
+      },
+      {
+        "path": "documentation/policies/booking-rules.md",
+        "sha256": "d37fa4efccb7125ed13b6ef64aaaf75741e53d48ff8c10174eabf5b6a5824b3e",
+        "size": 2001
+      },
+      {
+        "path": "documentation/policies/contact-and-privacy.it.md",
+        "sha256": "0af63c544b03d55e628ae14e8fc5fb0f016e6af59326a1136be50e3d9100d02b",
+        "size": 1500
+      },
+      {
+        "path": "documentation/policies/contact-and-privacy.md",
+        "sha256": "801d5648bd82e7eace1bb04e5497fd969da2a6aa0f639c9cc4bbc3acfee4b426",
+        "size": 1431
+      },
+      {
+        "path": "policies/default-access.yaml",
+        "sha256": "f4f8afc5be438dcc20547fc33a114b807d78a5f1f53e12bfc607c1822ef7e364",
+        "size": 1381
+      },
+      {
+        "path": "rag-sources/clinic-policies.yaml",
+        "sha256": "6357bb0fdfe3f751e88cea56a33b2ad01e501a3cfa28cc87cd0b470f903810de",
+        "size": 1055
+      },
+      {
+        "path": "schemas/adapters/clinic-mcp.yaml",
+        "sha256": "86d8a392e7a7934e21a8055334e9e2542fff8b1b999d9b00725605f5570645ec",
+        "size": 2575
+      },
+      {
+        "path": "schemas/appointments.book.prepared.result.schema.json",
+        "sha256": "030a5cdf9a517bf9038fab5e1a93140bdf546f6f5feef7b5ef338be9b5937204",
+        "size": 12805
+      },
+      {
+        "path": "schemas/appointments.book.receipt.result.schema.json",
+        "sha256": "985504f99669f1c042047b763013af8b6667da288dc05da6a089da941d50f1bb",
+        "size": 13138
+      },
+      {
+        "path": "schemas/appointments.book.validation.result.schema.json",
+        "sha256": "7b34ac1152c83b012e9ac6710845a0073ebc0e36973887a55fb374957130357a",
+        "size": 9247
+      },
+      {
+        "path": "schemas/appointments.cancel.prepared.result.schema.json",
+        "sha256": "6bab6fedeed32fa0658eb155790587814dde791da695bcfc8badaea6ee92f792",
+        "size": 13670
+      },
+      {
+        "path": "schemas/appointments.cancel.receipt.result.schema.json",
+        "sha256": "207706efe7f1b663d1e0d2d26fd95bc934e5bb405674e2426771ed4ecbd7ca98",
+        "size": 11819
+      },
+      {
+        "path": "schemas/appointments.cancel.validation.result.schema.json",
+        "sha256": "2b9666c6d07587a3ea1324ef0bd908a7120c51f7bb44cf9a788356000eff342d",
+        "size": 10178
+      },
+      {
+        "path": "schemas/availability.list.result.schema.json",
+        "sha256": "9e6266dea743d1f447030aa5a509ca551497bb49402f698ef1bcfba2a1ba2708",
+        "size": 11559
+      },
+      {
+        "path": "schemas/patients.find.result.schema.json",
+        "sha256": "fec6593d80da7c6f316469ec0e90913063b768b04d71931cd714e0ce293e3590",
+        "size": 10192
+      },
+      {
+        "path": "schemas/patients.update_contact.prepared.result.schema.json",
+        "sha256": "01d54d1a7fc249397fd035b3ca48dbb8e3afb90fc393e18c041b9fb3058b174a",
+        "size": 9950
+      },
+      {
+        "path": "schemas/patients.update_contact.receipt.result.schema.json",
+        "sha256": "e67501119b2b90e0c88dedd709cefb2fc7cda0b83955e55a991412af1f6e25e3",
+        "size": 7079
+      },
+      {
+        "path": "schemas/patients.update_contact.validation.result.schema.json",
+        "sha256": "4e7f365cbc607f7af679823c31e78e52020730bcaa55e3027551d144587c3c13",
+        "size": 6547
+      },
+      {
+        "path": "schemas/resolve.result.schema.json",
+        "sha256": "e6413a84ad01b650155349f55ce32e07e1db13d6a2ca48a6c5bd66ecf64f03fb",
+        "size": 6952
+      },
+      {
+        "path": "terminology/clinic-terms.yaml",
+        "sha256": "86d7ea3c336ed511b1fdebff247c0bc4f40955a1ac3b0ea2111be5d14e5033b8",
+        "size": 5651
+      },
+      {
+        "path": "tests/clinic-safety.yaml",
+        "sha256": "beec0d2f2a10880c13bbff9b6c38c0c9a9a2e4d9e625cb35cfa5789d2e7e2c78",
+        "size": 15851
+      },
+      {
+        "path": "tests/seed/clinic.json",
+        "sha256": "d574f5c09c6892dd81d4bb70f0d29a432aebe8a273c6ca569a0035c015d4a5bb",
+        "size": 1842
+      }
+    ]
+  },
+  "signatures": [
+    {
+      "key_id": "alixai-test-only-publisher",
+      "algorithm": "ed25519",
+      "signature": "oXkU0pZpr7yJ8dKk4Iow672e557LLmN5azONhhnO3R6fdsAnVbhWv4jVBY2PQvv71QoyfPKvmgrmqSpgx4ZgAA==",
+      "signed_at": "2026-10-02T00:00:00Z",
+      "expires_at": "2036-10-01T00:00:00Z"
+    }
+  ]
+}

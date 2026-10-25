@@ -1,0 +1,18 @@
+{
+  "occurred_at": "2026-10-02T09:00:03Z",
+  "provider": {
+    "profile_id": "pprf_01J0000000000000000000000P",
+    "provider_id": "openai",
+    "model_id": "gpt-4.1-mini",
+    "model_version": "2025-04-14"
+  },
+  "kind": "bad_request",
+  "code": "schema_invalid",
+  "retryable": false,
+  "message": "The call failed: bad request.",
+  "status": 400,
+  "retry_after_ms": null,
+  "outcome_uncertain": false,
+  "attempts": 3,
+  "provider_request_id": "req_8f2c91"
+}

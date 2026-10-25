@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:decision:fallback-reason:v1",
+  "title": "FallbackReason",
+  "description": "Why no scorer result was used (docs/architecture/decision-layer.md section 4). Every non-accepted outcome carries exactly one of these stable strings and the controller path runs instead, producing the same deterministic outcomes as with the layer off. disabled: the layer is off for this deployment, tenant or application. unavailable: the provider could not be reached or is not loaded. timeout: the deadline passed. malformed_output: the provider output did not match the contract. low_confidence: calibrated confidence was below the gate. calibration_failed: calibration could not be applied or checked. ood_unsupported_shape: the input was out of distribution or of a shape the scorer does not support. model_mismatch: the model or revision is not the one the manifest and the registry pin. tenant_mismatch: the result did not belong to the requesting tenant or application. policy_conflict: the selection conflicted with a deterministic policy or scope check. candidate_set_rejected: the guard rejected the candidate set (empty, oversized, stale, duplicate, cross-tenant or unauthorised). resource_gate: the resource gate refused to run the scorer. unsupported_runtime: the selected runtime or backend does not support the decision API. An exact deterministic match that skips the scorer is not a fallback. An unknown value is rejected on decode.",
+  "type": "string",
+  "enum": [
+    "disabled",
+    "unavailable",
+    "timeout",
+    "malformed_output",
+    "low_confidence",
+    "calibration_failed",
+    "ood_unsupported_shape",
+    "model_mismatch",
+    "tenant_mismatch",
+    "policy_conflict",
+    "candidate_set_rejected",
+    "resource_gate",
+    "unsupported_runtime"
+  ]
+}

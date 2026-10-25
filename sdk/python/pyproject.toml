@@ -1,0 +1,48 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "alixai"
+version = "1.0.0"
+description = "AlixAI Python SDK: sync and async clients over httpx, typed models generated from the JSON Schemas, SSE turn streaming and a fake server for host tests"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+keywords = ["alixai", "sdk", "assistant", "streaming"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Typing :: Typed",
+]
+# Runtime: httpx for the transport, pydantic for the generated models, certifi for the CA bundle.
+dependencies = [
+  "httpx>=0.28.1",
+  "pydantic>=2.14",
+  # httpx verifies TLS against certifi's CA bundle. 2026.10.23 is the first release without the compromised eMudhra
+  # intermediate CAs (CVE-2026-111943), so an older bundle must never satisfy this SDK.
+  "certifi>=2026.10.23",
+]
+
+[project.optional-dependencies]
+# PyYAML and jsonschema read schemas/ for the generator's drift check and the OpenAPI contract tests: dev-time only.
+test = [
+  "pytest>=8",
+  "pytest-asyncio>=0.23",
+  "jsonschema>=4.21",
+  "pyyaml>=6",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/alixai"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "."]
+asyncio_mode = "auto"
+filterwarnings = ["error"]

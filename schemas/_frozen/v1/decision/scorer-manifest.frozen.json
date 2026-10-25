@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:decision:scorer-manifest:v1",
+  "title": "ScorerManifest",
+  "description": "The supply-chain manifest of one decision scorer (master plan 16.3): provider, model, encoder, revision, file hashes, licence and signature. It is verified before the scorer is loaded and compared with every result (a result from another model or revision is model_mismatch). It describes what the scorer is; it grants nothing, and an unsigned or unverifiable manifest means the scorer is not loaded (fallback reason unavailable or model_mismatch). Hashes are SHA-256 over the exact files the runtime loads. No runtime download of unapproved code is implied.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["provider_id", "model_id", "model_revision", "encoder", "files", "licence", "signature"],
+  "properties": {
+    "provider_id": {
+      "description": "The decision provider that runs the scorer.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+    },
+    "model_id": {
+      "description": "The scorer model, for example the heads that sit on the encoder.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+    },
+    "model_revision": {
+      "description": "The pinned revision of the model.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/opaqueVersion"
+    },
+    "encoder": {
+      "description": "The encoder the scorer heads sit on.",
+      "x-alixai-authority": "alixai",
+      "$ref": "#/$defs/encoder"
+    },
+    "files": {
+      "description": "Every file the runtime loads, each with its hash. At least one.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": { "$ref": "#/$defs/fileHash" }
+    },
+    "licence": {
+      "description": "The licence of the scorer and its encoder.",
+      "x-alixai-authority": "alixai",
+      "$ref": "#/$defs/licence"
+    },
+    "signature": {
+      "description": "A signature over the manifest, verified before use.",
+      "x-alixai-authority": "alixai",
+      "$ref": "#/$defs/signature"
+    }
+  },
+  "$defs": {
+    "encoder": {
+      "description": "The encoder model and its pinned revision.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["encoder_id", "revision"],
+      "properties": {
+        "encoder_id": {
+          "description": "The encoder, for example a frozen base language model.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "revision": {
+          "description": "The pinned revision of the encoder.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/opaqueVersion"
+        },
+        "sha256": {
+          "description": "SHA-256 of the encoder weights when they are a separate file the runtime loads.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:decision:shared:v1#/$defs/sha256"
+        }
+      }
+    },
+    "fileHash": {
+      "description": "One loaded file and its SHA-256.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "sha256", "size_bytes"],
+      "properties": {
+        "name": {
+          "description": "The file name inside the model directory: no path separators.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "^[A-Za-z0-9_][A-Za-z0-9._-]*$"
+        },
+        "sha256": {
+          "description": "SHA-256 of the file.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:decision:shared:v1#/$defs/sha256"
+        },
+        "size_bytes": {
+          "description": "Size of the file in bytes.",
+          "x-alixai-authority": "alixai",
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "licence": {
+      "description": "A recorded licence and its redistribution terms (master plan 16.3).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["spdx_id", "redistribution"],
+      "properties": {
+        "spdx_id": {
+          "description": "The SPDX licence identifier, or LicenseRef-<name> for a custom licence.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9.+-]*(:[A-Za-z0-9.+-]+)?$"
+        },
+        "redistribution": {
+          "description": "Whether AlixAI may redistribute the files. allowed: yes. restricted: only under conditions recorded in url. not_allowed: no, the operator fetches the files.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "enum": ["allowed", "restricted", "not_allowed"]
+        },
+        "url": {
+          "description": "Where the licence text is published.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "format": "uri",
+          "maxLength": 2048,
+          "pattern": "^https://"
+        }
+      }
+    },
+    "signature": {
+      "description": "A detached signature over the canonical manifest without this member.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "key_id", "value"],
+      "properties": {
+        "algorithm": {
+          "description": "The signature algorithm. Only ed25519 is defined; any other value is rejected on decode.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "enum": ["ed25519"]
+        },
+        "key_id": {
+          "description": "The ID of the release key that signed, resolved against the trusted key set.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+        },
+        "value": {
+          "description": "The signature, standard base64 without line breaks (64 bytes for ed25519).",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "minLength": 86,
+          "maxLength": 88,
+          "pattern": "^[A-Za-z0-9+/]{86}==$"
+        }
+      }
+    }
+  }
+}

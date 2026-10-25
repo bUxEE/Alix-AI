@@ -1,0 +1,5 @@
+# anchor <-> relay. Internal, as alixai-backend.
+# Compose counterpart: networks.front in ../stack/compose.yaml.
+[Network]
+NetworkName=alixai-front
+Internal=true

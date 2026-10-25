@@ -1,0 +1,24 @@
+# Resource profile "lite": 8g RAM / 4 CPU. Use as an override on top of compose.yaml:
+#   docker compose -f compose.yaml -f compose.lite.yaml up -d
+#
+# EMULATED: these are cgroup caps on this container, not a certified machine. Numbers measured
+# under this file must be labelled "emulated", never "certified" (master plan 7.4).
+# memswap_limit == mem_limit disables swap for the container (master plan 7.4 "avoid swap").
+# LOCALAI_THREADS == cpus: under a CPU quota llama.cpp would otherwise size its thread pool
+# to the host's core count and be throttled.
+#
+# Lite: the lowest dependable certified target (master plan 7.1). Two resident backends: the controller and
+# the embedder (docs/operations/resource-budgets.md R2). With one active backend every call of a RAG turn
+# reloads a model (M0-15: 15.2 s for a chat after an embedding), so the default is 2 (R3.1).
+
+services:
+  localai:
+    mem_limit: 8g
+    memswap_limit: 8g
+    cpus: 4
+    environment:
+      LOCALAI_THREADS: "4"
+      LOCALAI_MAX_ACTIVE_BACKENDS: ${LOCALAI_MAX_ACTIVE_BACKENDS:-2}
+    labels:
+      ai.alixai.profile: lite
+      ai.alixai.evidence: emulated

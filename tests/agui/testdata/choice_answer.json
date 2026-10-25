@@ -1,0 +1,395 @@
+{
+  "name": "choice_answer",
+  "description": "The answer to the form above: the client sends the id of the chosen choice in forwardedProps.alixai.choiceId (structured input, no model reads it) and the run ends in the confirmation interrupt.",
+  "protocol": "AG-UI 1.0 (@ag-ui/core 1.0.1)",
+  "source": "engine",
+  "request": {
+    "method": "POST",
+    "path": "/v1/agui",
+    "body": {
+      "context": [],
+      "forwardedProps": {
+        "alixai": {
+          "choiceId": "small"
+        }
+      },
+      "messages": [
+        {
+          "content": "create an item named widget with quantity 3",
+          "id": "m1",
+          "role": "user"
+        }
+      ],
+      "runId": "run_choice",
+      "state": {},
+      "threadId": "ses_test_01",
+      "tools": []
+    }
+  },
+  "response": {
+    "status": 200,
+    "content_type": "text/event-stream",
+    "headers": {
+      "X-AlixAI-Confirmation-Token": "<present: the single-use confirmation secret of the preparation>"
+    },
+    "sse_file": "choice_answer.sse",
+    "ids": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7"
+    ],
+    "event_types": [
+      "RUN_STARTED",
+      "STATE_DELTA",
+      "STEP_STARTED",
+      "ACTIVITY_SNAPSHOT",
+      "STEP_FINISHED",
+      "STEP_STARTED",
+      "STEP_FINISHED",
+      "STEP_STARTED",
+      "STEP_FINISHED",
+      "CUSTOM",
+      "TOOL_CALL_START",
+      "TOOL_CALL_ARGS",
+      "TOOL_CALL_END",
+      "ACTIVITY_SNAPSHOT",
+      "TEXT_MESSAGE_START",
+      "TEXT_MESSAGE_CONTENT",
+      "TEXT_MESSAGE_END",
+      "STATE_DELTA",
+      "RUN_FINISHED"
+    ],
+    "events": [
+      {
+        "type": "RUN_STARTED",
+        "threadId": "ses_test_01",
+        "runId": "run_choice"
+      },
+      {
+        "type": "STATE_DELTA",
+        "delta": [
+          {
+            "op": "add",
+            "path": "/alixai",
+            "value": {
+              "pending": {
+                "capabilityId": "items.create",
+                "collectedFields": [
+                  {
+                    "name": "name",
+                    "origin": "user_turn"
+                  },
+                  {
+                    "name": "quantity",
+                    "origin": "user_turn"
+                  }
+                ],
+                "expiresAt": "2026-10-02T12:30:00Z",
+                "kind": "clarification",
+                "missingFields": [
+                  "size"
+                ],
+                "phase": "",
+                "question": {
+                  "answerKind": "choice",
+                  "choices": [
+                    {
+                      "id": "small",
+                      "label": "small"
+                    },
+                    {
+                      "id": "medium",
+                      "label": "medium"
+                    },
+                    {
+                      "id": "large",
+                      "label": "large"
+                    }
+                  ],
+                  "field": "size"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "tool_call"
+      },
+      {
+        "type": "ACTIVITY_SNAPSHOT",
+        "messageId": "act_trn_01J00000000000000000000001_tool_call",
+        "activityType": "alixai.progress",
+        "content": {
+          "capabilityId": "items.create",
+          "stage": "tool_call",
+          "state": "completed"
+        }
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "tool_call"
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "generating"
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "generating"
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "verifying"
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "verifying"
+      },
+      {
+        "type": "CUSTOM",
+        "name": "alixai.directive",
+        "value": {
+          "turn_id": "trn_01J00000000000000000000001",
+          "capability_id": "items.create",
+          "act": "request_confirmation",
+          "facts": [
+            {
+              "field": "summary",
+              "value": {
+                "kind": "text",
+                "value": "Create an item named \"widget\""
+              }
+            },
+            {
+              "field": "name",
+              "value": {
+                "kind": "text",
+                "value": "widget"
+              }
+            }
+          ],
+          "must_state": [
+            "summary",
+            "name"
+          ],
+          "missing_fields": [],
+          "invalid_fields": [],
+          "allowed_suggestions": [],
+          "confirmation": {
+            "mode": "explicit",
+            "bindings": [
+              "preparation_id",
+              "principal",
+              "session",
+              "data_versions"
+            ]
+          },
+          "permitted_next_actions": [
+            {
+              "action": "confirm"
+            },
+            {
+              "action": "modify"
+            },
+            {
+              "action": "reject"
+            }
+          ],
+          "sources": [],
+          "preparation_id": "prep_01J00000000000000000000001"
+        }
+      },
+      {
+        "type": "TOOL_CALL_START",
+        "toolCallId": "alixai_confirm_prep_01J00000000000000000000001",
+        "toolCallName": "alixai_confirm_action"
+      },
+      {
+        "type": "TOOL_CALL_ARGS",
+        "toolCallId": "alixai_confirm_prep_01J00000000000000000000001",
+        "delta": "{\"preparationId\":\"prep_01J00000000000000000000001\",\"capabilityId\":\"items.create\",\"summary\":\"Create an item named \\\"widget\\\"\",\"effects\":[{\"operation\":\"create\",\"entity_type\":\"item\",\"description\":\"Create an item named \\\"widget\\\".\",\"changes\":[{\"field\":\"name\",\"value\":{\"kind\":\"text\",\"value\":\"widget\"}}],\"external\":false}],\"riskLevel\":2,\"expiresAt\":\"2026-10-02T12:05:00.000Z\",\"confirmation\":{\"mode\":\"explicit\",\"bindings\":[\"preparation_id\",\"principal\",\"session\",\"data_versions\"]}}"
+      },
+      {
+        "type": "TOOL_CALL_END",
+        "toolCallId": "alixai_confirm_prep_01J00000000000000000000001"
+      },
+      {
+        "type": "ACTIVITY_SNAPSHOT",
+        "messageId": "act_trn_01J00000000000000000000001_b1",
+        "activityType": "alixai.block.confirmation_panel",
+        "content": {
+          "type": "confirmation_panel",
+          "preparation_id": "prep_01J00000000000000000000001",
+          "summary": "Create an item named \"widget\"",
+          "effects": [
+            {
+              "operation": "create",
+              "entity_type": "item",
+              "description": "Create an item named \"widget\".",
+              "changes": [
+                {
+                  "field": "name",
+                  "value": {
+                    "kind": "text",
+                    "value": "widget"
+                  }
+                }
+              ],
+              "external": false
+            }
+          ],
+          "risk_level": 2,
+          "expires_at": "2026-10-02T12:05:00.000Z",
+          "confirmation": {
+            "mode": "explicit",
+            "bindings": [
+              "preparation_id",
+              "principal",
+              "session",
+              "data_versions"
+            ]
+          }
+        }
+      },
+      {
+        "type": "TEXT_MESSAGE_START",
+        "messageId": "msg_trn_01J00000000000000000000001_1",
+        "role": "assistant"
+      },
+      {
+        "type": "TEXT_MESSAGE_CONTENT",
+        "messageId": "msg_trn_01J00000000000000000000001_1",
+        "delta": "Please confirm: create an item named widget."
+      },
+      {
+        "type": "TEXT_MESSAGE_END",
+        "messageId": "msg_trn_01J00000000000000000000001_1"
+      },
+      {
+        "type": "STATE_DELTA",
+        "delta": [
+          {
+            "op": "replace",
+            "path": "/alixai/pending/collectedFields",
+            "value": [
+              {
+                "name": "name",
+                "origin": "user_turn"
+              },
+              {
+                "name": "quantity",
+                "origin": "user_turn"
+              },
+              {
+                "name": "size",
+                "origin": "choice"
+              }
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "/alixai/pending/expiresAt",
+            "value": "2026-10-02T12:05:00Z"
+          },
+          {
+            "op": "replace",
+            "path": "/alixai/pending/kind",
+            "value": "confirmation"
+          },
+          {
+            "op": "replace",
+            "path": "/alixai/pending/missingFields",
+            "value": []
+          },
+          {
+            "op": "replace",
+            "path": "/alixai/pending/phase",
+            "value": "prepared"
+          },
+          {
+            "op": "add",
+            "path": "/alixai/pending/preparationId",
+            "value": "prep_01J00000000000000000000001"
+          },
+          {
+            "op": "remove",
+            "path": "/alixai/pending/question"
+          }
+        ]
+      },
+      {
+        "type": "RUN_FINISHED",
+        "threadId": "ses_test_01",
+        "runId": "run_choice",
+        "result": {
+          "finishReason": "awaiting_confirmation",
+          "turnId": "trn_01J00000000000000000000001"
+        },
+        "outcome": {
+          "type": "interrupt",
+          "interrupts": [
+            {
+              "id": "prep_01J00000000000000000000001",
+              "reason": "confirmation_required",
+              "message": "Create an item named \"widget\"",
+              "toolCallId": "alixai_confirm_prep_01J00000000000000000000001",
+              "responseSchema": {
+                "additionalProperties": false,
+                "properties": {
+                  "approved": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "approved"
+                ],
+                "type": "object"
+              },
+              "expiresAt": "2026-10-02T12:05:00.000Z",
+              "metadata": {
+                "preparationId": "prep_01J00000000000000000000001",
+                "capabilityId": "items.create",
+                "summary": "Create an item named \"widget\"",
+                "effects": [
+                  {
+                    "operation": "create",
+                    "entity_type": "item",
+                    "description": "Create an item named \"widget\".",
+                    "changes": [
+                      {
+                        "field": "name",
+                        "value": {
+                          "kind": "text",
+                          "value": "widget"
+                        }
+                      }
+                    ],
+                    "external": false
+                  }
+                ],
+                "riskLevel": 2,
+                "expiresAt": "2026-10-02T12:05:00.000Z",
+                "confirmation": {
+                  "mode": "explicit",
+                  "bindings": [
+                    "preparation_id",
+                    "principal",
+                    "session",
+                    "data_versions"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

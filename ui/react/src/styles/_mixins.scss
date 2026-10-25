@@ -1,0 +1,146 @@
+// Shared behaviour of the kit: the focus ring, the press response, the entrance and the reduced-motion rule.
+
+@mixin focus-ring {
+  &:focus-visible {
+    outline: 2px solid var(--alixai-focus);
+    outline-offset: 2px;
+  }
+}
+
+// Pressable: a quick scale on press (transform only), hover gated to real pointers.
+@mixin pressable {
+  transition:
+    transform var(--alixai-duration-press) var(--alixai-ease-out),
+    background-color var(--alixai-duration-fade) ease,
+    border-color var(--alixai-duration-fade) ease,
+    color var(--alixai-duration-fade) ease;
+  @include focus-ring;
+
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &:active:not(:disabled) {
+      transform: none;
+    }
+  }
+}
+
+@mixin button-base {
+  @include pressable;
+  min-height: var(--alixai-target);
+  padding: 0 var(--alixai-space-4);
+  border: 1px solid var(--alixai-border-strong);
+  border-radius: var(--alixai-radius-md);
+  background: var(--alixai-surface);
+  color: var(--alixai-text);
+  font: inherit;
+  font-size: var(--alixai-text-sm);
+  font-weight: 600;
+  cursor: pointer;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover:not(:disabled) {
+      background: var(--alixai-surface-sunken);
+    }
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+}
+
+@mixin button-primary {
+  background: var(--alixai-accent);
+  border-color: var(--alixai-accent);
+  color: var(--alixai-on-accent);
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover:not(:disabled) {
+      background: var(--alixai-accent-hover);
+    }
+  }
+}
+
+@mixin button-danger {
+  background: var(--alixai-danger);
+  border-color: var(--alixai-danger);
+  color: var(--alixai-on-danger);
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover:not(:disabled) {
+      background: var(--alixai-danger-hover);
+    }
+  }
+}
+
+// A small status label. Meaning is carried by its text; the tint only supports it.
+@mixin tag($fg: var(--alixai-text-muted), $bg: var(--alixai-surface-sunken)) {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--alixai-space-2);
+  min-height: 1.25rem;
+  border-radius: var(--alixai-radius-sm);
+  background: $bg;
+  color: $fg;
+  font-size: var(--alixai-text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+// Entrance: fade and a short rise, ease-out. Under reduced motion only the fade remains.
+@mixin enter {
+  animation: alix-enter var(--alixai-duration-enter) var(--alixai-ease-out) both;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation-name: alix-fade;
+  }
+}
+
+@keyframes alix-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes alix-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes alix-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@mixin reduced-motion {
+  @media (prefers-reduced-motion: reduce) {
+    @content;
+  }
+}
+
+@mixin visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

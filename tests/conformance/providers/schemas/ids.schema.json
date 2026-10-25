@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:common:ids:v1",
+  "title": "Common identifiers",
+  "description": "Shared identifier grammars, referenced as urn:alixai:schema:common:ids:v1#/$defs/<name>. This file is a definitions library: it constrains nothing on its own.",
+  "$defs": {
+    "identifier": {
+      "title": "Identifier",
+      "description": "An opaque, host-chosen identifier (deployment, application, tenant, workspace, principal, session, role, capability, entity, trace). 1 to 128 characters, no whitespace, no control characters and no '*': wildcards do not exist. Mirrors pkg/contracts scopeValueState.",
+      "$comment": "The pattern excludes exactly what Go's unicode.IsSpace and unicode.IsControl reject, written as literal characters so it behaves the same in RE2 and ECMA-262 engines: U+0000-U+0020, U+007F-U+00A0, U+1680, U+2000-U+200A, U+2028, U+2029, U+202F, U+205F, U+3000, plus '*'. pkg/contracts TestIdentifierGrammarMatchesSchema checks every BMP code point against scopeValueState.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[^\\x00-\\x20\\x7f-\\xa0  -     　*]+$"
+    },
+    "capabilityId": {
+      "title": "Capability ID",
+      "description": "The stable ID of an application capability. Exact match only; there are no capability wildcards.",
+      "$ref": "#/$defs/identifier"
+    },
+    "traceId": {
+      "title": "Trace ID",
+      "description": "Opaque model/provider trace identifier used to correlate a structured object with the inference call that produced it.",
+      "$ref": "#/$defs/identifier"
+    },
+    "fieldName": {
+      "title": "Field name",
+      "description": "The name of a typed capability field: lower snake_case, at most 64 characters.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "typedId": {
+      "title": "Typed core-minted ID",
+      "description": "An ID minted by the AlixAI core: a short lowercase type prefix, an underscore and a 26-character ULID (Crockford base32, upper case), for example ses_01J0000000000000000000000A.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]{1,7}_[0-9A-HJKMNP-TV-Z]{26}$"
+    }
+  }
+}

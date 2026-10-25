@@ -1,0 +1,18 @@
+{
+  "operation": "read",
+  "capability_id": "appointments.list_availability",
+  "status": "unavailable",
+  "identifiers": [],
+  "values": [],
+  "errors": [
+    {
+      "code": "unavailable",
+      "message": "The calendar service is not reachable."
+    }
+  ],
+  "allowed_next_actions": [
+    {
+      "action": "retry"
+    }
+  ]
+}

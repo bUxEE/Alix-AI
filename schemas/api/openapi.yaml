@@ -1,0 +1,277 @@
+openapi: 3.1.0
+info:
+  title: AlixAI public API
+  version: 1.0.0
+  summary: The application-facing API of an AlixAI service (master plan section 14).
+  description: |
+    AlixAI is a headless, application-bound assistant core. A host application authenticates its user,
+    exchanges that identity for a short-lived context token (ADR 0013) and calls this API with it.
+
+    **Identity.** Every route below `/v1` needs `Authorization: Bearer <context token>`. The token carries
+    the application, tenant, workspace, principal, roles, capability scopes and session; nothing about
+    them is read from a path, a query or a body. A token is **single use**: every request, and every
+    event-stream open, needs a fresh one; a second presentation is `replayed`. The deployment level of
+    the scope is configuration and is never reported.
+
+    **Errors.** Every failure is the bare `Error` document (`code`, `message`, `retryable`, `details`),
+    whatever the status. The one exception is a confirmation whose commit reached the host and did not
+    succeed (`confirmAction`, 409 and 500): the receipt, the durable record of what happened, comes beside
+    the `Error`. The request id is in the `X-Request-ID` response header and in `details.request_id`.
+
+    **Quarantine.** An application whose package is not active (quarantined, rejected, superseded or not
+    installed) serves no traffic: its sessions, turns, actions and capabilities answer `quarantined`.
+    Registering a package only ever installs it into quarantine.
+
+    **Streaming.** A turn answers with TurnEvents (schemas/conversation/turn-event). Ask for
+    `text/event-stream` to receive them as server-sent events; `id` is the event's `seq`, `event` its `type`
+    and `data` the TurnEvent JSON on one line. A dropped connection resumes from the last `id` seen with
+    `GET /v1/sessions/{session_id}/turns/{turn_id}/events` (header `Last-Event-ID` or query `cursor`); the turn is
+    never run again. LocalAI's own endpoints are never exposed.
+
+    **How this document is assembled.** This root lists one fragment per area under `paths/` in
+    `x-alixai-areas`. A fragment is a mapping with an optional `paths` (path items) and an optional
+    `components` (schemas, responses, parameters). A task that adds endpoints fills its own fragment and
+    never edits this file; `TestRoutesMatchOpenAPISpec` fails when a registered route is missing from the
+    merged document, or an operation in it has no route.
+  license:
+    name: Apache-2.0
+    identifier: Apache-2.0
+servers:
+  - url: http://127.0.0.1:7470
+    description: The default loopback listener (server.listen). A listener beyond loopback requires TLS.
+security:
+  - bearerAuth: []
+tags:
+  - name: sessions
+    description: Sessions, turns and the structured pending state.
+  - name: actions
+    description: Inspect, confirm, reject and read the receipt of a prepared action.
+  - name: applications
+    description: Register and inspect application packages; list capabilities.
+  - name: operations
+    description: Liveness and readiness.
+
+# Operational probes: unauthenticated, loopback-first, they reveal no more than liveness and role status.
+paths:
+  /healthz:
+    get:
+      operationId: getLiveness
+      tags: [operations]
+      summary: Liveness
+      description: The process is serving HTTP. It checks no dependency, so a slow model runtime never gets the service restarted.
+      security: []
+      responses:
+        '200':
+          description: Alive.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [status]
+                properties:
+                  status:
+                    const: ok
+  /readyz:
+    get:
+      operationId: getReadiness
+      tags: [operations]
+      summary: Readiness
+      description: |
+        200 when the service can answer (the controller role is usable and every check passes), 503 when it
+        cannot. A degraded service (a missing router or embedder) is still ready. The report is cached for
+        gateway.health_ttl so an anonymous caller cannot turn it into load on the runtime.
+      security: []
+      responses:
+        '200':
+          description: Ready (possibly degraded).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadyReport'
+        '503':
+          description: Not ready.
+          headers:
+            Retry-After:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadyReport'
+
+x-alixai-areas:
+  sessions:
+    $ref: paths/sessions.yaml
+  actions:
+    $ref: paths/actions.yaml
+  apps:
+    $ref: paths/apps.yaml
+  rag:
+    $ref: paths/rag.yaml
+  voice:
+    $ref: paths/voice.yaml
+  settings:
+    $ref: paths/settings.yaml
+  history:
+    $ref: paths/history.yaml
+  files:
+    $ref: paths/files.yaml
+  ops:
+    $ref: paths/ops.yaml
+  providers:
+    $ref: paths/providers.yaml
+  oauth:
+    $ref: paths/oauth.yaml
+  decision:
+    $ref: paths/decision.yaml
+  agui:
+    $ref: paths/agui.yaml
+  events:
+    $ref: paths/events.yaml
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: alixai-context+jwt
+      description: |
+        A single-use application context token (ADR 0013): a JWS signed with the host application's Ed25519
+        key (`alg` EdDSA, `typ` alixai-context+jwt) carrying application_id, tenant_id, workspace_id, `sub`
+        (the principal), roles, capability_scopes and session_id. Sent only in the Authorization header,
+        never in a query string, a cookie or a body.
+
+  schemas:
+    Error:
+      $ref: ../common/error.schema.json
+    TurnEvent:
+      $ref: ../conversation/turn-event.schema.json
+    PreparedAction:
+      $ref: ../actions/prepared-action.schema.json
+    ActionReceipt:
+      $ref: ../actions/action-receipt.schema.json
+    ReadyReport:
+      type: object
+      additionalProperties: false
+      required: [status, ready, roles, checks]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded, unavailable]
+        ready:
+          type: boolean
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReadyRole'
+        checks:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReadyCheck'
+    ReadyRole:
+      type: object
+      additionalProperties: false
+      required: [role, configured, status]
+      properties:
+        role:
+          type: string
+        configured:
+          type: boolean
+        status:
+          type: string
+          enum: [ok, degraded, unavailable]
+        reason:
+          type: string
+        effect:
+          type: string
+    ReadyCheck:
+      type: object
+      additionalProperties: false
+      required: [name, ok]
+      properties:
+        name:
+          type: string
+        ok:
+          type: boolean
+        reason:
+          type: string
+
+  responses:
+    BadRequest:
+      description: The request is malformed or fails validation (`validation_failed`).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: |
+        The context token is missing, malformed, expired, replayed or unverifiable (`unauthenticated`,
+        `expired`, `replayed`, `scope_missing`). Mint a fresh token and retry.
+      headers:
+        WWW-Authenticate:
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: |
+        The caller may not do this: `scope_violation` (the path names another session, application or
+        preparation than the token is bound to), `permission_denied`, `step_up_required` or `quarantined`
+        (the application's package is not active).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: The thing is not in a state that allows this (`conflict`, `stale`, `replayed`).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Gone:
+      description: The session has ended; a new session needs a new authenticated context (`expired`).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    PayloadTooLarge:
+      description: The body exceeds gateway.max_body_bytes.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    UnsupportedMediaType:
+      description: The Content-Type is not the one this operation accepts.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unprocessable:
+      description: The request is well-formed but its content is refused (for example a package with critical findings).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    TooManyRequests:
+      description: Rate limited (`rate_limited`, retryable).
+      headers:
+        Retry-After:
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unavailable:
+      description: A dependency the request needs cannot answer (`unavailable`, `timeout`); nothing was done.
+      headers:
+        Retry-After:
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

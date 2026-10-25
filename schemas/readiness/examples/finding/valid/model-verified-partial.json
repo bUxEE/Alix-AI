@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "finding_id": "fnd_fedcba9876543210",
+  "requirement_id": "req.mcp.tool_list",
+  "category": "mcp",
+  "status": "partial",
+  "source": "model_verified",
+  "check_id": "application.control_surface",
+  "evidence": [
+    {
+      "path": "docs/mcp.md",
+      "line_start": 3,
+      "line_end": 21,
+      "file_sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    },
+    {
+      "path": "server/tools.ts",
+      "line_start": 1,
+      "line_end": 40,
+      "file_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ],
+  "summary": "Four of six MCP tools are listed with input schemas.",
+  "remediation": {
+    "en": "Give the remaining two tools an input schema.",
+    "it": "Dare uno schema di input ai due strumenti rimanenti."
+  }
+}

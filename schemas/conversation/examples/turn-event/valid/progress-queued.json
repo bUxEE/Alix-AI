@@ -1,0 +1,9 @@
+{
+  "type": "progress",
+  "turn_id": "trn_01J0000000000000000000000A",
+  "seq": 6,
+  "stage": "queued",
+  "state": "progress",
+  "percent": 40,
+  "job_id": "job_01J0000000000000000000000A"
+}

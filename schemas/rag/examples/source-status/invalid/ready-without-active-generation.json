@@ -1,0 +1,17 @@
+{
+  "source_id": "src_01J0000000000000000000000A",
+  "display_name": "Clinic cancellation policy",
+  "state": "ready",
+  "availability": "available",
+  "staleness": "current",
+  "last_attempt_at": "2026-10-02T11:45:12.250Z",
+  "last_success_at": "2026-10-02T11:45:12.250Z",
+  "counts": {
+    "discovered": 42,
+    "indexed": 40,
+    "skipped": 1,
+    "failed": 1,
+    "tombstoned": 0
+  },
+  "active_generation_id": null
+}

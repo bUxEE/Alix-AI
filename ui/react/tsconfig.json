@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "jsx": "react-jsx",
+    "paths": {
+      "@alixai/sdk": ["../../sdk/typescript/src/index.ts"],
+      "@alixai/voice-orb": ["../voice-orb/src/index.ts"],
+      "@alixai/copilotkit-adapter": ["../../sdk/copilotkit-adapter/src/index.ts"],
+      "@alixai/copilotkit-adapter/react": ["../../sdk/copilotkit-adapter/src/react/index.ts"]
+    }
+  },
+  "include": ["src", "test", "vitest.config.ts"]
+}

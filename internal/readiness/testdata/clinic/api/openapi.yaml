@@ -1,0 +1,73 @@
+openapi: 3.0.3
+info:
+  title: Clinic booking API
+  version: 1.0.0
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      responses:
+        "200":
+          description: ok
+  /slots:
+    get:
+      operationId: listSlots
+      responses:
+        "200":
+          description: Free slots
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SlotList"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /bookings/prepare:
+    post:
+      operationId: prepareBooking
+      responses:
+        "200":
+          description: Prepared
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PreparedBooking"
+  /bookings/commit:
+    post:
+      operationId: commitBooking
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Receipt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingReceipt"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /remote:
+    get:
+      operationId: remoteDoc
+      responses:
+        "200":
+          description: Remote
+          content:
+            application/json:
+              schema:
+                $ref: "https://example.invalid/schemas/never-fetched.json"
+components:
+  schemas:
+    SlotList:
+      type: object

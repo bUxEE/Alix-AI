@@ -1,0 +1,384 @@
+@use "mixins";
+
+// Visual primitives shared by every component: colours, borders, radii and states. Layout is never decided here; it is
+// decided with the utilities of `_utilities.scss` in the markup.
+
+.alix-root {
+  // ---- buttons ----
+  .alix-btn {
+    @include mixins.pressable;
+    @include mixins.focus-ring;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 16px;
+    border: 1px solid var(--alix-border-strong);
+    border-radius: var(--alix-radius-md);
+    background: var(--alix-surface);
+    color: var(--alix-text);
+    font: inherit;
+    font-size: var(--alix-fs-sm);
+    font-weight: 560;
+    line-height: 1;
+    cursor: pointer;
+    user-select: none;
+    touch-action: manipulation;
+
+    @include mixins.hover {
+      background: var(--alix-surface-2);
+    }
+
+    &:disabled,
+    &[aria-disabled="true"] {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    &.alix-btn-primary {
+      background: var(--alix-accent);
+      border-color: var(--alix-accent);
+      color: var(--alix-accent-contrast);
+
+      @include mixins.hover {
+        background: var(--alix-accent-hover);
+      }
+    }
+
+    &.alix-btn-danger {
+      background: var(--alix-danger);
+      border-color: var(--alix-danger);
+      color: var(--alix-surface);
+    }
+
+    &.alix-btn-quiet {
+      background: transparent;
+      border-color: transparent;
+      color: var(--alix-text-muted);
+
+      @include mixins.hover {
+        background: var(--alix-surface-2);
+        color: var(--alix-text);
+      }
+    }
+
+    &.alix-btn-icon {
+      width: 40px;
+      padding: 0;
+    }
+  }
+
+  // ---- fields ----
+  .alix-field {
+    @include mixins.focus-ring;
+
+    width: 100%;
+    min-height: 40px;
+    padding: 9px 12px;
+    border: 1px solid var(--alix-border-strong);
+    border-radius: var(--alix-radius-md);
+    background: var(--alix-surface);
+    color: var(--alix-text);
+    font: inherit;
+    font-size: max(16px, var(--alix-fs-md));
+    line-height: 1.45;
+
+    &::placeholder {
+      color: var(--alix-text-muted);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+    }
+  }
+
+  // ---- surfaces ----
+  .alix-card {
+    border: 1px solid var(--alix-border);
+    border-radius: var(--alix-radius-lg);
+    background: var(--alix-surface);
+  }
+
+  .alix-card-raised {
+    box-shadow: var(--alix-shadow);
+  }
+
+  .alix-divided > * + * {
+    border-top: 1px solid var(--alix-border);
+  }
+
+  .alix-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--alix-surface-3);
+    color: var(--alix-text);
+    font-size: var(--alix-fs-xs);
+    font-weight: 560;
+    line-height: 1.4;
+    white-space: nowrap;
+
+    &.alix-tone-accent {
+      background: var(--alix-accent-soft);
+      color: var(--alix-accent);
+    }
+
+    &.alix-tone-success {
+      background: var(--alix-success-soft);
+      color: var(--alix-success);
+    }
+
+    &.alix-tone-warning {
+      background: var(--alix-warning-soft);
+      color: var(--alix-warning);
+    }
+
+    &.alix-tone-danger {
+      background: var(--alix-danger-soft);
+      color: var(--alix-danger);
+    }
+  }
+
+  .alix-chip {
+    @include mixins.pressable;
+    @include mixins.focus-ring;
+
+    padding: 6px 12px;
+    border: 1px solid var(--alix-border-strong);
+    border-radius: 999px;
+    background: var(--alix-surface);
+    color: var(--alix-text);
+    font: inherit;
+    font-size: var(--alix-fs-sm);
+    cursor: pointer;
+    touch-action: manipulation;
+
+    @include mixins.hover {
+      background: var(--alix-accent-soft);
+      border-color: var(--alix-accent);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  .alix-banner {
+    padding: 10px 14px;
+    border-radius: var(--alix-radius-md);
+    background: var(--alix-surface-2);
+    font-size: var(--alix-fs-sm);
+
+    &.alix-tone-warning {
+      background: var(--alix-warning-soft);
+      color: var(--alix-warning);
+    }
+
+    &.alix-tone-danger {
+      background: var(--alix-danger-soft);
+      color: var(--alix-danger);
+    }
+  }
+
+  // ---- loading: skeleton and section overlay ----
+  .alix-skeleton {
+    display: block;
+    border-radius: var(--alix-radius-sm);
+    background: var(--alix-surface-3);
+    animation: alix-pulse 1.4s var(--alix-ease-in-out) infinite;
+    animation-play-state: var(--alix-shimmer);
+  }
+
+  .alix-section-loader {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--alix-scrim);
+    border-radius: inherit;
+    animation: alix-fade-in var(--alix-dur-base) var(--alix-ease-out) both;
+  }
+
+  .alix-spinner {
+    width: 22px;
+    height: 22px;
+    border: 2.5px solid var(--alix-border-strong);
+    border-top-color: var(--alix-accent);
+    border-radius: 50%;
+    animation: alix-spin 0.7s linear infinite;
+    animation-play-state: var(--alix-shimmer);
+  }
+
+  // ---- text ----
+  .alix-prose {
+    max-width: 72ch;
+    overflow-wrap: anywhere;
+
+    p,
+    ul,
+    ol,
+    pre,
+    blockquote {
+      margin: 0 0 0.6em;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4 {
+      margin: 0.9em 0 0.4em;
+      font-size: var(--alix-fs-md);
+      font-weight: 640;
+      line-height: 1.3;
+    }
+
+    h1 {
+      font-size: var(--alix-fs-lg);
+    }
+
+    ul,
+    ol {
+      padding-inline-start: 1.4em;
+    }
+
+    code {
+      padding: 1px 5px;
+      border-radius: 5px;
+      background: var(--alix-surface-3);
+      font-family: var(--alix-font-mono);
+      font-size: 0.92em;
+    }
+
+    pre {
+      padding: 12px 14px;
+      overflow-x: auto;
+      border: 1px solid var(--alix-border);
+      border-radius: var(--alix-radius-md);
+      background: var(--alix-surface-2);
+
+      code {
+        padding: 0;
+        background: none;
+      }
+    }
+
+    blockquote {
+      padding-inline-start: 12px;
+      border-inline-start: 1px solid var(--alix-border-strong);
+      color: var(--alix-text-muted);
+    }
+
+    a {
+      color: var(--alix-accent);
+      text-underline-offset: 2px;
+    }
+
+    > :last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .alix-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--alix-border);
+    border-radius: var(--alix-radius-md);
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--alix-fs-sm);
+    }
+
+    caption {
+      padding: 8px 12px;
+      color: var(--alix-text-muted);
+      text-align: start;
+    }
+
+    th,
+    td {
+      padding: 8px 12px;
+      border-top: 1px solid var(--alix-border);
+      text-align: start;
+      vertical-align: top;
+    }
+
+    thead th {
+      border-top: 0;
+      background: var(--alix-surface-2);
+      font-weight: 640;
+    }
+
+    .alix-num {
+      font-variant-numeric: tabular-nums;
+      text-align: end;
+    }
+  }
+
+  .alix-swatch {
+    display: inline-block;
+    flex: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+  }
+
+  .alix-eyebrow {
+    margin: 0;
+    color: var(--alix-text-muted);
+    font-size: var(--alix-fs-xs);
+    font-weight: 640;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .alix-heading {
+    margin: 0;
+    font-size: var(--alix-fs-md);
+    font-weight: 640;
+    line-height: 1.3;
+  }
+
+  .alix-reset-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  // Elements that enter the page rise a few pixels and fade; reduced motion collapses the duration.
+  .alix-enter {
+    animation: alix-rise var(--alix-dur-base) var(--alix-ease-out) both;
+  }
+}
+
+@keyframes alix-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes alix-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@keyframes alix-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes alix-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}

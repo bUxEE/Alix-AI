@@ -1,0 +1,318 @@
+@use "../styles/mixins" as m;
+
+// Voice Mode, the talk button and the transcript editor. Colour, size and time come from the kit's tokens only. Motion is
+// transform and opacity; under reduced motion the voice orb holds still and the words carry the state.
+
+.alix-voice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--alixai-space-4);
+  padding: var(--alixai-space-5);
+  border: 1px solid var(--alixai-border);
+  border-radius: var(--alixai-radius-lg);
+  background: var(--alixai-surface);
+  color: var(--alixai-text);
+  font-family: var(--alixai-font);
+  font-size: var(--alixai-text-md);
+  line-height: var(--alixai-leading);
+
+  &__status {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--alixai-space-2);
+    margin: 0;
+    font-weight: 640;
+  }
+
+  // A dot beside the state word. It supports the word and never replaces it.
+  &__dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--alixai-border-strong);
+
+    &[data-phase="listening"] {
+      background: var(--alixai-accent);
+    }
+
+    &[data-phase="speaking"] {
+      background: var(--alixai-ok);
+    }
+
+    &[data-phase="processing"],
+    &[data-phase="connecting"],
+    &[data-phase="reconnecting"] {
+      background: var(--alixai-warn);
+    }
+
+    &[data-phase="unavailable"],
+    &[data-phase="ended"] {
+      background: var(--alixai-danger);
+    }
+  }
+
+  &__banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--alixai-space-2);
+    width: 100%;
+    margin: 0;
+    padding: var(--alixai-space-3) var(--alixai-space-4);
+    border-radius: var(--alixai-radius-md);
+    background: var(--alixai-surface-sunken);
+    font-size: var(--alixai-text-sm);
+
+    &[data-tone="warn"] {
+      background: var(--alixai-warn-soft);
+      color: var(--alixai-warn);
+    }
+  }
+
+  &__sr {
+    @include m.visually-hidden;
+  }
+
+  &__block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--alixai-space-2);
+    width: 100%;
+  }
+
+  &__block[data-align="start"] {
+    align-items: stretch;
+    gap: var(--alixai-space-1);
+  }
+
+  &__caption {
+    margin: 0;
+    text-align: center;
+    overflow-wrap: anywhere;
+
+    &[data-interim] {
+      color: var(--alixai-text-muted);
+    }
+  }
+
+  &__label {
+    margin: 0;
+    color: var(--alixai-text-muted);
+    font-size: var(--alixai-text-xs);
+    font-weight: 600;
+  }
+
+  &__reply {
+    overflow-wrap: anywhere;
+  }
+
+  &__note {
+    margin: 0;
+    color: var(--alixai-text-muted);
+    font-size: var(--alixai-text-sm);
+    text-align: center;
+  }
+
+  &__tag {
+    @include m.tag(var(--alixai-accent), var(--alixai-accent-soft));
+  }
+
+  &__controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--alixai-space-4);
+  }
+
+  &__check {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--alixai-space-2);
+  }
+
+  &__hint {
+    margin: 0;
+    color: var(--alixai-text-muted);
+    font-size: var(--alixai-text-xs);
+    text-align: center;
+  }
+
+  &__button {
+    @include m.button-base;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--alixai-space-2);
+
+    &[data-variant="quiet"] {
+      border-color: transparent;
+      background: transparent;
+      color: var(--alixai-text-muted);
+    }
+
+    &[data-variant="primary"] {
+      @include m.button-primary;
+    }
+  }
+
+  // The round talk button carries its own look. The ring is a pseudo-element that fades and settles in, never from nothing.
+  &__talk {
+    @include m.pressable;
+
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: var(--alixai-target);
+    height: var(--alixai-target);
+    padding: 0;
+    border: 1px solid var(--alixai-border-strong);
+    border-radius: 50%;
+    background: var(--alixai-surface);
+    color: var(--alixai-text);
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+
+    &[data-mode="push-to-talk"] {
+      touch-action: none;
+    }
+
+    &[data-size="lg"] {
+      width: 4rem;
+      height: 4rem;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover:not([aria-disabled="true"]) {
+        background: var(--alixai-surface-sunken);
+      }
+    }
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: -0.375rem;
+      border: 2px solid var(--alixai-accent);
+      border-radius: 50%;
+      opacity: 0;
+      transform: scale(0.92);
+      pointer-events: none;
+      transition:
+        opacity var(--alixai-duration-enter) var(--alixai-ease-out),
+        transform var(--alixai-duration-enter) var(--alixai-ease-out);
+    }
+
+    &[data-state="listening"] {
+      border-color: var(--alixai-accent);
+      background: var(--alixai-accent);
+      color: var(--alixai-on-accent);
+
+      &::after {
+        opacity: 0.4;
+        transform: scale(1);
+      }
+    }
+
+    &[aria-disabled="true"] {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+// The voice orb paints its own canvas inside this box; the box only reserves the space, so nothing moves when the canvas arrives.
+.alix-voice-orb {
+  display: inline-block;
+  flex-shrink: 0;
+  max-width: 100%;
+  aspect-ratio: 1;
+  pointer-events: none;
+}
+
+.alix-voice-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--alixai-space-3);
+  width: 100%;
+  padding: var(--alixai-space-4);
+  border: 1px solid var(--alixai-border);
+  border-radius: var(--alixai-radius-lg);
+  background: var(--alixai-surface);
+  color: var(--alixai-text);
+  font-family: var(--alixai-font);
+
+  &__label {
+    display: flex;
+    flex-direction: column;
+    gap: var(--alixai-space-1);
+  }
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: var(--alixai-space-2);
+    font-weight: 640;
+  }
+
+  &__hint {
+    color: var(--alixai-text-muted);
+    font-size: var(--alixai-text-sm);
+  }
+
+  &__tag {
+    @include m.tag(var(--alixai-accent), var(--alixai-accent-soft));
+  }
+
+  &__field {
+    @include m.focus-ring;
+
+    width: 100%;
+    min-height: var(--alixai-target);
+    padding: var(--alixai-space-2) var(--alixai-space-3);
+    border: 1px solid var(--alixai-border-strong);
+    border-radius: var(--alixai-radius-md);
+    background: var(--alixai-surface);
+    color: var(--alixai-text);
+    font: inherit;
+    font-size: max(16px, var(--alixai-text-md));
+    resize: vertical;
+
+    &:disabled {
+      opacity: 0.6;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--alixai-space-2);
+  }
+
+  &__spacer {
+    flex: 1 1 auto;
+  }
+
+  &__button {
+    @include m.button-base;
+
+    &[data-variant="quiet"] {
+      border-color: transparent;
+      background: transparent;
+      color: var(--alixai-text-muted);
+    }
+
+    &[data-variant="primary"] {
+      @include m.button-primary;
+    }
+  }
+}

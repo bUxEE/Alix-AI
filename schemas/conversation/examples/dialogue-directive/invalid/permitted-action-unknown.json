@@ -1,0 +1,54 @@
+{
+  "turn_id": "trn_01J0000000000000000000000A",
+  "capability_id": "appointments.book",
+  "act": "ask_missing",
+  "facts": [
+    {
+      "field": "doctor",
+      "value": {
+        "kind": "text",
+        "value": "Dr. Rossi"
+      }
+    }
+  ],
+  "must_state": [],
+  "missing_fields": [
+    "slot_start"
+  ],
+  "invalid_fields": [],
+  "next_question": {
+    "field": "slot_start",
+    "answer_kind": "choice",
+    "choices": [
+      {
+        "choice_id": "c1",
+        "label": "Tuesday 14 October, 10:30",
+        "value": {
+          "kind": "datetime",
+          "value": "2026-10-14T08:30:00Z",
+          "zone": "Europe/Rome"
+        }
+      },
+      {
+        "choice_id": "c2",
+        "label": "Tuesday 14 October, 11:00",
+        "value": {
+          "kind": "datetime",
+          "value": "2026-10-14T09:00:00Z",
+          "zone": "Europe/Rome"
+        }
+      }
+    ]
+  },
+  "allowed_suggestions": [],
+  "confirmation": {
+    "mode": "none",
+    "bindings": []
+  },
+  "permitted_next_actions": [
+    {
+      "action": "commit"
+    }
+  ],
+  "sources": []
+}

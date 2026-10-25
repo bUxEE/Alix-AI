@@ -1,0 +1,215 @@
+id: "quotes.draft"
+version: "1.0.0"
+audience: "user"
+title: "Draft a quote"
+purpose: "Draft a quote for a customer of the caller's team: a description, an exact amount in minor units of the customer's currency and a validity period. A draft is reversible: nobody is billed until an invoice is issued from it. The summary is shown and the draft is created at once."
+scope_level: "workspace"
+permissions:
+  - "quotes.draft"
+fields:
+  - name: "customer"
+    type: "entity_ref"
+    required: true
+    description: "The customer the quote is for, named by its name or identifier."
+    entity_type: "customer"
+  - name: "description"
+    type: "string"
+    required: true
+    description: "What the quote is for."
+    min_length: 3
+    max_length: 200
+  - name: "amount_minor"
+    type: "integer"
+    required: true
+    description: "The quoted amount as a whole number of minor units of the currency: 1250.50 EUR is 125050, 480000 JPY is 480000, 1.234 KWD is 1234."
+    minimum: 1
+    maximum: 100000000000000
+  - name: "currency"
+    type: "enum"
+    required: false
+    description: "The ISO 4217 currency. A customer is billed in one currency, so it must be the customer's; when omitted the customer's currency applies."
+    values:
+      - "CHF"
+      - "EUR"
+      - "GBP"
+      - "JPY"
+      - "KWD"
+      - "USD"
+  - name: "valid_days"
+    type: "integer"
+    required: false
+    description: "How many days the quote stays valid."
+    minimum: 1
+    maximum: 90
+    default:
+      source: "literal"
+      value: 30
+entity_types:
+  customer:
+    description: "A customer of the caller's team, as the caller is allowed to see it."
+    resolve:
+      endpoint: "ledger-bridge"
+      native_method: "resolve_customer"
+      result_schema: "schemas/resolve.result.schema.json"
+ambiguity:
+  - id: "customer_multiple"
+    field: "customer"
+    when: "multiple_matches"
+    action: "ask_user"
+    max_choices: 5
+  - id: "customer_none"
+    field: "customer"
+    when: "no_match"
+    action: "reject"
+validation:
+  - id: "description_present"
+    fields:
+      - "description"
+    description: "The description needs at least three characters that are not spaces."
+    error_code: "validation_failed"
+  - id: "amount_in_range"
+    fields:
+      - "amount_minor"
+    description: "The amount must be a whole number of minor units from 1 to 100000000000000."
+    error_code: "validation_failed"
+  - id: "currency_matches_customer"
+    fields:
+      - "currency"
+      - "customer"
+    description: "The currency must be the customer's own currency."
+    error_code: "validation_failed"
+  - id: "valid_days_in_range"
+    fields:
+      - "valid_days"
+    description: "The validity must be from 1 to 90 days."
+    error_code: "validation_failed"
+failure_states:
+  - code: "permission_denied"
+    description: "The principal's role may not draft a quote."
+  - code: "scope_violation"
+    description: "The record is outside the principal's reach (another team without manager access, or another organisation), or does not exist. The application does not say which."
+  - code: "validation_failed"
+    description: "A value is malformed or breaks one of the rules above. Nothing was changed."
+  - code: "missing_fields"
+    description: "A required field (customer, description, amount_minor) was not supplied. Nothing was changed."
+  - code: "conflict"
+    description: "The idempotency key was used for a different action. Nothing was changed."
+  - code: "stale"
+    description: "A record changed after the action was prepared, so the preparation is no longer valid. Nothing was changed; it can be prepared again."
+  - code: "expired"
+    description: "The prepared action was not confirmed in time, or was withdrawn. Nothing was changed."
+  - code: "uncertain_outcome"
+    description: "The commit response was lost. What was recorded is established through the status operation before anything is retried."
+  - code: "unavailable"
+    description: "The ledger cannot be reached. Nothing was changed."
+effect_class: "reversible"
+risk_level: 1
+operations:
+  validate:
+    endpoint: "ledger-bridge"
+    native_method: "quotes_draft_validate"
+    result_schema: "schemas/quotes.draft.validation.result.schema.json"
+    timeout_ms: 5000
+  prepare:
+    endpoint: "ledger-bridge"
+    native_method: "quotes_draft_prepare"
+    result_schema: "schemas/quotes.draft.prepared.result.schema.json"
+    timeout_ms: 8000
+  commit:
+    endpoint: "ledger-bridge"
+    native_method: "quotes_draft_commit"
+    result_schema: "schemas/quotes.draft.receipt.result.schema.json"
+    timeout_ms: 15000
+  status:
+    endpoint: "ledger-bridge"
+    native_method: "quotes_draft_status"
+    result_schema: "schemas/quotes.draft.receipt.result.schema.json"
+    timeout_ms: 5000
+confirmation:
+  mode: "none"
+prepared_action:
+  ttl_seconds: 600
+  invalidated_by:
+    - "record_revision"
+    - "permission_change"
+    - "user_change"
+    - "application_event"
+idempotency:
+  key_source: "prepared_action_id"
+  window_seconds: 86400
+  on_replay: "return_original_receipt"
+response_obligations:
+  - fact: "customer_name"
+    when: "always"
+    description: "The customer the quote is for."
+  - fact: "quote_total"
+    when: "always"
+    description: "The quoted amount with its currency."
+  - fact: "quote_valid_until"
+    when: "always"
+    description: "The last day the quote is valid."
+  - fact: "quote_number"
+    when: "success"
+    description: "The number of the drafted quote."
+next_actions:
+  - id: "issue_invoice"
+    after: "success"
+    capability_id: "invoices.issue"
+doc_refs:
+  - "qd-field-customer"
+  - "qd-field-description"
+  - "qd-field-amount_minor"
+  - "qd-field-currency"
+  - "qd-field-valid_days"
+  - "qd-rule-description_present"
+  - "qd-rule-amount_in_range"
+  - "qd-rule-currency_matches_customer"
+  - "qd-rule-valid_days_in_range"
+  - "qd-perm-quotes.draft"
+  - "qd-failure-permission_denied"
+  - "qd-failure-scope_violation"
+  - "qd-failure-validation_failed"
+  - "qd-failure-missing_fields"
+  - "qd-failure-conflict"
+  - "qd-failure-stale"
+  - "qd-failure-expired"
+  - "qd-failure-uncertain_outcome"
+  - "qd-failure-unavailable"
+  - "qd-risk"
+  - "qd-confirmation"
+  - "qd-outcome-drafted"
+examples:
+  - id: "en-draft-quote"
+    language: "en"
+    test_only: true
+    utterance: "Draft a quote for Acme Srl for annual support, 1250.50 euro"
+    expected_fields:
+      customer: "Acme Srl"
+      description: "annual support"
+      amount_minor: 125050
+  - id: "en-draft-quote-days"
+    language: "en"
+    test_only: true
+    utterance: "Quote Gulf Trading 480000 yen for spare parts, valid for 14 days"
+    expected_fields:
+      customer: "Gulf Trading"
+      description: "spare parts"
+      amount_minor: 480000
+      valid_days: 14
+  - id: "it-redigi-preventivo"
+    language: "it"
+    test_only: true
+    utterance: "Redigi un preventivo per Acme Srl per assistenza annuale, 1250,50 euro"
+    expected_fields:
+      customer: "Acme Srl"
+      description: "assistenza annuale"
+      amount_minor: 125050
+  - id: "it-preventivo-validita"
+    language: "it"
+    test_only: true
+    utterance: "Fai un preventivo da 99000 per Tokyo Parts per ricambi valido 14 giorni"
+    expected_fields:
+      customer: "Tokyo Parts"
+      description: "ricambi"
+      amount_minor: 99000
+      valid_days: 14

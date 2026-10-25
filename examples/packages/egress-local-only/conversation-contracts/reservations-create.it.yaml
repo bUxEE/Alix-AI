@@ -1,0 +1,53 @@
+capability_id: reservations.create
+language: it
+contract_version: 1.0.0
+terminology:
+- title
+- reservation
+field_prompts:
+- field: title
+  label: Titolo
+  prompt: Quale titolo vuoi prenotare?
+- field: pickup_date
+  label: Data di ritiro
+  prompt: In che data lo ritirerai?
+  examples:
+  - '2026-11-13'
+- field: notes
+  label: Nota per il banco
+  prompt: C'è qualcosa che il banco deve sapere?
+clarifications:
+- rule_id: title_multiple
+  prompt: Ho trovato più di un risultato per {input.title}. Quale intendi?
+corrections:
+  acknowledgement: Perfetto, ho aggiornato i dati della prenotazione.
+  correctable_fields:
+  - title
+  - pickup_date
+  - notes
+  prepared_action_invalidated: Ho cambiato i dati, quindi il riepilogo precedente non vale più. Ecco quello nuovo.
+cancellations:
+  acknowledgement: D'accordo, non ho prenotato nulla.
+confirmations:
+  request: 'Conferma per favore: prenotare {reservation.title} presso {reservation.branch} per il ritiro del {reservation.pickup_date}. Procedo?'
+  declined: Capito. Non è stato prenotato nulla.
+  expired: Quel riepilogo è scaduto, quindi non è stato prenotato nulla. Dimmelo di nuovo se lo vuoi ancora.
+success:
+- outcome: reserved
+  text: 'Prenotato: {reservation.title}, da ritirare il {reservation.pickup_date}. Il tuo riferimento è {reservation.reference}.'
+failures:
+- code: permission_denied
+  text: Non puoi prenotare presso questa sede, quindi non è stato prenotato nulla.
+- code: validation_failed
+  text: 'Quella data di ritiro non è possibile: deve essere tra oggi e i prossimi 60 giorni. Non è stato prenotato nulla.'
+- code: conflict
+  text: Nessuna copia di {reservation.title} è libera il {reservation.pickup_date}, quindi non è stato prenotato nulla.
+- code: stale
+  text: '{reservation.title} è cambiato mentre parlavamo, quindi non è stato prenotato nulla. Posso prepararlo di nuovo.'
+- code: expired
+  text: La prenotazione non è stata confermata in tempo, quindi non è stato prenotato nulla.
+- code: uncertain_outcome
+  text: Non sono riuscito a verificare se la prenotazione è stata fatta. Controllo lo stato prima di fare altro, così non può essere fatta due volte.
+next_actions:
+- id: find_another
+  label: Cerca un altro titolo

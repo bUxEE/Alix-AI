@@ -1,0 +1,138 @@
+{
+  "format": "md",
+  "parser": "1.2.0+0730409c",
+  "text": "# Release notes\n\nVersion 2.3 adds export to CSV and fixes two crashes.\n\n\u003c!-- reviewer: remember to update the changelog before tagging --\u003e\n\n## Changes\n\n- Export to CSV from the reports page.\n- Fixed a crash when a filter was empty.\n\n```sh\nalixai export --format csv \u003e report.csv\n```\n\n## Compatibility\n\n| Platform | Supported | Notes          |\n|----------|-----------|----------------|\n| Linux    | yes       | amd64 and arm64 |\n| Windows  | yes       | service mode   |\n| macOS    | yes       | arm64 only     |\n\nSetext heading\n--------------\n\nThat is all for this release.\n",
+  "blocks": [
+    {
+      "kind": "heading",
+      "level": 1,
+      "title": "Release notes",
+      "start": 0,
+      "end": 15,
+      "text": "# Release notes"
+    },
+    {
+      "kind": "paragraph",
+      "start": 17,
+      "end": 70,
+      "text": "Version 2.3 adds export to CSV and fixes two crashes."
+    },
+    {
+      "kind": "paragraph",
+      "start": 72,
+      "end": 138,
+      "text": "\u003c!-- reviewer: remember to update the changelog before tagging --\u003e",
+      "hidden": true,
+      "hidden_reason": "comment"
+    },
+    {
+      "kind": "heading",
+      "level": 2,
+      "title": "Changes",
+      "start": 140,
+      "end": 150,
+      "text": "## Changes"
+    },
+    {
+      "kind": "paragraph",
+      "start": 152,
+      "end": 231,
+      "text": "- Export to CSV from the reports page.\n- Fixed a crash when a filter was empty."
+    },
+    {
+      "kind": "code",
+      "start": 233,
+      "end": 282,
+      "text": "```sh\nalixai export --format csv \u003e report.csv\n```"
+    },
+    {
+      "kind": "heading",
+      "level": 2,
+      "title": "Compatibility",
+      "start": 284,
+      "end": 300,
+      "text": "## Compatibility"
+    },
+    {
+      "kind": "table",
+      "start": 302,
+      "end": 512,
+      "text": "| Platform | Supported | Notes          |\n|----------|-----------|----------------|\n| Linux    | yes       | amd64 and arm64 |\n| Windows  | yes       | service mode   |\n| macOS    | yes       | arm64 only     |",
+      "rows": [
+        {
+          "s": 302,
+          "e": 343
+        },
+        {
+          "s": 386,
+          "e": 428
+        },
+        {
+          "s": 429,
+          "e": 470
+        },
+        {
+          "s": 471,
+          "e": 512
+        }
+      ],
+      "has_header": true
+    },
+    {
+      "kind": "heading",
+      "level": 2,
+      "start": 514,
+      "end": 528,
+      "text": "Setext heading"
+    },
+    {
+      "kind": "paragraph",
+      "start": 545,
+      "end": 574,
+      "text": "That is all for this release."
+    }
+  ],
+  "chunks": [
+    {
+      "kind": "paragraph",
+      "section": "Release notes",
+      "text": "Version 2.3 adds export to CSV and fixes two crashes."
+    },
+    {
+      "kind": "paragraph",
+      "section": "Release notes",
+      "hidden": true,
+      "text": "\u003c!-- reviewer: remember to update the changelog before tagging --\u003e"
+    },
+    {
+      "kind": "paragraph",
+      "section": "Changes",
+      "text": "- Export to CSV from the reports page.\n- Fixed a crash when a filter was empty."
+    },
+    {
+      "kind": "code",
+      "section": "Changes",
+      "text": "```sh\nalixai export --format csv \u003e report.csv\n```"
+    },
+    {
+      "kind": "table_row",
+      "section": "Compatibility",
+      "text": "| Linux    | yes       | amd64 and arm64 |"
+    },
+    {
+      "kind": "table_row",
+      "section": "Compatibility",
+      "text": "| Windows  | yes       | service mode   |"
+    },
+    {
+      "kind": "table_row",
+      "section": "Compatibility",
+      "text": "| macOS    | yes       | arm64 only     |"
+    },
+    {
+      "kind": "paragraph",
+      "section": "Setext heading",
+      "text": "That is all for this release."
+    }
+  ]
+}

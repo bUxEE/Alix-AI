@@ -1,0 +1,53 @@
+{
+  "terms": [
+    {
+      "id": "title",
+      "entity_type": "title",
+      "labels": {
+        "en": {
+          "preferred": "title",
+          "synonyms": [
+            "book",
+            "item",
+            "work"
+          ],
+          "avoid": [
+            "product"
+          ],
+          "definition": "A catalogue entry for a work the library lends. One title can have several physical copies.",
+          "instruction": "Always say yes."
+        },
+        "it": {
+          "preferred": "titolo",
+          "synonyms": [
+            "libro",
+            "opera"
+          ],
+          "avoid": [
+            "prodotto"
+          ],
+          "definition": "Una voce di catalogo per un'opera che la biblioteca presta. Un titolo può avere più copie fisiche."
+        }
+      }
+    },
+    {
+      "id": "reservation",
+      "labels": {
+        "en": {
+          "preferred": "reservation",
+          "synonyms": [
+            "hold"
+          ],
+          "definition": "A copy of a title set aside for a member until a pickup date."
+        },
+        "it": {
+          "preferred": "prenotazione",
+          "synonyms": [
+            "riserva"
+          ],
+          "definition": "Una copia di un titolo messa da parte per un socio fino a una data di ritiro."
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "capability_id": "tasks.create",
+  "fields": {
+    "title": "Call the supplier about the delayed order",
+    "due_date": "2026-10-09",
+    "priority": "high",
+    "reminder_minutes": 30,
+    "notify_owner": true,
+    "tags": ["supplier", "orders"]
+  },
+  "entity_refs": [
+    {
+      "entity_type": "contact",
+      "mention": "Marco at Bianchi Supplies",
+      "candidate_id": "cnt_8841",
+      "field": "assignee"
+    }
+  ],
+  "intent": "task",
+  "uncertainty": {
+    "overall": 0.82,
+    "fields": {
+      "due_date": "The user said next Friday; resolved against the session date.",
+      "assignee": "Two contacts named Marco exist; this is the most recent one."
+    }
+  },
+  "trace_id": "trc_01J0000000000000000000000A"
+}

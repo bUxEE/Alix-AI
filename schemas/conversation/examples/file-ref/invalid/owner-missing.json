@@ -1,0 +1,16 @@
+{
+  "file_id": "fil_01J0000000000000000000000A",
+  "name": "referral-letter.pdf",
+  "mime_type": "application/pdf",
+  "size_bytes": 182044,
+  "content_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "origin": "upload",
+  "treatment": "ephemeral_context",
+  "permissions": [
+    "read",
+    "preview",
+    "download"
+  ],
+  "previewable": true,
+  "expires_at": "2026-10-10T08:00:00Z"
+}

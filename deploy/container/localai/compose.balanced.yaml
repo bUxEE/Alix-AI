@@ -1,0 +1,25 @@
+# Resource profile "balanced": 16g RAM / 8 CPU. Use as an override on top of compose.yaml:
+#   docker compose -f compose.yaml -f compose.balanced.yaml up -d
+#
+# EMULATED: these are cgroup caps on this container, not a certified machine. Numbers measured
+# under this file must be labelled "emulated", never "certified" (master plan 7.4).
+# memswap_limit == mem_limit disables swap for the container (master plan 7.4 "avoid swap").
+# LOCALAI_THREADS == cpus: under a CPU quota llama.cpp would otherwise size its thread pool
+# to the host's core count and be throttled.
+#
+# Balanced: normal production use (master plan 7.2). Four resident backends: the controller, the embedder and
+# the small speech-to-text and text-to-speech workers (docs/operations/resource-budgets.md R2). A cap below the
+# resident roles makes LocalAI reload a model on every call (R3.1), so the default is 4. A reranker or a decision
+# scorer is admitted on top only by the memory projection of R3.2; raise the value in .env when one is installed.
+
+services:
+  localai:
+    mem_limit: 16g
+    memswap_limit: 16g
+    cpus: 8
+    environment:
+      LOCALAI_THREADS: "8"
+      LOCALAI_MAX_ACTIVE_BACKENDS: ${LOCALAI_MAX_ACTIVE_BACKENDS:-4}
+    labels:
+      ai.alixai.profile: balanced
+      ai.alixai.evidence: emulated

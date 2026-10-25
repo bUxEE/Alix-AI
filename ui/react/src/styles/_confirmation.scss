@@ -1,0 +1,168 @@
+@use "mixins" as *;
+
+// The confirmation sheet: the exact effects an application will carry out, and the one decision that follows.
+.alix-sheet {
+  @include enter;
+  display: grid;
+  gap: var(--alixai-space-4);
+  padding: var(--alixai-space-5);
+  border: 1px solid var(--alixai-border-strong);
+  border-radius: var(--alixai-radius-lg);
+  background: var(--alixai-surface-raised);
+  color: var(--alixai-text);
+  font-family: var(--alixai-font);
+  line-height: var(--alixai-leading);
+
+  &__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--alixai-space-2) var(--alixai-space-4);
+  }
+
+  &__title {
+    margin: 0;
+    font-size: var(--alixai-text-lg);
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+
+  &__summary {
+    margin: 0;
+    max-width: 65ch;
+    font-size: var(--alixai-text-md);
+  }
+
+  &__effects {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__effect {
+    display: grid;
+    gap: var(--alixai-space-2);
+    padding: var(--alixai-space-3) 0;
+    border-top: 1px solid var(--alixai-border);
+  }
+
+  &__effect-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--alixai-space-2);
+    font-weight: 600;
+  }
+
+  &__op {
+    @include tag;
+
+    &[data-op="delete"] {
+      @include tag(var(--alixai-danger), var(--alixai-danger-soft));
+    }
+
+    &[data-op="send"] {
+      @include tag(var(--alixai-warn), var(--alixai-warn-soft));
+    }
+  }
+
+  &__external {
+    @include tag(var(--alixai-warn), var(--alixai-warn-soft));
+  }
+
+  &__changes {
+    display: grid;
+    grid-template-columns: minmax(0, max-content) minmax(0, 1fr);
+    gap: var(--alixai-space-1) var(--alixai-space-4);
+    margin: 0;
+    font-size: var(--alixai-text-sm);
+
+    > div {
+      display: contents;
+    }
+
+    dt {
+      color: var(--alixai-text-muted);
+    }
+
+    dd {
+      margin: 0;
+      overflow-wrap: anywhere;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
+  &__risk {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--alixai-space-2);
+    font-size: var(--alixai-text-sm);
+    font-weight: 600;
+  }
+
+  &__meter {
+    display: inline-flex;
+    gap: 2px;
+
+    i {
+      width: 0.5rem;
+      height: 0.75rem;
+      border-radius: 2px;
+      background: var(--alixai-border-strong);
+    }
+
+    i[data-on] {
+      background: var(--alixai-text);
+    }
+  }
+
+  &[data-risk="2"] &__meter i[data-on] {
+    background: var(--alixai-warn);
+  }
+
+  &[data-risk="3"] &__meter i[data-on] {
+    background: var(--alixai-danger);
+  }
+
+  &__foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--alixai-space-3) var(--alixai-space-4);
+    padding-top: var(--alixai-space-4);
+    border-top: 1px solid var(--alixai-border);
+  }
+
+  &__expires {
+    margin: 0;
+    color: var(--alixai-text-muted);
+    font-size: var(--alixai-text-xs);
+  }
+
+  &__actions {
+    display: flex;
+    gap: var(--alixai-space-2);
+    margin-inline-start: auto;
+  }
+
+  &__button {
+    @include button-base;
+
+    &[data-variant="approve"] {
+      @include button-primary;
+    }
+
+    &[data-variant="approve"][data-tone="danger"] {
+      @include button-danger;
+    }
+  }
+
+  &__status {
+    margin: 0;
+    color: var(--alixai-text-muted);
+    font-size: var(--alixai-text-sm);
+  }
+}

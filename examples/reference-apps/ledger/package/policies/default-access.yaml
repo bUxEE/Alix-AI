@@ -1,0 +1,48 @@
+policy_id: "default-access"
+description: "Which role may use which capability of the ledger, and which fields of each the model may see. The host still reauthorises every call from its own directory and applies team and organisation visibility (an accountant or a viewer reaches their own team, a manager every team of the organisation, nobody another organisation)."
+role_grants:
+  - role: "accountant"
+    capabilities:
+      - "invoices.find"
+      - "quotes.draft"
+      - "invoices.issue"
+      - "payments.record"
+  - role: "manager"
+    capabilities:
+      - "invoices.find"
+      - "quotes.draft"
+      - "invoices.issue"
+      - "payments.record"
+      - "invoices.void"
+  - role: "viewer"
+    capabilities:
+      - "invoices.find"
+risk_overrides: []
+field_projection:
+  - capability_id: "invoices.find"
+    model_visible_fields:
+      - "query"
+      - "status"
+      - "max_results"
+  - capability_id: "quotes.draft"
+    model_visible_fields:
+      - "customer"
+      - "description"
+      - "amount_minor"
+      - "currency"
+      - "valid_days"
+  - capability_id: "invoices.issue"
+    model_visible_fields:
+      - "quote"
+      - "due_days"
+  - capability_id: "payments.record"
+    model_visible_fields:
+      - "invoice"
+      - "amount_minor"
+      - "currency"
+      - "paid_on"
+      - "method"
+  - capability_id: "invoices.void"
+    model_visible_fields:
+      - "invoice"
+      - "reason"

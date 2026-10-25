@@ -1,0 +1,18 @@
+{
+  "operation": "status",
+  "capability_id": "appointments.book",
+  "status": "uncertain",
+  "identifiers": [],
+  "values": [],
+  "errors": [
+    {
+      "code": "uncertain_outcome",
+      "message": "The booking service did not report whether the write was applied."
+    }
+  ],
+  "allowed_next_actions": [
+    {
+      "action": "refresh"
+    }
+  ]
+}

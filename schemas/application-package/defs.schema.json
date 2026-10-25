@@ -1,0 +1,235 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:application-package:defs:v1",
+  "title": "Application package shared definitions",
+  "description": "Shared grammars for the Application Integration Package schemas (master plan section 9), referenced as urn:alixai:schema:application-package:defs:v1#/$defs/<name>. This file is a definitions library: it constrains nothing on its own. Patterns avoid lookahead so they behave the same in RE2 and ECMA-262 engines.",
+  "$defs": {
+    "slug": {
+      "title": "Package-local identifier",
+      "description": "A lower-case identifier chosen by the package author for an endpoint, rule, outcome, term, source or similar object: starts with a letter, then letters, digits, underscore or hyphen, at most 64 characters.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+    },
+    "dottedId": {
+      "title": "Dotted lower-snake identifier",
+      "description": "One to four dot-separated lower_snake segments, for example catalog.find_title or reservation.pickup_date. Used for capability IDs and for the paths of canonical facts in a deterministic result.",
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^[a-z][a-z0-9_]{0,31}(\\.[a-z][a-z0-9_]{0,31}){0,3}$"
+    },
+    "capabilityId": {
+      "title": "Capability ID",
+      "description": "The stable ID of a capability: an exact-match common capability ID that is also a dotted lower-snake identifier. There are no wildcards.",
+      "allOf": [
+        { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/capabilityId" },
+        { "$ref": "#/$defs/dottedId" }
+      ]
+    },
+    "factPath": {
+      "title": "Fact path",
+      "description": "The dotted path of one canonical value in a deterministic result, for example reservation.pickup_date.",
+      "$ref": "#/$defs/dottedId"
+    },
+    "applicationId": {
+      "title": "Application ID",
+      "description": "The host application ID: a common identifier restricted to a portable slug, so it is safe in file names and logs. It is the application_id of every Scope the application's tokens carry.",
+      "allOf": [
+        { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier" },
+        { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" }
+      ]
+    },
+    "docId": {
+      "title": "Documentation entry ID",
+      "description": "The ID of one documentation index entry: lower-case, starts with a letter, then letters, digits, dot, underscore or hyphen, at most 64 characters. Unique across the whole index.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.-]{0,63}$"
+    },
+    "permissionId": {
+      "title": "Application permission ID",
+      "description": "The name of a permission the host application checks before it runs an operation (it reauthorizes every read, prepare and commit). Lower-case, may contain dot, colon, underscore and hyphen.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.:-]{0,63}$"
+    },
+    "semver": {
+      "title": "Semantic version",
+      "description": "A semantic version 2.0.0 string: MAJOR.MINOR.PATCH with optional pre-release and build metadata.",
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$"
+    },
+    "languageTag": {
+      "title": "Language tag",
+      "description": "A BCP 47 tag in canonical case: a lower-case 2 or 3 letter language, an optional Title-case 4 letter script and an optional upper-case 2 letter or 3 digit region (en, it, pt-BR, zh-Hant-TW).",
+      "type": "string",
+      "pattern": "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|[0-9]{3}))?$"
+    },
+    "relativePath": {
+      "title": "Package-relative path",
+      "description": "A portable path inside the package: forward slashes only, no leading slash, no drive letter, no empty, '.' or '..' segment and no segment starting with a dot. Each segment starts with a letter, digit or underscore and continues with letters, digits, dot, underscore or hyphen.",
+      "type": "string",
+      "maxLength": 240,
+      "pattern": "^[A-Za-z0-9_][A-Za-z0-9._-]*(/[A-Za-z0-9_][A-Za-z0-9._-]*)*$"
+    },
+    "schemaRef": {
+      "title": "Reference to an application schema",
+      "description": "A package-relative path below schemas/ with an optional JSON Pointer fragment (schemas/reservation.result.schema.json or schemas/openapi.yaml#/components/schemas/Reservation). It names a JSON Schema, an OpenAPI document or a similar machine-readable contract shipped in the package.",
+      "type": "string",
+      "maxLength": 300,
+      "pattern": "^schemas/[A-Za-z0-9_][A-Za-z0-9._-]*(/[A-Za-z0-9_][A-Za-z0-9._-]*)*(#/[^\\s]*)?$"
+    },
+    "sha256": {
+      "title": "SHA-256 digest",
+      "description": "A SHA-256 digest as 64 lower-case hexadecimal characters.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "credentialRef": {
+      "title": "Credential reference",
+      "description": "An opaque ID that names a credential held in the OS secret store or an approved local secret provider (master plan 16.2). It is never the credential: the cred: prefix, the lower-case-only alphabet and the 64-character cap exist so that a pasted key, token or password does not fit the grammar. AlixAI resolves it outside model context.",
+      "type": "string",
+      "pattern": "^cred:[a-z][a-z0-9_.-]{2,63}$"
+    },
+    "operationName": {
+      "title": "Adapter operation name",
+      "description": "The name of one operation on an adapter: an MCP tool name, an OpenAPI operationId or a native bridge method name.",
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_.-]{0,127}$"
+    },
+    "adapterCall": {
+      "title": "Adapter call",
+      "description": "Names one operation on one declared endpoint. Exactly one of mcp_tool, openapi_operation_id or native_method is present; its kind must match the transport of the endpoint. There is no events variant: events never trigger an AI commit (master plan 9.3).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["endpoint"],
+      "properties": {
+        "endpoint": {
+          "description": "The ID of an mcp, openapi or native endpoint declared in the manifest.",
+          "$ref": "#/$defs/slug"
+        },
+        "mcp_tool": {
+          "description": "MCP tool name, when the endpoint is an mcp endpoint.",
+          "$ref": "#/$defs/operationName"
+        },
+        "openapi_operation_id": {
+          "description": "OpenAPI operationId, when the endpoint is an openapi endpoint.",
+          "$ref": "#/$defs/operationName"
+        },
+        "native_method": {
+          "description": "Native bridge method name, when the endpoint is a native endpoint.",
+          "$ref": "#/$defs/operationName"
+        }
+      },
+      "oneOf": [
+        { "required": ["mcp_tool"] },
+        { "required": ["openapi_operation_id"] },
+        { "required": ["native_method"] }
+      ]
+    },
+    "riskLevel": {
+      "title": "Risk level",
+      "description": "The action safety level of master plan 11.4 as a bare integer: 0 read-only, 1 reversible low-impact, 2 consequential or external side effect, 3 high-risk, privileged or legally sensitive. Always required where it appears: the absence of a level is never read as 0. Mirrors pkg/contracts.RiskLevel.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "errorCode": {
+      "title": "Error code",
+      "description": "A code of the platform error taxonomy (schemas/common/error.schema.json).",
+      "$ref": "urn:alixai:schema:common:error:v1#/properties/code"
+    },
+    "hostname": {
+      "title": "Exact host name",
+      "description": "A lower-case DNS host name or IPv4 address, exact: no wildcard, no scheme, no port, no path.",
+      "type": "string",
+      "maxLength": 253,
+      "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$"
+    },
+    "httpUrl": {
+      "title": "HTTP(S) URL",
+      "description": "An absolute http or https URL without user information (credentials never travel in a URL; use a credential reference).",
+      "type": "string",
+      "format": "uri",
+      "maxLength": 2048,
+      "pattern": "^https?://[^\\s@/]+(/[^\\s]*)?$"
+    },
+    "label": {
+      "title": "Label",
+      "description": "A single-line human-readable label: 1 to 200 characters, no control characters.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\x00-\\x1f\\x7f]+$"
+    },
+    "text": {
+      "title": "Text",
+      "description": "Human-readable prose: 1 to 2000 characters. Line breaks and tabs are allowed; other control characters are not.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000,
+      "pattern": "^[^\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f\\x7f]+$"
+    },
+    "template": {
+      "title": "Response template",
+      "description": "Fixed wording with {fact.path} placeholders that AlixAI fills from deterministic facts: the canonical values of an operation result, or, under the reserved prefix input., the validated field values collected so far (for example {input.query}). 1 to 1000 characters. Literal braces are written {{ and }}. A result placeholder must name a fact the capability declares in its response_obligations or result schema; an input placeholder must name one of its fields.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000,
+      "pattern": "^[^\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f\\x7f]+$"
+    },
+    "scalar": {
+      "title": "Scalar example value",
+      "description": "A single value used in a test-only example.",
+      "type": ["string", "number", "boolean", "null"],
+      "maxLength": 1024
+    },
+    "exampleValue": {
+      "title": "Example value",
+      "description": "A scalar, a flat list of scalars or a flat object of scalars. No deeper nesting.",
+      "oneOf": [
+        { "$ref": "#/$defs/scalar" },
+        {
+          "type": "array",
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/scalar" }
+        },
+        {
+          "type": "object",
+          "maxProperties": 16,
+          "propertyNames": { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName" },
+          "additionalProperties": { "$ref": "#/$defs/scalar" }
+        }
+      ]
+    },
+    "exampleFields": {
+      "title": "Example field values",
+      "description": "Field values keyed by capability field name.",
+      "type": "object",
+      "maxProperties": 64,
+      "propertyNames": { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName" },
+      "additionalProperties": { "$ref": "#/$defs/exampleValue" }
+    },
+    "retentionDays": {
+      "title": "Retention in days",
+      "description": "A whole number of days, 0 to 3650. 0 means the data is not retained beyond the operation that needs it.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3650
+    },
+    "globPattern": {
+      "title": "Relative glob pattern",
+      "description": "A glob relative to a source root: no leading slash, no backslash, no '..' segment, at most 256 characters. * matches within a segment and ** across segments.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[^\\s/\\\\][^\\s\\\\]*$",
+      "not": { "pattern": "(^|/)\\.\\.(/|$)" }
+    },
+    "mimeType": {
+      "title": "MIME type",
+      "description": "A concrete lower-case media type such as text/markdown or application/pdf. No wildcards and no parameters.",
+      "type": "string",
+      "maxLength": 127,
+      "pattern": "^[a-z]+/[a-z0-9][a-z0-9.+-]*$"
+    }
+  }
+}

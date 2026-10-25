@@ -1,0 +1,32 @@
+# M4-06 pinned backend catalogue for the voice benchmark (mounted over the shipped one at /backends/alixai-backend-gallery.yaml;
+# nothing under deploy/ is edited). Digest-pinned OCI images of LocalAI v4.10.0, resolved 2026-10-04 from the release tags.
+# The backends are unpacked on the host by fetch-backends.sh (the container cannot pull through the TLS-intercepting product),
+# so LocalAI finds them installed and never contacts a registry.
+- name: "whisper"
+  alias: "whisper"
+  version: "v4.10.0"
+  license: mit
+  description: "whisper.cpp CPU backend (speech to text; with the vad_only option the ggml Silero VAD), v4.10.0-cpu-whisper"
+  tags: [stt, cpu]
+  uri: "quay.io/go-skynet/local-ai-backends@sha256:cd3d42dbc15b7a6cf29a1e3c8509bd7a29abc16cce766178349de66898bd1475"
+- name: "piper"
+  alias: "piper"
+  version: "v4.10.0"
+  license: mit
+  description: "Piper CPU text to speech backend (GPL-3.0 engine, ADR 0015), v4.10.0-piper"
+  tags: [tts, cpu]
+  uri: "quay.io/go-skynet/local-ai-backends@sha256:d02327c0f851d3858724d3ee5d977241e7c617a0ed575eca58b28e57ec10792a"
+- name: "cpu-llama-cpp"
+  alias: "llama-cpp"
+  version: "v4.10.0"
+  license: mit
+  description: "llama.cpp CPU backend, the digest of deploy/container/localai/config/backend-gallery.yaml (co-residency run only)"
+  tags: [llm, cpu]
+  uri: "quay.io/go-skynet/local-ai-backends@sha256:d7b0d9c69ecce93c2e7f7500ac3d99aba28648dab1ab29b698e0cc4538662579"
+- name: "kokoros"
+  alias: "kokoros"
+  version: "v4.10.0"
+  license: apache-2.0
+  description: "Kokoros Rust TTS backend (Kokoro v1.0 ONNX, English here), v4.10.0-cpu-kokoros"
+  tags: [tts, cpu]
+  uri: "quay.io/go-skynet/local-ai-backends@sha256:613c05d872ad1e1b24b4cbbd981cef4f80c6e1369221c54c8ca23bb0a0872d7b"

@@ -1,0 +1,473 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:providers:request-envelope:v1",
+  "title": "External request envelope",
+  "description": "The bounded request AlixAI builds for an external provider after scope, policy and data-egress checks (additive plan section 6.2 steps 5 and 6, section 3). It has two parts. payload is the wire part: the only thing an adapter maps into the provider request. internal (at the root, and on every part) is source and classification metadata that stays inside AlixAI and is STRIPPED before sending: an adapter reads payload only and drops every member named internal. Every part must carry its category, classification and, for RAG, its source and source mode, so an unclassified or local-only part cannot be built; restricted is not a classification an envelope can hold; credentials, raw database content, filesystem paths, database handles and MCP URLs have no representation at all; and provider-native features (hosted memory, file search, agents, server-side tool loops, remote MCP) have no member. The envelope is bounded: at most 64 messages of 32 parts, 65536 characters per text part, 32 tools, 1 MiB of payload and 262144 output toks. The core builds every member; the model writes none of it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["envelope_id", "created_at", "provider", "role", "payload", "internal"],
+  "properties": {
+    "envelope_id": {
+      "description": "Envelope ID.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/envelopeId"
+    },
+    "created_at": {
+      "description": "When the envelope was built, from the injected clock.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    },
+    "provider": {
+      "description": "The exact provider, model and version the envelope is for. An adapter refuses an envelope addressed to another profile.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/providerRef"
+    },
+    "role": {
+      "description": "The role the request serves.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/role"
+    },
+    "payload": {
+      "description": "WIRE PART. The only part an adapter maps into the provider request. Everything in it has passed the egress guard. Provider-native features have no member here: there is no way to ask for hosted memory, file search, an agent, a server-side tool loop or a remote MCP server.",
+      "x-alixai-authority": "alixai",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["instructions", "messages", "tools", "response_format", "limits"],
+      "properties": {
+        "instructions": {
+          "description": "System instructions written by the core: fixed templates and the directive wording, never user, host or provider text.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32768
+        },
+        "messages": {
+          "description": "The conversation the model sees, bounded to 64 messages.",
+          "x-alixai-authority": "alixai",
+          "type": "array",
+          "items": { "$ref": "#/$defs/message" },
+          "minItems": 1,
+          "maxItems": 64
+        },
+        "tools": {
+          "description": "The allowlisted tool schemas built from the application contract, bounded to 32. The provider returns candidate calls only; AlixAI validates and never lets it execute one.",
+          "x-alixai-authority": "alixai",
+          "type": "array",
+          "items": { "$ref": "#/$defs/toolSpec" },
+          "maxItems": 32
+        },
+        "response_format": {
+          "description": "The shape of the answer.",
+          "x-alixai-authority": "alixai",
+          "$ref": "#/$defs/responseFormat"
+        },
+        "limits": {
+          "description": "Hard bounds on this call.",
+          "x-alixai-authority": "alixai",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["max_output_toks", "timeout_ms"],
+          "properties": {
+            "max_output_toks": {
+              "description": "Upper bound on output toks, at most 262144.",
+              "x-alixai-authority": "alixai",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 262144
+            },
+            "timeout_ms": {
+              "description": "Deadline for the call in milliseconds, at most 10 minutes.",
+              "x-alixai-authority": "alixai",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 600000
+            }
+          }
+        }
+      }
+    },
+    "internal": {
+      "description": "INTERNAL. Never sent. Names the verified subject, the trace and the accounting of this envelope.",
+      "x-alixai-authority": "alixai",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subject", "trace_id", "channel", "reservation_id", "payload_bytes", "estimated_toks_in"],
+      "properties": {
+        "subject": {
+          "description": "The verified context the envelope was built in. One envelope never mixes tenants.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/subject"
+        },
+        "trace_id": {
+          "description": "Trace ID correlating the envelope with the inference call.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/traceId"
+        },
+        "channel": {
+          "description": "interactive or background. Background envelopes draw on the background budget only.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/channel"
+        },
+        "reservation_id": {
+          "description": "The budget reservation held for this call, or null before one is taken.",
+          "x-alixai-authority": "alixai",
+          "oneOf": [
+            { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/reservationId" },
+            { "type": "null" }
+          ]
+        },
+        "payload_bytes": {
+          "description": "The size in bytes of the serialised payload as the builder measured it. The bound is 1 MiB; the guard recomputes it.",
+          "x-alixai-authority": "alixai",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1048576
+        },
+        "estimated_toks_in": {
+          "description": "Upper-bound estimate of toks_in, used for the pre-call cost estimate.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/counter"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "message": {
+      "description": "One message: a role and between 1 and 32 parts.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "parts"],
+      "properties": {
+        "role": {
+          "description": "user: user or host data. assistant: an earlier model turn. tool_result: a deterministic ActionReceipt or result handed back for wording. The system role does not exist here: instructions are a separate member written by the core.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "enum": ["user", "assistant", "tool_result"]
+        },
+        "parts": {
+          "description": "The parts, in order.",
+          "x-alixai-authority": "alixai",
+          "type": "array",
+          "items": { "$ref": "#/$defs/part" },
+          "minItems": 1,
+          "maxItems": 32
+        }
+      }
+    },
+    "part": {
+      "description": "One piece of content. A discriminated union on type: text, or a reference to an image, file or audio. A reference is a core-minted file ID; the adapter resolves it through the scoped file service and the provider never receives the ID, a path or a URL.",
+      "oneOf": [
+        { "$ref": "#/$defs/textPart" },
+        { "$ref": "#/$defs/imagePart" },
+        { "$ref": "#/$defs/filePart" },
+        { "$ref": "#/$defs/audioPart" }
+      ]
+    },
+    "textPart": {
+      "description": "Text content.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "text", "internal"],
+      "properties": {
+        "type": {
+          "description": "The part kind: text.",
+          "x-alixai-authority": "alixai",
+          "const": "text"
+        },
+        "text": {
+          "description": "The text, at most 65536 characters. Untrusted data to the model: it is data, never instructions.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 65536
+        },
+        "internal": {
+          "description": "INTERNAL. Source and classification metadata of this part. It stays inside AlixAI and is stripped before the request is sent.",
+          "x-alixai-authority": "alixai",
+          "$ref": "#/$defs/partMeta"
+        }
+      },
+      "allOf": [
+        {
+          "description": "A text part carries user_message or conversation_history or structured_state or deterministic_fact or dialogue_directive or action_receipt or rag_excerpt or rag_metadata data, or file_content: an excerpt of an uploaded file the files setting of the egress policy let through.",
+          "properties": {
+            "internal": {
+              "properties": {
+                "category": {
+                  "enum": [
+                    "user_message",
+                    "conversation_history",
+                    "structured_state",
+                    "deterministic_fact",
+                    "dialogue_directive",
+                    "action_receipt",
+                    "rag_excerpt",
+                    "rag_metadata",
+                    "file_content"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "imagePart": {
+      "description": "An image, by scoped file reference.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "file_id", "internal"],
+      "properties": {
+        "type": {
+          "description": "The part kind: image.",
+          "x-alixai-authority": "alixai",
+          "const": "image"
+        },
+        "file_id": {
+          "description": "Scoped file reference of an approved image.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/fileId"
+        },
+        "internal": {
+          "description": "INTERNAL. Source and classification metadata of this part. It stays inside AlixAI and is stripped before the request is sent.",
+          "x-alixai-authority": "alixai",
+          "$ref": "#/$defs/partMeta"
+        }
+      },
+      "allOf": [
+        {
+          "description": "A image part carries image_content data.",
+          "properties": {
+            "internal": {
+              "properties": {
+                "category": { "const": "image_content" }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "filePart": {
+      "description": "A file, by scoped file reference.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "file_id", "internal"],
+      "properties": {
+        "type": {
+          "description": "The part kind: file.",
+          "x-alixai-authority": "alixai",
+          "const": "file"
+        },
+        "file_id": {
+          "description": "Scoped file reference of an approved file.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/fileId"
+        },
+        "internal": {
+          "description": "INTERNAL. Source and classification metadata of this part. It stays inside AlixAI and is stripped before the request is sent.",
+          "x-alixai-authority": "alixai",
+          "$ref": "#/$defs/partMeta"
+        }
+      },
+      "allOf": [
+        {
+          "description": "A file part carries file_content data.",
+          "properties": {
+            "internal": {
+              "properties": {
+                "category": { "const": "file_content" }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "audioPart": {
+      "description": "Audio, by scoped file reference.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "file_id", "internal"],
+      "properties": {
+        "type": {
+          "description": "The part kind: audio.",
+          "x-alixai-authority": "alixai",
+          "const": "audio"
+        },
+        "file_id": {
+          "description": "Scoped file reference of approved audio.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/fileId"
+        },
+        "internal": {
+          "description": "INTERNAL. Source and classification metadata of this part. It stays inside AlixAI and is stripped before the request is sent.",
+          "x-alixai-authority": "alixai",
+          "$ref": "#/$defs/partMeta"
+        }
+      },
+      "allOf": [
+        {
+          "description": "A audio part carries audio_content data.",
+          "properties": {
+            "internal": {
+              "properties": {
+                "category": { "const": "audio_content" }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "partMeta": {
+      "description": "INTERNAL sidecar of a part: what the data is, how it is classified and where it came from. Required on every part, so an unclassified part cannot be built. restricted is not a possible classification, and a RAG part must carry the source and a source mode that permits it: a local_only or deny source cannot appear in an envelope.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["category", "classification", "size_bytes"],
+      "properties": {
+        "category": {
+          "description": "The data category of the part.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/sendCategory"
+        },
+        "classification": {
+          "description": "The classification of the data. restricted never leaves, so it is not a possible value here.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:data-classification:v1#/$defs/egressEligibleClass"
+        },
+        "source_id": {
+          "description": "The RAG source the part came from. Present exactly for rag_excerpt and rag_metadata.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/sourceId"
+        },
+        "source_mode": {
+          "description": "The effective source mode that let the part in. rag_excerpt needs allow_excerpt; rag_metadata needs allow_excerpt or allow_metadata.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/egressMode"
+        },
+        "size_bytes": {
+          "description": "Size of the part content in bytes.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/counter"
+        }
+      },
+      "allOf": [
+        {
+          "description": "A RAG part names its source and the mode that permits it; any other part has no source.",
+          "if": {
+            "required": ["category"],
+            "properties": {
+              "category": { "enum": ["rag_excerpt", "rag_metadata"] }
+            }
+          },
+          "then": { "required": ["source_id", "source_mode"] },
+          "else": {
+            "properties": { "source_id": false, "source_mode": false }
+          }
+        },
+        {
+          "description": "Excerpts are allowed only from an allow_excerpt source.",
+          "if": {
+            "required": ["category"],
+            "properties": {
+              "category": { "const": "rag_excerpt" }
+            }
+          },
+          "then": {
+            "properties": {
+              "source_mode": { "const": "allow_excerpt" }
+            }
+          }
+        },
+        {
+          "description": "Metadata is allowed only from an allow_excerpt or allow_metadata source.",
+          "if": {
+            "required": ["category"],
+            "properties": {
+              "category": { "const": "rag_metadata" }
+            }
+          },
+          "then": {
+            "properties": {
+              "source_mode": { "enum": ["allow_excerpt", "allow_metadata"] }
+            }
+          }
+        }
+      ]
+    },
+    "toolSpec": {
+      "description": "One allowlisted tool offered to the model as a schema, built from the application contract. The model can only propose a call.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "description", "parameters"],
+      "properties": {
+        "name": {
+          "description": "The tool name: letters, digits, underscore and hyphen, at most 64.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+        },
+        "description": {
+          "description": "What the tool is for, at most 1024 characters.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "parameters": {
+          "description": "JSON Schema of the arguments, an open object by design, at most 128 top-level members.",
+          "x-alixai-authority": "alixai",
+          "type": "object",
+          "maxProperties": 128
+        }
+      }
+    },
+    "responseFormat": {
+      "description": "The shape of the answer. text: free text. json_object: any JSON object. json_schema: an object conforming to schema, with strict asking the provider to guarantee it where it can.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "strict"],
+      "properties": {
+        "kind": {
+          "description": "text, json_object or json_schema.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "enum": ["text", "json_object", "json_schema"]
+        },
+        "schema": {
+          "description": "The JSON Schema for json_schema, an open object by design, at most 128 top-level members. For a TaskProposal this is the grammar with every non-model property removed.",
+          "x-alixai-authority": "alixai",
+          "type": "object",
+          "maxProperties": 128
+        },
+        "strict": {
+          "description": "Ask for a strict, decoder-constrained schema where the profile guarantees one.",
+          "x-alixai-authority": "alixai",
+          "type": "boolean"
+        }
+      },
+      "allOf": [
+        {
+          "description": "json_schema carries its schema.",
+          "if": {
+            "required": ["kind"],
+            "properties": {
+              "kind": { "const": "json_schema" }
+            }
+          },
+          "then": { "required": ["schema"] }
+        },
+        {
+          "description": "text and json_object carry no schema.",
+          "if": {
+            "required": ["kind"],
+            "properties": {
+              "kind": { "enum": ["text", "json_object"] }
+            }
+          },
+          "then": {
+            "properties": { "schema": false }
+          }
+        }
+      ]
+    }
+  }
+}

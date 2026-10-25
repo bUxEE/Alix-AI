@@ -1,0 +1,80 @@
+{
+  "id": "catalogue-notes",
+  "type": "application_document_api",
+  "title": "Librarian notes",
+  "owner": {
+    "name": "Cataloguing team",
+    "contact": "cataloguing@library.example.test"
+  },
+  "scope": {
+    "application_id": "demo-library",
+    "tenant": {
+      "mode": "request"
+    },
+    "workspace": {
+      "mode": "fixed",
+      "id": "central-branch"
+    }
+  },
+  "root": {
+    "kind": "api",
+    "endpoint": "library-mcp",
+    "base_path": "/notes"
+  },
+  "include": [
+    "public/**"
+  ],
+  "exclude": [],
+  "query_scope": {
+    "allowed_parameters": [
+      "updated_since",
+      "page"
+    ],
+    "fixed_parameters": {
+      "collection": "librarian-notes"
+    }
+  },
+  "credential_ref": "cred:demo-library-notes-reader",
+  "formats": [
+    "application/json",
+    "text/html"
+  ],
+  "limits": {
+    "max_file_bytes": 2097152,
+    "max_total_bytes": 1073741824,
+    "max_files": 100000
+  },
+  "sync": {
+    "method": "event",
+    "interval_seconds": 86400,
+    "event": {
+      "endpoint": "library-events",
+      "event_type": "note.changed"
+    }
+  },
+  "deletion": {
+    "purge_after_hours": 72,
+    "on_source_removed": "purge"
+  },
+  "parser": {
+    "ocr": "disabled",
+    "max_pages_per_file": 50,
+    "timeout_seconds": 20
+  },
+  "citation": {
+    "kind": "adapter_operation"
+  },
+  "egress": {
+    "entries": [
+      "library-api"
+    ]
+  },
+  "retention": {
+    "derived_data_days": 90,
+    "import_originals": false,
+    "audit": {
+      "record_access": true,
+      "retention_days": 365
+    }
+  }
+}

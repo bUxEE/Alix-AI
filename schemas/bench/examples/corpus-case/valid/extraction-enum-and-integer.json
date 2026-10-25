@@ -1,0 +1,87 @@
+{
+  "id": "ex-it-09",
+  "language": "it",
+  "category": "extraction",
+  "today": "2026-10-12",
+  "catalogue": [
+    {
+      "id": "stock.check",
+      "description": "Controlla la giacenza di un articolo",
+      "fields": [
+        {
+          "name": "sku",
+          "type": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "stock.adjust",
+      "description": "Rettifica la giacenza di un articolo",
+      "fields": [
+        {
+          "name": "sku",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "quantity",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "reason",
+          "type": "enum",
+          "required": true,
+          "enum": [
+            "damaged",
+            "recount",
+            "return"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "orders.create",
+      "description": "Crea un ordine fornitore",
+      "fields": [
+        {
+          "name": "sku",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "quantity",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "ship_date",
+          "type": "date",
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "orders.status",
+      "description": "Controlla lo stato di un ordine",
+      "fields": [
+        {
+          "name": "order_ref",
+          "type": "string",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "text": "Rettifica lo SKU WH-1182 di meno 5 perché danneggiato.",
+  "expected": {
+    "capability_id": "stock.adjust",
+    "intent": "task",
+    "fields": {
+      "sku": "WH-1182",
+      "quantity": -5,
+      "reason": "damaged"
+    }
+  }
+}

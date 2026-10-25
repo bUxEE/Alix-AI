@@ -1,0 +1,13 @@
+// @alixai/react styles. Compile once (`sass @alixai/react/styles.scss`) or `@use` it from the host's own SCSS.
+// The tokens are plain custom properties: override them on :root or on any ancestor to theme the kit.
+@use "tokens";
+@use "confirmation";
+@use "blocks";
+@use "citations";
+@use "files";
+@use "panels";
+@use "editor";
+@use "outcome";
+@use "loading";
+@use "chat";
+@use "../voice/voice";

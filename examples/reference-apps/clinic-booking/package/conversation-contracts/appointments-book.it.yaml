@@ -1,0 +1,69 @@
+capability_id: appointments.book
+language: it
+contract_version: 1.0.0
+terminology:
+  - patient
+  - doctor
+  - slot
+  - appointment
+  - appointment_reference
+  - clinic_site
+field_prompts:
+  - field: patient
+    label: Paziente
+    prompt: "Per chi è l'appuntamento? Dimmi il nome del paziente."
+    examples:
+      - Maria Rossi
+  - field: slot
+    label: Orario dell'appuntamento
+    prompt: "Quale orario preferisci? Dammi una data e un'ora come 2026-10-14 10:30, chiedi il primo orario libero, oppure scegline uno tra gli orari liberi."
+    examples:
+      - "2026-10-14 10:30"
+  - field: reason
+    label: Motivo della visita
+    prompt: "C'è un motivo della visita da annotare? Puoi anche saltare questa domanda."
+clarifications:
+  - rule_id: patient_multiple
+    prompt: "Più di un paziente corrisponde a {input.patient}. Quale intendi?"
+  - rule_id: slot_multiple
+    prompt: "Più di un orario libero corrisponde a {input.slot}. Quale vuoi?"
+corrections:
+  acknowledgement: "Va bene, ho cambiato."
+  correctable_fields:
+    - patient
+    - slot
+    - reason
+  prepared_action_invalidated: "Questo cambia la prenotazione, quindi il riepilogo precedente non vale più. Preparo di nuovo la prenotazione e ti chiedo di confermare i nuovi dati."
+cancellations:
+  acknowledgement: "Va bene, mi fermo. Non è stato prenotato nulla."
+confirmations:
+  request: "Conferma questa prenotazione: {patient_name} con {doctor_name} il {appointment_starts_at} presso {site_name}. Al paziente sarà inviato un messaggio di conferma. Procedo con la prenotazione?"
+  declined: "Va bene, non ho prenotato nulla."
+  expired: "Questa prenotazione non è più valida, quindi non è stato prenotato nulla. Posso prepararla di nuovo se vuoi."
+success:
+  - outcome: booked
+    text: "Fatto. {patient_name} è prenotato con {doctor_name} il {appointment_starts_at} presso {site_name}. Il riferimento dell'appuntamento è {appointment_reference}."
+failures:
+  - code: permission_denied
+    text: "Non hai il permesso di prenotare appuntamenti, quindi non è stato prenotato nulla."
+  - code: scope_violation
+    text: "Non posso prenotare: il paziente o l'orario non sono disponibili per te. Non è stato prenotato nulla."
+  - code: validation_failed
+    text: "Non ho potuto prenotare: un appuntamento si può prenotare da 60 minuti a 90 giorni prima. Non è stato prenotato nulla."
+  - code: conflict
+    text: "Quell'orario non è più libero, oppure il paziente ha già un appuntamento a quell'ora. Non è stato prenotato nulla. Posso mostrarti altri orari liberi."
+  - code: stale
+    text: "L'orario o la scheda del paziente sono cambiati dopo che avevo preparato questa prenotazione, quindi non l'ho effettuata. Non è stato prenotato nulla; posso prepararla di nuovo."
+  - code: expired
+    text: "La prenotazione non è stata confermata in tempo, oppure è stata annullata, quindi non è stato prenotato nulla."
+  - code: missing_fields
+    text: "Mi servono ancora il paziente e l'orario prima di poter prenotare. Non è stato prenotato nulla."
+  - code: uncertain_outcome
+    text: "Non sono riuscito a verificare se l'appuntamento è stato prenotato. Controllo prima di fare altro, quindi per ora non richiederlo."
+  - code: unavailable
+    text: "Il sistema degli appuntamenti non è raggiungibile in questo momento, quindi non è stato prenotato nulla."
+next_actions:
+  - id: cancel_booked_appointment
+    label: "Annulla questo appuntamento"
+  - id: show_other_slots
+    label: "Mostra altri orari liberi"

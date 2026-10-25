@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:rag:source-status:v1",
+  "title": "SourceStatus",
+  "description": "The status of one registered source (master plan 14.2 'inspect source/index status', 12.1, 12.5), read under authorisation. Every member is computed by the core from sync and index results, so every member is 'alixai'. The status never claims more than was observed: a source whose root cannot be reached has availability unavailable and an error, and its last_success_at stays at the last time a sync really succeeded (null if none ever did); it is never reported as checked, current or ready on the strength of an earlier run. Internal source metadata (the data-egress mode and classification of the external-provider seam) is not part of this object.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["source_id", "display_name", "state", "availability", "staleness", "last_attempt_at", "last_success_at", "counts", "active_generation_id"],
+  "properties": {
+    "source_id": {
+      "description": "ID of the registered source.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/sourceId"
+    },
+    "display_name": {
+      "description": "The source's name as the requesting principal is authorised to see it.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "state": {
+      "description": "Lifecycle. registered: declared, nothing indexed yet. indexing: a sync or index job is queued or running. ready: an index generation is active and serves queries. paused: ingestion stopped, for example because a size limit of the declaration was reached (an error says why); the active generation, if any, still serves. disabled: kept but inert, never retrievable until re-enabled. removing: tombstoned and waiting for the purge window of the declaration.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "enum": ["registered", "indexing", "ready", "paused", "disabled", "removing"]
+    },
+    "availability": {
+      "description": "Whether the source can be reached now: available, unavailable (it exists but its root or API cannot be reached) or removed.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:conversation:citation:v1#/properties/availability"
+    },
+    "staleness": {
+      "description": "Whether the indexed content is the latest: current, stale (the source changed after the active generation was built) or unknown (the core cannot tell, for example while the source is unreachable).",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:conversation:citation:v1#/properties/staleness"
+    },
+    "last_attempt_at": {
+      "description": "When the last sync attempt started, or null when none ever ran.",
+      "x-alixai-authority": "alixai",
+      "oneOf": [
+        { "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp" },
+        { "type": "null" }
+      ]
+    },
+    "last_success_at": {
+      "description": "When the last sync that really completed finished, or null when none ever did. Never advanced by a failed or unreachable attempt.",
+      "x-alixai-authority": "alixai",
+      "oneOf": [
+        { "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp" },
+        { "type": "null" }
+      ]
+    },
+    "counts": {
+      "description": "How many items the source holds, by outcome.",
+      "x-alixai-authority": "alixai",
+      "$ref": "#/$defs/counts"
+    },
+    "active_generation_id": {
+      "description": "The index generation that serves queries now, or null when there is none.",
+      "x-alixai-authority": "alixai",
+      "oneOf": [
+        { "$ref": "urn:alixai:schema:rag:shared:v1#/$defs/generationId" },
+        { "type": "null" }
+      ]
+    },
+    "error": {
+      "description": "Present when the source is unavailable or paused, and may be present otherwise: the typed, non-sensitive reason, for example unavailable for an unreachable root or resource_exhausted for a reached size limit.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:error:v1"
+    }
+  },
+  "$defs": {
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["discovered", "indexed", "skipped", "failed", "tombstoned"],
+      "properties": {
+        "discovered": {
+          "description": "Items found inside the declared root and include rules.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:rag:shared:v1#/$defs/count"
+        },
+        "indexed": {
+          "description": "Items parsed, chunked and in the active generation.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:rag:shared:v1#/$defs/count"
+        },
+        "skipped": {
+          "description": "Items not accepted: a format or size limit, or a page limit.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:rag:shared:v1#/$defs/count"
+        },
+        "failed": {
+          "description": "Items whose parse failed or timed out. Never half-indexed.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:rag:shared:v1#/$defs/count"
+        },
+        "tombstoned": {
+          "description": "Items that disappeared from the source: excluded from retrieval at once, purged after the declaration's window.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:rag:shared:v1#/$defs/count"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "state": { "const": "registered" } }, "required": ["state"] },
+      "then": {
+        "properties": {
+          "last_success_at": { "type": "null" },
+          "active_generation_id": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "state": { "const": "ready" } }, "required": ["state"] },
+      "then": { "properties": { "active_generation_id": { "type": "string" } } }
+    },
+    {
+      "if": {
+        "anyOf": [
+          { "properties": { "state": { "const": "paused" } }, "required": ["state"] },
+          { "properties": { "availability": { "const": "unavailable" } }, "required": ["availability"] }
+        ]
+      },
+      "then": { "required": ["error"] }
+    }
+  ]
+}

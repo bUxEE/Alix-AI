@@ -1,0 +1,51 @@
+capability_id: availability.list
+language: en
+contract_version: 1.0.0
+terminology:
+  - doctor
+  - slot
+  - appointment
+field_prompts:
+  - field: date
+    label: First day
+    prompt: "From which day should I look? Give me a date such as 2026-10-14, or I will start from today."
+    examples:
+      - "2026-10-14"
+  - field: days
+    label: Number of days
+    prompt: "How many days should I search?"
+  - field: doctor
+    label: Doctor
+    prompt: "Should I look only at one doctor? Tell me which one."
+  - field: max_results
+    label: Number of results
+    prompt: "How many free appointments should I list?"
+clarifications:
+  - rule_id: doctor_multiple
+    prompt: "More than one doctor matches {input.doctor}. Which one do you mean?"
+corrections:
+  acknowledgement: "Okay, I will search again with the new details."
+  correctable_fields:
+    - date
+    - days
+    - doctor
+    - max_results
+cancellations:
+  acknowledgement: "Okay, I stopped that search."
+success:
+  - outcome: slots_found
+    text: "I found {slot_count} free appointments from {search_from}: {slot_summary}."
+  - outcome: none_available
+    text: "I found no free appointments from {search_from}. That is {slot_count} results."
+failures:
+  - code: permission_denied
+    text: "You are not allowed to look up availability, so I did not search."
+  - code: scope_violation
+    text: "I cannot search for that doctor at your clinic site. Nothing was searched."
+  - code: validation_failed
+    text: "I could not search: the first day must be from today to 90 days ahead, and the number of days from 1 to 14."
+  - code: unavailable
+    text: "The appointment system is not reachable right now, so I could not search. Nothing was changed."
+next_actions:
+  - id: book_listed_slot
+    label: "Book one of these appointments"

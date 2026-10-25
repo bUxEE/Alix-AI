@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "types": ["node"],
+    "noEmit": true,
+    "paths": {
+      "@alixai/sdk": ["../../sdk/typescript/src/index.ts"],
+      "@alixai/voice-orb": ["../voice-orb/src/index.ts"],
+      "@alixai/vue": ["./src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.vue", "test", "vitest.config.ts", "env.d.ts", "demo/**/*.ts", "demo/**/*.vue", "vite.config.ts"]
+}

@@ -1,0 +1,485 @@
+# Sessions and conversation (master plan 14.2): create, resume and end a session, send a turn, stream and resume its
+# events, inspect the structured pending state. Implemented by internal/gateway/routes_v1_sessions.go and
+# routes_v1_turnevents.go (the resumable event stream, internal/stream).
+#
+# A session is keyed by the session id the context token carries: the core never mints one. A path id that
+# is not the token's is `scope_violation`. Every request needs a fresh single-use token.
+paths:
+  /v1/sessions:
+    post:
+      operationId: createSession
+      tags: [sessions]
+      summary: Create the session the token names (or open it again)
+      description: |
+        Opens the session whose id the context token carries, creating it on first sight. The principal,
+        tenant and workspace are the token's; a later token for the same session must be the same
+        authenticated context (a session cannot change principal, tenant or workspace). Opening is idempotent,
+        so the answer is always 200. The body is optional and, when present, is `{}`.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+      responses:
+        '200':
+          description: The session, created on first sight or resumed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '410':
+          $ref: ../openapi.yaml#/components/responses/Gone
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/sessions/{session_id}:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+    get:
+      operationId: getSession
+      tags: [sessions]
+      summary: Resume a session
+      description: Returns the session with its structured pending state. The id must be the token's session.
+      responses:
+        '200':
+          description: The session.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '410':
+          $ref: ../openapi.yaml#/components/responses/Gone
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+    delete:
+      operationId: endSession
+      tags: [sessions]
+      summary: End a session
+      description: |
+        Ends the session. The prepared action it was waiting on is invalidated first (`session_ended`); nothing
+        is ever committed by ending. Ending twice is the same as ending once.
+      responses:
+        '200':
+          description: The session has ended.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionEnded'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/sessions/{session_id}/pending:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+    get:
+      operationId: getPendingState
+      tags: [sessions]
+      summary: Inspect the structured pending state
+      description: |
+        What the active goal waits for: a confirmation of a prepared action, an answer to a clarification, or
+        nothing blocking. `pending` is null when there is no goal. Collected values are not returned, only the
+        field names and where each came from. The confirmation secret is never part of it.
+      responses:
+        '200':
+          description: The pending state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingResponse'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '410':
+          $ref: ../openapi.yaml#/components/responses/Gone
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/sessions/{session_id}/turns:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+    post:
+      operationId: sendTurn
+      tags: [sessions]
+      summary: Send a turn and receive its events
+      description: |
+        Exactly one of `text`, `choice_id`, `confirmation` and `reject`. A confirmation is a structured input
+        from the client UI, `{preparation_id, token}`: the model never reads "yes" as consent, and a text turn
+        can never confirm anything. A level 3 action cannot be confirmed through the AI path: the turn answers
+        with a `request_step_up` directive.
+
+        The turn runs to completion before anything is sent, so the text of a `token` event has already passed
+        the response verifier, and the events are published into the stream hub before they are sent: the text of
+        a `token` event is Markdown sanitised as a whole (raw HTML, images and links outside the allowed schemes
+        removed) and then cut into fragments of at most 4096 characters, so render the concatenated text, not
+        each fragment alone. The same events, byte for byte, can be read again from
+        `GET /v1/sessions/{session_id}/turns/{turn_id}/events` after a lost connection. With `Accept: text/event-stream` the events arrive as server-sent events (`id` is
+        `seq`, `event` is `type`, `data` is the TurnEvent on one line); otherwise as one JSON document. `seq` runs
+        from 0 without gaps, every event carries the same `turn_id` and the last event is `done`. A turn that
+        ended in a refusal or a failure has a typed `error` event before `done` (`finish_reason: failed`).
+
+        The single-use confirmation secret of a prepared action is not a TurnEvent: it is the
+        `X-AlixAI-Confirmation-Token` response header of a stream, or `confirmation` in the JSON document. Show it
+        to the user's client only; present it once, with the preparation id.
+
+        A turn that could not be run at all (no valid scope, a limit, a session that is not this context) is an
+        error response, never a stream. An event the stream refuses (it fails validation) is not sent and not
+        skipped over: the turn ends with an `error` event and a `done` event with `finish_reason: failed`, at the
+        next sequence numbers, and the confirmation secret is withheld.
+
+        **Attachments.** A text turn may name files the user uploaded (`attachments`, the ids `POST /v1/files`
+        returned; at most 4). They are resolved together under the turn's scope before anything runs: a reference
+        that does not resolve for the caller (another tenant's, principal's or session's file, a deleted one, an
+        expired one, one that never existed) fails the whole turn with one and the same `403 scope_violation` that
+        says nothing about why, no model is called and no turn is recorded. What a model may see of a file (the
+        text of a text file, cut to the files configuration's limit and to what the prompt budget has left; never
+        a path, an id or image bytes) is given to it as untrusted data, in the proposal prompt of that turn only:
+        it is not the user's message, so it is not routed on, kept in the transcript or shown to a later turn. A
+        deployment that cannot take attachments in a turn answers `503 unavailable`
+        (`details.reason` `attachments_unavailable`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TurnRequest'
+      responses:
+        '200':
+          description: The events of the turn.
+          headers:
+            X-AlixAI-Confirmation-Token:
+              description: |
+                Event-stream only: the single-use confirmation secret of the action the turn prepared, when it
+                needs the user's explicit confirmation.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TurnResponse'
+            text/event-stream:
+              description: One server-sent event per TurnEvent.
+              schema:
+                type: string
+                description: |
+                  A sequence of `id: <seq>`, `event: <type>`, `data: <TurnEvent JSON>` frames; the `data` of each
+                  validates against schemas/conversation/turn-event.
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '410':
+          $ref: ../openapi.yaml#/components/responses/Gone
+        '413':
+          $ref: ../openapi.yaml#/components/responses/PayloadTooLarge
+        '415':
+          $ref: ../openapi.yaml#/components/responses/UnsupportedMediaType
+        '429':
+          $ref: ../openapi.yaml#/components/responses/TooManyRequests
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/sessions/{session_id}/turns/{turn_id}/events:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+      - $ref: '#/components/parameters/TurnId'
+      - $ref: '#/components/parameters/EventsCursor'
+      - $ref: '#/components/parameters/LastEventId'
+    get:
+      operationId: streamTurnEvents
+      tags: [sessions]
+      summary: Read the events of a turn again, from a cursor
+      description: |
+        The events of a turn the caller sent, from the turn's replay buffer, so that a client that lost its
+        connection continues without the turn being run again: this route only reads, and a turn is never
+        re-run because a client reconnected. The turn is the one `sendTurn` answered for (its `turn_id`, which
+        every event carries); the buffer keeps a bounded number of events and bytes per turn, and a finished
+        turn for a few minutes.
+
+        **Transport.** Server-sent events by default: each event is `id: <seq>`, `event: <type>` and
+        `data: <the TurnEvent on one line>`, byte for byte what `sendTurn` sent, followed by a blank line; the
+        response starts with a `retry:` hint and idle periods carry `: keep-alive` comments, and the stream ends
+        after the `done` event. A request with `Upgrade: websocket` is served as a WebSocket instead: one text
+        message per event (the same JSON), server to client only (a message from the client closes the
+        connection with 1008), the optional subprotocol `alixai.turn-events.v1`, and a normal closure (1000)
+        after `done`. A browser's `Origin` must be the request's own host: no CORS header is ever sent.
+
+        **Resume.** The cursor is the `seq` of the last event the client received, from `Last-Event-ID` or the
+        `cursor` query parameter (when both are present the later one wins); the stream continues with the next
+        event, each exactly once and in order. No cursor is the start of the turn. A cursor that is not a
+        sequence number, or that is ahead of the stream, is `400`; one behind the retained window is `410`
+        (`expired`, `details.reason: cursor_expired`: the stream is never resumed with a gap, so read the turn's
+        outcome from the session and the actions API instead); one at the end of a finished turn is `204` (stop
+        reconnecting). A connection cut off for reading too slowly is closed after a comment (SSE) or with
+        close code 1013 (WebSocket): reconnect with the last cursor.
+
+        **Identity.** The turn is looked up in the caller's whole scope (application, tenant, workspace,
+        principal and session, all from the token). A turn that does not exist, a turn of another principal and
+        a turn past its retention are the same `403` (`scope_violation`, `details.reason: turn_not_visible`), so
+        a turn id is no oracle. A context token is single use, so **every reconnect needs a fresh token**: a
+        browser `EventSource`, which reconnects by itself and cannot set the `Authorization` header, is not
+        usable here; read the stream with a fetch-based reader (the SDK's) and mint a token per open.
+
+        The single-use confirmation secret of a prepared action is never in a TurnEvent and is not sent here;
+        it is the response of the turn that prepared the action, once.
+      responses:
+        '200':
+          description: The events of the turn after the cursor.
+          content:
+            text/event-stream:
+              description: One server-sent event per TurnEvent.
+              schema:
+                type: string
+                description: |
+                  A `retry:` line, then `id: <seq>`, `event: <type>`, `data: <TurnEvent JSON>` frames; the
+                  `data` of each validates against schemas/conversation/turn-event.
+        '101':
+          description: 'The connection is upgraded to a WebSocket (the request carried `Upgrade: websocket`).'
+        '204':
+          description: 'The cursor is at the end of a finished turn: the client has every event. Stop reconnecting.'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '410':
+          description: |
+            The cursor is behind the retained window (`expired`, `details.reason: cursor_expired`): the events
+            after it are no longer kept.
+          content:
+            application/json:
+              schema:
+                $ref: ../openapi.yaml#/components/schemas/Error
+        '429':
+          $ref: ../openapi.yaml#/components/responses/TooManyRequests
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+components:
+  parameters:
+    SessionId:
+      name: session_id
+      in: path
+      required: true
+      description: The session id the context token carries. Any other value is `scope_violation`.
+      schema:
+        type: string
+        pattern: '^[A-Za-z0-9_.-]{1,128}$'
+    TurnId:
+      name: turn_id
+      in: path
+      required: true
+      description: |
+        The turn to read, as `sendTurn` reported it (`turn_id`). A turn that is not visible in the caller's scope
+        (unknown, another principal's, past its retention) is `scope_violation`.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+    EventsCursor:
+      name: cursor
+      in: query
+      required: false
+      description: |
+        The `seq` of the last event the client received; the stream continues with the next one. For a
+        fetch-based reader and for a WebSocket, which cannot set `Last-Event-ID`. Not given: the start of the turn.
+      schema:
+        type: string
+        pattern: '^[0-9]{1,10}$'
+    LastEventId:
+      name: Last-Event-ID
+      in: header
+      required: false
+      description: |
+        The `id` (the `seq`) of the last event the client received, as an `EventSource` sends it on reconnect.
+        With `cursor` as well, the later of the two wins.
+      schema:
+        type: string
+        pattern: '^[0-9]{1,10}$'
+  schemas:
+    Session:
+      type: object
+      additionalProperties: false
+      required: [session_id, status, turn_count, created_at, updated_at, pending]
+      properties:
+        session_id:
+          type: string
+        status:
+          type: string
+          enum: [active, ended]
+        turn_count:
+          type: integer
+          minimum: 0
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        pending:
+          oneOf:
+            - $ref: '#/components/schemas/PendingState'
+            - type: 'null'
+    SessionEnded:
+      type: object
+      additionalProperties: false
+      required: [session_id, status]
+      properties:
+        session_id:
+          type: string
+        status:
+          const: ended
+    PendingResponse:
+      type: object
+      additionalProperties: false
+      required: [pending]
+      properties:
+        pending:
+          oneOf:
+            - $ref: '#/components/schemas/PendingState'
+            - type: 'null'
+    PendingState:
+      type: object
+      additionalProperties: false
+      required: [kind, capability_id, phase, collected_fields]
+      properties:
+        kind:
+          type: string
+          enum: [confirmation, clarification, goal]
+          description: confirmation (a prepared action awaits the user), clarification (a question awaits an answer) or goal.
+        capability_id:
+          type: string
+        phase:
+          type: string
+        collected_fields:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [name, origin]
+            properties:
+              name:
+                type: string
+              origin:
+                type: string
+                enum: [user_turn, correction, entity_resolution, choice]
+        missing_fields:
+          type: array
+          items:
+            type: string
+        question:
+          type: object
+          additionalProperties: false
+          required: [field, answer_kind]
+          properties:
+            field:
+              type: string
+            answer_kind:
+              type: string
+              enum: [text, choice, entity]
+            choices:
+              type: array
+              items:
+                $ref: ../../actions/shared.schema.json#/$defs/choice
+        preparation:
+          $ref: ../openapi.yaml#/components/schemas/PreparedAction
+        expires_at:
+          type: string
+          format: date-time
+    TurnRequest:
+      type: object
+      additionalProperties: false
+      description: Exactly one of text, choice_id, confirmation and reject; attachments only with text.
+      properties:
+        text:
+          type: string
+          minLength: 1
+          description: The user's message (or a finalised transcript).
+        language:
+          type: string
+          description: A BCP 47 tag the core supports ("en", "it"); empty lets the core choose.
+        choice_id:
+          type: string
+          description: Selects one of the choices of the pending clarification.
+        confirmation:
+          type: object
+          additionalProperties: false
+          required: [preparation_id, token]
+          properties:
+            preparation_id:
+              type: string
+            token:
+              type: string
+              pattern: '^cfm_[A-Za-z0-9_-]{43}$'
+              description: The single-use confirmation secret that came with the prepared action.
+        reject:
+          type: object
+          additionalProperties: false
+          required: [preparation_id]
+          properties:
+            preparation_id:
+              type: string
+        attachments:
+          type: array
+          maxItems: 4
+          description: |
+            The files the user attached to this message: ids of `POST /v1/files`, at most 4, each resolved under the
+            turn's scope (see the description of the operation). Only a turn with `text` carries them; a file named
+            twice counts once.
+          items:
+            type: string
+            pattern: '^fil_[0-9A-HJKMNP-TV-Z]{26}$'
+      dependentRequired:
+        attachments: [text]
+      oneOf:
+        - required: [text]
+        - required: [choice_id]
+        - required: [confirmation]
+        - required: [reject]
+    TurnResponse:
+      type: object
+      additionalProperties: false
+      required: [turn_id, events]
+      properties:
+        turn_id:
+          type: string
+        events:
+          type: array
+          minItems: 1
+          items:
+            $ref: ../openapi.yaml#/components/schemas/TurnEvent
+        confirmation:
+          type: object
+          additionalProperties: false
+          required: [preparation_id, token]
+          description: Present when the turn prepared an action that needs the user's explicit confirmation.
+          properties:
+            preparation_id:
+              type: string
+            token:
+              type: string

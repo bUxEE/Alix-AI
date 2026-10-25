@@ -1,0 +1,457 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:policy:decision-record:v1",
+  "title": "Policy decision record",
+  "description": "The records the policy gateway writes to the audit log, in the form the log stores them (master plan 4.1, SEC-087), discriminated by format. A decision record (alixai.policy-decision/v1) is the full account of one decision. An exposure record (alixai.policy-exposure/v1) is the compact account of one Expose call: the outcome of every capability the package declares, in one record instead of one decision record per capability. Neither carries a field value, a bearer credential or a reason that quotes user input. Key names avoid the substrings the log redactor matches.",
+  "oneOf": [
+    { "$ref": "#/$defs/decision" },
+    { "$ref": "#/$defs/exposure" }
+  ],
+  "$defs": {
+    "maybeIdentifier": {
+      "description": "An identifier, or the empty string when the level was absent from the request.",
+      "type": "string",
+      "maxLength": 128
+    },
+    "maybeCapabilityId": {
+      "description": "A capability ID, or the empty string when the package declared one that is not a well-formed ID (such a capability is denied, and its text is not copied into the record).",
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^([a-z][a-z0-9_]{0,31}(\\.[a-z][a-z0-9_]{0,31}){0,3})?$"
+    },
+    "packageRef": {
+      "description": "The package the decision was made against.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["application_id", "version", "status"],
+      "properties": {
+        "application_id": { "$ref": "#/$defs/maybeIdentifier" },
+        "version": { "type": "string", "maxLength": 64 },
+        "status": { "type": "string", "maxLength": 64 }
+      }
+    },
+    "policyRef": {
+      "description": "One host policy in force, by ID and the SHA-256 of its canonical JSON.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy_id", "digest"],
+      "properties": {
+        "policy_id": { "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug" },
+        "digest": { "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/sha256" }
+      }
+    },
+    "capabilityOutcome": {
+      "description": "What Expose decided for one capability: allowed, or denied with the typed code and the fixed reason of the check that denied it, and the effective risk level (3 when the denial stopped before the level was known). The full account of the decision (every check, the risk calculation, the fields) is not repeated: it follows from the package, the policy digests of the record and the subject, and is written in full as a decision record whenever the capability is used.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capability_id", "outcome", "risk"],
+      "properties": {
+        "capability_id": { "$ref": "#/$defs/maybeCapabilityId" },
+        "outcome": { "enum": ["allow", "deny"] },
+        "code": {
+          "description": "The error code of a denial. Absent on allow, required on deny.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/errorCode"
+        },
+        "reason": {
+          "description": "A fixed machine-readable reason code, never free text from a user. Absent on allow, required on deny.",
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+        },
+        "risk": {
+          "description": "The effective risk level: the highest of the declared level, the platform floor and every host raise. At exposure it is an upper bound; the prepare and commit decisions are authoritative.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/riskLevel"
+        }
+      },
+      "if": { "properties": { "outcome": { "const": "deny" } }, "required": ["outcome"] },
+      "then": { "required": ["code", "reason"] },
+      "else": {
+        "allOf": [
+          { "not": { "required": ["code"] } },
+          { "not": { "required": ["reason"] } },
+          { "properties": { "capability_id": { "minLength": 1 } } }
+        ]
+      }
+    },
+    "decision": {
+      "description": "The full record of one policy decision, allow or deny (master plan 4.1, SEC-087): what Decide returns at every phase, and what Expose returns when the package itself is refused. It names who asked, for which capability, in which phase (exposure, prepare or commit), the outcome with a typed error code on denial, every check that ran in order with its result, the policies and rules that influenced the outcome, the risk calculation (declared level, platform floor, host minimum, effective level and what raised it) and the fields the model may see. It never carries a field value, a bearer credential or a reason that quotes user input. Key names avoid the substrings the log redactor matches.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "decision_id",
+        "decided_at",
+        "phase",
+        "outcome",
+        "subject",
+        "capability_id",
+        "package",
+        "policies",
+        "checks",
+        "risk",
+        "requires",
+        "visible_fields",
+        "withheld_fields",
+        "rules_applied",
+        "rules_deferred"
+      ],
+      "properties": {
+        "format": {
+          "description": "The record format and its major version.",
+          "const": "alixai.policy-decision/v1"
+        },
+        "decision_id": {
+          "description": "Core-minted ID of this decision (prefix pdec).",
+          "type": "string",
+          "pattern": "^pdec_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "decided_at": {
+          "description": "When the decision was made, from the injected clock.",
+          "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+        },
+        "phase": {
+          "description": "expose: before a tool is shown to the model. prepare and commit: the second and third evaluation of the same policy, with the field values known.",
+          "enum": ["expose", "prepare", "commit"]
+        },
+        "outcome": {
+          "description": "allow or deny. The zero decision is a deny.",
+          "enum": ["allow", "deny"]
+        },
+        "code": {
+          "description": "The error code of a denial. Absent on allow, required on deny.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/errorCode"
+        },
+        "subject": {
+          "description": "The verified context the decision was made for. Strings are empty only when the context itself was missing that level, which is why such a decision is a denial.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["application_id", "tenant_id", "workspace_id", "principal_id", "session_id", "roles", "capability_scopes"],
+          "properties": {
+            "application_id": { "$ref": "#/$defs/maybeIdentifier" },
+            "tenant_id": { "$ref": "#/$defs/maybeIdentifier" },
+            "workspace_id": { "$ref": "#/$defs/maybeIdentifier" },
+            "principal_id": { "$ref": "#/$defs/maybeIdentifier" },
+            "session_id": { "$ref": "#/$defs/maybeIdentifier" },
+            "roles": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/maybeIdentifier" }
+            },
+            "capability_scopes": {
+              "description": "The capability IDs the context token permitted.",
+              "type": "array",
+              "items": { "$ref": "#/$defs/maybeIdentifier" }
+            }
+          }
+        },
+        "capability_id": {
+          "description": "The capability the decision is about; empty only for a request that named none.",
+          "$ref": "#/$defs/maybeIdentifier"
+        },
+        "package": { "$ref": "#/$defs/packageRef" },
+        "policies": {
+          "description": "The host policies in force, by ID and the SHA-256 of their canonical JSON, so a decision can be tied to the exact signed policy.",
+          "type": "array",
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/policyRef" }
+        },
+        "checks": {
+          "description": "The checks that ran, in order. Evaluation stops at the first failed check, so the last entry of a denial is the check that denied it.",
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "passed", "reason"],
+            "properties": {
+              "name": {
+                "enum": [
+                  "request",
+                  "scope",
+                  "package_active",
+                  "application_match",
+                  "tenant_workspace_match",
+                  "capability_declared",
+                  "audience",
+                  "token_scope",
+                  "role_grant",
+                  "host_rules",
+                  "field_visibility",
+                  "evidence",
+                  "audit_sink"
+                ]
+              },
+              "passed": { "type": "boolean" },
+              "code": {
+                "description": "The error code this check yields. Present only when the check failed.",
+                "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/errorCode"
+              },
+              "reason": {
+                "description": "A fixed machine-readable reason code, never free text from a user.",
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+              },
+              "rule_id": {
+                "description": "The package rule or policy that produced the outcome, when one did.",
+                "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+              }
+            },
+            "if": { "properties": { "passed": { "const": false } }, "required": ["passed"] },
+            "then": { "required": ["code"] },
+            "else": { "not": { "required": ["code"] } }
+          }
+        },
+        "risk": {
+          "description": "The risk calculation of master plan 11.4. effective is never lower than platform_floor, whatever the policy says.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["declared", "platform_floor", "host_minimum", "effective", "effect_class", "raised_by"],
+          "properties": {
+            "declared": { "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/riskLevel" },
+            "platform_floor": { "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/riskLevel" },
+            "host_minimum": {
+              "description": "The highest minimum any applicable risk override or rule demanded; 0 when none did.",
+              "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/riskLevel"
+            },
+            "effective": { "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/riskLevel" },
+            "effect_class": {
+              "description": "The declared effect class, or unknown when the package gave none that the platform recognises (the floor is then 3).",
+              "enum": ["none", "reversible", "external", "privileged", "unknown"]
+            },
+            "raised_by": {
+              "description": "What lifted effective above the declared level, highest first; empty when nothing did.",
+              "type": "array",
+              "maxItems": 258,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["source", "level"],
+                "properties": {
+                  "source": { "enum": ["platform_floor", "risk_override", "rule"] },
+                  "id": {
+                    "description": "The policy ID (risk_override) or rule ID (rule). Absent for platform_floor.",
+                    "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug"
+                  },
+                  "level": { "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/riskLevel" }
+                }
+              }
+            }
+          }
+        },
+        "requires": {
+          "description": "What the effective level obliges the caller to obtain before a commit.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["confirmation", "step_up"],
+          "properties": {
+            "confirmation": { "type": "boolean" },
+            "step_up": { "type": "boolean" }
+          }
+        },
+        "visible_fields": {
+          "description": "The only fields the model may see or propose, in the capability's declaration order. Empty on denial.",
+          "type": "array",
+          "maxItems": 64,
+          "items": { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName" }
+        },
+        "withheld_fields": {
+          "description": "Declared fields the model may not see, with why.",
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["field", "reason"],
+            "properties": {
+              "field": { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName" },
+              "reason": { "enum": ["not_projected", "sensitive_until_needed", "rule"] },
+              "rule_id": { "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug" }
+            }
+          }
+        },
+        "rules_applied": {
+          "description": "Rules whose condition held for this decision and what each did.",
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["rule_id", "effects"],
+            "properties": {
+              "rule_id": { "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug" },
+              "effects": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": { "enum": ["deny", "risk_min", "hide_fields"] }
+              }
+            }
+          }
+        },
+        "rules_deferred": {
+          "description": "Rules that cannot be decided at exposure because they need field values; they are evaluated again at prepare and commit.",
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": { "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/slug" }
+        }
+      },
+      "allOf": [
+        {
+          "description": "A denial carries its error code; an allow carries none.",
+          "if": { "properties": { "outcome": { "const": "deny" } }, "required": ["outcome"] },
+          "then": { "required": ["code"] },
+          "else": { "not": { "required": ["code"] } }
+        },
+        {
+          "description": "An allow names a complete subject and capability.",
+          "if": { "properties": { "outcome": { "const": "allow" } }, "required": ["outcome"] },
+          "then": {
+            "properties": {
+              "capability_id": { "minLength": 1 },
+              "subject": {
+                "properties": {
+                  "application_id": { "minLength": 1 },
+                  "tenant_id": { "minLength": 1 },
+                  "workspace_id": { "minLength": 1 },
+                  "principal_id": { "minLength": 1 },
+                  "session_id": { "minLength": 1 },
+                  "roles": { "minItems": 1 },
+                  "capability_scopes": { "minItems": 1 }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "exposure": {
+      "description": "The compact record of one Expose call: for every capability the package declares, whether the model may be shown it, in one record instead of one decision record per capability (the audit cost of a turn then no longer grows with the size of the catalogue). It names who asked, the package and the policies in force (so the record can be tied to the exact signed policy) and one outcome per capability. A catalogue too large for one record (at most 256 outcomes and 24 KiB) is split over parts, numbered from 1; the parts together list every capability once, and a reader that finds fewer than parts records for one call has found an incomplete trail: a call that wrote fewer than parts records exposed nothing to the model, whatever the parts that were written say, because Expose shows capabilities only once every part is in the log. A package-level denial (a quarantined package, a wrong application or tenant) is not an exposure record but a decision record. The subject leaves out the token's capability list: a capability the token did not permit appears in outcomes as a denial with the reason capability_not_in_token_scope.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "decision_id",
+        "decided_at",
+        "phase",
+        "outcome",
+        "subject",
+        "package",
+        "policies",
+        "considered",
+        "part",
+        "parts",
+        "outcomes"
+      ],
+      "properties": {
+        "format": {
+          "description": "The record format and its major version.",
+          "const": "alixai.policy-exposure/v1"
+        },
+        "decision_id": {
+          "description": "Core-minted ID of this record (prefix pdec). The decisions Expose returns carry the ID of the record that holds them.",
+          "type": "string",
+          "pattern": "^pdec_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "decided_at": {
+          "description": "When the exposure was decided, from the injected clock.",
+          "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+        },
+        "phase": {
+          "description": "Always expose: before a tool is shown to the model.",
+          "const": "expose"
+        },
+        "outcome": {
+          "description": "allow when at least one capability of this record may be shown to the model, deny when none may. The outcome of each capability is in outcomes.",
+          "enum": ["allow", "deny"]
+        },
+        "code": {
+          "description": "Present on deny only: permission_denied, there being no capability the model may be shown. Why each capability was denied is in outcomes.",
+          "$ref": "urn:alixai:schema:application-package:defs:v1#/$defs/errorCode"
+        },
+        "subject": {
+          "description": "The verified context the exposure was decided for, without the token's capability list.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["application_id", "tenant_id", "workspace_id", "principal_id", "session_id", "roles"],
+          "properties": {
+            "application_id": { "$ref": "#/$defs/maybeIdentifier" },
+            "tenant_id": { "$ref": "#/$defs/maybeIdentifier" },
+            "workspace_id": { "$ref": "#/$defs/maybeIdentifier" },
+            "principal_id": { "$ref": "#/$defs/maybeIdentifier" },
+            "session_id": { "$ref": "#/$defs/maybeIdentifier" },
+            "roles": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/maybeIdentifier" }
+            }
+          }
+        },
+        "package": { "$ref": "#/$defs/packageRef" },
+        "policies": {
+          "description": "The host policies in force, by ID and the SHA-256 of their canonical JSON, so the exposure can be tied to the exact signed policy.",
+          "type": "array",
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/policyRef" }
+        },
+        "considered": {
+          "description": "How many capabilities the Expose call evaluated in all, across every part.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1048576
+        },
+        "part": {
+          "description": "The number of this record among the records of the call, from 1.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4096
+        },
+        "parts": {
+          "description": "How many records the call wrote.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4096
+        },
+        "outcomes": {
+          "description": "The capabilities of this part, sorted by capability ID: one entry each, allowed or denied.",
+          "type": "array",
+          "maxItems": 256,
+          "items": { "$ref": "#/$defs/capabilityOutcome" }
+        }
+      },
+      "allOf": [
+        {
+          "description": "A denial carries its error code; an allow carries none.",
+          "if": { "properties": { "outcome": { "const": "deny" } }, "required": ["outcome"] },
+          "then": { "required": ["code"] },
+          "else": { "not": { "required": ["code"] } }
+        },
+        {
+          "description": "An allow lists at least one allowed capability and names a complete subject; a deny lists none.",
+          "if": { "properties": { "outcome": { "const": "allow" } }, "required": ["outcome"] },
+          "then": {
+            "properties": {
+              "outcomes": {
+                "contains": { "properties": { "outcome": { "const": "allow" } }, "required": ["outcome"] }
+              },
+              "subject": {
+                "properties": {
+                  "application_id": { "minLength": 1 },
+                  "tenant_id": { "minLength": 1 },
+                  "workspace_id": { "minLength": 1 },
+                  "principal_id": { "minLength": 1 },
+                  "session_id": { "minLength": 1 },
+                  "roles": { "minItems": 1 }
+                }
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "outcomes": {
+                "items": { "properties": { "outcome": { "const": "deny" } }, "required": ["outcome"] }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

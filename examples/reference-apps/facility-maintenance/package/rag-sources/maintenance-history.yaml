@@ -1,0 +1,58 @@
+id: maintenance-history
+type: application_document_api
+title: Maintenance history
+description: 'The closed work orders of a site as records: the problem, the resolution, the parts used and the labour, read through the application''s own history API (GET /rag/maintenance-history). Bound to the tenant and workspace of the request: a site sees only its own history.'
+languages:
+- en
+- it
+owner:
+  name: Maintenance Engineering (synthetic)
+  contact: maintenance@facility-maintenance.example.test
+scope:
+  application_id: facility-maintenance
+  tenant:
+    mode: request
+  workspace:
+    mode: request
+root:
+  kind: api
+  endpoint: facility-api
+  base_path: /rag/maintenance-history
+include:
+- work-orders/**
+exclude: []
+query_scope:
+  allowed_parameters:
+  - application_id
+  - cursor
+  - limit
+  - tenant_id
+  - workspace_id
+credential_ref: null
+formats:
+- text/markdown
+limits:
+  max_file_bytes: 1048576
+  max_total_bytes: 104857600
+  max_files: 100000
+sync:
+  method: poll
+  interval_seconds: 3600
+deletion:
+  purge_after_hours: 24
+  on_source_removed: purge
+parser:
+  ocr: disabled
+  max_pages_per_file: 20
+  timeout_seconds: 30
+citation:
+  kind: alixai_preview
+egress:
+  entries:
+  - facility-loopback
+retention:
+  derived_data_days: 365
+  import_originals: false
+  audit:
+    record_access: true
+    retention_days: 730

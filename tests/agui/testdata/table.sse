@@ -1,0 +1,18 @@
+data: {"type":"RUN_STARTED","threadId":"ses_test_01","runId":"run_table"}
+
+id: 0
+data: {"type":"CUSTOM","name":"alixai.directive","value":{"turn_id":"trn_01J00000000000000000000001","capability_id":"appointments.book","act":"present_result","facts":[{"field":"free_slots","value":{"kind":"integer","value":3}}],"must_state":[],"missing_fields":[],"invalid_fields":[],"allowed_suggestions":[],"confirmation":{"mode":"none","bindings":[]},"permitted_next_actions":[],"sources":[]}}
+
+id: 1
+data: {"type":"ACTIVITY_SNAPSHOT","messageId":"act_trn_01J00000000000000000000001_b1","activityType":"alixai.block.table","content":{"type":"table","caption":"Free slots on 14 October","columns":[{"key":"start","label":"Start","kind":"text"},{"key":"doctor","label":"Doctor"},{"key":"free","label":"Free","kind":"boolean"}],"rows":[["10:30","Dr. Rossi",true],["11:00","Dr. Rossi",false],["11:30",null,3]]}}
+
+data: {"type":"TEXT_MESSAGE_START","messageId":"msg_trn_01J00000000000000000000001_1","role":"assistant"}
+
+id: 2
+data: {"type":"TEXT_MESSAGE_CONTENT","messageId":"msg_trn_01J00000000000000000000001_1","delta":"These are the free slots."}
+
+data: {"type":"TEXT_MESSAGE_END","messageId":"msg_trn_01J00000000000000000000001_1"}
+
+id: 3
+data: {"type":"RUN_FINISHED","threadId":"ses_test_01","runId":"run_table","result":{"finishReason":"completed","turnId":"trn_01J00000000000000000000001"},"outcome":{"type":"success"}}
+

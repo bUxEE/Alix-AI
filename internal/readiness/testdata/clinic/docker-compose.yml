@@ -1,0 +1,10 @@
+services:
+  clinic:
+    build: .
+    image: example.invalid/clinic@sha256:0000000000000000000000000000000000000000000000000000000000000000
+    ports:
+      - "127.0.0.1:8787:8787"
+    volumes:
+      - ./docs:/srv/docs:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://127.0.0.1:8787/health"]

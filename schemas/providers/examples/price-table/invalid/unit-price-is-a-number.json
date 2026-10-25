@@ -1,0 +1,10 @@
+{
+  "currency": "USD",
+  "effective_on": "2026-10-01",
+  "source_url": "https://platform.example.com/pricing",
+  "prices": {
+    "toks_in": 150000,
+    "toks_out": { "per_units": 1000000, "micro_units": 600000 },
+    "toks_in_cached": { "per_units": 1000000, "micro_units": 75000 }
+  }
+}

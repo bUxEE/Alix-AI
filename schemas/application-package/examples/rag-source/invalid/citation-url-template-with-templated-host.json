@@ -1,0 +1,66 @@
+{
+  "id": "nas-archive",
+  "type": "mounted_volume",
+  "owner": {
+    "name": "Archive team"
+  },
+  "scope": {
+    "application_id": "demo-library",
+    "tenant": {
+      "mode": "fixed",
+      "id": "network-north"
+    },
+    "workspace": {
+      "mode": "request"
+    }
+  },
+  "root": {
+    "kind": "mount",
+    "mount_id": "archive-nas",
+    "path": "reports/annual"
+  },
+  "include": [
+    "*.pdf"
+  ],
+  "exclude": [],
+  "credential_ref": "cred:nas-archive-share",
+  "formats": [
+    "application/pdf"
+  ],
+  "limits": {
+    "max_file_bytes": 209715200,
+    "max_total_bytes": 107374182400,
+    "max_files": 5000
+  },
+  "sync": {
+    "method": "poll",
+    "interval_seconds": 86400
+  },
+  "deletion": {
+    "purge_after_hours": 168,
+    "on_source_removed": "disable"
+  },
+  "parser": {
+    "ocr": "always",
+    "ocr_languages": [
+      "en"
+    ],
+    "max_pages_per_file": 1000,
+    "timeout_seconds": 600
+  },
+  "citation": {
+    "kind": "url_template",
+    "url_template": "https://{item_id}.evil.example/archive"
+  },
+  "egress": {
+    "entries": []
+  },
+  "retention": {
+    "derived_data_days": null,
+    "import_originals": false,
+    "audit": {
+      "record_access": false,
+      "retention_days": 30
+    }
+  }
+}

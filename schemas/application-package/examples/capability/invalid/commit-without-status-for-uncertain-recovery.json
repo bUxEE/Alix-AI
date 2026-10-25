@@ -1,0 +1,222 @@
+{
+  "id": "reservations.create",
+  "version": "1.0.0",
+  "audience": "user",
+  "title": "Reserve a title",
+  "purpose": "Reserve a title for pickup at the user's branch on a chosen date. The reservation is prepared first, its exact effects are shown, and it is committed only after the user confirms.",
+  "scope_level": "workspace",
+  "permissions": [
+    "reservations.write"
+  ],
+  "fields": [
+    {
+      "name": "title",
+      "type": "entity_ref",
+      "entity_type": "title",
+      "required": true,
+      "description": "The catalogue title to reserve."
+    },
+    {
+      "name": "pickup_date",
+      "type": "date",
+      "required": true,
+      "description": "The date the user will collect the title, in the branch's time zone."
+    },
+    {
+      "name": "notes",
+      "type": "string",
+      "required": false,
+      "description": "An optional note for the desk.",
+      "max_length": 300,
+      "sensitive": true
+    }
+  ],
+  "entity_types": {
+    "title": {
+      "description": "A catalogue title.",
+      "resolve": {
+        "endpoint": "library-mcp",
+        "mcp_tool": "resolve_title",
+        "result_schema": "schemas/resolve-title.result.schema.json"
+      }
+    }
+  },
+  "ambiguity": [
+    {
+      "id": "title_multiple",
+      "field": "title",
+      "when": "multiple_matches",
+      "action": "ask_user",
+      "max_choices": 5
+    },
+    {
+      "id": "title_none",
+      "field": "title",
+      "when": "no_match",
+      "action": "reject"
+    }
+  ],
+  "validation": [
+    {
+      "id": "pickup_date_not_past",
+      "fields": [
+        "pickup_date"
+      ],
+      "description": "The pickup date must be today or later and at most 60 days ahead.",
+      "error_code": "validation_failed"
+    },
+    {
+      "id": "title_available",
+      "fields": [
+        "title"
+      ],
+      "description": "A copy of the title must be free to reserve at the branch on the pickup date.",
+      "error_code": "conflict"
+    }
+  ],
+  "failure_states": [
+    {
+      "code": "permission_denied",
+      "description": "The principal is not allowed to reserve at this branch."
+    },
+    {
+      "code": "validation_failed",
+      "description": "The pickup date is in the past or more than 60 days ahead."
+    },
+    {
+      "code": "conflict",
+      "description": "No copy of the title is free on the pickup date."
+    },
+    {
+      "code": "stale",
+      "description": "The title or its stock changed after the reservation was prepared, so the preparation is no longer valid."
+    },
+    {
+      "code": "expired",
+      "description": "The prepared reservation was not confirmed in time, or was cancelled."
+    },
+    {
+      "code": "uncertain_outcome",
+      "description": "The commit response was lost. Whether the reservation exists is established through the status operation before anything is retried."
+    }
+  ],
+  "effect_class": "external",
+  "risk_level": 2,
+  "operations": {
+    "validate": {
+      "endpoint": "library-mcp",
+      "mcp_tool": "validate_reservation",
+      "result_schema": "schemas/reservation.validation.schema.json"
+    },
+    "prepare": {
+      "endpoint": "library-mcp",
+      "mcp_tool": "prepare_reservation",
+      "result_schema": "schemas/reservation.prepared.schema.json",
+      "arguments": {
+        "pickup_date": "pickupDate"
+      },
+      "timeout_ms": 8000
+    },
+    "commit": {
+      "endpoint": "library-mcp",
+      "mcp_tool": "commit_reservation",
+      "result_schema": "schemas/reservation.receipt.schema.json",
+      "timeout_ms": 15000
+    }
+  },
+  "confirmation": {
+    "mode": "explicit"
+  },
+  "prepared_action": {
+    "ttl_seconds": 600,
+    "invalidated_by": [
+      "record_revision",
+      "permission_change",
+      "user_change"
+    ]
+  },
+  "idempotency": {
+    "key_source": "prepared_action_id",
+    "window_seconds": 86400,
+    "on_replay": "return_original_receipt"
+  },
+  "response_obligations": [
+    {
+      "fact": "reservation.title",
+      "when": "always",
+      "description": "The title being reserved."
+    },
+    {
+      "fact": "reservation.pickup_date",
+      "when": "always",
+      "description": "The pickup date."
+    },
+    {
+      "fact": "reservation.branch",
+      "when": "prepared",
+      "description": "The branch where the title will be held."
+    },
+    {
+      "fact": "reservation.reference",
+      "when": "success",
+      "description": "The reservation reference the user quotes at the desk."
+    }
+  ],
+  "next_actions": [
+    {
+      "id": "find_another",
+      "after": "success",
+      "capability_id": "catalog.find_title"
+    }
+  ],
+  "doc_refs": [
+    "rc-field-title",
+    "rc-field-pickup-date",
+    "rc-field-notes",
+    "rc-rule-pickup-date-not-past",
+    "rc-rule-title-available",
+    "rc-perm-reservations-write",
+    "rc-fail-permission-denied",
+    "rc-fail-validation-failed",
+    "rc-fail-conflict",
+    "rc-fail-stale",
+    "rc-fail-expired",
+    "rc-fail-uncertain-outcome",
+    "rc-risk",
+    "rc-confirmation",
+    "rc-outcome-reserved"
+  ],
+  "examples": [
+    {
+      "id": "en-reserve-for-friday",
+      "language": "en",
+      "test_only": true,
+      "utterance": "Please reserve The Leopard for me, I will collect it on 2026-11-13",
+      "expected_fields": {
+        "title": "The Leopard",
+        "pickup_date": "2026-11-13"
+      }
+    },
+    {
+      "id": "en-reserve-with-note",
+      "language": "en",
+      "test_only": true,
+      "utterance": "Reserve Invisible Cities for 2026-11-20 and tell the desk I need large print",
+      "expected_fields": {
+        "title": "Invisible Cities",
+        "pickup_date": "2026-11-20",
+        "notes": "large print"
+      }
+    },
+    {
+      "id": "it-prenota-gattopardo",
+      "language": "it",
+      "test_only": true,
+      "utterance": "Vorrei prenotare Il Gattopardo, lo ritiro il 2026-11-13",
+      "expected_fields": {
+        "title": "Il Gattopardo",
+        "pickup_date": "2026-11-13"
+      }
+    }
+  ]
+}

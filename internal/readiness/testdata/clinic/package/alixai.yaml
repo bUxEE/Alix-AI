@@ -1,0 +1,84 @@
+format: alixai.application-package/v1
+application:
+  id: clinic-booking
+  name: Synthetic Clinic Booking
+  version: 1.0.0
+  vendor: AlixAI reference applications
+  description: A synthetic, privacy-safe clinic appointment application (TypeScript, Koa, node:sqlite, MCP) used as the first neutral AlixAI reference application. Every record is made up.
+package:
+  version: 1.0.0
+  description: 'Initial integration package: availability, patient search, booking, cancellation and contact-detail updates, in English and Italian.'
+compatibility:
+  alixai_core:
+    min: 0.1.0
+    max_exclusive: 1.0.0
+endpoints:
+  clinic-mcp:
+    transport: mcp
+    url: http://127.0.0.1:8787/mcp
+    adapter_config: schemas/adapters/clinic-mcp.yaml
+    credential_ref: cred:clinic-booking-mcp
+context_exchange:
+  mode: context_token
+  issuer: https://clinic-booking.example.test
+  audience: alixai
+  key_ids:
+  - alixai-test-only-publisher
+  max_lifetime_seconds: 900
+tenancy:
+  tenant:
+    label: clinic group
+    description: A clinic group is one customer organisation that owns several clinic sites. Patients, doctors, slots and appointments never cross groups.
+  workspace:
+    label: clinic site
+    description: A clinic site is one physical clinic of a group. Its patients, doctors, free slots and appointments are the only records a request at that site can reach; a site never sees another site, even of the same group.
+  principal_kinds:
+  - human
+  roles:
+    receptionist:
+      description: Front-desk staff of one clinic site. Sees every patient and appointment of the site, books and cancels for them and corrects their contact details.
+    doctor:
+      description: A doctor of one clinic site. Sees only the patients who have an appointment with them, and may cancel their own appointments, but never books or edits contact details.
+    patient:
+      description: A patient of one clinic site. Sees and changes only their own record and appointments.
+languages:
+  default: en
+  supported:
+  - en
+  - it
+capabilities:
+  appointments.book: capabilities/appointments-book.yaml
+  availability.list: capabilities/availability-list.yaml
+rag_sources:
+  clinic-policies: rag-sources/clinic-policies.yaml
+model_requirements:
+  minimum_profile: lite
+  controller:
+    need: required
+    languages:
+    - en
+    - it
+    min_context_tokens: 4096
+  embedding:
+    need: optional
+retention:
+  session_state_days: 7
+  transcript_days: 30
+  action_receipt_days: 365
+  audit_days: 730
+  log_days: 14
+network:
+  default: deny
+  egress:
+    clinic-loopback:
+      host: 127.0.0.1
+      ports:
+      - 8787
+      scheme: http
+      purpose: The clinic application's MCP server on the same machine (loopback only; a test fixture)
+integrity:
+  signature_manifest: signatures/signature-manifest.json
+  hash_algorithm: sha256
+  signature_algorithm: ed25519
+  publisher_key_ids:
+  - alixai-test-only-publisher

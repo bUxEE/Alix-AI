@@ -1,0 +1,48 @@
+policy_id: default-access
+description: Which role may use which capability of the facility-maintenance application, and which fields of each the model may see. The host still reauthorises every call and applies record-level visibility (a technician sees the work assigned to them or raised by them, supervisors and auditors the whole site).
+role_grants:
+- role: technician
+  capabilities:
+  - workorders.close
+  - workorders.create
+  - workorders.list
+- role: supervisor
+  capabilities:
+  - assets.decommission
+  - workorders.assign
+  - workorders.close
+  - workorders.create
+  - workorders.list
+- role: auditor
+  capabilities:
+  - workorders.list
+risk_overrides: []
+field_projection:
+- capability_id: workorders.list
+  model_visible_fields:
+  - status
+  - priority
+  - asset
+  - technician
+  - max_results
+- capability_id: workorders.create
+  model_visible_fields:
+  - asset
+  - title
+  - description
+  - priority
+- capability_id: workorders.assign
+  model_visible_fields:
+  - work_order
+  - technician
+  - note
+- capability_id: workorders.close
+  model_visible_fields:
+  - work_order
+  - resolution
+  - parts_used
+  - labor_hours
+- capability_id: assets.decommission
+  model_visible_fields:
+  - asset
+  - reason

@@ -1,0 +1,48 @@
+{
+  "preparation_id": "prep_01J0000000000000000000000A",
+  "capability_id": "appointments.book",
+  "state": "prepared",
+  "summary": "Book Dr. Rossi for Anna Verdi on 14 October 2026 at 10:30.",
+  "effects": [
+    {
+      "operation": "send",
+      "entity_type": "notification",
+      "description": "Email a booking confirmation to anna.verdi@example.test.",
+      "changes": [
+        {
+          "field": "recipient",
+          "value": {
+            "kind": "text",
+            "value": "anna.verdi@example.test"
+          }
+        }
+      ],
+      "external": true
+    }
+  ],
+  "risk_level": 1,
+  "data_versions": [
+    {
+      "entity_type": "slot",
+      "entity_id": "slot_0412",
+      "version": "v42"
+    },
+    {
+      "entity_type": "patient",
+      "entity_id": "pat_881",
+      "version": "7"
+    }
+  ],
+  "prepared_at": "2026-10-09T08:00:05Z",
+  "expires_at": "2026-10-09T08:10:05Z",
+  "invalidation_conditions": [
+    "data_version_changed",
+    "permission_changed",
+    "session_ended"
+  ],
+  "confirmation": {
+    "mode": "none",
+    "bindings": []
+  },
+  "idempotency_key": "idk_01J0000000000000000000000A"
+}

@@ -1,0 +1,89 @@
+{
+  "name": "ui_tool_result",
+  "description": "The client ran the tool and sends the result back as a tool message for the call's id. It is data: a run with no turn (no model call, no history, nothing approved) that starts, sends the state and finishes. The client resends the result with the thread, so it reaches the next turn as one more fenced line of client context.",
+  "protocol": "AG-UI 1.0 (@ag-ui/core 1.0.1)",
+  "source": "engine",
+  "request": {
+    "method": "POST",
+    "path": "/v1/agui",
+    "body": {
+      "context": [],
+      "forwardedProps": {},
+      "messages": [
+        {
+          "content": "show item item-1",
+          "id": "m1",
+          "role": "user"
+        },
+        {
+          "content": "The item is named gadget. I highlighted its row.",
+          "id": "a1",
+          "role": "assistant"
+        },
+        {
+          "content": "{\"highlighted\": true, \"rowId\": \"item-1\"}",
+          "id": "t1",
+          "role": "tool",
+          "toolCallId": "alixai_ui_trn_01J00000000000000000000001"
+        }
+      ],
+      "runId": "run_ui_result",
+      "state": {},
+      "threadId": "ses_test_01",
+      "tools": []
+    }
+  },
+  "response": {
+    "status": 200,
+    "content_type": "text/event-stream",
+    "sse_file": "ui_tool_result.sse",
+    "ids": null,
+    "event_types": [
+      "RUN_STARTED",
+      "STATE_DELTA",
+      "RUN_FINISHED"
+    ],
+    "events": [
+      {
+        "type": "RUN_STARTED",
+        "threadId": "ses_test_01",
+        "runId": "run_ui_result"
+      },
+      {
+        "type": "STATE_DELTA",
+        "delta": [
+          {
+            "op": "add",
+            "path": "/alixai",
+            "value": {
+              "pending": {
+                "capabilityId": "items.get",
+                "collectedFields": [
+                  {
+                    "name": "item_id",
+                    "origin": "user_turn"
+                  }
+                ],
+                "expiresAt": "2026-10-02T12:30:00Z",
+                "kind": "goal",
+                "missingFields": [],
+                "phase": "success"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "RUN_FINISHED",
+        "threadId": "ses_test_01",
+        "runId": "run_ui_result",
+        "result": {
+          "uiResult": true
+        },
+        "outcome": {
+          "type": "success"
+        }
+      }
+    ]
+  }
+}

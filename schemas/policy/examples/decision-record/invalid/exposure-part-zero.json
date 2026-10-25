@@ -1,0 +1,62 @@
+{
+  "format": "alixai.policy-exposure/v1",
+  "decision_id": "pdec_01M3XZ5YE0VF1A3VM6K82CEN2A",
+  "decided_at": "2026-10-02T09:30:00Z",
+  "phase": "expose",
+  "outcome": "allow",
+  "subject": {
+    "application_id": "demo-library",
+    "tenant_id": "tenant-a",
+    "workspace_id": "ws-1",
+    "principal_id": "user-1",
+    "session_id": "ses-1",
+    "roles": [
+      "member"
+    ]
+  },
+  "package": {
+    "application_id": "demo-library",
+    "version": "1.0.0",
+    "status": "active"
+  },
+  "policies": [
+    {
+      "policy_id": "default-access",
+      "digest": "89026592bcef05c5e9c889aa8fac375324ca2c4b9e5913d91dfdf036b610aec5"
+    }
+  ],
+  "considered": 5,
+  "part": 0,
+  "parts": 1,
+  "outcomes": [
+    {
+      "capability_id": "admin.reindex",
+      "outcome": "deny",
+      "code": "permission_denied",
+      "reason": "admin_capability_not_model_visible",
+      "risk": 3
+    },
+    {
+      "capability_id": "catalog.find_title",
+      "outcome": "allow",
+      "risk": 0
+    },
+    {
+      "capability_id": "loans.extend",
+      "outcome": "allow",
+      "risk": 1
+    },
+    {
+      "capability_id": "members.delete_account",
+      "outcome": "deny",
+      "code": "permission_denied",
+      "reason": "role_not_granted",
+      "risk": 3
+    },
+    {
+      "capability_id": "reservations.create",
+      "outcome": "allow",
+      "risk": 2
+    }
+  ]
+}

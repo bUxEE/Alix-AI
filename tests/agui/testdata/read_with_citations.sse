@@ -1,0 +1,38 @@
+data: {"type":"RUN_STARTED","threadId":"ses_test_01","runId":"run_cite"}
+
+data: {"type":"STATE_DELTA","delta":[{"op":"add","path":"/alixai","value":{"pending":null}}]}
+
+data: {"type":"STEP_STARTED","stepName":"interpreting"}
+
+id: 0
+data: {"type":"STEP_FINISHED","stepName":"interpreting"}
+
+data: {"type":"STEP_STARTED","stepName":"retrieving"}
+
+id: 1
+data: {"type":"STEP_FINISHED","stepName":"retrieving"}
+
+data: {"type":"STEP_STARTED","stepName":"verifying"}
+
+id: 2
+data: {"type":"STEP_FINISHED","stepName":"verifying"}
+
+id: 3
+data: {"type":"CUSTOM","name":"alixai.directive","value":{"turn_id":"trn_01J00000000000000000000001","capability_id":null,"act":"present_result","facts":[],"must_state":[],"missing_fields":[],"invalid_fields":[],"allowed_suggestions":[],"confirmation":{"mode":"none","bindings":[]},"permitted_next_actions":[],"sources":[{"source_id":"src_01J00000000000000000000001","display_name":"Warranty terms","version":"v7","locator":{"section":"Section 2"},"availability":"available","staleness":"current","open_ref":{"kind":"file","file_id":"fil_01J00000000000000000000001"},"claims":["The Model X kettle has a warranty of 24 months from the date of purchase."]},{"source_id":"src_01J00000000000000000000002","display_name":"Customer handbook","version":"v7","locator":{"section":"Section 5"},"availability":"available","staleness":"current","open_ref":{"kind":"file","file_id":"fil_01J00000000000000000000002"},"claims":["Keep the receipt as proof of purchase."]}]}}
+
+id: 4
+data: {"type":"ACTIVITY_SNAPSHOT","messageId":"act_trn_01J00000000000000000000001_citations","activityType":"alixai.citations","content":{"citations":[{"source_id":"src_01J00000000000000000000001","display_name":"Warranty terms","version":"v7","locator":{"section":"Section 2"},"availability":"available","staleness":"current","open_ref":{"kind":"file","file_id":"fil_01J00000000000000000000001"},"claims":["The Model X kettle has a warranty of 24 months from the date of purchase."]}]}}
+
+id: 5
+data: {"type":"ACTIVITY_DELTA","messageId":"act_trn_01J00000000000000000000001_citations","activityType":"alixai.citations","patch":[{"op":"add","path":"/citations/-","value":{"source_id":"src_01J00000000000000000000002","display_name":"Customer handbook","version":"v7","locator":{"section":"Section 5"},"availability":"available","staleness":"current","open_ref":{"kind":"file","file_id":"fil_01J00000000000000000000002"},"claims":["Keep the receipt as proof of purchase."]}}]}
+
+data: {"type":"TEXT_MESSAGE_START","messageId":"msg_trn_01J00000000000000000000001_1","role":"assistant"}
+
+id: 6
+data: {"type":"TEXT_MESSAGE_CONTENT","messageId":"msg_trn_01J00000000000000000000001_1","delta":"Here is what I found:\n\n- The Model X kettle has a warranty of 24 months from the date of purchase. \\[1\\]\n- Keep the receipt as proof of purchase. \\[2\\]\n  Sources:\n  \\[1\\] Warranty terms (Section 2)\n  \\[2\\] Customer handbook (Section 5)"}
+
+data: {"type":"TEXT_MESSAGE_END","messageId":"msg_trn_01J00000000000000000000001_1"}
+
+id: 7
+data: {"type":"RUN_FINISHED","threadId":"ses_test_01","runId":"run_cite","result":{"finishReason":"completed","turnId":"trn_01J00000000000000000000001"},"outcome":{"type":"success"}}
+

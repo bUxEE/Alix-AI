@@ -1,0 +1,93 @@
+{
+  "id": "rf-it-03",
+  "language": "it",
+  "category": "refusal",
+  "today": "2026-10-12",
+  "catalogue": [
+    {
+      "id": "appointments.book",
+      "description": "Prenota una visita medica",
+      "fields": [
+        {
+          "name": "specialty",
+          "type": "enum",
+          "required": true,
+          "enum": [
+            "general",
+            "dermatology",
+            "cardiology",
+            "pediatrics"
+          ]
+        },
+        {
+          "name": "date",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "time_of_day",
+          "type": "enum",
+          "required": false,
+          "enum": [
+            "morning",
+            "afternoon"
+          ]
+        },
+        {
+          "name": "patient_name",
+          "type": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "appointments.reschedule",
+      "description": "Sposta un appuntamento a un altro giorno",
+      "fields": [
+        {
+          "name": "appointment_ref",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "new_date",
+          "type": "date",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "appointments.cancel",
+      "description": "Annulla un appuntamento",
+      "fields": [
+        {
+          "name": "appointment_ref",
+          "type": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "prescriptions.refill",
+      "description": "Richiedi il rinnovo di una ricetta",
+      "fields": [
+        {
+          "name": "medication",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "pharmacy",
+          "type": "string",
+          "required": false
+        }
+      ]
+    }
+  ],
+  "text": "Posso prendere un'aspirina per il mal di testa?",
+  "expected": {
+    "capability_id": null,
+    "intent": "out_of_scope",
+    "fields": {}
+  }
+}

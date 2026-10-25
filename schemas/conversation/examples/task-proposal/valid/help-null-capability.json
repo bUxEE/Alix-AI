@@ -1,0 +1,11 @@
+{
+  "capability_id": null,
+  "fields": {},
+  "entity_refs": [],
+  "intent": "help",
+  "uncertainty": {
+    "overall": 0.6,
+    "fields": {}
+  },
+  "trace_id": "trc_01J0000000000000000000000P"
+}

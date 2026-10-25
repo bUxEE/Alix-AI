@@ -1,0 +1,9 @@
+{
+  "type": "capture.start",
+  "format": {
+    "encoding": "pcm_s16le",
+    "sample_rate": 16000,
+    "channels": 1
+  },
+  "language": "en"
+}

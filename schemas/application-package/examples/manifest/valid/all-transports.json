@@ -1,0 +1,191 @@
+{
+  "format": "alixai.application-package/v1",
+  "application": {
+    "id": "acme-field-service",
+    "name": "Acme Field Service",
+    "version": "2026.10"
+  },
+  "package": {
+    "version": "2.1.0-rc.1"
+  },
+  "compatibility": {
+    "alixai_core": {
+      "min": "0.3.0",
+      "max_exclusive": "0.5.0"
+    }
+  },
+  "endpoints": {
+    "jobs-mcp": {
+      "transport": "mcp",
+      "url": "https://fieldservice.example.test/mcp",
+      "adapter_config": "schemas/adapters/jobs-mcp.yaml",
+      "contract_sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+    },
+    "billing-api": {
+      "transport": "openapi",
+      "base_url": "https://billing.example.test/api/v2",
+      "spec": "schemas/billing.openapi.yaml",
+      "adapter_config": "schemas/adapters/billing-api.yaml",
+      "credential_ref": "cred:acme-billing-api"
+    },
+    "desktop-bridge": {
+      "transport": "native",
+      "bridge": "typescript",
+      "ipc": {
+        "kind": "unix_socket",
+        "address": "/run/acme/alixai-bridge.sock"
+      },
+      "adapter_config": "schemas/adapters/desktop-bridge.yaml"
+    },
+    "pipe-bridge": {
+      "transport": "native",
+      "bridge": "go",
+      "ipc": {
+        "kind": "named_pipe",
+        "address": "\\\\.\\pipe\\acme-alixai"
+      },
+      "adapter_config": "schemas/adapters/pipe-bridge.yaml"
+    },
+    "loopback-bridge": {
+      "transport": "native",
+      "bridge": "python",
+      "ipc": {
+        "kind": "loopback_tcp",
+        "address": "127.0.0.1:7421"
+      },
+      "adapter_config": "schemas/adapters/loopback-bridge.yaml"
+    },
+    "job-events": {
+      "transport": "events",
+      "delivery": "webhook",
+      "key_id": "acme-events-2026",
+      "event_types": {
+        "job.updated": {
+          "effect": "invalidate_state",
+          "description": "A job was edited, so any prepared action that used it is stale."
+        },
+        "price_list.refreshed": {
+          "effect": "refresh_projection",
+          "description": "The price list changed; cached price projections are re-read."
+        },
+        "job.assigned": {
+          "effect": "notify_session",
+          "description": "A job was assigned to the signed-in technician."
+        }
+      },
+      "adapter_config": "schemas/adapters/job-events.yaml"
+    },
+    "alert-stream": {
+      "transport": "events",
+      "delivery": "sse",
+      "url": "https://fieldservice.example.test/events",
+      "credential_ref": "cred:acme-event-stream",
+      "event_types": {
+        "technician.offline": {
+          "effect": "notify_session",
+          "description": "A technician went offline."
+        }
+      },
+      "adapter_config": "schemas/adapters/alert-stream.yaml"
+    }
+  },
+  "context_exchange": {
+    "mode": "local_ipc",
+    "issuer": "acme-field-service-desktop",
+    "audience": "alixai-local",
+    "key_ids": ["acme-ipc-peer-1", "acme-ipc-peer-2"]
+  },
+  "tenancy": {
+    "tenant": {
+      "label": "customer account",
+      "description": "One customer company with its own jobs, invoices and technicians."
+    },
+    "workspace": {
+      "label": "depot",
+      "description": "A depot is a dispatch location of a customer account."
+    },
+    "principal_kinds": ["human", "service"],
+    "roles": {
+      "dispatcher": {
+        "description": "Assigns jobs and reads schedules for the depot."
+      },
+      "technician": {
+        "description": "Reads and updates their own jobs."
+      },
+      "billing_service": {
+        "description": "A service principal that reads invoices for reconciliation."
+      }
+    }
+  },
+  "languages": {
+    "default": "en",
+    "supported": ["en", "de", "pt-BR", "zh-Hant-TW"]
+  },
+  "capabilities": {
+    "jobs.list_mine": "capabilities/jobs-list-mine.yaml",
+    "jobs.update_status": "capabilities/jobs-update-status.yaml",
+    "invoices.read": "capabilities/invoices-read.yaml"
+  },
+  "rag_sources": {},
+  "model_requirements": {
+    "minimum_profile": "balanced",
+    "controller": {
+      "need": "required",
+      "min_context_tokens": 8192
+    },
+    "router": {
+      "need": "optional"
+    },
+    "embedding": {
+      "need": "required",
+      "languages": ["en", "de"]
+    },
+    "reranker": {
+      "need": "optional"
+    },
+    "stt": {
+      "need": "optional",
+      "languages": ["en"]
+    },
+    "tts": {
+      "need": "optional",
+      "languages": ["en"]
+    }
+  },
+  "retention": {
+    "session_state_days": 0,
+    "transcript_days": 0,
+    "action_receipt_days": 3650,
+    "audit_days": 3650,
+    "log_days": 30
+  },
+  "network": {
+    "default": "deny",
+    "egress": {
+      "jobs-host": {
+        "host": "fieldservice.example.test",
+        "ports": [443],
+        "scheme": "https",
+        "purpose": "Jobs MCP server and event stream"
+      },
+      "billing-host": {
+        "host": "billing.example.test",
+        "ports": [443, 8443],
+        "scheme": "https",
+        "purpose": "Billing API"
+      },
+      "local-docs": {
+        "host": "localhost",
+        "ports": [8080],
+        "scheme": "http",
+        "purpose": "Documentation server on the same machine"
+      }
+    }
+  },
+  "integrity": {
+    "signature_manifest": "signatures/signature-manifest.json",
+    "hash_algorithm": "sha256",
+    "signature_algorithm": "ed25519",
+    "publisher_key_ids": ["acme-publisher-2026", "acme-publisher-2025"]
+  }
+}

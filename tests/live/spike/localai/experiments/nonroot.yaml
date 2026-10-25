@@ -1,0 +1,4 @@
+# HC-33 / HC-41 experiment: run as an unprivileged user (the image runs as root).
+services:
+  localai:
+    user: "1000:1000"

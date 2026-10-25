@@ -1,0 +1,75 @@
+{
+  "package_id": "evp_01J0000000000000000000000A",
+  "scope": {
+    "application_id": "clinic-app",
+    "tenant_id": "tenant-1",
+    "workspace_id": "ws-main"
+  },
+  "query": "Can I cancel an appointment for free?",
+  "created_at": "2026-10-02T09:30:00Z",
+  "items": [
+    {
+      "evidence_id": "e1",
+      "rank": 1,
+      "chunk_id": "chk_8f3a21c9d04e",
+      "generation_id": "gen_01J0000000000000000000000A",
+      "source_id": "src_01J0000000000000000000000A",
+      "display_name": "Clinic cancellation policy",
+      "version": "rev-12",
+      "locator": {
+        "page": 3,
+        "section": "Late cancellations",
+        "span": {
+          "start": 120,
+          "end": 342
+        }
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "file",
+        "file_id": "fil_01J0000000000000000000000A"
+      },
+      "text": "Appointments can be cancelled free of charge up to 24 hours before the start. Later cancellations are charged 50 percent of the visit fee.",
+      "est_toks": 34,
+      "source_egress": "allow_excerpt",
+      "source_classification": "internal"
+    },
+    {
+      "evidence_id": "e2",
+      "rank": 2,
+      "chunk_id": "chk_1d77b0aa5e21",
+      "generation_id": "gen_01J0000000000000000000000B",
+      "source_id": "src_01J0000000000000000000000B",
+      "display_name": "Pricing table",
+      "version": "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "locator": {
+        "record": "price_2026_standard"
+      },
+      "availability": "available",
+      "staleness": "current",
+      "open_ref": {
+        "kind": "record",
+        "entity_type": "price_list",
+        "entity_id": "price_2026"
+      },
+      "text": "Late cancellation fee: 50 percent of the visit fee.",
+      "est_toks": 12,
+      "source_egress": "local_only",
+      "source_classification": "restricted"
+    }
+  ],
+  "budget": {
+    "max_items": 8,
+    "max_toks": 1500,
+    "est_toks": 46,
+    "truncated": false
+  },
+  "retrieval": {
+    "methods": [
+      "fts",
+      "vector"
+    ],
+    "notices": []
+  }
+}

@@ -1,0 +1,62 @@
+# Configuration of the separate LocalAI unit (localai.service), read from /etc/alixai/localai.yaml by
+# `alixai supervisor exec`. Not the configuration of the AlixAI service (alixai.yaml). Every key can also be set by an
+# ALIXAI_<SECTION>_<FIELD> environment variable. Nothing secret lives here.
+
+log:
+  level: info
+
+localai:
+  # The runtime this unit keeps alive, as the adapter reaches it: the supervisor's health probe is the adapter's own Health.
+  endpoint: http://127.0.0.1:8080
+  # LoadCredential= of localai.service puts the key here; it is also given to LocalAI itself (exec.api_key_env below).
+  api_key_ref: file:/run/credentials/localai.service/localai-api-key
+  # A LocalAI version AlixAI was not qualified against is reported unavailable (SEC-072).
+  qualified_versions: ["v4.10.0"]
+
+supervisor:
+  enabled: true
+  # exec: this unit spawns LocalAI. alixai.yaml says unit (attach) and `serve` refuses exec.
+  runtime: exec
+  # The loop's own tuning is optional: max_restarts 5 inside restart_window 5m, backoff 1s doubling to 30s, a runtime that
+  # is not ready within start_timeout 5m is a failure. When it gives up the unit exits and systemd starts it again.
+  exec:
+    # Installed by the operator, root-owned, not writable by this unit. Never searched for on PATH, never run through a shell.
+    path: /opt/localai/local-ai
+    args: [run]
+    # The child's whole environment: nothing of the supervisor's is inherited. The same off-switches as the container stack
+    # (deploy/container/localai/hardening.md): one shared key, no web UI, gallery, MCP, agents, p2p or tracing.
+    env:
+      - PATH=/usr/local/bin:/usr/bin:/bin
+      - HOME=/var/lib/alixai-localai
+      - LOCALAI_ADDRESS=127.0.0.1:8080
+      - LOCALAI_SUBTLE_KEY_COMPARISON=true
+      - LOCALAI_AUTH=false
+      - LOCALAI_CORS=false
+      # The models directory alixai.yaml verifies (inference.models_dir): root-owned, read-only to this unit.
+      - LOCALAI_MODELS_PATH=/var/lib/alixai-models
+      - LOCALAI_BACKENDS_PATH=/var/lib/alixai-localai/backends
+      - LOCALAI_DATA_PATH=/var/lib/alixai-localai/data
+      - LOCALAI_AUTO_UPGRADE_BACKENDS=false
+      - LOCALAI_DISABLE_WEBUI=true
+      - LOCALAI_DISABLE_RUNTIME_SETTINGS=true
+      - LOCALAI_DISABLE_GALLERY_ENDPOINT=true
+      - LOCALAI_GALLERIES=[]
+      - LOCALAI_AUTOLOAD_GALLERIES=false
+      - LOCALAI_AUTOLOAD_BACKEND_GALLERIES=false
+      - LOCALAI_DISABLE_MCP=true
+      - LOCALAI_DISABLE_AGENTS=true
+      - LOCALAI_DISABLE_ASSISTANT=true
+      - LOCALAI_P2P=false
+      - LOCALAI_FEDERATED=false
+      - LOCALAI_DISTRIBUTED=false
+      - LOCALAI_ENABLE_TRACING=false
+      # Resident backends: never fewer than the roles the profile keeps resident (docs/operations/resource-budgets.md R2, R3).
+      - LOCALAI_MAX_ACTIVE_BACKENDS=2
+      - LOCALAI_WATCHDOG_IDLE=true
+      - LOCALAI_WATCHDOG_IDLE_TIMEOUT=15m
+      # info only: at debug and trace LocalAI logs every completion in full. The child's output is discarded either way.
+      - LOCALAI_LOG_LEVEL=info
+    # The key of localai.api_key_ref reaches the child under this name, and nowhere else.
+    api_key_env: LOCALAI_API_KEY
+    # Limits beyond the unit's MemoryMax are optional (max_memory_bytes, max_open_files); a limit the platform cannot
+    # enforce refuses the start instead of being ignored.

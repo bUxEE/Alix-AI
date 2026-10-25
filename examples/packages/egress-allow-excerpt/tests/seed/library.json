@@ -1,0 +1,7 @@
+{
+  "synthetic": true,
+  "titles": [
+    { "ref": "title-a1", "name": "The Gardener Year", "copies": 2 },
+    { "ref": "title-a2", "name": "Invisible Cities", "copies": 1 }
+  ]
+}

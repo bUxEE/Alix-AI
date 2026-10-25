@@ -1,0 +1,71 @@
+capability_id: workorders.close
+language: it
+contract_version: 1.0.0
+terminology:
+- work_order
+- part
+- technician
+- closure
+field_prompts:
+- field: work_order
+  label: Ordine di lavoro
+  prompt: Quale ordine di lavoro stai chiudendo? Dammi il riferimento, come WO-1001, oppure descrivilo.
+  examples:
+  - WO-1001
+- field: resolution
+  label: Risoluzione
+  prompt: Cosa è stato fatto per risolverlo?
+  examples:
+  - Sostituita la cinghia del ventilatore
+- field: parts_used
+  label: Ricambi usati
+  prompt: Quali ricambi hai usato? Scrivi ciascuno come CODICE:QUANTITÀ, ad esempio FLT-204:2. Puoi saltare se nessuno.
+  examples:
+  - FLT-204:2
+- field: labor_hours
+  label: Ore di lavoro
+  prompt: Quante ore di lavoro? Puoi saltare.
+  examples:
+  - 1,5
+clarifications:
+- rule_id: work_order_multiple
+  prompt: Più di un ordine di lavoro corrisponde a {input.work_order}. Quale intendi?
+corrections:
+  acknowledgement: D'accordo, l'ho modificato.
+  correctable_fields:
+  - work_order
+  - resolution
+  - parts_used
+  - labor_hours
+  prepared_action_invalidated: Questo cambia la chiusura, quindi il riepilogo precedente non vale più. La preparerò di nuovo e ti chiederò di confermare i nuovi dettagli.
+cancellations:
+  acknowledgement: D'accordo, mi sono fermato. Non ho chiuso nulla.
+confirmations:
+  request: 'Conferma: chiudere l''ordine di lavoro {work_order_id} ({work_order_title}) con la risoluzione «{input.resolution}». Ricambi usati: {parts_summary}, costo totale {parts_cost}. Le scorte saranno ridotte di conseguenza. Procedo con la chiusura?'
+  declined: D'accordo, non ho chiuso nulla.
+  expired: Questa chiusura non è più valida, quindi non ho chiuso nulla. Posso prepararla di nuovo, se vuoi.
+success:
+- outcome: closed
+  text: 'Fatto. L''ordine di lavoro {work_order_id} è chiuso ({closed_at}). Costo dei ricambi: {parts_cost}.'
+failures:
+- code: permission_denied
+  text: Non hai il permesso di farlo, quindi non ho cambiato nulla.
+- code: scope_violation
+  text: 'Non posso farlo: il record non è disponibile per te. Non ho cambiato nulla.'
+- code: validation_failed
+  text: 'Non ho potuto chiuderlo: controlla la risoluzione, scrivi ogni ricambio come CODICE:QUANTITÀ con ricambi del catalogo di questa sede e indica da 0 a 24 ore di lavoro. Non ho chiuso nulla.'
+- code: conflict
+  text: 'Non ho potuto chiuderlo: l''ordine di lavoro è già chiuso, oppure un ricambio non è disponibile in quella quantità. Non ho chiuso nulla.'
+- code: stale
+  text: Un record è cambiato dopo che l'avevo preparato, quindi non l'ho applicato. Non ho cambiato nulla; posso prepararlo di nuovo.
+- code: expired
+  text: Non è stato confermato in tempo, oppure è stato ritirato, quindi non ho cambiato nulla.
+- code: uncertain_outcome
+  text: Non sono riuscito a confermare se è stato applicato. Controllerò prima di fare altro, quindi per ora non chiederlo di nuovo.
+- code: missing_fields
+  text: Mi servono ancora alcuni dettagli prima di poterlo fare. Non ho cambiato nulla.
+- code: unavailable
+  text: Il sistema di manutenzione al momento non è raggiungibile, quindi non ho cambiato nulla.
+next_actions:
+- id: show_remaining_orders
+  label: Mostra gli ordini di lavoro aperti

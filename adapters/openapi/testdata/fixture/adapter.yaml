@@ -1,0 +1,13 @@
+server: fixture-api
+auth:
+  header: Authorization
+  scheme: Bearer
+identity:
+  header: X-AlixAI-Identity
+idempotency:
+  header: Idempotency-Key
+management:
+  describe: describeApplication
+  health: getHealth
+  inspect: inspectApplication
+  provisioning: [createTenant, cleanupTenant]

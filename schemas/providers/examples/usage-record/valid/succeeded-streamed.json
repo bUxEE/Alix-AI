@@ -1,0 +1,44 @@
+{
+  "usage_id": "usg_01J0000000000000000000000W",
+  "recorded_at": "2026-10-02T09:00:04Z",
+  "subject": {
+    "application_id": "app_crm",
+    "tenant_id": "ten_42",
+    "workspace_id": "wsp_sales",
+    "principal_id": "usr_77",
+    "session_id": "ses_9"
+  },
+  "provider": {
+    "profile_id": "pprf_01J0000000000000000000000P",
+    "provider_id": "openai",
+    "model_id": "gpt-4.1-mini",
+    "model_version": "2025-04-14"
+  },
+  "role": "conversational_controller",
+  "channel": "interactive",
+  "envelope_id": "envl_01J0000000000000000000000E",
+  "decision_id": "edec_01J0000000000000000000000D",
+  "reservation_id": "rsv_01J0000000000000000000000V",
+  "outcome": "succeeded",
+  "error_kind": null,
+  "metering": {
+    "toks_in": 812,
+    "toks_out": 144,
+    "toks_in_cached": 512,
+    "images_in": 0,
+    "images_out": 0,
+    "audio_seconds_in": 0,
+    "audio_seconds_out": 0,
+    "file_bytes_in": 0,
+    "requests": 1
+  },
+  "metering_basis": "provider_reported",
+  "cost": {
+    "currency": "USD",
+    "reserved_micro_units": 4200,
+    "actual_micro_units": 208,
+    "basis": "price_table"
+  },
+  "latency": { "total_ms": 1420, "first_delta_ms": 380 },
+  "fallback_from": null
+}

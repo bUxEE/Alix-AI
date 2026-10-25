@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "report_id": "rdr_01J0000000000000000000000A",
+  "advisory": true,
+  "generated_at": "2026-10-12T09:00:00+02:00",
+  "scanned_root": "/home/operator/projects/clinic-booking",
+  "inputs_sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  "catalog_version": 1,
+  "catalog_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "mode": "deterministic_and_model",
+  "model": {
+    "model_id": "lite-controller",
+    "runtime": "local",
+    "qualification": "unqualified"
+  },
+  "scan": {
+    "files_scanned": 212,
+    "files_skipped": 4031,
+    "bytes_scanned": 1804332,
+    "secret_files_recorded": 2,
+    "values_redacted": 5,
+    "truncated": false
+  },
+  "checklist": [
+    {
+      "requirement_id": "req.data.read",
+      "category": "deterministic_data",
+      "check_id": "application.deterministic_results",
+      "level": "mandatory",
+      "status": "found",
+      "finding_ids": [
+        "fnd_0123456789abcdef"
+      ]
+    },
+    {
+      "requirement_id": "req.package.manifest",
+      "category": "deployment",
+      "check_id": "package.authenticity",
+      "level": "mandatory",
+      "status": "missing",
+      "finding_ids": [
+        "fnd_1111111111111111"
+      ]
+    },
+    {
+      "requirement_id": "req.documentation.capabilities",
+      "category": "documentation",
+      "check_id": "package.documentation",
+      "level": "mandatory",
+      "status": "unverified",
+      "finding_ids": [
+        "fnd_2222222222222222"
+      ]
+    }
+  ],
+  "summary": {
+    "found": 1,
+    "partial": 0,
+    "missing": 1,
+    "unverified": 1,
+    "contradicted": 0
+  },
+  "findings": [
+    {
+      "schema_version": 1,
+      "finding_id": "fnd_0123456789abcdef",
+      "requirement_id": "req.data.read",
+      "category": "deterministic_data",
+      "status": "found",
+      "source": "deterministic",
+      "check_id": "application.deterministic_results",
+      "evidence": [
+        {
+          "path": "src/api/reads.ts",
+          "line_start": 12,
+          "line_end": 48,
+          "file_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "summary": "Three read operations return schema-typed responses.",
+      "remediation": {
+        "en": "Add a typed response schema to each read operation.",
+        "it": "Aggiungere uno schema di risposta tipizzato a ogni operazione di lettura."
+      }
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "fnd_1111111111111111",
+      "requirement_id": "req.package.manifest",
+      "category": "deployment",
+      "status": "missing",
+      "source": "deterministic",
+      "check_id": "package.authenticity",
+      "evidence": [],
+      "remediation": {
+        "en": "Create alixai.yaml at the package root."
+      }
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "fnd_2222222222222222",
+      "requirement_id": "req.documentation.capabilities",
+      "category": "documentation",
+      "status": "unverified",
+      "source": "model_unverified",
+      "check_id": "package.documentation",
+      "evidence": [
+        {
+          "path": "README.md",
+          "line_start": 90,
+          "line_end": 120,
+          "file_sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        }
+      ],
+      "summary": "Three read operations return schema-typed responses.",
+      "remediation": {
+        "en": "Write one documentation entry per capability."
+      },
+      "unverified_reason": "The cited span ends past the end of the file."
+    }
+  ]
+}

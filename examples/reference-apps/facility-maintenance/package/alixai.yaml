@@ -1,0 +1,89 @@
+format: alixai.application-package/v1
+application:
+  id: facility-maintenance
+  name: Synthetic Facility Maintenance
+  version: 1.0.0
+  vendor: AlixAI reference applications
+  description: 'A synthetic facility-maintenance application (Python, FastAPI, OpenAPI transport) used as the second neutral AlixAI reference application: one tenant with many sites, three roles, risk levels 0 to 3, and an equipment-manuals folder plus a maintenance-history API as RAG sources. Every record is made up.'
+package:
+  version: 1.0.0
+  description: 'Initial integration package: list, create, assign and close work orders and start the decommissioning of assets, in English and Italian.'
+compatibility:
+  alixai_core:
+    min: 0.1.0
+    max_exclusive: 1.0.0
+endpoints:
+  facility-api:
+    transport: openapi
+    base_url: http://127.0.0.1:8788
+    spec: schemas/facility-api.openapi.yaml
+    adapter_config: schemas/adapters/facility-api.yaml
+    contract_sha256: 11a59f251697e379069df9d7ae86d5301eef4f5e1f9582a23036416c046ccae6
+context_exchange:
+  mode: context_token
+  issuer: https://facility-maintenance.example.test
+  audience: alixai
+  key_ids:
+  - alixai-test-only-publisher
+  max_lifetime_seconds: 900
+tenancy:
+  tenant:
+    label: facility operator
+    description: 'The facility operator is the one customer organisation of a deployment: a deployment serves exactly one tenant. Assets, technicians, parts and work orders never cross tenants; disposable tenants exist only for the integration audit.'
+  workspace:
+    label: site
+    description: A site is one physical location of the operator. Its assets, technicians, parts stock and work orders are the only records a request at that site can reach; a site never sees another site, even of the same operator.
+  principal_kinds:
+  - human
+  roles:
+    technician:
+      description: Field technician of one site. Sees and works on the work orders assigned to them and the ones they raised, raises new work orders and closes their own with the parts used. Never assigns work, never retires assets.
+    supervisor:
+      description: Maintenance supervisor of one site. Sees every work order of the site, raises, assigns and closes them, and is the only role that can start the decommissioning of an asset, which is completed in the application's own UI after a step-up check.
+    auditor:
+      description: 'Read-only reviewer of one site. Sees every work order of the site and nothing else: cannot raise, assign, close or decommission anything.'
+languages:
+  default: en
+  supported:
+  - en
+  - it
+capabilities:
+  workorders.list: capabilities/workorders-list.yaml
+  workorders.create: capabilities/workorders-create.yaml
+  workorders.assign: capabilities/workorders-assign.yaml
+  workorders.close: capabilities/workorders-close.yaml
+  assets.decommission: capabilities/assets-decommission.yaml
+rag_sources:
+  equipment-manuals: rag-sources/equipment-manuals.yaml
+  maintenance-history: rag-sources/maintenance-history.yaml
+model_requirements:
+  minimum_profile: lite
+  controller:
+    need: required
+    languages:
+    - en
+    - it
+    min_context_tokens: 4096
+  embedding:
+    need: optional
+retention:
+  session_state_days: 7
+  transcript_days: 30
+  action_receipt_days: 365
+  audit_days: 730
+  log_days: 14
+network:
+  default: deny
+  egress:
+    facility-loopback:
+      host: 127.0.0.1
+      ports:
+      - 8788
+      scheme: http
+      purpose: The facility-maintenance application's HTTP API on the same machine (loopback only; a test fixture)
+integrity:
+  signature_manifest: signatures/signature-manifest.json
+  hash_algorithm: sha256
+  signature_algorithm: ed25519
+  publisher_key_ids:
+  - alixai-test-only-publisher

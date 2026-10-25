@@ -1,0 +1,5 @@
+# HC-20 experiment: LOCALAI_OPAQUE_ERRORS=true replaces every error body with a blank 500.
+services:
+  localai:
+    environment:
+      LOCALAI_OPAQUE_ERRORS: "true"

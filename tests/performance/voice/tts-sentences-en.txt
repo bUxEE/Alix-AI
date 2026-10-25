@@ -1,0 +1,16 @@
+Your appointment is booked for Tuesday at ten thirty in the morning.
+Please confirm that you want to cancel your booking for Friday.
+I could not find any free slot on that day, would you like another date?
+The clinic opens at eight and closes at six in the evening.
+Your reservation for four people has been moved to seven thirty.
+Do you want to book the appointment with doctor Rossi or doctor Bianchi?
+I have sent the confirmation to the address you gave me.
+Please tell me your first name and your last name.
+The payment has not been completed, so the order is still waiting.
+You can change the time of your visit until the day before.
+Your leave request from the first to the fifth of March is waiting for approval.
+I am sorry, I did not understand, could you say it again?
+The delivery will arrive tomorrow between nine and noon.
+Do you confirm the room for two nights starting on Monday?
+The invoice has been added to your expense report.
+Thank you, your booking is confirmed and you will receive a reminder.

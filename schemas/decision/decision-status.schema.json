@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:decision:decision-status:v1",
+  "title": "DecisionStatus",
+  "description": "The safe public status surface of the optional decision layer (master plan 14.2, operations): which provider and model are configured, in what mode, how often the layer fell back and why, and how many results were accepted and rejected. It is a read-only operational view and never an authorisation result: it carries no thresholds, gates, candidate data, scores, tenant data, keys or any other authority internals, and no counter can be read as permission to do anything.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["mode", "provider_id", "accepted_count", "rejected_count", "fallback_counts", "since", "generated_at"],
+  "properties": {
+    "mode": {
+      "description": "off: the layer is disabled and every flow runs through the controller. shadow: the scorer runs and is recorded but its result is never used. advisory: gated results may inform the interpretation path; the deterministic adapter still re-resolves every selection.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "enum": ["off", "shadow", "advisory"]
+    },
+    "provider_id": {
+      "description": "The configured decision provider.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+    },
+    "model_id": {
+      "description": "The configured scorer model. Absent when none is configured.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+    },
+    "model_revision": {
+      "description": "The pinned revision of the configured model. Absent when none is configured.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/opaqueVersion"
+    },
+    "accepted_count": {
+      "description": "Results whose disposition was accepted since the counters started.",
+      "x-alixai-authority": "alixai",
+      "type": "integer",
+      "minimum": 0
+    },
+    "rejected_count": {
+      "description": "Results whose disposition was fallback since the counters started: the sum of fallback_counts.",
+      "x-alixai-authority": "alixai",
+      "type": "integer",
+      "minimum": 0
+    },
+    "fallback_counts": {
+      "description": "One entry per fallback reason that occurred since the counters started, at most one entry per reason.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "maxItems": 13,
+      "items": { "$ref": "#/$defs/fallbackCount" }
+    },
+    "since": {
+      "description": "When the counters started (process start or last reset).",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    },
+    "generated_at": {
+      "description": "When this status was read.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    }
+  },
+  "$defs": {
+    "fallbackCount": {
+      "description": "How many results fell back for one reason.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason", "count"],
+      "properties": {
+        "reason": {
+          "description": "The fallback reason.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:decision:fallback-reason:v1"
+        },
+        "count": {
+          "description": "Number of results that fell back for this reason.",
+          "x-alixai-authority": "alixai",
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

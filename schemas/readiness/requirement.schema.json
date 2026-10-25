@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:readiness:requirement:v1",
+  "title": "ReadinessRequirement",
+  "description": "One entry of the readiness requirement catalog (master plan 9.5, ADR 0037; internal/readiness/catalog). The catalog is derived from what already exists: the integration audit check ids, the application package layout of master plan 9 and the transports of 9.3. Each requirement names the audit check it feeds, so a covered readiness checklist points at what the audit will then verify. A requirement states what the project should contain; it is advisory and describes no certification, authorisation or approval. English and Italian are both mandatory.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "category", "check_id", "level", "title", "description", "satisfied_by", "how_satisfied", "remediation"],
+  "properties": {
+    "schema_version": {
+      "description": "The contract generation of this document.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/schemaVersion"
+    },
+    "id": {
+      "description": "The stable requirement ID.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/requirementId"
+    },
+    "category": {
+      "description": "What kind of thing the requirement is about.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/category"
+    },
+    "check_id": {
+      "description": "The integration audit check this requirement feeds. It must name a check registered in internal/integrationaudit; a test enforces it.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/checkId"
+    },
+    "level": {
+      "description": "Whether the requirement is mandatory or recommended.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/level"
+    },
+    "title": {
+      "description": "A short name, in English and Italian.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/localizedText"
+    },
+    "description": {
+      "description": "What the project should contain and why the audit needs it, in English and Italian.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/localizedText"
+    },
+    "satisfied_by": {
+      "description": "The finding sources that can cover the requirement: a deterministic rule, a verified model finding, or both. At least one. A model_unverified finding never covers a requirement.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": { "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/satisfiedBy" }
+    },
+    "how_satisfied": {
+      "description": "What a rule looks for and, when a verified model finding can also cover it, what evidence that finding must cite, in English and Italian.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/localizedText"
+    },
+    "remediation": {
+      "description": "What to do when the requirement is missing, partial or contradicted, in English and Italian.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:readiness:shared:v1#/$defs/localizedText"
+    }
+  }
+}

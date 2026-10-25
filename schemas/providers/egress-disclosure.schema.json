@@ -1,0 +1,213 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:providers:egress-disclosure:v1",
+  "title": "Egress disclosure",
+  "description": "What the host application can show a user before a request leaves the deployment (additive plan section 6.3): which provider and model will process it, which data categories and classes may leave, whether RAG excerpts are included, the provider retention and training terms where known, the expected cost or budget state, and whether the request will fail or fall back when the provider is unavailable. It is computed by the core from the effective policy, the profile and the budget and contains no content. Every member is alixai: a host cannot set or edit a disclosure.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "generated_at",
+    "provider",
+    "role",
+    "external_enabled",
+    "data_classes",
+    "data_categories",
+    "rag_excerpts_included",
+    "regions",
+    "terms",
+    "cost",
+    "on_unavailable"
+  ],
+  "properties": {
+    "generated_at": {
+      "description": "When the disclosure was computed.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    },
+    "provider": {
+      "description": "The exact provider, model and version that would process the request.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/providerRef"
+    },
+    "role": {
+      "description": "The role the request would serve.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/role"
+    },
+    "external_enabled": {
+      "description": "Whether the effective policy lets this request leave at all. false means the request stays local.",
+      "x-alixai-authority": "alixai",
+      "type": "boolean"
+    },
+    "data_classes": {
+      "description": "The data classes that may leave under the effective policy. Empty when nothing may leave.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "items": { "$ref": "urn:alixai:schema:providers:data-classification:v1#/$defs/egressEligibleClass" },
+      "maxItems": 3,
+      "uniqueItems": true
+    },
+    "data_categories": {
+      "description": "The data categories that may leave.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "items": { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/sendCategory" },
+      "maxItems": 11,
+      "uniqueItems": true
+    },
+    "rag_excerpts_included": {
+      "description": "Whether RAG excerpts would be part of the request.",
+      "x-alixai-authority": "alixai",
+      "type": "boolean"
+    },
+    "regions": {
+      "description": "The regions the provider processes in, from its profile. Empty when the residency is unknown.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "items": { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/regionCode" },
+      "maxItems": 32,
+      "uniqueItems": true
+    },
+    "terms": {
+      "description": "The provider retention and training terms recorded in the profile, as the provider stated them. unknown values are shown as unknown, never guessed.",
+      "x-alixai-authority": "alixai",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["retention", "retention_days", "training_use", "residency"],
+      "properties": {
+        "retention": {
+          "description": "Retention of request content.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/retentionMode"
+        },
+        "retention_days": {
+          "description": "Days retained when retention is limited, else null.",
+          "x-alixai-authority": "alixai",
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3650
+            },
+            { "type": "null" }
+          ]
+        },
+        "training_use": {
+          "description": "Whether the provider may train on request content.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/trainingUse"
+        },
+        "residency": {
+          "description": "How the provider places processing.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/residency"
+        }
+      }
+    },
+    "cost": {
+      "description": "Expected cost class: an upper bound in integer micro-units, or null when the profile has no price for the request, and the budget state it would be charged against.",
+      "x-alixai-authority": "alixai",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["currency", "estimate_upper_micro_units", "budget_state"],
+      "properties": {
+        "currency": {
+          "description": "The operator currency.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/currency"
+        },
+        "estimate_upper_micro_units": {
+          "description": "Upper bound of the cost of the request, or null when no price is known. Never a float.",
+          "x-alixai-authority": "alixai",
+          "oneOf": [
+            { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/microUnits" },
+            { "type": "null" }
+          ]
+        },
+        "budget_state": {
+          "description": "The state of the budget the request would be charged to. exhausted means the request would be refused.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/budgetStatus"
+        }
+      }
+    },
+    "on_unavailable": {
+      "description": "What happens when the provider is unavailable: the request fails, or falls back to the one profile policy names. There is no other behaviour and no hidden fallback.",
+      "x-alixai-authority": "alixai",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["behavior", "fallback_profile_id"],
+      "properties": {
+        "behavior": {
+          "description": "fail: report unavailable. fallback: use fallback_profile_id.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "enum": ["fail", "fallback"]
+        },
+        "fallback_profile_id": {
+          "description": "The named fallback profile, or null.",
+          "x-alixai-authority": "alixai",
+          "oneOf": [
+            { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/profileId" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "description": "A fallback names its profile; a failure names none.",
+          "if": {
+            "required": ["behavior"],
+            "properties": {
+              "behavior": { "const": "fallback" }
+            }
+          },
+          "then": {
+            "properties": {
+              "fallback_profile_id": { "type": "string" }
+            }
+          },
+          "else": {
+            "properties": {
+              "fallback_profile_id": { "type": "null" }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "description": "When nothing may leave, nothing is listed as leaving.",
+      "if": {
+        "required": ["external_enabled"],
+        "properties": {
+          "external_enabled": { "const": false }
+        }
+      },
+      "then": {
+        "properties": {
+          "data_classes": { "maxItems": 0 },
+          "data_categories": { "maxItems": 0 },
+          "rag_excerpts_included": { "const": false }
+        }
+      }
+    },
+    {
+      "description": "Excerpts are listed as included only if the category rag_excerpt may leave.",
+      "if": {
+        "required": ["rag_excerpts_included"],
+        "properties": {
+          "rag_excerpts_included": { "const": true }
+        }
+      },
+      "then": {
+        "properties": {
+          "data_categories": {
+            "contains": { "const": "rag_excerpt" }
+          }
+        }
+      }
+    }
+  ]
+}

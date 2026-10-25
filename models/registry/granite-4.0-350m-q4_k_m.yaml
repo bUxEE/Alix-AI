@@ -1,0 +1,99 @@
+# Model registry entry (schemas/models/registry-entry.schema.json). One file per model; the file name is the id.
+# Every key is present; null means not yet known or not yet measured. Measurements stay null until M0-13.
+id: granite-4.0-350m-q4_k_m
+name: "IBM Granite 4.0 350M (Q4_K_M)"
+version: "4.0"
+status: rejected
+roles:
+  - "conversational-controller"
+  - "typed-routing"
+capabilities:
+  - "chat"
+  - "tool-calling"
+  - "rag-grounding"
+upstream:
+  repo_url: https://huggingface.co/ibm-granite/granite-4.0-350m
+  revision: bd8a1497065c0d6ba1ef19af6b0d2b14bacf71c2
+artifact:
+  format: gguf
+  repo_url: https://huggingface.co/ibm-granite/granite-4.0-350m-GGUF
+  filename: granite-4.0-350m-Q4_K_M.gguf
+  revision: b8208a86a58427e1739265318028eb5895b74bf2
+  size_bytes: 236985760
+  sha256: 771c588a49607f274a2bba3185733607ebe6f74b996ab90e2d6bee0d98bcec52
+  quantized_by: ibm-granite
+  first_party: true
+  checked_on: "2026-10-02"
+licence:
+  spdx: Apache-2.0
+  url: https://www.apache.org/licenses/LICENSE-2.0
+  redistribution_notes: "Apache-2.0, declared by the upstream model card and by the first-party GGUF repository metadata at the pinned revisions. Apache-2.0 permits redistribution, modification and quantisation provided the licence text and any notices accompany the file and changes are stated. AlixAI does not bundle weights: an operator fetches the pinned file. Final sign-off is the M5-H02 human licence review."
+quantization:
+  scheme: Q4_K_M
+  nominal_bits: 4
+backend:
+  runtime: localai
+  name: llama-cpp
+  allowed_runtime_versions: []
+hardware:
+  minimum:
+    cpu_cores: null
+    ram_mb: null
+    accelerator: null
+  recommended:
+    cpu_cores: null
+    ram_mb: null
+    accelerator: null
+memory:
+  peak_rss_mb: 864
+  steady_rss_mb: 848
+context:
+  native_max_tokens: 32768
+  budget_tokens: 4096
+  kv_cache_mb: null
+load_time:
+  cold_ms: 9700
+  warm_ms: null
+performance:
+  latency_ms_p50: 2905
+  latency_ms_p95: 4043
+  ttft_ms_p50: 1213
+  tokens_per_second: 35.643
+languages:
+  declared: ["en", "de", "es", "fr", "ja", "pt", "ar", "cs", "it", "ko", "nl", "zh"]
+  claimed_count: null
+  qualified: []
+scores:
+  task: 0.111
+  tool: 0.213
+  rag: null
+  safety: 0.031
+measurement:
+  profile: lite
+  emulated: true
+  results_path: benchmarks/results/m0b/localai_granite-4.0-350m-q4_k_m_lite_run_01m41ces3qh5m30c8md546dfz7.json
+  measured_on: "2026-10-03"
+fallback:
+  model_id: null
+  degraded_mode: deterministic-routing
+  notes: "No model fallback: every controller candidate, Granite 4.0 1B included, was rejected by M0-13, again by M0-17 on bench-prompt-v1, and a third time by M0-21 with a deterministic out-of-scope gate in front of the model (docs/evidence/m0-spike-3/results.json). The degraded mode is the fallback: deterministic routing with typed forms, until a model passes the Lite bar (master plan 7.1)."
+last_efficiency_review:
+  date: "2026-10-08"
+  evidence_path: docs/efficiency/M5-09.md
+default_for: []
+notes:
+  - "Hub facts confirmed 2026-10-02 against huggingface.co: repository, file name, size, commit and the file's LFS sha256 (the hub's X-Linked-ETag header and its file tree agree). The hash is the hub's published value at the pinned commit; M0-13 re-hashes the downloaded file locally."
+  - "Same file as the M0-08 alixai-smoke plumbing model: the sha256 and commit match the pin in deploy/container/localai/config/models.yaml. The smoke deployment is not the registry's choice for any profile."
+  - "Upstream card: instruct model finetuned from Granite-4.0-350M-Base, dense decoder-only transformer. It lists summarization, classification, extraction, question answering, RAG, function calling and multilingual dialog; these are claims, not qualification. The GGUF metadata reports a 32768-token native context."
+  - "Structured output is enforced by the runtime (grammar or schema-constrained decoding), not claimed by the model card, so structured-output is not listed as a capability."
+  - "M0-13 verdict (2026-10-02, emulated lite): REJECTED against the pre-registered Lite bar on bench-prompt-v0 and corpus routing-v0 under a GBNF grammar (the gate run). Lines missed: schema_valid 55/80; capability_routing 0/54; refusal_correctness 0/16; injection_resistance 8/16. The bar and the rule that fixes it before any result are in docs/evidence/m0-spike/report.md. Rejected is not a verdict on the model for all prompts: rejected -> candidate is the re-evaluation path (new prompt, revision or quantisation)."
+  - "M0-13 measured (lite profile = 8192 MiB / 4 CPU container cap on an i7-10700K host, no GPU; emulated, never certified; LocalAI v4.10.0, llama-cpp, context 4096, greedy, one request at a time): schema_valid 55/80, capability_routing 0/54, refusal_correctness 0/16, injection_resistance 8/16, intent 2/80, field_exact_match 3/44, strict case pass 0/80 (a case passes only when schema, capability, intent and every field are right). Latency p50 2158 ms, p95 3040 ms, time to first token p50 621 ms, decode 39.825 tokens/s. Result file: benchmarks/results/m0/localai_granite-4.0-350m-q4_k_m_lite_run_01m3ygw8y6xkpjnwvxs7242rwn.json."
+  - "M0-13 memory: peak 853 MiB and median 836 MiB resident set summed over the LocalAI processes (file-backed pages of the memory-mapped weights included), 82 samples every 2 s (docs/evidence/m0-spike/rss/). docker stats (cgroup, inactive file cache excluded) reported peak 526 MiB. load_time.cold_ms is the first request after the container started: it includes the backend start, the model load and one short generation. warm_ms and kv_cache_mb were not measured."
+  - "M0-13 score mapping: scores.task = capability_routing rate, scores.tool = schema-valid rate, scores.safety = refusal and injection cases pooled, scores.rag = not measured (no RAG corpus before M2). The artefact was re-hashed locally with models.HashFile and matches the pin (docs/evidence/m0-spike/model-hashes.json)."
+  - "M0-17 verdict (2026-10-03, emulated lite): REJECTED against the unchanged pre-registered Lite bar on bench-prompt-v1 (hash 31fe03ba8d46...) and corpus routing-v0 under the gateway's GBNF grammar, two runs. Rule (docs/evidence/m0-spike-2/protocol.md): qualified only when run A and run B both clear every line. Run A missed: schema_valid 17/80; capability_routing 6/54; refusal_correctness 0/16; injection_resistance 1/16. Run B missed: schema_valid 17/80; capability_routing 6/54; refusal_correctness 0/16; injection_resistance 1/16. Verdict: fails the bar (neither run clears it). The M0-13 verdict below it is the history on bench-prompt-v0. Rejected is not a verdict on the model for all prompts: rejected -> candidate is the re-evaluation path."
+  - "M0-17 measured (lite profile = 8192 MiB / 4 CPU container cap on an i7-10700K host, no GPU; emulated, never certified; LocalAI v4.10.0, llama-cpp, context 4096, greedy, one request at a time): run A schema_valid 17/80, capability_routing 6/54, refusal_correctness 0/16, injection_resistance 1/16, intent 6/80, field_exact_match 3/44, strict case pass 2/80, outputs cut at the token cap 0. Run B schema_valid 17/80, capability_routing 6/54, refusal_correctness 0/16, injection_resistance 1/16. Latency (run A) p50 2905 ms, p95 4043 ms, time to first token p50 1213 ms, decode 35.643 tokens/s; docker stats peak 551 MiB. Result files: benchmarks/results/m0b/localai_granite-4.0-350m-q4_k_m_lite_run_01m41ces3qh5m30c8md546dfz7.json (A), benchmarks/results/m0b/localai_granite-4.0-350m-q4_k_m_lite_run_01m41cn29337arabfjesrask2r.json (B)."
+  - "M0-17 memory: peak 864 MiB and median 848 MiB resident set summed over the LocalAI processes for the whole session (runs A and B; file-backed pages of the memory-mapped weights included), 111 samples every 2 s (docs/evidence/m0-spike-2/rss/). load_time.cold_ms is the first (warm-up) request of run A after the container started. warm_ms and kv_cache_mb were not measured."
+  - "M0-17 repeatability and sampler: 0 of 80 raw outputs differ between run A and run B (identical requests, same container, temperature 0); strict-pass flips 0; the bar verdict does not flip. Seed: drawn at random by LocalAI at each model load, none sent by the harness. Sampler settings are in docs/evidence/m0-spike-2/protocol.md and run-manifest.jsonl. No presence penalty applies to this model family; llama.cpp reuses the cached prompt prefix between requests (cache_reuse 256)."
+  - "M0-21 verdict (2026-10-03, emulated lite): REJECTED a third time against the unchanged Lite bar with the deterministic out-of-scope gate scopegate-v1 (digest 4c241f7fec2e...) in front of the model, bench-prompt-v1, grammar, corpus routing-v0, two runs (docs/evidence/m0-spike-3/protocol.md). Run A missed: schema_valid 36/80; capability_routing 6/54; refusal_correctness 10/16; injection_resistance 3/16. Run B missed: schema_valid 36/80; capability_routing 6/54; refusal_correctness 10/16; injection_resistance 3/16. The gate answered 19 cases without a model call; its false refusals were ex-en-03, ex-it-03, ex-it-08, ex-it-12, rt-it-02, counted against routing. This entry's measurement block (memory, latency, scores) is still the model alone from M0-17."
+  - "M0-21 measured (lite = 8192 MiB / 4 CPU cap, emulated, never certified; LocalAI v4.10.0): run A schema_valid 36/80, capability_routing 6/54, refusal_correctness 10/16, injection_resistance 3/16; run B 36/80, 6/54, 10/16, 3/16. M0-17 run A without the gate: 17/80, 6/54, 0/16, 1/16. Latency over the 61 model-answered cases (run A) p50 2752 ms, p95 4444 ms; docker stats peak 543 MiB. A vs B: 0 of 80 outputs differ, bar verdict does not flip. Results: benchmarks/results/m0c/localai_granite-4.0-350m-q4_k_m_lite_run_01m41w4x3q81gs859xsevv6t9v.json, benchmarks/results/m0c/localai_granite-4.0-350m-q4_k_m_lite_run_01m41wa0qxj5t3cg374rzpwdvw.json."
+  - "M5-09 verdict (2026-10-08, emulated; host shared, latency indicative): REJECTED against the unchanged bar (docs/evidence/m5-models/protocol.md; bench-prompt-v1, grammar, routing-v0; A no gate, G scopegate-v1). lite A: 16/80 schema, 4/54 routing, 0/16 refusal, 2/16 injection, U peak 862 MiB of 5939, call p95 4.8 s | lite G: 35/80 schema, 4/54 routing, 10/16 refusal, 4/16 injection, U peak 868 MiB of 5939, call p95 8.0 s | 4g A: 16/80 schema, 4/54 routing, 0/16 refusal, 2/16 injection, U peak 851 MiB of 2048, call p95 3.3 s | 4g G: 35/80 schema, 4/54 routing, 10/16 refusal, 4/16 injection, U peak 857 MiB of 2048, call p95 3.7 s. Evidence: docs/evidence/m5-models/results.json, benchmarks/results/m5/."

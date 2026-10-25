@@ -1,0 +1,12 @@
+{
+  "capability_id": "appointments.book",
+  "fields": {
+    "slot_date": "2026-10-15"
+  },
+  "entity_refs": [],
+  "intent": "correction",
+  "uncertainty": {
+    "overall": 0.8
+  },
+  "trace_id": "trc_01J0000000000000000000000R"
+}

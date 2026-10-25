@@ -1,0 +1,67 @@
+capability_id: workorders.assign
+language: it
+contract_version: 1.0.0
+terminology:
+- work_order
+- technician
+- site
+- assignment
+field_prompts:
+- field: work_order
+  label: Ordine di lavoro
+  prompt: Quale ordine di lavoro? Dammi il riferimento, come WO-1001, oppure descrivilo.
+  examples:
+  - WO-1001
+- field: technician
+  label: Tecnico
+  prompt: Chi deve occuparsene? Dimmi il nome del tecnico.
+  examples:
+  - Marco Bianchi
+- field: note
+  label: Nota
+  prompt: C'è qualcosa che il tecnico deve sapere? Puoi saltare.
+clarifications:
+- rule_id: work_order_multiple
+  prompt: Più di un ordine di lavoro corrisponde a {input.work_order}. Quale intendi?
+- rule_id: technician_multiple
+  prompt: Più di un tecnico corrisponde a {input.technician}. Quale intendi?
+corrections:
+  acknowledgement: D'accordo, l'ho modificato.
+  correctable_fields:
+  - work_order
+  - technician
+  - note
+  prepared_action_invalidated: Questo cambia l'assegnazione, quindi il riepilogo precedente non vale più. La preparerò di nuovo e ti chiederò di confermare i nuovi dettagli.
+cancellations:
+  acknowledgement: D'accordo, mi sono fermato. Non ho assegnato nulla.
+confirmations:
+  request: 'Conferma: assegnare l''ordine di lavoro {work_order_id} ({work_order_title}) a {technician_name}. Il tecnico riceverà una notifica. Procedo con l''assegnazione?'
+  declined: D'accordo, non ho assegnato nulla.
+  expired: Questa assegnazione non è più valida, quindi non ho assegnato nulla. Posso prepararla di nuovo, se vuoi.
+success:
+- outcome: assigned
+  text: Fatto. L'ordine di lavoro {work_order_id} è assegnato a {technician_name}. Il tecnico è stato avvisato (riferimento {notification_reference}).
+failures:
+- code: permission_denied
+  text: Non hai il permesso di farlo, quindi non ho cambiato nulla.
+- code: scope_violation
+  text: 'Non posso farlo: il record non è disponibile per te. Non ho cambiato nulla.'
+- code: validation_failed
+  text: 'Non ho potuto assegnarlo: la nota può essere lunga al massimo 200 caratteri. Non ho assegnato nulla.'
+- code: conflict
+  text: 'Non ho potuto assegnarlo: l''ordine di lavoro è chiuso o già assegnato a quel tecnico, oppure il tecnico è inattivo o ha già 5 ordini di lavoro aperti. Non ho assegnato nulla.'
+- code: stale
+  text: Un record è cambiato dopo che l'avevo preparato, quindi non l'ho applicato. Non ho cambiato nulla; posso prepararlo di nuovo.
+- code: expired
+  text: Non è stato confermato in tempo, oppure è stato ritirato, quindi non ho cambiato nulla.
+- code: uncertain_outcome
+  text: Non sono riuscito a confermare se è stato applicato. Controllerò prima di fare altro, quindi per ora non chiederlo di nuovo.
+- code: missing_fields
+  text: Mi servono ancora alcuni dettagli prima di poterlo fare. Non ho cambiato nulla.
+- code: unavailable
+  text: Il sistema di manutenzione al momento non è raggiungibile, quindi non ho cambiato nulla.
+next_actions:
+- id: show_open_orders
+  label: Mostra gli ordini di lavoro aperti
+- id: show_orders_after_failure
+  label: Mostra gli ordini di lavoro

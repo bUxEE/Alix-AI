@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:voice:client-message:v1",
+  "title": "ClientMessage",
+  "description": "One JSON (text) message a client sends on the voice socket GET /v1/sessions/{session_id}/voice, discriminated by type. Binary messages are not JSON: while a capture is active each binary message is one chunk of audio in the format of capture.start. A message the schema does not describe, or an unknown type, is answered with an error event and changes nothing. There is deliberately no message that confirms, rejects or chooses: speech never confirms an action (a confirmation is the structured input of POST /v1/sessions/{session_id}/turns), and nothing here can widen the scope the context token gave the connection.",
+  "oneOf": [
+    { "$ref": "#/$defs/captureStart" },
+    { "$ref": "#/$defs/captureEnd" },
+    { "$ref": "#/$defs/captureCancel" },
+    { "$ref": "#/$defs/audioSubmit" },
+    { "$ref": "#/$defs/playbackCancel" },
+    { "$ref": "#/$defs/transcriptCorrect" }
+  ],
+  "$defs": {
+    "captureStart": {
+      "description": "Start streaming audio. The binary messages that follow are the audio, until capture.end or capture.cancel. A capture that starts while speech is playing cancels the playback at once (barge-in).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "format"],
+      "properties": {
+        "type": { "const": "capture.start" },
+        "format": { "$ref": "urn:alixai:schema:voice:shared:v1#/$defs/audioFormat" },
+        "language": { "$ref": "urn:alixai:schema:voice:shared:v1#/$defs/language" }
+      }
+    },
+    "captureEnd": {
+      "description": "No more audio follows: the transcript is finalised and enters the turn pipeline.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "capture.end" }
+      }
+    },
+    "captureCancel": {
+      "description": "Discard the capture in progress: nothing is transcribed into a turn and nothing is kept.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "capture.cancel" }
+      }
+    },
+    "audioSubmit": {
+      "description": "Submit one finalised utterance as a single message instead of streaming it. A submission that starts while speech is playing cancels the playback at once (barge-in).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "format", "audio"],
+      "properties": {
+        "type": { "const": "audio.submit" },
+        "format": { "$ref": "urn:alixai:schema:voice:shared:v1#/$defs/audioFormat" },
+        "language": { "$ref": "urn:alixai:schema:voice:shared:v1#/$defs/language" },
+        "audio": {
+          "description": "The whole utterance, raw PCM in format, base64 encoded (at most 8 MiB of audio).",
+          "type": "string",
+          "contentEncoding": "base64",
+          "minLength": 4,
+          "maxLength": 11184812
+        }
+      }
+    },
+    "playbackCancel": {
+      "description": "Stop the speech that is playing now. Synthesis is cancelled at once and no further audio is sent.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "playback.cancel" }
+      }
+    },
+    "transcriptCorrect": {
+      "description": "Replace the transcript of the latest utterance with corrected text, before any consequential confirmation. The corrected text runs through the same turn pipeline on the same session as a new message; a preparation made from the old transcript is voided by the pipeline's own correction rules and cannot be confirmed. A correction after a newer utterance is refused (stale).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "utterance_id", "text"],
+      "properties": {
+        "type": { "const": "transcript.correct" },
+        "utterance_id": { "$ref": "urn:alixai:schema:voice:shared:v1#/$defs/utteranceId" },
+        "text": { "type": "string", "minLength": 1, "maxLength": 2000 }
+      }
+    }
+  }
+}

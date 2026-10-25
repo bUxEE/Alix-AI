@@ -1,0 +1,105 @@
+{
+  "profile_id": "pprf_01J0000000000000000000000P",
+  "provider_id": "gemini",
+  "endpoint": "https://api.openai.example.com/v1",
+  "model_id": "gemini-2.5-flash",
+  "model_version": "001",
+  "roles": ["conversational_controller", "vision", "image_generation", "stt", "tts"],
+  "cred_ref": null,
+  "modalities": { "input": ["text", "image", "audio", "file"], "output": ["text", "image", "audio"] },
+  "streaming": true,
+  "structured_output": "strict_schema",
+  "tool_calling": {
+    "supported": true,
+    "strict_arguments": true,
+    "parallel_calls": true,
+    "max_tools": 128
+  },
+  "remote_mcp": { "supported": true },
+  "native_features": { "available": ["agents", "file_search"] },
+  "limits": {
+    "max_context_toks": 128000,
+    "max_output_toks": 16384,
+    "max_request_bytes": 10485760
+  },
+  "image_generation": {
+    "supported": true,
+    "max_images_per_request": 4,
+    "output_retention": "limited"
+  },
+  "voice": {
+    "stt": true,
+    "tts": true,
+    "realtime": true,
+    "audio_retention": "transient"
+  },
+  "terms": {
+    "retention": "limited",
+    "retention_days": 30,
+    "training_use": "never",
+    "terms_url": "https://openai.example.com/policies/terms",
+    "terms_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "recorded_on": "2026-10-01"
+  },
+  "region": {
+    "residency": "selectable",
+    "processing_regions": ["us", "eu"],
+    "compliance": ["gdpr_dpa", "soc2_type2"]
+  },
+  "rate_limits": {
+    "requests_per_min": 500,
+    "toks_per_min": 200000,
+    "concurrent_requests": null,
+    "retry": {
+      "max_attempts": 2,
+      "initial_backoff_ms": 500,
+      "max_backoff_ms": 8000,
+      "honors_retry_after": true
+    }
+  },
+  "pricing": {
+    "currency": "USD",
+    "effective_on": "2026-10-01",
+    "source_url": "https://openai.example.com/pricing",
+    "prices": {
+      "toks_in": { "per_units": 1000000, "micro_units": 150000 },
+      "toks_out": { "per_units": 1000000, "micro_units": 600000 }
+    }
+  },
+  "usage_metering": "per_response",
+  "permitted_scopes": [
+    { "application_id": "app_crm", "tenant_id": "ten_42" }
+  ],
+  "allowed_data_classes": ["public", "internal"],
+  "fallback": { "profile_id": "pprf_01J0000000000000000000000Q", "on": ["unavailable", "timeout"] },
+  "last_policy_review": "2026-10-01",
+  "review_interval_days": 30,
+  "billing_notice": {
+    "version": "2026-10-02.1",
+    "text": "A ChatGPT subscription does not include API access. API usage is billed separately by the provider.",
+    "url": "https://platform.openai.example.com/billing",
+    "subscription_grants_api_access": false
+  },
+  "billing_notice_ack": null,
+  "last_conformance": null,
+  "lifecycle": "candidate",
+  "created_at": "2026-10-02T08:00:00Z",
+  "updated_at": "2026-10-02T10:05:00Z",
+  "media": {
+    "files": {
+      "max_bytes": 52428800,
+      "mime_types": ["application/pdf"],
+      "retention": "transient"
+    },
+    "images": {
+      "max_bytes": 20971520,
+      "mime_types": ["image/png", "image/jpeg"],
+      "retention": "transient"
+    },
+    "audio": {
+      "max_bytes": 20971520,
+      "mime_types": ["audio/wav", "audio/mpeg"],
+      "retention": "transient"
+    }
+  }
+}

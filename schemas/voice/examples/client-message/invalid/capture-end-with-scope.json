@@ -1,0 +1,6 @@
+{
+  "type": "capture.end",
+  "scope": {
+    "tenant_id": "other"
+  }
+}

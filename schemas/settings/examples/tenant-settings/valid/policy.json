@@ -1,0 +1,29 @@
+{
+  "default_language": "en",
+  "default_model_profile": "lite",
+  "voice": {
+    "allowed": false
+  },
+  "history": {
+    "retention_days": 90,
+    "export_allowed": true
+  },
+  "privacy": {
+    "transcript_allowed": true
+  },
+  "attachments": {
+    "allowed": true,
+    "max_file_mb": 5
+  },
+  "notifications": {
+    "allowed": false
+  },
+  "capabilities": {
+    "disabled": [
+      "items.create"
+    ]
+  },
+  "confirmation": {
+    "extra_from_risk_level": 1
+  }
+}

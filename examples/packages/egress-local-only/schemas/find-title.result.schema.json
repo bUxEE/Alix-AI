@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Result of the catalogue search",
+  "type": "object",
+  "required": ["status", "count", "titles", "as_of"],
+  "additionalProperties": false,
+  "properties": {
+    "status": { "enum": ["ok", "unavailable"] },
+    "count": { "type": "integer", "minimum": 0, "maximum": 20 },
+    "as_of": { "type": "string", "format": "date-time" },
+    "titles": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "required": ["title_id", "name", "available"],
+        "additionalProperties": false,
+        "properties": {
+          "title_id": { "type": "string", "maxLength": 64 },
+          "name": { "type": "string", "maxLength": 300 },
+          "available": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

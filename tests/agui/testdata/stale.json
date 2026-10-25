@@ -1,0 +1,185 @@
+{
+  "name": "stale",
+  "description": "The data the action was prepared against changed before the user approved. The application refuses the commit as stale, nothing is created, the run ends with RUN_ERROR (never a success-looking finish) and the confirmation call is resolved as failed.",
+  "protocol": "AG-UI 1.0 (@ag-ui/core 1.0.1)",
+  "source": "engine",
+  "request": {
+    "method": "POST",
+    "path": "/v1/agui",
+    "headers": {
+      "X-AlixAI-Confirmation-Token": "<the confirmation secret the run that prepared the action returned in this header>"
+    },
+    "body": {
+      "context": [],
+      "forwardedProps": {},
+      "messages": [],
+      "resume": [
+        {
+          "interruptId": "prep_01J00000000000000000000001",
+          "payload": {
+            "approved": true
+          },
+          "status": "resolved"
+        }
+      ],
+      "runId": "run_stale",
+      "state": {},
+      "threadId": "ses_test_01",
+      "tools": []
+    }
+  },
+  "response": {
+    "status": 200,
+    "content_type": "text/event-stream",
+    "sse_file": "stale.sse",
+    "ids": [
+      "0",
+      "1",
+      "2",
+      "4",
+      "5"
+    ],
+    "event_types": [
+      "RUN_STARTED",
+      "STATE_DELTA",
+      "STEP_STARTED",
+      "STEP_FINISHED",
+      "STEP_STARTED",
+      "STEP_FINISHED",
+      "CUSTOM",
+      "TEXT_MESSAGE_START",
+      "TEXT_MESSAGE_CONTENT",
+      "TEXT_MESSAGE_END",
+      "TOOL_CALL_RESULT",
+      "STATE_DELTA",
+      "RUN_ERROR"
+    ],
+    "events": [
+      {
+        "type": "RUN_STARTED",
+        "threadId": "ses_test_01",
+        "runId": "run_stale"
+      },
+      {
+        "type": "STATE_DELTA",
+        "delta": [
+          {
+            "op": "add",
+            "path": "/alixai",
+            "value": {
+              "pending": {
+                "capabilityId": "items.create",
+                "collectedFields": [
+                  {
+                    "name": "name",
+                    "origin": "user_turn"
+                  },
+                  {
+                    "name": "quantity",
+                    "origin": "user_turn"
+                  },
+                  {
+                    "name": "size",
+                    "origin": "user_turn"
+                  }
+                ],
+                "expiresAt": "2026-10-02T12:05:00Z",
+                "kind": "confirmation",
+                "missingFields": [],
+                "phase": "prepared",
+                "preparationId": "prep_01J00000000000000000000001"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "committing"
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "committing"
+      },
+      {
+        "type": "STEP_STARTED",
+        "stepName": "verifying"
+      },
+      {
+        "type": "STEP_FINISHED",
+        "stepName": "verifying"
+      },
+      {
+        "type": "CUSTOM",
+        "name": "alixai.directive",
+        "value": {
+          "turn_id": "trn_01J00000000000000000000001",
+          "capability_id": "items.create",
+          "act": "report_failure",
+          "facts": [],
+          "must_state": [],
+          "missing_fields": [],
+          "invalid_fields": [],
+          "allowed_suggestions": [],
+          "confirmation": {
+            "mode": "none",
+            "bindings": []
+          },
+          "permitted_next_actions": [],
+          "sources": [],
+          "reason_code": "stale"
+        }
+      },
+      {
+        "type": "TEXT_MESSAGE_START",
+        "messageId": "msg_trn_01J00000000000000000000001_1",
+        "role": "assistant"
+      },
+      {
+        "type": "TEXT_MESSAGE_CONTENT",
+        "messageId": "msg_trn_01J00000000000000000000001_1",
+        "delta": "Sorry, this could not be carried out.\nThe information is out of date. Please start again."
+      },
+      {
+        "type": "TEXT_MESSAGE_END",
+        "messageId": "msg_trn_01J00000000000000000000001_1"
+      },
+      {
+        "type": "TOOL_CALL_RESULT",
+        "messageId": "msg_trn_01J00000000000000000000001_r1",
+        "toolCallId": "alixai_confirm_prep_01J00000000000000000000001",
+        "content": "{\"code\":\"stale\",\"preparationId\":\"prep_01J00000000000000000000001\",\"status\":\"failed\"}",
+        "role": "tool"
+      },
+      {
+        "type": "STATE_DELTA",
+        "delta": [
+          {
+            "op": "replace",
+            "path": "/alixai/pending/expiresAt",
+            "value": "2026-10-02T12:30:00Z"
+          },
+          {
+            "op": "replace",
+            "path": "/alixai/pending/kind",
+            "value": "goal"
+          },
+          {
+            "op": "replace",
+            "path": "/alixai/pending/phase",
+            "value": "failure"
+          },
+          {
+            "op": "remove",
+            "path": "/alixai/pending/preparationId"
+          }
+        ]
+      },
+      {
+        "type": "RUN_ERROR",
+        "message": "Sorry, this could not be carried out.\nThe information is out of date. Please start again.",
+        "code": "stale"
+      }
+    ]
+  }
+}

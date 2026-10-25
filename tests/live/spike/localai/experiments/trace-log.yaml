@@ -1,0 +1,5 @@
+# HC-34 experiment: what does trace logging print? (Never in production.)
+services:
+  localai:
+    environment:
+      LOCALAI_LOG_LEVEL: trace

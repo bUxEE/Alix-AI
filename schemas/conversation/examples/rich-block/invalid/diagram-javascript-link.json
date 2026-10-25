@@ -1,0 +1,7 @@
+{
+  "type": "diagram",
+  "language": "mermaid",
+  "requires_host_renderer": true,
+  "description": "Booking flow: the user asks, the clinic app validates, the user confirms, the clinic app commits.",
+  "source": "flowchart LR\n  A --> B\n  %% see javascript:alert(1)"
+}

@@ -1,0 +1,53 @@
+{
+  "turn_id": "trn_01J0000000000000000000000A",
+  "capability_id": "appointments.book",
+  "act": "disambiguate",
+  "facts": [
+    {
+      "field": "doctor",
+      "value": {
+        "kind": "text",
+        "value": "Dr. Rossi"
+      }
+    }
+  ],
+  "must_state": [],
+  "missing_fields": [],
+  "invalid_fields": [],
+  "next_question": {
+    "field": "doctor",
+    "answer_kind": "choice",
+    "choices": [
+      {
+        "choice_id": "d1",
+        "label": "Dr. Rossi (cardiology)",
+        "value": {
+          "kind": "identifier",
+          "value": "doc_17"
+        },
+        "description": "Mon, Wed"
+      },
+      {
+        "choice_id": "d2",
+        "label": "Dr. Rossi (dermatology)",
+        "value": {
+          "kind": "identifier",
+          "value": "doc_29"
+        },
+        "description": "Tue, Thu"
+      }
+    ]
+  },
+  "allowed_suggestions": [],
+  "confirmation": {
+    "mode": "none",
+    "bindings": []
+  },
+  "permitted_next_actions": [
+    {
+      "action": "cancel",
+      "label": "Cancel booking"
+    }
+  ],
+  "sources": []
+}

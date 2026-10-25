@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:voice:shared:v1",
+  "title": "Shared voice building blocks",
+  "description": "Definitions shared by the messages of the voice session socket (master plan 13 and 14.2), referenced as urn:alixai:schema:voice:shared:v1#/$defs/<name>. This file is a definitions library: it constrains nothing on its own.",
+  "$defs": {
+    "audioFormat": {
+      "title": "Audio format",
+      "description": "Raw PCM, the only encoding the voice seam carries: signed 16-bit little-endian, interleaved when there is more than one channel. Containers and codecs (WAV, Opus, MP3) are the client's business; the core never parses an untrusted media format.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["encoding", "sample_rate", "channels"],
+      "properties": {
+        "encoding": { "const": "pcm_s16le" },
+        "sample_rate": { "description": "Samples per second per channel.", "type": "integer", "minimum": 8000, "maximum": 48000 },
+        "channels": { "type": "integer", "minimum": 1, "maximum": 2 }
+      }
+    },
+    "language": {
+      "title": "Language tag",
+      "description": "A BCP 47 language tag such as en, it or it-IT.",
+      "type": "string",
+      "maxLength": 35,
+      "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$"
+    },
+    "utteranceId": {
+      "title": "Utterance ID",
+      "description": "ID of one spoken or submitted utterance, minted by the core when the capture starts or the audio is submitted.",
+      "type": "string",
+      "pattern": "^utt_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "playbackId": {
+      "title": "Playback ID",
+      "description": "ID of one playback of verified response speech, minted by the core.",
+      "type": "string",
+      "pattern": "^pbk_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "voiceSessionId": {
+      "title": "Voice session ID",
+      "description": "ID of one voice connection, minted by the core. It is not the conversation session: voice and text share the session the context token names.",
+      "type": "string",
+      "pattern": "^vss_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "effect": {
+      "title": "Degradation effect",
+      "description": "What the user loses when a voice component is not available (master plan 18): text_input_only (no speech recognition: type instead), verified_text_only (no speech synthesis: the verified text is shown, not spoken), manual_turn_taking (no voice-activity detection: the client ends each capture).",
+      "type": "string",
+      "enum": ["text_input_only", "verified_text_only", "manual_turn_taking"]
+    },
+    "speakerHint": {
+      "title": "Speaker hint",
+      "description": "What an optional speaker-recognition component believes about who spoke. It is a convenience for the host's interface (a greeting, a highlighted name) and nothing else: it is never an identity, never a permission, never a confirmation and never changes the scope the utterance runs under, which is the verified context token's.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "confidence"],
+      "properties": {
+        "label": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    }
+  }
+}

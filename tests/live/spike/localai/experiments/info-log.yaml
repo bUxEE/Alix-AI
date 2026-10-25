@@ -1,0 +1,5 @@
+# HC-34 control: the shipped log level written out explicitly, so the info run goes through the same probe as debug and trace.
+services:
+  localai:
+    environment:
+      LOCALAI_LOG_LEVEL: info

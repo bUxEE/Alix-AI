@@ -1,0 +1,30 @@
+{
+  "type": "action_card",
+  "title": "Appointment booked",
+  "capability_id": "appointments.book",
+  "facts": [
+    {
+      "field": "slot_date",
+      "value": {
+        "kind": "date",
+        "value": "2026-10-14"
+      },
+      "display": "Tuesday 14 October 2026"
+    },
+    {
+      "field": "slot_start",
+      "value": {
+        "kind": "time",
+        "value": "10:30"
+      }
+    }
+  ],
+  "actions": [
+    {
+      "action": "invoke_capability",
+      "capability_id": "appointments.cancel",
+      "href": "https://example.test/cancel"
+    }
+  ],
+  "receipt_id": "rcpt_01J0000000000000000000000A"
+}

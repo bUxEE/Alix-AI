@@ -1,0 +1,428 @@
+# Conversation history (master plan 14.2 and 19): paginated transcript segments, full-text search, segment
+# cleanup, export, and the workspace cleanup. Implemented by internal/gateway/routes_v1_history.go over
+# internal/history.
+#
+# The host authorises each operation by putting its capability in the context token (`capability_scopes`):
+#
+#   history.read     list the transcript segments of the caller's own session
+#   history.search   search the caller's own history
+#   history.clear    clear the transcript of the caller's own session
+#   history.export   export the caller's own history
+#   history.cleanup  delete the whole workspace's history older than a time
+#
+# The match is exact (no wildcard, no role stands in), and a token that lacks the capability is
+# `permission_denied` before anything is read or deleted. Reading, searching, clearing and exporting are about
+# the caller's OWN history: rows of another principal are never visible, and a session of another principal is
+# `scope_violation`. Clearing history deletes the transcript and nothing else: the session state, committed
+# receipts, audit events, application records and sources are never touched (master plan 19). Every deletion
+# and every export is recorded in the audit log first, without any transcript text.
+#
+# The text of an assistant row is model Markdown. The transcript keeps it as the engine verified it, and the
+# stream hub sanitises a response before a client sees it, so every history response (segments, search snippets,
+# the export) runs assistant text through the same sanitiser: a host that renders history with the renderer it
+# uses for live `token` events never gets more than it would have got live. A user row is the user's own text,
+# verbatim, and is plain text: render it as such.
+paths:
+  /v1/history/sessions/{session_id}/segments:
+    parameters:
+      - $ref: '#/components/parameters/HistorySessionId'
+    get:
+      operationId: listHistorySegments
+      tags: [history]
+      summary: Read a page of the transcript
+      description: |
+        A page of the session's transcript: whole turns, oldest first. A turn is the user's row and the assistant's
+        row that share a turn number `n` (a turn can have just one of them), and a page never splits a turn, so
+        continuing from `next_cursor` can neither skip nor repeat a row. `limit` counts turns. `next_cursor` is
+        null on the last page. The session id must be the token's session and the transcript the caller's own.
+        A session with no transcript is an empty page. Needs `history.read`.
+      parameters:
+        - $ref: '#/components/parameters/HistoryCursor'
+        - $ref: '#/components/parameters/HistoryLimit'
+      responses:
+        '200':
+          description: A page of the transcript.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistorySegmentPage'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/history/sessions/{session_id}:
+    parameters:
+      - $ref: '#/components/parameters/HistorySessionId'
+    delete:
+      operationId: clearHistorySession
+      tags: [history]
+      summary: Clear the transcript of the session
+      description: |
+        Deletes the transcript of the session and returns how many rows went; clearing a session with no transcript
+        deletes nothing and is not an error. Only the transcript goes (and, with it, its search index entries):
+        the session itself, its prepared actions, receipts and audit events are not touched. The deletion is
+        recorded in the audit log first and is refused if it cannot be recorded. The session id must be the
+        token's session and the transcript the caller's own. Needs `history.clear`.
+      responses:
+        '200':
+          description: The transcript is cleared.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistorySessionCleared'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/history/search:
+    post:
+      operationId: searchHistory
+      tags: [history]
+      summary: Search the caller's own history
+      description: |
+        Full-text search over the caller's own transcript rows, in every session of the token's workspace. Every
+        word of `text` must occur in the row; the words are plain text (an operator, a quote, a star or a column
+        name is just a word or a separator), matched without regard to case or accents. Best match first.
+        Another principal's rows, and everything of another tenant, workspace or application, never appear. The
+        text is sent in the body, never in the URL, because a URL is logged. Needs `history.search`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HistorySearchRequest'
+      responses:
+        '200':
+          description: A page of hits.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistorySearchPage'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '413':
+          $ref: ../openapi.yaml#/components/responses/PayloadTooLarge
+        '415':
+          $ref: ../openapi.yaml#/components/responses/UnsupportedMediaType
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/history/export:
+    post:
+      operationId: exportHistory
+      tags: [history]
+      summary: Export the caller's own history
+      description: |
+        Streams the caller's own transcript as JSON lines (`application/x-ndjson`): one `HistoryExportRow` per
+        line, oldest first, then a last line, a `HistoryExportTrailer` `{"complete": true, "rows": N}`. The
+        status is sent before the rows, so a failure half way cannot change it: an export is whole only if it ends
+        with the trailer. The export is recorded in the audit log before the first row is sent, and refused if it
+        cannot be recorded. The body is optional; `session_id` restricts the export to one of the caller's
+        sessions, `since` (inclusive) and `until` (exclusive) bound the creation time. Needs `history.export`.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HistoryExportRequest'
+      responses:
+        '200':
+          description: The export.
+          content:
+            application/x-ndjson:
+              schema:
+                type: string
+                description: |
+                  Lines of JSON, each a `HistoryExportRow` except the last, which is a `HistoryExportTrailer`.
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '413':
+          $ref: ../openapi.yaml#/components/responses/PayloadTooLarge
+        '415':
+          $ref: ../openapi.yaml#/components/responses/UnsupportedMediaType
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/history/cleanup:
+    post:
+      operationId: cleanupHistory
+      tags: [history]
+      summary: Delete the workspace's history older than a time
+      description: |
+        Deletes every transcript turn of the token's WORKSPACE (all its principals and sessions) created before
+        `before`, and returns how many rows went. It reaches beyond the caller's own history, so it needs its own
+        capability, `history.cleanup`, which the host should grant only to whoever manages history; the caller is
+        authorised before anything is deleted. `before` cannot be in the future. Like clearing a session it leaves
+        the session state, receipts, audit events, records and sources alone, and it is recorded in the audit log
+        first. The retention policy of the application and tenant is applied by a scheduled job, not by this call.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HistoryCleanupRequest'
+      responses:
+        '200':
+          description: The history before the cutoff is deleted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoryCleanupResult'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '413':
+          $ref: ../openapi.yaml#/components/responses/PayloadTooLarge
+        '415':
+          $ref: ../openapi.yaml#/components/responses/UnsupportedMediaType
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+components:
+  parameters:
+    HistorySessionId:
+      name: session_id
+      in: path
+      required: true
+      description: The session id the context token carries. Any other value is `scope_violation`.
+      schema:
+        type: string
+        pattern: '^[A-Za-z0-9_.-]{1,128}$'
+    HistoryCursor:
+      name: cursor
+      in: query
+      required: false
+      description: The `next_cursor` of the previous page; not given, the start of the transcript.
+      schema:
+        type: string
+        pattern: '^[0-9]{1,18}$'
+    HistoryLimit:
+      name: limit
+      in: query
+      required: false
+      description: How many turns the page holds at most (25 when not given).
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+  schemas:
+    HistoryTurn:
+      type: object
+      additionalProperties: false
+      required: [turn_id, n, role, body, clipped, created_at]
+      properties:
+        turn_id:
+          type: string
+        n:
+          type: integer
+          minimum: 1
+          description: The turn number inside the session; the user's row and the assistant's row of one turn share it.
+        role:
+          type: string
+          enum: [user, assistant]
+        act:
+          type: string
+          description: The directive act of an assistant row.
+        body:
+          type: string
+          description: |
+            A user row: the user's own text, verbatim, plain text. An assistant row: model Markdown sanitised as a
+            whole exactly as the `token` events of a live turn are (raw HTML and images removed, links limited to the
+            allowed schemes), so it can be rendered with the renderer used for live text. Empty when `withheld`.
+        clipped:
+          type: boolean
+          description: True when the text was cut when it was stored.
+        created_at:
+          type: string
+          format: date-time
+        withheld:
+          type: boolean
+          description: |
+            Present and true when `body` is empty because the sanitiser refused the text of an assistant row (the
+            live stream would have refused it too). History never falls back to the raw text.
+    HistorySegmentPage:
+      type: object
+      additionalProperties: false
+      required: [session_id, turns, next_cursor, total]
+      properties:
+        session_id:
+          type: string
+        turns:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistoryTurn'
+        next_cursor:
+          oneOf:
+            - type: string
+              pattern: '^[0-9]{1,18}$'
+            - type: 'null'
+          description: The cursor of the next page, or null at the end of the transcript.
+        total:
+          type: integer
+          minimum: 0
+          description: How many rows the session's transcript holds.
+    HistorySessionCleared:
+      type: object
+      additionalProperties: false
+      required: [session_id, rows_deleted]
+      properties:
+        session_id:
+          type: string
+        rows_deleted:
+          type: integer
+          minimum: 0
+    HistorySearchRequest:
+      type: object
+      additionalProperties: false
+      required: [text]
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 512
+          description: |
+            The words to find; every one must occur in the row. At most 12 distinct words count. Plain text:
+            nothing in it is syntax.
+        session_id:
+          type: string
+          pattern: '^[A-Za-z0-9_.-]{1,128}$'
+          description: Restrict the search to one of the caller's sessions.
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 50
+          description: How many hits a page holds at most (10 when not given).
+        offset:
+          type: integer
+          minimum: 0
+          maximum: 1000
+          description: How many hits to skip; the `next_offset` of the previous page.
+    HistorySearchHit:
+      type: object
+      additionalProperties: false
+      required: [session_id, turn_id, n, role, created_at, snippet]
+      properties:
+        session_id:
+          type: string
+        turn_id:
+          type: string
+        n:
+          type: integer
+          minimum: 1
+        role:
+          type: string
+          enum: [user, assistant]
+        created_at:
+          type: string
+          format: date-time
+        snippet:
+          type: string
+          description: |
+            A short excerpt of the row around the match. For a user row it is the user's own words, plain text; for an
+            assistant row it is sanitised Markdown like `HistoryTurn.body`. Empty if the sanitiser refused it.
+    HistorySearchPage:
+      type: object
+      additionalProperties: false
+      required: [hits, next_offset]
+      properties:
+        hits:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistorySearchHit'
+        next_offset:
+          oneOf:
+            - type: integer
+              minimum: 1
+            - type: 'null'
+          description: The offset of the next page, or null at the end.
+    HistoryExportRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        session_id:
+          type: string
+          pattern: '^[A-Za-z0-9_.-]{1,128}$'
+        since:
+          type: string
+          format: date-time
+          description: Include rows created at or after this time.
+        until:
+          type: string
+          format: date-time
+          description: Include rows created before this time.
+    HistoryExportRow:
+      type: object
+      additionalProperties: false
+      required: [session_id, turn_id, n, role, body, clipped, created_at]
+      properties:
+        session_id:
+          type: string
+        turn_id:
+          type: string
+        n:
+          type: integer
+          minimum: 1
+        role:
+          type: string
+          enum: [user, assistant]
+        act:
+          type: string
+        body:
+          type: string
+          description: "As `HistoryTurn.body`, an assistant row is sanitised like live text."
+        clipped:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        withheld:
+          type: boolean
+          description: Present and true when `body` is empty because the sanitiser refused the text.
+    HistoryExportTrailer:
+      type: object
+      additionalProperties: false
+      required: [complete, rows]
+      properties:
+        complete:
+          const: true
+        rows:
+          type: integer
+          minimum: 0
+    HistoryCleanupRequest:
+      type: object
+      additionalProperties: false
+      required: [before]
+      properties:
+        before:
+          type: string
+          format: date-time
+          description: Delete every transcript turn of the workspace created before this time. Not in the future.
+    HistoryCleanupResult:
+      type: object
+      additionalProperties: false
+      required: [rows_deleted]
+      properties:
+        rows_deleted:
+          type: integer
+          minimum: 0

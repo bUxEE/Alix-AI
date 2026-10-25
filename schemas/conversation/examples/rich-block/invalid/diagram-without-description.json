@@ -1,0 +1,6 @@
+{
+  "type": "diagram",
+  "language": "mermaid",
+  "requires_host_renderer": true,
+  "source": "flowchart LR\n  A[Request] --> B[Validate]\n  B --> C{Confirm?}\n  C -->|yes| D[Commit]\n  C -->|no| E[Cancelled]"
+}

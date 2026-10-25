@@ -1,0 +1,69 @@
+capability_id: appointments.book
+language: en
+contract_version: 1.0.0
+terminology:
+  - patient
+  - doctor
+  - slot
+  - appointment
+  - appointment_reference
+  - clinic_site
+field_prompts:
+  - field: patient
+    label: Patient
+    prompt: "Who is the appointment for? Tell me the patient's name."
+    examples:
+      - Maria Rossi
+  - field: slot
+    label: Appointment time
+    prompt: "Which appointment time would you like? Give me a date and time such as 2026-10-14 10:30, ask for the next available one, or pick one from the free appointments."
+    examples:
+      - "2026-10-14 10:30"
+  - field: reason
+    label: Reason for the visit
+    prompt: "Is there a reason for the visit I should note? You can skip this."
+clarifications:
+  - rule_id: patient_multiple
+    prompt: "More than one patient matches {input.patient}. Which one do you mean?"
+  - rule_id: slot_multiple
+    prompt: "More than one free appointment matches {input.slot}. Which one do you want?"
+corrections:
+  acknowledgement: "Okay, I have changed that."
+  correctable_fields:
+    - patient
+    - slot
+    - reason
+  prepared_action_invalidated: "That changes the booking, so the earlier summary no longer applies. I will prepare the booking again and ask you to confirm the new details."
+cancellations:
+  acknowledgement: "Okay, I stopped. Nothing was booked."
+confirmations:
+  request: "Please confirm this booking: {patient_name} with {doctor_name} on {appointment_starts_at} at {site_name}. A confirmation message will be sent to the patient. Shall I book it?"
+  declined: "Okay, I did not book anything."
+  expired: "That booking is no longer valid, so nothing was booked. I can prepare it again if you like."
+success:
+  - outcome: booked
+    text: "Done. {patient_name} is booked with {doctor_name} on {appointment_starts_at} at {site_name}. The appointment reference is {appointment_reference}."
+failures:
+  - code: permission_denied
+    text: "You are not allowed to book appointments, so nothing was booked."
+  - code: scope_violation
+    text: "I cannot book that: the patient or the appointment time is not available to you. Nothing was booked."
+  - code: validation_failed
+    text: "I could not book that: an appointment can be booked from 60 minutes to 90 days ahead. Nothing was booked."
+  - code: conflict
+    text: "That appointment time is no longer free, or the patient already has an appointment at that time. Nothing was booked. I can show you other free times."
+  - code: stale
+    text: "The appointment time or the patient record changed after I prepared this booking, so I did not book it. Nothing was booked; I can prepare it again."
+  - code: expired
+    text: "The booking was not confirmed in time, or it was cancelled, so nothing was booked."
+  - code: missing_fields
+    text: "I still need the patient and the appointment time before I can book. Nothing was booked."
+  - code: uncertain_outcome
+    text: "I could not confirm whether the appointment was booked. I will check before doing anything else, so please do not ask for it again yet."
+  - code: unavailable
+    text: "The appointment system is not reachable right now, so nothing was booked."
+next_actions:
+  - id: cancel_booked_appointment
+    label: "Cancel this appointment"
+  - id: show_other_slots
+    label: "Show other free appointments"

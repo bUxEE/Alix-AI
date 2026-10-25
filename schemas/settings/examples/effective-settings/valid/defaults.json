@@ -1,0 +1,62 @@
+{
+  "levels": {
+    "deployment": 1,
+    "tenant": 0,
+    "user": 3
+  },
+  "language": "it",
+  "model_profile": "lite",
+  "voice": {
+    "allowed": false,
+    "enabled": false,
+    "speech_rate_pct": 100,
+    "auto_play": true,
+    "barge_in": true
+  },
+  "history": {
+    "retention_days": 90,
+    "auto_cleanup": true,
+    "export_allowed": false
+  },
+  "privacy": {
+    "store_transcript": true
+  },
+  "attachments": {
+    "allowed": false,
+    "enabled": false,
+    "max_file_mb": 25
+  },
+  "sources": {
+    "include_attachments": true,
+    "citation_display": "inline"
+  },
+  "notifications": {
+    "allowed": true,
+    "enabled": true,
+    "events": [
+      "action_ready",
+      "job_finished",
+      "source_indexed"
+    ]
+  },
+  "streaming": {
+    "enabled": true,
+    "unit": "token"
+  },
+  "accessibility": {
+    "reduced_motion": false,
+    "high_contrast": false,
+    "text_scale_pct": 100,
+    "screen_reader": false,
+    "captions": false
+  },
+  "capabilities": {
+    "disabled": []
+  },
+  "confirmation": {},
+  "decided_by": {
+    "model_profile": "default",
+    "history.retention_days": "default",
+    "language": "user"
+  }
+}
