@@ -32,6 +32,7 @@ import (
 	"github.com/buxee/alix-ai/internal/dialogue/extmode"
 	"github.com/buxee/alix-ai/internal/egress"
 	"github.com/buxee/alix-ai/internal/extmodal"
+	"github.com/buxee/alix-ai/internal/fsperm"
 	"github.com/buxee/alix-ai/internal/gateway"
 	"github.com/buxee/alix-ai/internal/identity"
 	"github.com/buxee/alix-ai/internal/jobs"
@@ -525,7 +526,8 @@ func newExternalAdmin(d externalAdminDeps) (*externalAdmin, error) {
 	if err := os.MkdirAll(d.Dir, 0o700); err != nil {
 		return nil, fmt.Errorf("external_providers: %w", err)
 	}
-	if err := os.Chmod(d.Dir, 0o700); err != nil && runtime.GOOS != "windows" {
+	// Directory must be owner-traversable (0700); Restrict is the shared helper.
+	if err := fsperm.Restrict(d.Dir, true); err != nil && runtime.GOOS != "windows" {
 		return nil, fmt.Errorf("external_providers: %w", err)
 	}
 	// The secrets live in a directory of their own that the credentials package creates (owner only, with an ACL on

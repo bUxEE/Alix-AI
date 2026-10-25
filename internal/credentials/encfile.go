@@ -95,18 +95,22 @@ func (k KeyFileSource) MasterKey(ctx context.Context, create bool) ([]byte, erro
 	case !create:
 		return nil, ErrNotFound
 	}
-	if err := ensureSecureDir(filepath.Dir(k.Path)); err != nil {
-		return nil, err
+	// serve and an operator command may both find no key and create one. The lock
+	// sits beside the key directory (not inside it) so creators serialize before
+	// mkdir: a lock inside the directory raced with ensureSecureDir on Linux, where
+	// rename of an empty dir replaces another empty dir and Lock then saw no parent.
+	dir := filepath.Dir(k.Path)
+	if err := os.MkdirAll(filepath.Dir(dir), 0o700); err != nil {
+		return nil, errBackend
 	}
-	// serve and an operator command may both find no key and create one: the
-	// lock makes the check and the creation one step across processes, and the
-	// exclusive link in writeFileOwnerOnly still refuses to replace a key made
-	// by a process that does not take the lock.
-	unlock, err := fsperm.Lock(k.Path + ".lock")
+	unlock, err := fsperm.Lock(dir + ".lock")
 	if err != nil {
 		return nil, errBackend
 	}
 	defer func() { _ = unlock() }()
+	if err := ensureSecureDir(dir); err != nil {
+		return nil, err
+	}
 	if _, err := os.Lstat(k.Path); err == nil {
 		return k.read() // another process made it first
 	} else if !errors.Is(err, os.ErrNotExist) {
@@ -118,8 +122,9 @@ func (k KeyFileSource) MasterKey(ctx context.Context, create bool) ([]byte, erro
 	}
 	if err := writeFileOwnerOnly(k.Path, []byte(hex.EncodeToString(key)+"\n"), true); err != nil {
 		wipe(key)
-		if errors.Is(err, os.ErrExist) {
-			return k.read() // another process made it first
+		// Contended create or a lost exclusive link: always prefer the key that won.
+		if got, rerr := k.read(); rerr == nil {
+			return got, nil
 		}
 		return nil, errBackend
 	}

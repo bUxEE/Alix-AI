@@ -116,7 +116,7 @@ jobs:
     #   G118 adapters/native/adapter.go: the cancel function is stored in the adapter and called by Close
     #   G122 cmd/alixai-conformance: a developer tool walking the integrator's own tree
     # Whole trees excluded: tools/ (developer tools run by a person, never shipped), tests/ (fixtures and live harnesses),
-    # examples/ (sample applications).
+    # examples/ (sample applications), testdata/ (fixture programs under product packages, e.g. fakellm).
     name: gosec
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -139,7 +139,7 @@ jobs:
           go run github.com/securego/gosec/v2/cmd/gosec@latest
           -severity=medium -confidence=medium -exclude-generated
           -exclude=G101,G103,G104,G115,G304
-          -exclude-dir=tools -exclude-dir=tests -exclude-dir=examples
+          -exclude-dir=tools -exclude-dir=tests -exclude-dir=examples -exclude-dir=testdata
           -exclude-rules="internal/supervisor/exec\.go:G204;internal/rag/parse/runner\.go:G204,G302;adapters/mcp/transport\.go:G204;internal/trust/sigmanifest\.go:G301,G302;internal/store/tx\.go:G404;internal/rag/vector/vectortest/.*:G404;internal/cli/cmd_backup\.go:G703;pkg/sdk-go/agui/proxy\.go:G704;deploy/container/alixai/netctl/main\.go:G704;internal/stream/sse\.go:G705;internal/gateway/routes_v1_events\.go:G705;adapters/native/adapter\.go:G118;cmd/alixai-conformance/.*:G122,G302"
           ./...
 

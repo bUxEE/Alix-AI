@@ -100,8 +100,8 @@ func backupSigner(env *Env, dataDir, keyFile, keyID string, create bool) (trust.
 	}
 	if keyFile == "" {
 		dir := filepath.Join(dataDir, backupKeysDirName)
-		keyFile = filepath.Join(dir, keyID+".key")
-		if _, err := os.Lstat(keyFile); errors.Is(err, os.ErrNotExist) {
+		keyFile = filepath.Clean(filepath.Join(dir, keyID+".key"))
+		if _, err := os.Lstat(keyFile); errors.Is(err, os.ErrNotExist) { // #nosec G703 -- keyFile is under data_dir/keys with a fixed stem
 			if !create {
 				return trust.SigningKey{}, Usagef("no backup signing key at %s: pass -key FILE", keyFile)
 			}
@@ -140,7 +140,8 @@ func backupPublicKeys(dataDir string, specs []string, allowDev bool) (backup.Sta
 		if !ok || id == "" || file == "" {
 			return keys, Usagef("-pubkey %q is not ID=FILE", spec)
 		}
-		raw, err := os.ReadFile(file)
+		file = filepath.Clean(file)
+		raw, err := os.ReadFile(file) // #nosec G703 -- file is the operator's -pubkey path, cleaned
 		if err != nil {
 			return keys, fmt.Errorf("cannot read %s: %w", file, err)
 		}

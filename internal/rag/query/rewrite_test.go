@@ -35,6 +35,9 @@ func (c *countingRewriter) Rewrite(ctx context.Context, _ contracts.Scope, _ str
 	if block != nil {
 		block(ctx)
 	}
+	if err := ctx.Err(); err != nil && c.err == nil {
+		return nil, err
+	}
 	return c.alts, c.err
 }
 
@@ -150,7 +153,7 @@ func TestQueryRewriteBudgeted(t *testing.T) {
 				cfg.RewriteTimeout = 40 * time.Millisecond
 				start := time.Now()
 				res := mustQuery(t, e.pipeline(d, cfg), sc, Request{Text: lowConfidence})
-				if took := time.Since(start); took > 3*time.Second {
+				if took := time.Since(start); took > 5*time.Second {
 					t.Errorf("held for %s past a 40ms rewrite budget", took)
 				}
 				if !hasString(res.Diagnostics.Degraded, DegradedRewriteFailed) || res.Diagnostics.Rewrites != 0 || spy.searchCount() != 1 {

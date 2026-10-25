@@ -9,8 +9,8 @@
 #   5. manifest     the UNSIGNED release manifest: artifacts, images, backends, models and their licences
 #   6. draft        a DRAFT GitHub release holding everything, behind the `release` environment (required reviewers)
 #
-# What it deliberately does not do: sign the release manifest. The manifest signature is an Ed25519 signature made with the offline
-# release key (SEC-090: signing keys are held offline, M5-H02). The key holder downloads release-manifest.json from the draft, runs
+# What it deliberately does not do: sign the release manifest. The manifest signature is an Ed25519 signature made with the
+# release key held by the maintainer, never in CI or in the repository (SEC-090, M5-H02). The key holder downloads release-manifest.json from the draft, runs
 # `go run ./tools/release sign`, uploads the signed file and publishes by hand. No signing key, no secret other than the job's own
 # GITHUB_TOKEN exists in this workflow.
 #

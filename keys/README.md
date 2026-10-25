@@ -1,7 +1,7 @@
 # Release keys
 
 `alixai-release-2026.pub` is the public half of the Ed25519 key that signs AlixAI release manifests
-(`release-manifest.json`). The private half is held offline by the maintainer and never reaches CI.
+(`release-manifest.json`). The private half is held by the maintainer, never in CI or in the repository.
 
 | Key id | Public key (base64) |
 | --- | --- |

@@ -70,10 +70,19 @@ archives:
       - goos: windows
         formats: [zip]
     name_template: "alixai_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    # Commit mtime on every archive member so two clean runs produce identical archives (release binaries job).
+    builds_info:
+      mtime: "{{ .CommitDate }}"
     files:
-      - LICENSE
-      - NOTICE
-      - deploy/native/**/*
+      - src: LICENSE
+        info:
+          mtime: "{{ .CommitDate }}"
+      - src: NOTICE
+        info:
+          mtime: "{{ .CommitDate }}"
+      - src: deploy/native/**/*
+        info:
+          mtime: "{{ .CommitDate }}"
 
 checksum:
   name_template: SHA256SUMS

@@ -65,10 +65,10 @@ func ensureSecureDir(dir string) error {
 	}
 	if err := os.Rename(tmp, dir); err != nil {
 		_ = os.Remove(tmp)
+		// Another creator won, or replaced an empty dir (Linux rename): use theirs.
 		if _, serr := os.Stat(dir); serr != nil {
 			return errBackend
 		}
-		// another process made it first
 	}
 	return checkOwnerOnly(dir, true)
 }
@@ -121,11 +121,18 @@ func writeFileOwnerOnly(path string, data []byte, excl bool) error {
 		}
 		// A file system without hard links: check and rename, which only the
 		// caller's lock (KeyFileSource) keeps from racing.
-		if _, err := os.Lstat(path); err == nil {
+		if _, lerr := os.Lstat(path); lerr == nil {
 			return os.ErrExist
+		} else if !errors.Is(lerr, os.ErrNotExist) {
+			return errBackend
 		}
 	}
 	if err := os.Rename(tmp, path); err != nil {
+		if excl {
+			if _, lerr := os.Lstat(path); lerr == nil {
+				return os.ErrExist
+			}
+		}
 		return errBackend
 	}
 	ok = true

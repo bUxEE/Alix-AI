@@ -116,7 +116,7 @@ AlixAI; [browser hosts](browser-hosts.md) says why and what a direct browser cal
 ## 6. Backups and keys
 
 A VPS disk is not a backup. `alixai backup create` writes a signed backup while the service runs; copy the backup directory **and** `backup.pub` to storage you control off the machine, and
-keep the checkpoint key and the release key offline ([backup and restore](backup-restore.md)). Remote backup is outside the core and needs a provider you choose.
+keep the checkpoint key offline and the release key held by the maintainer, never in CI or in the repository ([backup and restore](backup-restore.md)). Remote backup is outside the core and needs a provider you choose.
 
 ## 7. Check it from outside
 

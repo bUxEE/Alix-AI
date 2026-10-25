@@ -18,3 +18,24 @@ paths = [
   '''^schemas/.+/examples/.+/invalid/''',
   '''^tests/performance/rag/corpus\.json$''',
 ]
+
+# Narrow allowlists for generic-api-key false positives that are not under the path exemptions above.
+# Each entry is path AND the exact fixture / published value; the rule itself stays enabled.
+
+[[allowlists]]
+description = "pinned release Ed25519 public key, published on purpose (internal/release/keys.go)"
+condition = "AND"
+paths = ['''^internal/release/keys\.go$''']
+regexes = ['''ok5oQ98ihECPbbWYuXWyfAlVbK6kZV97vQliBsYfzOU=''']
+
+[[allowlists]]
+description = "fake provider API key in the Python SDK provider tests"
+condition = "AND"
+paths = ['''^sdk/python/tests/test_providers\.py$''']
+regexes = ['''sk-test-0123456789abcdef-NEVER-ECHO''']
+
+[[allowlists]]
+description = "fake provider API key in the TypeScript SDK provider tests"
+condition = "AND"
+paths = ['''^sdk/typescript/test/providers\.test\.ts$''']
+regexes = ['''sk-test-0123456789abcdef-NEVER-ECHO''']

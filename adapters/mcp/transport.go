@@ -227,11 +227,14 @@ type stdioConn struct {
 }
 
 func (c *stdioConn) Write(ctx context.Context, msg jsonrpc.Message) error {
+	// Arm before the ctx.Err check: if the deadline already passed while the
+	// call was prepared, AfterFunc runs at once and stops a server that is no
+	// longer reading (otherwise the early return left it wedged).
+	stop := context.AfterFunc(ctx, func() { _ = c.proc.Close() })
+	defer stop()
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	stop := context.AfterFunc(ctx, func() { _ = c.proc.Close() })
-	defer stop()
 	return c.Connection.Write(ctx, msg)
 }
 

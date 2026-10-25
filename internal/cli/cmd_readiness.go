@@ -233,14 +233,11 @@ func rdyCLIScope(app string) contracts.Scope {
 
 // rdyCLIAbsDir resolves the directory the operator named; it must exist and be a directory.
 func rdyCLIAbsDir(dir string) (string, error) {
-	if strings.TrimSpace(dir) == "" || strings.ContainsRune(dir, 0) {
+	abs, err := rdyCLICleanPath(dir)
+	if err != nil {
 		return "", Usagef("the directory is not a usable path")
 	}
-	abs, err := filepath.Abs(dir)
-	if err != nil {
-		return "", Usagef("the directory cannot be resolved: %v", err)
-	}
-	fi, err := os.Stat(abs)
+	fi, err := os.Stat(abs) // #nosec G703 -- abs is filepath.Clean+Abs of the operator's scan root
 	if err != nil {
 		return "", fmt.Errorf("the directory cannot be read: %w", err)
 	}
@@ -250,19 +247,34 @@ func rdyCLIAbsDir(dir string) (string, error) {
 	return abs, nil
 }
 
+// rdyCLICleanPath resolves an operator path to a cleaned absolute form and refuses NULs.
+func rdyCLICleanPath(p string) (string, error) {
+	if strings.TrimSpace(p) == "" || strings.ContainsRune(p, 0) {
+		return "", errRdyBadPath
+	}
+	abs, err := filepath.Abs(filepath.Clean(p))
+	if err != nil {
+		return "", err
+	}
+	return filepath.Clean(abs), nil
+}
+
+var errRdyBadPath = errors.New("not a usable path")
+
 // rdyCLICheckOut refuses an -out that cannot be written before any work is done.
 func rdyCLICheckOut(out string) error {
 	if out == "" {
 		return nil
 	}
-	if strings.ContainsRune(out, 0) {
+	abs, err := rdyCLICleanPath(out)
+	if err != nil {
 		return Usagef("-out is not a usable path")
 	}
-	if fi, err := os.Stat(out); err == nil && fi.IsDir() {
-		return Usagef("-out %s is a directory; name a file", out)
+	if fi, err := os.Stat(abs); err == nil && fi.IsDir() { // #nosec G703 -- abs is cleaned operator -out
+		return Usagef("-out %s is a directory; name a file", abs)
 	}
-	if fi, err := os.Stat(filepath.Dir(out)); err != nil || !fi.IsDir() {
-		return Usagef("-out %s: its directory does not exist", out)
+	if fi, err := os.Stat(filepath.Dir(abs)); err != nil || !fi.IsDir() { // #nosec G703 -- parent of cleaned -out
+		return Usagef("-out %s: its directory does not exist", abs)
 	}
 	return nil
 }
@@ -360,8 +372,12 @@ func rdyCLIJSON(v any) ([]byte, error) {
 
 // rdyCLIWriteOut writes the one file the operator named, owner-only.
 func rdyCLIWriteOut(path string, data []byte) error {
-	if err := os.WriteFile(path, data, 0o600); err != nil {
+	abs, err := rdyCLICleanPath(path)
+	if err != nil {
 		return fmt.Errorf("the report is stored, but -out %s could not be written: %w", path, err)
+	}
+	if err := os.WriteFile(abs, data, 0o600); err != nil { // #nosec G703 -- abs is cleaned operator -out
+		return fmt.Errorf("the report is stored, but -out %s could not be written: %w", abs, err)
 	}
 	return nil
 }

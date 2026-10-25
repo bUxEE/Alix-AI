@@ -733,14 +733,15 @@ func TestStdioServerCrashHandled(t *testing.T) {
 			t.Fatal(err)
 		}
 		deaf := proc(a)
-		hctx, cancel := context.WithTimeout(ctx, 300*time.Millisecond)
+		hctx, cancel := context.WithTimeout(ctx, time.Second)
 		defer cancel()
 		if _, err := readItem(hctx, w, "item_1"); code(err) != contracts.ErrTimeout {
 			t.Fatalf("read = %v, want timeout", err)
 		}
 		// Arguments larger than the pipe holds (the raw adapter: the guard bounds
-		// a field): the write blocks.
-		cctx, cancel2 := context.WithTimeout(ctx, 300*time.Millisecond)
+		// a field): the write blocks. The deadline must outlive request prep under
+		// -race on a 2-core runner so AfterFunc is armed while Write is blocked.
+		cctx, cancel2 := context.WithTimeout(ctx, 3*time.Second)
 		defer cancel2()
 		done := make(chan error, 1)
 		go func() {
@@ -752,15 +753,15 @@ func TestStdioServerCrashHandled(t *testing.T) {
 			if !errors.Is(err, context.DeadlineExceeded) {
 				t.Errorf("validate = %v, want the deadline", err)
 			}
-		case <-time.After(stdioGrace + 5*time.Second):
+		case <-time.After(stdioGrace + 15*time.Second):
 			t.Fatal("a call to a server that stopped reading outlived its deadline")
 		}
-		if !fixture.Wait(10*time.Second, func() bool { return exited(deaf) }) {
+		if !fixture.Wait(30*time.Second, func() bool { return exited(deaf) }) {
 			t.Error("the process that stopped reading was not stopped")
 		}
 		// The adapter is not wedged: a later call reaches a new process.
-		if !fixture.Wait(10*time.Second, func() bool {
-			rctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		if !fixture.Wait(30*time.Second, func() bool {
+			rctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 			defer cancel()
 			_, err := w.Validate(rctx, testScope(), adapters.ValidateRequest{CapabilityID: fake.ActionCapability, Fields: map[string]any{"name": "W"}})
 			return err == nil

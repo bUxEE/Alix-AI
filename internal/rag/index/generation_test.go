@@ -141,24 +141,39 @@ func TestGenerationActivationAtomic(t *testing.T) {
 			}
 		}()
 	}
-	flips := []string{id2, id1, id2, id1, id2}
-	for _, id := range flips {
-		if err := f.ix.ActivateGeneration(ctx, scope, id); err != nil {
+	// Flip until enough searches overlapped the activations (or the cap). A fixed
+	// short sleep made the test too weak under -race on 2-core runners.
+	const wantReads int64 = 20
+	deadline := time.Now().Add(30 * time.Second)
+	active := id1 // gen1 is already serving
+	for reads.Load() < wantReads && time.Now().Before(deadline) {
+		next := id2
+		if active == id2 {
+			next = id1
+		}
+		if err := f.ix.ActivateGeneration(ctx, scope, next); err != nil {
 			stop.Store(true)
 			wg.Wait()
-			t.Fatalf("ActivateGeneration(%s): %v", id, err)
+			t.Fatalf("ActivateGeneration(%s): %v", next, err)
 		}
+		active = next
 		if n := f.activeCount(src); n != 1 {
 			t.Errorf("%d active generations after a flip", n)
 		}
-		time.Sleep(15 * time.Millisecond)
+	}
+	if active != id2 {
+		if err := f.ix.ActivateGeneration(ctx, scope, id2); err != nil {
+			stop.Store(true)
+			wg.Wait()
+			t.Fatalf("ActivateGeneration(%s): %v", id2, err)
+		}
 	}
 	stop.Store(true)
 	wg.Wait()
 	if v := bad.Load(); v != nil {
 		t.Fatal(v)
 	}
-	if reads.Load() < 20 {
+	if reads.Load() < wantReads {
 		t.Fatalf("only %d reads overlapped the flips; the test is too weak to mean anything", reads.Load())
 	}
 	// The last flip made gen2 active; gen1 is retained as superseded (rollback).
