@@ -301,11 +301,37 @@ type goreleaserBuild struct {
 	Targets []string `yaml:"targets"`
 }
 
+// goreleaserArchiveFile is one archives[].files entry: a plain path string, or an
+// object with src (and optional info.mtime for reproducible archives).
+type goreleaserArchiveFile string
+
+func (f *goreleaserArchiveFile) UnmarshalYAML(value *yaml.Node) error {
+	switch value.Kind {
+	case yaml.ScalarNode:
+		*f = goreleaserArchiveFile(value.Value)
+		return nil
+	case yaml.MappingNode:
+		var obj struct {
+			Src string `yaml:"src"`
+		}
+		if err := value.Decode(&obj); err != nil {
+			return err
+		}
+		if obj.Src == "" {
+			return &yaml.TypeError{Errors: []string{"archives files entry needs src"}}
+		}
+		*f = goreleaserArchiveFile(obj.Src)
+		return nil
+	default:
+		return &yaml.TypeError{Errors: []string{"archives files entry must be a string or an object with src"}}
+	}
+}
+
 type goreleaserFile struct {
 	Version  int               `yaml:"version"`
 	Builds   []goreleaserBuild `yaml:"builds"`
 	Archives []struct {
-		Files []string `yaml:"files"`
+		Files []goreleaserArchiveFile `yaml:"files"`
 	} `yaml:"archives"`
 	Release struct {
 		Disable bool `yaml:"disable"`
@@ -370,7 +396,7 @@ func TestGoreleaserBuildsTheFourStaticTargets(t *testing.T) {
 	if !g.Release.Disable {
 		t.Error("release must stay disabled: publishing belongs to the release pipeline (M5-03)")
 	}
-	if len(g.Archives) == 0 || !slices.Contains(g.Archives[0].Files, "deploy/native/**/*") {
+	if len(g.Archives) == 0 || !slices.Contains(g.Archives[0].Files, goreleaserArchiveFile("deploy/native/**/*")) {
 		t.Error("the archives must carry deploy/native")
 	}
 	for _, f := range []string{"../../LICENSE", "../../NOTICE", "systemd/alixai.service", "launchd/ai.alixai.service.plist", "windows/alixai.yaml"} {

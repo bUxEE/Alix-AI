@@ -1,6 +1,7 @@
 package dr
 
 import (
+	"go/build"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -16,12 +17,19 @@ import (
 // the test. Commands in a shell block are only the ones that are checked here (alixai, the release
 // tool, curl against the endpoints the drill reads, and the drill's own go test line): a document that
 // needs another program says so in prose, outside a command block.
+//
+// Commands registered only under a GOOS build tag (today: Windows `service *` in cmd_service.go) are
+// skipped when the built binary does not include them: the tags are the same source of truth the CLI uses.
 
 var (
 	fenceRE  = regexp.MustCompile("(?s)```([a-z]*)\n(.*?)```")
 	inlineRE = regexp.MustCompile("`((?:alixai|go run \\./tools/release) [^`\n]+)`")
 	spanRE   = regexp.MustCompile("`([a-z][^`\\n]*)`")
 	helpRow  = regexp.MustCompile(`(?m)^  ([a-z]+(?: [a-z-]+)?)\s{2,}\S`)
+	// registerNameRE finds Command.Name in Register(Command{...}) blocks of build-tagged CLI files.
+	registerNameRE = regexp.MustCompile(`(?s)Register\(\s*Command\s*\{[^}]*?\bName:\s*"([^"]+)"`)
+	// osConstraintRE matches a //go:build line that gates on an OS, not a feature tag (noexternal, …).
+	osConstraintRE = regexp.MustCompile(`(?m)^//go:build[^\n]*\b(windows|linux|darwin|freebsd|openbsd|netbsd|dragonfly|solaris|illumos|aix|plan9|android|ios|js|wasip1)\b`)
 )
 
 // documentedEndpoints are the paths a document may curl: the drill reads each of them from a running
@@ -46,6 +54,10 @@ func TestDRDocumentedCommandsExist(t *testing.T) {
 	}
 	if len(known) < 20 {
 		t.Fatalf("could not read the command list from `alixai help`:\n%s", help)
+	}
+	otherOS, err := commandsExcludedByGOOS(filepath.Join(e.moduleRoot, "internal", "cli"))
+	if err != nil {
+		t.Fatal(err)
 	}
 	releaseHelp := execProgram(time.Minute, e.moduleRoot, e.releaseBin, "help")
 	releaseCmds := map[string]bool{}
@@ -133,6 +145,12 @@ func TestDRDocumentedCommandsExist(t *testing.T) {
 					name, words = words[0]+" "+words[1], words[2:]
 				case len(words) >= 1 && known[words[0]]:
 					name, words = words[0], words[1:]
+				case len(words) >= 2 && otherOS[words[0]+" "+words[1]]:
+					t.Logf("%s: skipping %q (registered only on another GOOS)", filepath.Base(c.file), line)
+					continue
+				case len(words) >= 1 && otherOS[words[0]]:
+					t.Logf("%s: skipping %q (registered only on another GOOS)", filepath.Base(c.file), line)
+					continue
 				default:
 					t.Errorf("%s: %q is not a command of the built alixai", filepath.Base(c.file), line)
 					continue
@@ -151,6 +169,42 @@ func TestDRDocumentedCommandsExist(t *testing.T) {
 	}
 	sort.Strings(names)
 	t.Logf("checked %d command lines against %d commands: %s", checked, len(names), strings.Join(names, ", "))
+}
+
+// commandsExcludedByGOOS reads internal/cli source and returns command names registered in files
+// whose //go:build line gates on an OS other than the current one. Those files are the CLI's source
+// of truth for platform-only commands (e.g. cmd_service.go is windows-only).
+func commandsExcludedByGOOS(cliDir string) (map[string]bool, error) {
+	ents, err := os.ReadDir(cliDir)
+	if err != nil {
+		return nil, err
+	}
+	ctx := build.Default
+	out := map[string]bool{}
+	for _, ent := range ents {
+		name := ent.Name()
+		if ent.IsDir() || !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
+			continue
+		}
+		raw, err := os.ReadFile(filepath.Join(cliDir, name))
+		if err != nil {
+			return nil, err
+		}
+		if !osConstraintRE.Match(raw) {
+			continue
+		}
+		match, err := ctx.MatchFile(cliDir, name)
+		if err != nil {
+			return nil, err
+		}
+		if match {
+			continue
+		}
+		for _, m := range registerNameRE.FindAllSubmatch(raw, -1) {
+			out[string(m[1])] = true
+		}
+	}
+	return out, nil
 }
 
 // logicalLines joins the continuation lines of a shell block and drops comments and blank lines.
