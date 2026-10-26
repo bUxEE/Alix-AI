@@ -118,6 +118,16 @@ interface Flow {
   expires: number;
 }
 
+interface PopupFlow {
+  provider: string;
+  tenant: string;
+  principal: string;
+  application: string;
+  workspace: string;
+  status: string;
+  updated: number;
+}
+
 interface Claims {
   principalId: string;
   tenantId: string;
@@ -134,7 +144,7 @@ interface Route {
 const ROUTES: Route[] = (Object.entries(PROVIDERS_OPERATIONS) as [ProvidersOperationId, { method: string; path: string }][]).map(([operation, spec]) => ({
   operation,
   method: spec.method,
-  pattern: new RegExp(`^${spec.path.replace("{provider}", "([^/]+)")}$`),
+  pattern: new RegExp(`^${spec.path.replace("{provider}", "([^/]+)").replace("{flow_id}", "([^/]+)")}$`),
 }));
 
 const ROLES = ["conversational_controller", "language_realization", "vision", "image_generation", "embedding", "stt", "tts"];
@@ -178,6 +188,7 @@ export const createFakeProvidersServer = (options: FakeProvidersServerOptions = 
   let budgets: Json[] = [];
   let spent = new Map<string, [number, number]>();
   let flows = new Map<string, Flow>();
+  let popupFlows = new Map<string, PopupFlow>();
   let usage: Json = { records: [], totals: [] };
 
   const configure = (next: ProvidersFixtureConfig): void => {
@@ -195,6 +206,7 @@ export const createFakeProvidersServer = (options: FakeProvidersServerOptions = 
     budgets = [];
     spent = new Map();
     flows = new Map();
+    popupFlows = new Map();
     usage = { records: [], totals: [] };
   };
   if (options.config !== undefined) configure(options.config);
@@ -324,6 +336,7 @@ export const createFakeProvidersServer = (options: FakeProvidersServerOptions = 
   interface Ctx {
     route: Route;
     provider: string;
+    flowId?: string;
     claims: Claims;
     query: URLSearchParams;
     body: Json | undefined;
@@ -551,7 +564,7 @@ export const createFakeProvidersServer = (options: FakeProvidersServerOptions = 
       const seed = seedOf(ctx.provider);
       if (seed === undefined) return problem(400, "validation_failed", "no such provider", { reason: "not_found" });
       const body = ctx.body;
-      if (body === undefined || !closedBy(body, ["capabilities", "redirect_uri", "reauthorize", "switch_account", "label"])) return bad();
+      if (body === undefined || !closedBy(body, ["capabilities", "redirect_uri", "reauthorize", "switch_account", "label", "presentation", "callback", "opener_origin"])) return bad();
       const caps = body["capabilities"];
       const redirect = body["redirect_uri"];
       if (!Array.isArray(caps) || caps.length === 0 || caps.length > 64 || typeof redirect !== "string" || redirect === "" || redirect.length > 512) {
@@ -564,14 +577,48 @@ export const createFakeProvidersServer = (options: FakeProvidersServerOptions = 
       const authorization = new URLSearchParams({
         response_type: "code", state, code_challenge: `ch${random(20)}`, code_challenge_method: "S256", nonce: `no${random(8)}`, redirect_uri: redirect,
       });
-      return ok({
+      const out: Record<string, unknown> = {
         authorization_url: `https://auth.fake.test/authorize?${authorization.toString()}`, redirect_uri: redirect, expires_at: stamp(expires),
         consent: {
           provider_name: seed.id, account: { account_id: null, organization_id: null, project_id: null },
           scopes: [{ name: "model.request", description: "Send model requests", data_access: "the permitted request content" }],
           data_access: ["the permitted request content"], reauthorization: typeof body["reauthorize"] === "string" && body["reauthorize"] !== "", switch_account: body["switch_account"] === true,
         },
-      });
+      };
+      if (body["presentation"] === "popup") {
+        const flowId = `oaf_${"01J0000000000000000000000T"}`;
+        popupFlows.set(flowId, {
+          provider: seed.id, tenant: ctx.claims.tenantId, principal: ctx.claims.principalId,
+          application: ctx.claims.applicationId, workspace: ctx.claims.workspaceId, status: "pending", updated: now(),
+        });
+        out["flow_id"] = flowId;
+        out["poll_interval_ms"] = 1000;
+      }
+      return ok(out);
+    },
+
+    getProviderOAuthFlow: (ctx) => {
+      const id = ctx.flowId;
+      const fl = id === undefined ? undefined : popupFlows.get(id);
+      if (fl === undefined || fl.principal !== ctx.claims.principalId || fl.tenant !== ctx.claims.tenantId ||
+        fl.application !== ctx.claims.applicationId || fl.workspace !== ctx.claims.workspaceId) {
+        return problem(404, "validation_failed", "no such flow", { reason: "not_found" });
+      }
+      return ok({ flow_id: id, provider: fl.provider, status: fl.status, updated_at: stamp(fl.updated) });
+    },
+
+    cancelProviderOAuthFlow: (ctx) => {
+      const id = ctx.flowId;
+      const fl = id === undefined ? undefined : popupFlows.get(id);
+      if (fl === undefined || fl.principal !== ctx.claims.principalId || fl.tenant !== ctx.claims.tenantId ||
+        fl.application !== ctx.claims.applicationId || fl.workspace !== ctx.claims.workspaceId) {
+        return problem(404, "validation_failed", "no such flow", { reason: "not_found" });
+      }
+      if (fl.status === "pending") {
+        fl.status = "cancelled";
+        fl.updated = now();
+      }
+      return new Response(null, { status: 204 });
     },
 
     completeProviderOAuth: (ctx) => {
@@ -611,7 +658,7 @@ export const createFakeProvidersServer = (options: FakeProvidersServerOptions = 
     exportProviderUsage: ["from", "to", "provider", "channel", "scope", "format"],
   };
 
-  const answer = (route: Route | undefined, provider: string, url: URL, init: RequestInit | undefined, authorization: string | null): Response => {
+  const answer = (route: Route | undefined, provider: string, flowId: string, url: URL, init: RequestInit | undefined, authorization: string | null): Response => {
     if (route === undefined) return problem(404, "validation_failed", "no such route");
     const token = authorization?.startsWith("Bearer ") === true ? authorization.slice("Bearer ".length) : undefined;
     const claims = token === undefined ? undefined : tokens.get(token);
@@ -629,7 +676,10 @@ export const createFakeProvidersServer = (options: FakeProvidersServerOptions = 
     if (hasBody && new Headers(init?.headers).get("Content-Type")?.startsWith("application/json") !== true) {
       return problem(415, "validation_failed", "Content-Type must be application/json");
     }
-    return handlers[route.operation]({ route, provider, claims, query: url.searchParams, body, hasBody });
+    return handlers[route.operation]({
+      route, provider, claims, query: url.searchParams, body, hasBody,
+      ...(flowId !== "" && { flowId }),
+    });
   };
 
   const fetchFake = async (input: string, init?: RequestInit): Promise<Response> => {
@@ -639,12 +689,17 @@ export const createFakeProvidersServer = (options: FakeProvidersServerOptions = 
     const path = url.pathname.slice(prefix.length);
     const method = init?.method ?? "GET";
     let provider = "";
+    let flowId = "";
     const route = ROUTES.find((r) => {
       const match = r.method === method ? r.pattern.exec(path) : null;
-      if (match !== null) provider = decodeURIComponent(match[1] ?? "");
+      if (match !== null) {
+        const captured = decodeURIComponent(match[1] ?? "");
+        if (r.operation === "getProviderOAuthFlow" || r.operation === "cancelProviderOAuthFlow") flowId = captured;
+        else provider = captured;
+      }
       return match !== null;
     });
-    const response = answer(route, provider, url, init, new Headers(init?.headers).get("Authorization"));
+    const response = answer(route, provider, flowId, url, init, new Headers(init?.headers).get("Authorization"));
     requests.push({
       operation: route?.operation ?? "", method, path, query: url.search.replace(/^\?/, ""), authenticated: new Headers(init?.headers).has("Authorization"),
       status: response.status,

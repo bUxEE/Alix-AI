@@ -16,6 +16,23 @@
   known_usecases: [transcript]
   parameters:
     model: ggml-small-q5_1.bin
+# Parakeet TDT 0.6B v3 (ADR 0040 candidate; mudler/parakeet-cpp-gguf Q4_K). voicebench: run-matrix.sh stt-parakeet
+- name: parakeet-tdt-0.6b-v3
+  backend: parakeet-cpp
+  known_usecases: [transcript]
+  parameters:
+    model: tdt-0.6b-v3-q4_k.gguf
+# Whisper large-v3-turbo / large-v3 (ADR 0040 candidates). voicebench: stt-turbo | stt-large-v3
+- name: whisper-large-v3-turbo
+  backend: whisper
+  known_usecases: [transcript]
+  parameters:
+    model: ggml-large-v3-turbo-q5_0.bin
+- name: whisper-large-v3
+  backend: whisper
+  known_usecases: [transcript]
+  parameters:
+    model: ggml-large-v3-q5_0.bin
 # the ggml Silero VAD of whisper.cpp, served by the whisper backend (LocalAI gallery entry silero-vad-ggml)
 - name: silero-vad
   backend: whisper

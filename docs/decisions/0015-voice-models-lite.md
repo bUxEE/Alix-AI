@@ -1,6 +1,6 @@
 # 0015 — Voice models that meet quality and memory gates on CPU-only Lite hardware
 
-- **Status:** accepted
+- **Status:** accepted — Superseded in part by [0040](0040-parakeet-local-stt.md) (STT default on Balanced); Amended by [0039](0039-dictation-without-vad.md) (dictation may use STT without VAD)
 - **Date:** 2026-10-04
 - **Decided in task:** M0-16 (provisional default and ladder); finalised in M4-06 (measured, accepted 2026-10-04)
 

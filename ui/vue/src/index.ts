@@ -37,6 +37,9 @@ export { default as AlixVoiceMode } from "./voice/AlixVoiceMode.vue";
 export { default as AlixVoiceButton } from "./voice/AlixVoiceButton.vue";
 export { default as AlixTranscriptEditor } from "./voice/AlixTranscriptEditor.vue";
 export { default as AlixVoiceOrb } from "./voice/AlixVoiceOrb.vue";
+export { default as AlixDictationButton } from "./dictation/AlixDictationButton.vue";
+export { useAlixDictation, insertAtCaret } from "./dictation";
+export type { AlixDictation, DictationPhase, UseAlixDictationOptions, VoiceModeOption } from "./dictation";
 
 // ---- the AG-UI client and the state it feeds ----
 export { AguiHttpError, CONFIRMATION_TOKEN_HEADER, createAguiClient } from "./agui/client";

@@ -1,14 +1,20 @@
-# OAuth (additive plan 11.1; milestone X): browser-based OAuth 2.x Authorization Code with PKCE for provider connections.
-# Implemented by internal/gateway/routes_v1_providers.go, with the same operator gate, scope rules and wiring as the
-# providers area.
+# OAuth (additive plan 11.1; milestone X; 1.1.0 popup flow): browser-based OAuth 2.x Authorization Code with PKCE
+# for provider connections. Implemented by internal/gateway/routes_v1_providers.go, with the same operator gate,
+# scope rules and wiring as the providers area.
 #
-# The flow. The host application calls `start` with the redirect URI it controls (a loopback URI on a port it bound, or a
-# registered HTTPS redirect) and opens the returned `authorization_url` in the user's browser. The provider sends the
-# browser back to the redirect URI; the host application relays what it received to `callback` with a FRESH context token
-# of the same principal (tokens are single use). The state is single use and expiring, the redirect URI is bound to the
-# flow, the PKCE verifier never leaves the server and the tokens go only to the credential service. The response of
-# `start` holds the authorization URL (state, challenge and nonce; no verifier, no token) and the consent the host shows
-# (provider, account, scopes and what they reach). The callback answers with the connection status only.
+# Host-redirect flow (presentation redirect, the 1.0 default). The host application calls `start` with the redirect
+# URI it controls and opens the returned `authorization_url` in the user's browser. The provider sends the browser
+# back to the redirect URI; the host relays what it received to `callback` with a fresh context token of the same
+# principal. The state is single use and expiring, the redirect URI is bound to the flow, the PKCE verifier never
+# leaves the server and the tokens (or OAuth-issued API key) go only to the credential service.
+#
+# Popup flow (presentation popup, 1.1.0). The host opens `authorization_url` in a popup so the main window never
+# navigates. Provider login pages often send Cross-Origin-Opener-Policy, which nulls window.opener, so the opener
+# polls GET /v1/oauth/flows/{flow_id} as the source of truth; a postMessage from the callback page
+# (schemas/providers/oauth-popup-result) is only a fast path and carries no code, state or token. With callback
+# loopback, AlixAI binds an ephemeral 127.0.0.1 listener; redirect_uri stays required on the wire for compatibility
+# (tools/compat treats dropping a required member as breaking) and the caller sends the documented placeholder
+# http://127.0.0.1/oauth/loopback, which the engine ignores in favour of the bound listener.
 paths:
   /v1/oauth/{provider}/start:
     post:
@@ -17,11 +23,15 @@ paths:
       summary: Start the OAuth authorization of a provider
       description: |
         Prepares the consent for the requested capabilities (the smallest set of provider scopes they map to) and begins the authorization. A provider without OAuth for API access answers `validation_failed` with `details.reason` `manual_fallback`: use the manual credential route. Operator only (a tenant administrator of the deployment's own configuration unless said otherwise); `permission_denied` for everybody else, before the body is read.
+
+        **Presentation.** `presentation` defaults to `redirect` (1.0 behaviour: the host navigates or opens a full window and relays the callback). `popup` keeps the host page in place: the response includes `flow_id` and `poll_interval_ms` so the opener can poll `GET /v1/oauth/flows/{flow_id}`. With `popup`, `opener_origin` is required: the exact origin (scheme://host[:port], no path) of the host page, used only as the `targetOrigin` of the callback page's postMessage. It is validated against the operator allowlist `external_providers.oauth.popup_origins` (never `*`).
+
+        **Callback.** `callback` defaults to `host` (the host's registered `redirect_uri` receives the provider redirect). `loopback` means AlixAI binds an ephemeral 127.0.0.1 listener and completes the exchange itself; the caller still sends `redirect_uri` (required for wire compatibility) with the placeholder `http://127.0.0.1/oauth/loopback`.
       parameters:
         - name: provider
           in: path
           required: true
-          description: The provider id (for example `openai`).
+          description: The provider id (for example `openai`, `openrouter`, `xai`, `moonshot`, `deepgram`, `elevenlabs`, `google-stt`). Slug pattern; not an enum.
           schema:
             type: string
             pattern: '^[a-z][a-z0-9_-]{0,31}$'
@@ -59,7 +69,7 @@ paths:
       tags: [oauth]
       summary: Complete an OAuth authorization
       description: |
-        Passes the redirect the browser followed to the OAuth engine, with the token's scope (which must be the scope that started the flow, principal included). A state that is unknown, replayed, expired or issued to another scope is refused and spent; nothing is stored unless every check passed. The code and the state are never echoed or logged. Operator only (a tenant administrator of the deployment's own configuration unless said otherwise); `permission_denied` for everybody else, before the body is read.
+        Passes the redirect the browser followed to the OAuth engine, with the token's scope (which must be the scope that started the flow, principal included). A state that is unknown, replayed, expired or issued to another scope is refused and spent; nothing is stored unless every check passed. The code and the state are never echoed or logged. Operator only (a tenant administrator of the deployment's own configuration unless said otherwise); `permission_denied` for everybody else, before the body is read. Used by the host-callback path; a loopback popup flow completes inside AlixAI and does not call this route.
       requestBody:
         required: true
         content:
@@ -88,10 +98,69 @@ paths:
         '503':
           $ref: ../openapi.yaml#/components/responses/Unavailable
 
+  /v1/oauth/flows/{flow_id}:
+    parameters:
+      - name: flow_id
+        in: path
+        required: true
+        description: The opaque flow id returned by start when presentation is popup.
+        schema:
+          type: string
+          pattern: '^oaf_[0-9A-HJKMNP-TV-Z]{26}$'
+    get:
+      operationId: getProviderOAuthFlow
+      tags: [oauth]
+      summary: Read the status of a popup OAuth flow
+      description: |
+        Returns the server-side status of a flow started with `presentation` `popup`. Only the principal that started the flow may read it (same application, tenant, workspace and principal); any other caller, and an unknown id, answers `not_found`. Operator only. This is the source of truth when `window.opener` is nulled.
+      responses:
+        '200':
+          description: The current flow status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthFlowStatus'
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: '#/components/responses/OAuthFlowNotFound'
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+    delete:
+      operationId: cancelProviderOAuthFlow
+      tags: [oauth]
+      summary: Cancel a pending popup OAuth flow
+      description: |
+        Cancels a pending flow (the user closed the popup). Idempotent: a flow that is already completed, failed, expired or cancelled answers `204` without changing a finished outcome. Only the principal that started the flow may cancel it; any other caller answers `not_found`. Operator only.
+      responses:
+        '204':
+          description: The flow is cancelled, or was already terminal.
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: '#/components/responses/OAuthFlowNotFound'
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
 components:
+  responses:
+    OAuthFlowNotFound:
+      description: The flow id is unknown or belongs to another principal (`not_found`).
+      content:
+        application/json:
+          schema:
+            $ref: ../openapi.yaml#/components/schemas/Error
   schemas:
     OAuthConnectionStatus:
       $ref: ../../providers/connection-status.schema.json
+    OAuthFlowStatus:
+      $ref: ../../providers/oauth-flow-status.schema.json
+    OAuthPopupResult:
+      $ref: ../../providers/oauth-popup-result.schema.json
     OAuthStartRequest:
       type: object
       additionalProperties: false
@@ -107,7 +176,10 @@ components:
         redirect_uri:
           type: string
           maxLength: 512
-          description: Where the provider sends the browser back. Bound to the flow and checked again at the callback.
+          description: |
+            Where the provider sends the browser back. Bound to the flow and checked again at the callback when `callback` is `host`.
+            Remains required for wire compatibility with 1.0 (dropping a required member is a breaking change under tools/compat).
+            When `callback` is `loopback`, send the placeholder `http://127.0.0.1/oauth/loopback`; AlixAI ignores it and uses the ephemeral listener it bound.
         reauthorize:
           type: string
           description: An existing connection to renew (re-consent or account switch).
@@ -116,6 +188,22 @@ components:
         label:
           type: string
           maxLength: 128
+        presentation:
+          type: string
+          enum: [redirect, popup]
+          description: 'How the authorization URL is shown. Default redirect (1.0). popup keeps the host page from navigating and enables flow polling.'
+        callback:
+          type: string
+          enum: [host, loopback]
+          description: 'Who receives the provider redirect. Default host. loopback: AlixAI binds 127.0.0.1 and completes the exchange; redirect_uri must still be the documented placeholder.'
+        opener_origin:
+          type: string
+          maxLength: 256
+          pattern: '^https?://[A-Za-z0-9._~-]+(:[0-9]{1,5})?$'
+          description: |
+            Exact origin of the host page that opened the popup (scheme://host[:port], no path, query or fragment).
+            Required when presentation is popup; used only as postMessage targetOrigin. Validated against the operator allowlist
+            `external_providers.oauth.popup_origins` (never `*`). Ignored for presentation redirect.
     OAuthStarted:
       type: object
       additionalProperties: false
@@ -161,6 +249,15 @@ components:
               type: boolean
             switch_account:
               type: boolean
+        flow_id:
+          type: string
+          pattern: '^oaf_[0-9A-HJKMNP-TV-Z]{26}$'
+          description: Opaque id of the flow. Present when presentation is popup so the opener can poll; optional for additive compatibility with 1.0 responses.
+        poll_interval_ms:
+          type: integer
+          minimum: 250
+          maximum: 10000
+          description: Suggested polling interval for GET /v1/oauth/flows/{flow_id}. Present with flow_id when presentation is popup.
     OAuthCallbackRequest:
       type: object
       additionalProperties: false

@@ -1,0 +1,118 @@
+{
+  "profile_id": "pprf_01J0000000000000000000FXTM",
+  "provider_id": "openrouter",
+  "endpoint": "https://openrouter.ai/api/v1",
+  "model_id": "openai/gpt-4o-mini",
+  "model_version": "unpinned",
+  "roles": [
+    "conversational_controller",
+    "language_realization"
+  ],
+  "cred_ref": null,
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "streaming": true,
+  "structured_output": "schema_best_effort",
+  "tool_calling": {
+    "supported": true,
+    "strict_arguments": false,
+    "parallel_calls": true,
+    "max_tools": 32
+  },
+  "remote_mcp": {
+    "supported": false
+  },
+  "native_features": {
+    "available": [
+      "server_tool_loops"
+    ]
+  },
+  "limits": {
+    "max_context_toks": 1048576,
+    "max_output_toks": 32768,
+    "max_request_bytes": 8388608
+  },
+  "image_generation": {
+    "supported": false,
+    "max_images_per_request": null,
+    "output_retention": "unknown"
+  },
+  "voice": {
+    "stt": false,
+    "tts": false,
+    "realtime": false,
+    "audio_retention": "unknown"
+  },
+  "terms": {
+    "retention": "unknown",
+    "retention_days": null,
+    "training_use": "unknown",
+    "terms_url": null,
+    "terms_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "recorded_on": "2026-10-08"
+  },
+  "region": {
+    "residency": "unknown",
+    "processing_regions": [],
+    "compliance": []
+  },
+  "rate_limits": {
+    "requests_per_min": 3000,
+    "toks_per_min": 4000000,
+    "concurrent_requests": null,
+    "retry": {
+      "max_attempts": 2,
+      "initial_backoff_ms": 500,
+      "max_backoff_ms": 8000,
+      "honors_retry_after": true
+    }
+  },
+  "pricing": {
+    "currency": "USD",
+    "effective_on": "2026-10-08",
+    "source_url": "https://dev.meta.ai/docs/pricing-rate-limits",
+    "prices": {
+      "toks_in": {
+        "per_units": 1000000,
+        "micro_units": 1250000
+      },
+      "toks_out": {
+        "per_units": 1000000,
+        "micro_units": 4250000
+      }
+    }
+  },
+  "usage_metering": "per_response",
+  "permitted_scopes": [
+    {
+      "application_id": "app_conf"
+    }
+  ],
+  "allowed_data_classes": [
+    "public",
+    "internal"
+  ],
+  "fallback": {
+    "profile_id": null,
+    "on": []
+  },
+  "last_policy_review": "2026-10-08",
+  "review_interval_days": 30,
+  "billing_notice": {
+    "version": "2026-10-08.1",
+    "text": "Meta AI (the consumer assistant in Facebook, Instagram, WhatsApp, Messenger and meta.ai) and a Meta account do not include API access to the Meta Model API or to Llama models. The Model API is a separate developer product: you create an API key in its own dashboard, its rate limits apply per team and its pay-as-you-go usage is billed separately from any Meta consumer product. Meta's earlier Llama API preview ended on 2026-07-06; hosted Llama is now sold by third-party hosts with their own accounts, keys and terms.",
+    "url": "https://dev.meta.ai/platform",
+    "subscription_grants_api_access": false
+  },
+  "billing_notice_ack": null,
+  "last_conformance": null,
+  "lifecycle": "candidate",
+  "created_at": "2026-10-08T08:00:00Z",
+  "updated_at": "2026-10-08T08:00:00Z"
+}

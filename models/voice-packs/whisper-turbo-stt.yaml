@@ -1,0 +1,42 @@
+# Voice language pack manifest (schema: pack-manifest.schema.json, urn:alixai:schema:voice:language-pack:v1).
+# STT-only multilingual candidate (ADR 0040): Whisper large-v3-turbo for Balanced and up, Whisper-family
+# alternative to Parakeet. Schema language is mul; OpenAI Whisper multilingual coverage includes en and it
+# (and the other Whisper languages). No VAD role: dictation clips are user-segmented. Conversation mode
+# still pairs STT with Silero VAD (ADR 0015). Quality/resources null until voicebench.
+id: whisper-turbo-stt
+name: "Multilingual speech input (Whisper large-v3-turbo q5_0, whisper.cpp)"
+version: "1"
+language: mul
+status: candidate
+models:
+  stt:
+    name: "Whisper large-v3-turbo, multilingual, Q5_0 (whisper.cpp ggml)"
+    engine: whisper.cpp
+    registry_id: null
+    files:
+      - name: ggml-large-v3-turbo-q5_0.bin
+        url: https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-large-v3-turbo-q5_0.bin
+        revision: 5359861c739e955e79d9a303bcbc70fb988958b1
+        size_bytes: 574041195
+        sha256: 394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2
+    licence:
+      spdx: MIT
+      url: https://huggingface.co/ggerganov/whisper.cpp/blob/5359861c739e955e79d9a303bcbc70fb988958b1/README.md
+      redistribution_notes: "MIT, declared by the whisper.cpp model repository card (licence mit on the Hub, checked 2026-10-26); upstream OpenAI Whisper weights are MIT. The ggml file is a third-party conversion by the whisper.cpp project. Size and sha256 are the Hugging Face LFS oid and byte size at the pinned revision (checked 2026-10-26). AlixAI does not bundle weights. Final sign-off is a human licence review."
+quality:
+  stt_wer: null
+  tts_time_to_first_audio_ms: null
+  tts_real_time_factor: null
+  measurement: null
+resources:
+  disk_bytes: 574041195
+  steady_rss_mb: null
+  peak_rss_mb: null
+  cpu_cores: null
+notes:
+  - "Candidate STT-only pack (ADR 0040). Whisper-family Balanced option beside Parakeet. Opt-in until voicebench clears the Balanced STT gates. Never a default while status is candidate."
+  - "large-v3-turbo: 809M parameters, 4 decoder layers, multilingual (same Whisper language set as other multilingual ggml models, including en and it). Pin is q5_0 (~547 MB); q8_0 also exists upstream (874188075 bytes, sha256 317eb69c11673c9de1e1f0d459b253999804ec71ac4c23c17ecf5fbe24e259a1) but is not the pack file."
+  - "Target profile: Balanced (CPU) and up. Worker RSS unmeasured; disk alone exceeds Whisper tiny/base. Not for Lite."
+  - "LocalAI: backend whisper, parameters.model: ggml-large-v3-turbo-q5_0.bin. Runs on CPU via whisper.cpp; GPU optional. No NVIDIA hardware required for this pack or for Parakeet (parakeet.cpp README: runs on CPU and on GPU backends)."
+  - "PROFILE DEFAULTS: Lite stays en-stt. Balanced may choose this pack or parakeet-stt after gates; Performance may choose this, whisper-large-v3-stt, or parakeet-stt. ONE-LINE FLIP: status qualified-emulated and voice.active_pack = whisper-turbo-stt when this candidate wins voicebench for the deployment."
+  - "Dictation: no VAD in this pack. Conversation mode: keep Silero VAD in front of STT (ADR 0015)."

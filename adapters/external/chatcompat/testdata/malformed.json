@@ -1,0 +1,1 @@
+{"id":"chatcmpl-fixture-bad-0001","object":"chat.completion","choices":"{{MARKER}}","usage":7}

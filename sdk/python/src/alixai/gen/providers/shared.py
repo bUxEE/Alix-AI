@@ -117,7 +117,7 @@ ProviderErrorKind = Literal["authentication_failed", "permission_denied", "rate_
 ProfileLifecycle = Literal["candidate", "qualified", "quarantined", "retired"]
 
 
-CredentialKind = Literal["oauth", "api_key"]
+CredentialKind = Literal["oauth", "api_key", "oauth_issued_key"]
 
 
 ConnectionWarning = Literal["broader_than_oauth_scopes", "excessive_permissions_reported", "unsupported_account_policy", "expiring_soon", "rotation_overdue"]

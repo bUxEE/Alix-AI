@@ -230,6 +230,7 @@ type OAuthStartInput struct {
 	// Capabilities are the capabilities to connect for; the engine requests the smallest set of provider scopes they map to.
 	Capabilities []string
 	// RedirectURI is where the provider sends the browser back: a loopback URI on a port the host bound, or a registered HTTPS redirect.
+	// For callback "loopback" send http://127.0.0.1/oauth/loopback (required on the wire for compatibility).
 	RedirectURI string
 	// Reauthorize names an existing connection to renew (re-consent or account switch).
 	Reauthorize string
@@ -237,6 +238,12 @@ type OAuthStartInput struct {
 	SwitchAccount bool
 	// Label is an optional name for the connection.
 	Label string
+	// Presentation is "redirect" (default) or "popup" (1.1.0).
+	Presentation string
+	// Callback is "host" (default) or "loopback" (1.1.0).
+	Callback string
+	// OpenerOrigin is the exact origin of the host page; required when Presentation is popup.
+	OpenerOrigin string
 }
 
 // OAuthScope is one scope as the consent shows it.
@@ -265,6 +272,10 @@ type OAuthStarted struct {
 	RedirectURI      string       `json:"redirect_uri"`
 	ExpiresAt        string       `json:"expires_at"`
 	Consent          OAuthConsent `json:"consent"`
+	// FlowID is set when Presentation was popup; poll GetOAuthFlow with it.
+	FlowID string `json:"flow_id,omitempty"`
+	// PollIntervalMS is the suggested polling interval when FlowID is set.
+	PollIntervalMS int `json:"poll_interval_ms,omitempty"`
 }
 
 // OAuthCallbackInput is the redirect the browser followed, relayed by the host.
@@ -747,6 +758,15 @@ func (p *ProvidersClient) StartOAuth(ctx context.Context, provider string, input
 	if input.Label != "" {
 		wire["label"] = input.Label
 	}
+	if input.Presentation != "" {
+		wire["presentation"] = input.Presentation
+	}
+	if input.Callback != "" {
+		wire["callback"] = input.Callback
+	}
+	if input.OpenerOrigin != "" {
+		wire["opener_origin"] = input.OpenerOrigin
+	}
 	return doJSON(ctx, p.c.t, providersRequest(opStartProviderOAuth, params, nil, jsonBody(wire)), applyOptions(options).deadline(p.c.timeout),
 		func(s *OAuthStarted) error {
 			if s.AuthorizationURL == "" || s.RedirectURI == "" || s.ExpiresAt == "" || s.Consent.ProviderName == "" || s.Consent.Scopes == nil {
@@ -754,6 +774,30 @@ func (p *ProvidersClient) StartOAuth(ctx context.Context, provider string, input
 			}
 			return nil
 		})
+}
+
+// GetOAuthFlow reads the server-side status of a popup OAuth flow (1.1.0). Unknown or foreign-scope ids are not_found.
+func (p *ProvidersClient) GetOAuthFlow(ctx context.Context, flowID string, options ...CallOption) (*pv.OauthFlowStatus, error) {
+	if flowID == "" {
+		return nil, invalidArgument("flowID", "it is required")
+	}
+	params := map[string]string{"flow_id": flowID}
+	return doJSON(ctx, p.c.t, providersRequest(opGetProviderOAuthFlow, params, nil, nil), applyOptions(options).deadline(p.c.timeout),
+		func(s *pv.OauthFlowStatus) error {
+			if s.FlowID == "" || s.Status == "" {
+				return errors.New("oauth flow: flow_id and status are required")
+			}
+			return nil
+		})
+}
+
+// CancelOAuthFlow cancels a pending popup OAuth flow (idempotent).
+func (p *ProvidersClient) CancelOAuthFlow(ctx context.Context, flowID string, options ...CallOption) error {
+	if flowID == "" {
+		return invalidArgument("flowID", "it is required")
+	}
+	params := map[string]string{"flow_id": flowID}
+	return doEmpty(ctx, p.c.t, providersRequest(opCancelProviderOAuthFlow, params, nil, nil), applyOptions(options).deadline(p.c.timeout))
 }
 
 // CompleteOAuth relays the redirect the browser followed to the OAuth engine with a FRESH context token of the

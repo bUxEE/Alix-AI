@@ -20,16 +20,16 @@
 //
 // The finalised local transcript is used before anything else: a transcript, or a local STT, means no
 // audio leaves. Raw audio goes to an external STT only when no local STT is installed, the provider
-// and the tenant both set the explicit RawAudio switch, the utterance was cut by the local VAD, the
-// provider accepts its size and the data-egress guard allows it (Deps.Audio: the audio of the class its
-// session states, under the audio setting of the egress policy, which is off by default). External TTS receives only text that was attested as a verified
-// response (Service.Attest takes the verify.Outcome of the turn; a piece of an attested text is
-// verified too, because the voice session speaks long answers in pieces). Wake word and microphone
-// state never reach this package. NewSTT treats audio as VAD-cut only when the call's context carries
-// WithVADSegmented (a session that does not cut utterances never sets it, so its raw audio stays local).
-// The decorators NewSTT and NewTTS implement voice.STT and voice.TTS
-// so the composition root can plug them through the voice provider factory; wiring them is not done
-// here.
+// and the tenant both set the explicit RawAudio switch, the utterance was segmented (local VAD for
+// voice conversation, or the host's record/stop for dictation), the provider accepts its size and the
+// data-egress guard allows it (Deps.Audio: the audio of the class its session states, under the audio
+// setting of the egress policy, which is off by default). External TTS receives only text that was
+// attested as a verified response (Service.Attest takes the verify.Outcome of the turn; a piece of an
+// attested text is verified too, because the voice session speaks long answers in pieces). Wake word
+// and microphone state never reach this package. NewSTT treats audio as segmented only when the call's
+// context carries WithVADSegmented or WithUserSegmented (a caller that sets neither keeps raw audio
+// local). The decorators NewSTT and NewTTS implement voice.STT and voice.TTS so the composition root
+// can plug them through the voice provider factory; wiring them is not done here.
 //
 // # Images and files
 //

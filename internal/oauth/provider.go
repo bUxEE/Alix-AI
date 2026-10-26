@@ -95,15 +95,57 @@ type ProviderConfig struct {
 	// Loopback allows RFC 8252 loopback redirects (http, 127.0.0.1 or [::1], any port) on LoopbackPath.
 	Loopback     bool
 	LoopbackPath string // default "/oauth/callback"
+	// LoopbackOnly refuses host (https) redirects: SIWC for open-source apps is loopback-only.
+	LoopbackOnly bool
 
 	Account AccountMapping
+
+	// GrantKind selects how Complete stores the grant. Empty or GrantOAuth stores access/refresh tokens;
+	// GrantIssuedKey exchanges for a provider-issued API key (OpenRouter).
+	GrantKind GrantKind
+	// AuthStyle selects the authorization URL shape. Empty is standard OAuth; AuthStyleOpenRouter uses
+	// callback_url + PKCE without state.
+	AuthStyle AuthStyle
+	// NoState: the provider has no state parameter; the flow is bound by the loopback redirect / flow id.
+	NoState bool
+	// Resource is the RFC 8707 resource parameter sent on authorize and token requests when set.
+	Resource string
+	// DynamicClient: first authorize uses InitialClientID (+ ext_agent_host_id); the token response may
+	// issue a durable client_id stored with the credential for reuse.
+	DynamicClient   bool
+	InitialClientID string // e.g. dynamic_agent_client
+	AgentNameHint   string
+	// KeyExchangeEndpoint is the POST JSON endpoint for GrantIssuedKey (OpenRouter /api/v1/auth/keys).
+	KeyExchangeEndpoint string
 }
+
+// GrantKind is how a completed authorization is stored.
+type GrantKind string
+
+// The grant kinds.
+const (
+	GrantOAuth     GrantKind = "oauth"
+	GrantIssuedKey GrantKind = "issued_key"
+)
+
+// AuthStyle is the authorization URL shape.
+type AuthStyle string
+
+// The auth styles.
+const (
+	AuthStyleStandard   AuthStyle = ""
+	AuthStyleOpenRouter AuthStyle = "openrouter"
+)
 
 // Reserved parameter names ExtraAuthParams must not set.
 var reservedAuthParams = []string{"response_type", "client_id", "redirect_uri", "scope", "state", "nonce",
-	"code_challenge", "code_challenge_method", "prompt", "request", "request_uri"}
+	"code_challenge", "code_challenge_method", "prompt", "request", "request_uri", "resource",
+	"ext_agent_host_id", "agent_name_hint", "callback_url"}
 
 const defaultLoopbackPath = "/oauth/callback"
+
+// Normalize validates the config and returns a copy with the defaults filled in.
+func (c ProviderConfig) Normalize() (ProviderConfig, error) { return c.normalized() }
 
 // normalized validates the config and returns a copy with the defaults filled in.
 func (c ProviderConfig) normalized() (ProviderConfig, error) {
@@ -116,13 +158,38 @@ func (c ProviderConfig) normalized() (ProviderConfig, error) {
 	if !c.OAuthSupported {
 		return c, nil // nothing else matters: the manual fallback applies
 	}
-	if c.ClientID == "" {
+	if c.GrantKind == "" {
+		c.GrantKind = GrantOAuth
+	}
+	switch c.GrantKind {
+	case GrantOAuth, GrantIssuedKey:
+	default:
+		return bad("unknown grant kind")
+	}
+	if c.GrantKind == GrantIssuedKey {
+		if c.KeyExchangeEndpoint == "" || !validEndpoint(c.KeyExchangeEndpoint) {
+			return bad("an issued-key grant needs a key exchange endpoint")
+		}
+	} else if c.ClientID == "" && !(c.DynamicClient && c.InitialClientID != "") {
 		return bad("a client ID is required")
 	}
-	for _, e := range []string{c.AuthorizationEndpoint, c.TokenEndpoint} {
+	if c.DynamicClient && c.InitialClientID == "" {
+		return bad("dynamic client registration needs an initial client id")
+	}
+	if c.ClientID == "" && c.DynamicClient {
+		c.ClientID = c.InitialClientID
+	}
+	endpoints := []string{c.AuthorizationEndpoint}
+	if c.GrantKind == GrantOAuth {
+		endpoints = append(endpoints, c.TokenEndpoint)
+	}
+	for _, e := range endpoints {
 		if !validEndpoint(e) {
 			return bad("the authorization and token endpoints must be https (or http on loopback) URLs without credentials or fragments")
 		}
+	}
+	if c.LoopbackOnly && !c.Loopback {
+		return bad("loopback-only providers must allow loopback")
 	}
 	if c.RevocationEndpoint != "" && !validEndpoint(c.RevocationEndpoint) {
 		return bad("the revocation endpoint is not a valid URL")
@@ -300,15 +367,30 @@ type SupportInfo struct {
 // provider that is not listed is unverified and treated as having no OAuth flow: the manual fallback applies.
 func Support() []SupportInfo {
 	return []SupportInfo{
-		{ProviderID: "openai", OAuth: false, Checked: "2026-10-07",
-			Source: "https://developers.openai.com/api/reference/overview/",
-			Note:   "API keys or short-lived access tokens from workload identity federation (machine to machine, no browser consent)"},
-		{ProviderID: "anthropic", OAuth: false, Checked: "2026-10-07",
+		{ProviderID: "openai", OAuth: true, Checked: "2026-10-26",
+			Source: "https://developers.openai.com/siwc/token-sharing-open-source",
+			Note:   "Sign in with ChatGPT (SIWC) for open-source / locally hosted apps: loopback-only, dynamic client registration, ChatGPT plan usage of the signed-in principal; remote deployments use the manual API key"},
+		{ProviderID: "anthropic", OAuth: false, Checked: "2026-10-26",
 			Source: "https://platform.claude.com/docs/en/api/overview",
-			Note:   "API keys or workload identity federation tokens (machine to machine, no browser consent)"},
-		{ProviderID: "gemini", OAuth: true, Checked: "2026-10-07",
+			Note:   "No official third-party browser OAuth for API access; subscription OAuth outside Anthropic products is forbidden and blocked server-side; use a manual API key (or OpenRouter)"},
+		{ProviderID: "gemini", OAuth: true, Checked: "2026-10-26",
 			Source: "https://ai.google.dev/gemini-api/docs/oauth",
-			Note:   "OAuth 2.0 offered for stricter access control; scopes cloud-platform and generative-language.retriever are named"},
+			Note:   "OAuth 2.0 offered; operator registers their own Google OAuth client (Desktop for loopback, Web for host https); scope generative-language.retriever only (narrowest named for the programmatic client on the official page)"},
+		{ProviderID: "google-stt", OAuth: true, Checked: "2026-10-26",
+			Source: "https://ai.google.dev/gemini-api/docs/oauth",
+			Note:   "Shares the Google OAuth client config with gemini; cloud-platform (whole Cloud project; no narrower Speech-to-Text OAuth scope documented) — use a dedicated project"},
+		{ProviderID: "openrouter", OAuth: true, Checked: "2026-10-26",
+			Source: "https://openrouter.ai/docs/guides/overview/auth/oauth",
+			Note:   "Official PKCE login issues a user-controlled API key (stored as oauth_issued_key); no refresh; no state parameter"},
+		{ProviderID: "xai", OAuth: false, Checked: "2026-10-26",
+			Source: "https://docs.x.ai/",
+			Note:   "No official third-party OAuth; first-party Grok logins must not be reused; use a manual API key (or OpenRouter)"},
+		{ProviderID: "moonshot", OAuth: false, Checked: "2026-10-26",
+			Source: "https://platform.moonshot.ai/docs",
+			Note:   "No official third-party OAuth for Kimi; first-party logins must not be reused; use a manual API key (or OpenRouter)"},
+		{ProviderID: "meta", OAuth: false, Checked: "2026-10-26",
+			Source: "https://llama.meta.com/",
+			Note:   "No verified browser OAuth for API access; manual API key"},
 	}
 }
 

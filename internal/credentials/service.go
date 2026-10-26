@@ -419,6 +419,9 @@ type OAuthGrant struct {
 	Refresh Secret
 	// ExpiresAt is the expiry of the access value; nil if it does not expire.
 	ExpiresAt *time.Time
+	// OwnerPrincipal, when set, binds the credential to that principal of the grant's application:
+	// Resolve refuses every other principal (SIWC ChatGPT plan usage). Empty keeps tenant scope.
+	OwnerPrincipal string
 }
 
 // AddOAuth stores the values of an authorization and returns the reference, active, with the time of
@@ -449,24 +452,82 @@ func (s *Service) AddOAuth(ctx context.Context, scope contracts.Scope, g OAuthGr
 			return providers.CredentialRef{}, err
 		}
 	}
+	owner := ""
+	if g.OwnerPrincipal != "" {
+		if !accountRE.MatchString(g.OwnerPrincipal) {
+			return providers.CredentialRef{}, fail(contracts.ErrValidationFailed, ReasonBadRequest, "credentials: owner principal is not an identifier")
+		}
+		owner = g.OwnerPrincipal
+	}
 	return s.create(ctx, scope, loc, newRef{
 		kind: providers.CredentialKindOauth, provider: g.ProviderID, label: label, scopes: scopes, expires: expires,
-		status: providers.CredentialRefStatusActive, account: sanitizeAccount(g.Account),
+		status: providers.CredentialRefStatusActive, account: sanitizeAccount(g.Account), ownerPrincipal: owner,
 	}, s.def, "", g.Access, g.Refresh)
+}
+
+// OAuthIssuedKeyGrant is a provider-issued API key obtained through a browser login (for example
+// OpenRouter PKCE). It is stored as kind oauth_issued_key: fingerprint like a manual key, authorized_at
+// like OAuth, no broader_than_oauth_scopes warning and no refresh value.
+type OAuthIssuedKeyGrant struct {
+	ProviderID providers.ProviderID
+	Label      string
+	Scopes     []string
+	Account    providers.SafeAccount
+	Key        Secret
+}
+
+// AddOAuthIssuedKey stores a browser-login-issued API key. The key is validated like a manual key
+// when a validator is configured; it is not stored if the provider refuses it.
+func (s *Service) AddOAuthIssuedKey(ctx context.Context, scope contracts.Scope, g OAuthIssuedKeyGrant) (providers.CredentialRef, error) {
+	loc, err := s.begin(scope)
+	if err != nil {
+		return providers.CredentialRef{}, err
+	}
+	if err := s.checkDeployment(scope); err != nil {
+		return providers.CredentialRef{}, err
+	}
+	if s.def == nil {
+		return providers.CredentialRef{}, fail(contracts.ErrUnavailable, ReasonBackendUnknown, "credentials: no writable backend is configured")
+	}
+	label, scopes, _, err := s.checkCommon(g.ProviderID, g.Label, g.Scopes, nil)
+	if err != nil {
+		return providers.CredentialRef{}, err
+	}
+	if err := validValue(g.Key); err != nil {
+		return providers.CredentialRef{}, err
+	}
+	res, err := s.validate(ctx, g.ProviderID, g.Key, scopes)
+	if err != nil {
+		_ = s.lifecycle(ctx, loc, lifecycleAudit{Provider: string(g.ProviderID), Action: "rejected", Reason: string(ReasonOf(err))})
+		return providers.CredentialRef{}, err
+	}
+	var warnings []providers.ConnectionWarning
+	if res.ExcessivePermissions {
+		warnings = append(warnings, providers.ConnectionWarningExcessivePermissionsReported)
+	}
+	if res.UnsupportedAccountPolicy {
+		warnings = append(warnings, providers.ConnectionWarningUnsupportedAccountPolicy)
+	}
+	return s.create(ctx, scope, loc, newRef{
+		kind: providers.CredentialKindOauthIssuedKey, provider: g.ProviderID, label: label, scopes: scopes,
+		status: keyStatus(res), warnings: warnings, account: sanitizeAccount(g.Account),
+		fingerprint: Fingerprint(g.Key), validated: true,
+	}, s.def, "", g.Key, "")
 }
 
 // newRef is the typed part of a reference being created.
 type newRef struct {
-	kind        providers.CredentialKind
-	provider    providers.ProviderID
-	label       *string
-	scopes      []string
-	expires     *common.Timestamp
-	status      providers.CredentialRefStatus
-	warnings    []providers.ConnectionWarning
-	account     providers.SafeAccount
-	fingerprint string
-	validated   bool
+	kind           providers.CredentialKind
+	provider       providers.ProviderID
+	label          *string
+	scopes         []string
+	expires        *common.Timestamp
+	status         providers.CredentialRefStatus
+	warnings       []providers.ConnectionWarning
+	account        providers.SafeAccount
+	fingerprint    string
+	validated      bool
+	ownerPrincipal string
 }
 
 func (s *Service) create(ctx context.Context, scope contracts.Scope, loc audit.Locator, n newRef, b Backend, locator string, key, refresh Secret) (providers.CredentialRef, error) {
@@ -499,7 +560,7 @@ func (s *Service) create(ctx context.Context, scope contracts.Scope, loc audit.L
 	if n.validated {
 		ref.Times.LastValidatedAt = tsPtr(now)
 	}
-	r := row{ref: ref, backend: b.Name(), locator: locator, hasRefresh: !refresh.Empty()}
+	r := row{ref: ref, backend: b.Name(), locator: locator, hasRefresh: !refresh.Empty(), ownerPrincipal: n.ownerPrincipal}
 	slot := r.slot()
 	if !b.ReadOnly() {
 		if err := b.Put(ctx, slot, key); err != nil {
@@ -550,7 +611,7 @@ func (s *Service) view(r row) providers.CredentialRef {
 				ref.Warnings = append(ref.Warnings, providers.ConnectionWarningExpiringSoon)
 			}
 		}
-		if ref.Kind == providers.CredentialKindAPIKey {
+		if ref.Kind == providers.CredentialKindAPIKey || ref.Kind == providers.CredentialKindOauthIssuedKey {
 			since, ok := parseTS(ref.Times.RotatedAt)
 			if !ok {
 				since, ok = parseTS(ref.Times.AuthorizedAt)
@@ -693,6 +754,9 @@ func (s *Service) Resolve(ctx context.Context, scope contracts.Scope, ref string
 	}
 	if r.ref.Binding.ProviderID != use.Provider {
 		return refuse(deny(ReasonProviderMismatch, "credentials: the reference is for another provider"))
+	}
+	if r.ownerPrincipal != "" && (scope.PrincipalID != r.ownerPrincipal || scope.ApplicationID != string(r.ref.Binding.ApplicationID)) {
+		return refuse(deny(ReasonPrincipalMismatch, "credentials: this credential is bound to another principal"))
 	}
 	for _, sc := range use.Scopes {
 		if !slices.Contains(r.ref.Binding.Scopes, sc) {

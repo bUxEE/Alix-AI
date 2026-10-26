@@ -34,6 +34,27 @@ func TestNewSTTSendsRawAudioOnlyWhenTheCallSaysTheVADCutIt(t *testing.T) {
 	}
 }
 
+// Dictation sets WithUserSegmented instead of VAD: the host's record/stop is the cut.
+func TestNewSTTSendsRawAudioWhenTheCallSaysTheUserRecordedIt(t *testing.T) {
+	r := newRig(t)
+	r.on(true, ModSTT)
+	r.stt.Script("hello from dictation")
+	req := voice.TranscribeRequest{Audio: pcm(32000), Format: pcm16k}
+	gate := NewSTT(r.svc, r.target, nil, r.stt)
+
+	_, err := gate.Transcribe(context.Background(), scopeA, req)
+	wantCode(t, err, contracts.ErrPermissionDenied, ReasonAudioNotSegmented)
+
+	ctx := WithUserSegmented(WithAudioClass(context.Background(), "internal"))
+	tr, err := gate.Transcribe(ctx, scopeA, req)
+	if err != nil || tr.Text != "hello from dictation" || r.stt.CallCount() != 1 {
+		t.Fatalf("user-segmented audio: %+v, %v, %d calls", tr, err, r.stt.CallCount())
+	}
+	if !UserSegmentedForTest(ctx) || VADSegmentedForTest(ctx) || AudioClassForTest(ctx) != "internal" {
+		t.Fatalf("markers: user=%v vad=%v class=%q", UserSegmentedForTest(ctx), VADSegmentedForTest(ctx), AudioClassForTest(ctx))
+	}
+}
+
 // A piece of one attested reply is speakable; text spliced from two replies, or text the reply does not contain, is not.
 func TestAttestedPiecesAreContiguousPiecesOfOneReply(t *testing.T) {
 	r := newRig(t)

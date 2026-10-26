@@ -27,6 +27,11 @@ type Registry struct {
 
 	mu    sync.RWMutex
 	roles map[Role]*entry
+	// externalCover notes roles served by an external route with no local
+	// provider. Overall and Snapshot treat them as ok (ExternalCoverReason);
+	// Has and Usable stay false so LocalProviders and local fallbacks still
+	// see a local gap.
+	externalCover map[Role]bool
 }
 
 type entry struct {
@@ -76,6 +81,35 @@ func implements(role Role, p any) bool {
 		return ok
 	}
 	return role.Reserved()
+}
+
+// ExternalCoverReason is the /readyz status reason when a role has no local
+// provider but external_providers.routing names profiles for it. Coverage is
+// conditional: only tenants whose effective mode is External use that route
+// (Hybrid keeps the controller local; Local uses no external path).
+const ExternalCoverReason = "external_route: tenants in external mode"
+
+// MarkExternallyCovered records that role may be served by an external route so
+// a deployment with no local provider for it can still report ready. It does not
+// register a provider: Has and Usable stay false. Unknown roles are ignored.
+// Tenants still in Local or Hybrid mode have no text model until they opt in.
+func (r *Registry) MarkExternallyCovered(role Role) {
+	if !role.Valid() {
+		return
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.externalCover == nil {
+		r.externalCover = map[Role]bool{}
+	}
+	r.externalCover[role] = true
+}
+
+// ExternallyCovered reports whether MarkExternallyCovered was called for role.
+func (r *Registry) ExternallyCovered(role Role) bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.externalCover[role]
 }
 
 // Register binds p to role. A new registration starts as ok. It fails for an
@@ -267,6 +301,9 @@ func (r *Registry) Status(role Role) RoleStatus {
 func (r *Registry) statusLocked(role Role) RoleStatus {
 	e, ok := r.roles[role]
 	if !ok {
+		if r.externalCover[role] {
+			return RoleStatus{Role: role, Status: HealthOK, Reason: ExternalCoverReason}
+		}
 		reason := "not configured"
 		return RoleStatus{Role: role, Status: HealthUnavailable, Reason: reason, Effect: role.Effect(), Behavior: role.Behavior()}
 	}

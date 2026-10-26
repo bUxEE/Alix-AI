@@ -57,7 +57,7 @@ def ack_and_connect(client: AlixAIClient, provider: str) -> None:
 
 def test_the_operation_table_matches_the_document_for_the_providers_and_oauth_areas(spec: Spec) -> None:
     documented = [o for o in spec.operations if o.area in ("providers", "oauth")]
-    assert len(documented) == 16
+    assert len(documented) == 18
     assert {o.operation_id for o in documented} <= set(alixai.OPERATIONS)
     for o in documented:
         op = alixai.OPERATIONS[o.operation_id]
@@ -68,6 +68,7 @@ def test_the_methods_are_named_after_the_operations_on_both_clients(fake: FakeAl
     names = {
         "list", "submit_credential", "disconnect", "acknowledge_billing_notice", "get_disclosure", "get_mode", "set_mode", "get_egress_policy",
         "set_egress_policy", "get_budgets", "set_budget", "export_usage", "get_kill_switch", "set_kill_switch", "start_oauth", "complete_oauth",
+        "get_oauth_flow", "cancel_oauth_flow",
     }
     for api in (operator(fake).providers, fake.async_client().providers):
         assert names <= {n for n in dir(api) if not n.startswith("_")}
@@ -101,6 +102,13 @@ def exercise_providers_conformance(fake: FakeAlixAIServer, recorded: Callable[..
     query = f"code=c0de&state={state_of(started)}"
     p.complete_oauth(redirect_uri=REDIRECT, query="?" + query)
     assert failure(lambda: p.complete_oauth(redirect_uri=REDIRECT, query=query)).code == "conflict"
+    popup = p.start_oauth(
+        "openai", capabilities=["chat"], redirect_uri="http://127.0.0.1/oauth/loopback",
+        presentation="popup", callback="loopback", opener_origin="http://127.0.0.1:3000",
+    )
+    assert popup.flow_id
+    p.get_oauth_flow(popup.flow_id)
+    p.cancel_oauth_flow(popup.flow_id)
 
     p.get_mode()
     p.set_mode("deployment", "external")
@@ -401,6 +409,16 @@ def test_the_oauth_flow_the_manual_fallback_and_a_state_that_is_single_use(fake:
     assert all(r.body["query"] == "[redacted]" for r in recorded) and "abc123" not in repr(fake.requests)
     other = p.start_oauth("openai", capabilities=["chat"], redirect_uri=REDIRECT)
     assert failure(lambda: p.complete_oauth(redirect_uri="http://127.0.0.1:1/other", query=f"code=x&state={state_of(other)}")).code == "conflict"
+    popup = p.start_oauth(
+        "openai", capabilities=["chat"], redirect_uri="http://127.0.0.1/oauth/loopback",
+        presentation="popup", callback="loopback", opener_origin="http://127.0.0.1:3000",
+    )
+    assert popup.flow_id and popup.poll_interval_ms == 1000
+    assert p.get_oauth_flow(popup.flow_id).status == "pending"
+    p.cancel_oauth_flow(popup.flow_id)
+    assert p.get_oauth_flow(popup.flow_id).status == "cancelled"
+    p.cancel_oauth_flow(popup.flow_id)
+    assert failure(lambda: p.get_oauth_flow("oaf_01J0000000000000000000000Z")).code == "validation_failed"
 
 
 def test_the_billing_notice_is_acknowledged_on_the_current_version(fake: FakeAlixAIServer) -> None:

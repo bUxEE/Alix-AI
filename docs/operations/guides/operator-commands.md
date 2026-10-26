@@ -36,7 +36,10 @@ packaged install (container stack, systemd `DynamicUser`) **no earlier task ran 
 | Command | What it does | Defined in | State |
 | --- | --- | --- | --- |
 | `alixai version` | Prints the build version, commit and Go version. | `cmd_version.go` | Run (this task, by hand) |
-| `alixai config check -config F` | Loads and validates the configuration, then exits. Does not read TLS or key files. | `cmd_config_check.go` | Run (this task, by hand) |
+| `alixai config check -config F` | Loads and validates the configuration, then exits. Does not read TLS or key files. With External mode configured it also prints effective `llm` / `stt` / `tts` locality. | `cmd_config_check.go` | Run (this task, by hand) |
+| `alixai providers layers -config F` | Prints the effective locality of the llm, stt and tts layers from `external_providers.routing` and local runtime settings. | `providers_external_layers.go` | Run (`light_external_test.go`) |
+| `alixai providers login PROVIDER` | Browser OAuth (loopback) for openai / gemini / google-stt / openrouter; openai requires `--for APP/PRINCIPAL` (SIWC plan owner). Other providers exit 2 with a pointer to `credential add-ref`. | `providers_oauth.go` | Run (`providers_oauth_test.go`) |
+| `alixai providers credential add-ref` | Registers an `ALIXAI_SECRET_*` env or secret-directory file credential reference (no plaintext key in YAML). | `providers_oauth.go` | Run (`providers_oauth_test.go`) |
 | `alixai serve -config F` | Runs the service: store, model preflight, providers, gateway. | `cmd_serve.go` | Run (`cmd_serve_test.go`; this task, by hand) |
 | `alixai service install \| uninstall \| run` | The Windows service (virtual account `NT SERVICE\AlixAI`; refuses LocalSystem and named users). Windows only. | `cmd_service.go` | Static (`cmd_service_test.go`; not run as a service) |
 | `alixai keys init [-key-id ID]` | Creates the platform checkpoint signing key under `<data_dir>/keys/` and registers its public half. | `cmd_keys.go` | Run (`cmd_keys_test.go`; this task, by hand) |

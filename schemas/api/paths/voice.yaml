@@ -7,7 +7,92 @@
 # typed message, and the verified response text may then be spoken. Nothing about the session is voice-only, so a
 # deployment without voice, a speech component that is down, or a client that never opens this socket loses nothing of
 # the text API.
+#
+# Dictation (1.1.0, record-to-text) is separate from the WebSocket: GET /v1/dictations/capabilities and
+# POST /v1/sessions/{session_id}/dictations (implemented by internal/gateway/routes_v1_transcriptions.go). The
+# user presses record and stop; the clip is transcribed; the text is returned for the host to put in the chat input.
+# It is never submitted as a turn by AlixAI, uses no VAD, and does not open the voice socket. Paths use "dictations"
+# (not "transcriptions") so they are not mistaken for an OpenAI-compatible /v1/audio/transcriptions surface.
 paths:
+  /v1/dictations/capabilities:
+    get:
+      operationId: getDictationCapabilities
+      tags: [sessions]
+      summary: Dictation capabilities of this deployment
+      description: |
+        Reports whether record-to-text is available for the token's scope, whether recognition is local or external,
+        the maximum clip length, and the only accepted audio shape (WAV, PCM s16le, mono, 16000 Hz). The host uses
+        this to show or hide the record control. Scoped like every other `/v1` route. A deployment with no STT
+        answers with `available` false and `locality` `none` (or `503 unavailable` when the transcription service
+        is not wired at all).
+      responses:
+        '200':
+          description: Capabilities for the scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranscriptionCapabilities'
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/sessions/{session_id}/dictations:
+    parameters:
+      - $ref: '#/components/parameters/VoiceSessionId'
+      - name: language
+        in: query
+        required: false
+        description: Optional BCP 47 language hint for the recogniser.
+        schema:
+          type: string
+          maxLength: 35
+          pattern: '^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$'
+    post:
+      operationId: createSessionDictation
+      tags: [sessions]
+      summary: Transcribe a user-recorded clip (dictation)
+      description: |
+        Accepts raw `audio/wav` bytes (PCM signed 16-bit little-endian, mono, 16000 Hz only). The server computes
+        the duration from the PCM payload and never trusts a client duration. Default maximum length is 60 seconds
+        (operator configurable); the body-size limit is derived from that rate. The response is a DictationTranscript
+        for the host to place in the chat input so the user can edit it. The transcript is data, never instructions;
+        AlixAI never submits it as a turn; raw audio is not retained. This route does not use the voice-conversation
+        WebSocket and does not involve VAD: the user's record and stop are the segmentation (`segment_kind`
+        `user_recorded`).
+
+        Errors use the typed envelope: `unavailable` (no STT), `validation_failed` (wrong Content-Type, malformed
+        WAV, wrong format, too long, too short or silent), `permission_denied`, `resource_exhausted` (budget), and
+        the existing egress denial when external STT is refused.
+      requestBody:
+        required: true
+        content:
+          audio/wav:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: The recognised text and metadata.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DictationTranscript'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '413':
+          $ref: ../openapi.yaml#/components/responses/PayloadTooLarge
+        '415':
+          $ref: ../openapi.yaml#/components/responses/UnsupportedMediaType
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
   /v1/sessions/{session_id}/voice:
     parameters:
       - $ref: '#/components/parameters/VoiceSessionId'
@@ -139,3 +224,7 @@ components:
       $ref: ../../voice/client-message.schema.json
     VoiceServerEvent:
       $ref: ../../voice/server-event.schema.json
+    TranscriptionCapabilities:
+      $ref: ../../voice/transcription-capabilities.schema.json
+    DictationTranscript:
+      $ref: ../../voice/dictation-transcript.schema.json

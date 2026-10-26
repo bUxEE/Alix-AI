@@ -26,6 +26,11 @@ FILES=(
   "kokoro-v1.0.onnx|https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx|7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5"
   "voices-v1.0.bin|https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin|bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d"
   "it_IT-riccardo-x_low.onnx.json|$PV/it/it_IT/riccardo/x_low/it_IT-riccardo-x_low.onnx.json|146ab9c634afe524e9fb7530f2510df7a42fb1db56b52658ca1fb3d98001a62a"
+  # Parakeet TDT 0.6B v3 Q4_K (models/voice-packs/parakeet-stt.yaml; LocalAI parakeet-cpp)
+  "tdt-0.6b-v3-q4_k.gguf|https://huggingface.co/mudler/parakeet-cpp-gguf/resolve/c77726e46ceaab96b5a5a3328915edb44c73209d/tdt-0.6b-v3-q4_k.gguf|993d73feb4206dadda865ab25bd64b50c48dc4d013c3bf6126a721f28b1d5ee8"
+  # Whisper large-v3-turbo / large-v3 q5_0 (whisper-turbo-stt / whisper-large-v3-stt)
+  "ggml-large-v3-turbo-q5_0.bin|$WH/ggml-large-v3-turbo-q5_0.bin|394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2"
+  "ggml-large-v3-q5_0.bin|$WH/ggml-large-v3-q5_0.bin|d75795ecff3f83b5faa89d1900604ad8c780abd5739fae406de19f23ecd98ad1"
 )
 for f in "${FILES[@]}"; do
   IFS='|' read -r name url sha <<<"$f"

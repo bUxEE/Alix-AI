@@ -19,10 +19,14 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/buxee/alix-ai/adapters/external"
 	"github.com/buxee/alix-ai/adapters/external/anthropic"
 	"github.com/buxee/alix-ai/adapters/external/gemini"
 	"github.com/buxee/alix-ai/adapters/external/meta"
+	"github.com/buxee/alix-ai/adapters/external/moonshot"
 	"github.com/buxee/alix-ai/adapters/external/openai"
+	"github.com/buxee/alix-ai/adapters/external/openrouter"
+	"github.com/buxee/alix-ai/adapters/external/xai"
 	"github.com/buxee/alix-ai/internal/audit"
 	"github.com/buxee/alix-ai/internal/clock"
 	"github.com/buxee/alix-ai/internal/config"
@@ -86,9 +90,12 @@ type ExternalProviderSpec struct {
 	OpenAI openai.Config
 	// Anthropic, Gemini and Meta configure their adapters the same way. Gemini authenticates with an API key
 	// (Keys) or, when Gemini.Auth is gemini.AuthOAuth, with the access tokens of GeminiTokens.
-	Anthropic anthropic.Config
-	Gemini    gemini.Config
-	Meta      meta.Config
+	Anthropic  anthropic.Config
+	Gemini     gemini.Config
+	Meta       meta.Config
+	OpenRouter openrouter.Config
+	XAI        xai.Config
+	Moonshot   moonshot.Config
 	// GeminiTokens resolves the OAuth access token of a Gemini connection per call (extFinalEngineTokens over the
 	// shared OAuth engine). Only a Gemini.Auth of gemini.AuthOAuth uses it.
 	GeminiTokens gemini.TokenSource
@@ -111,13 +118,22 @@ var externalProviderFactories map[string]externalProviderFactory
 
 func init() {
 	externalProviderFactories = map[string]externalProviderFactory{
-		ExternalProviderOpenAI:    externalProviderBuildOpenAI,
-		ExternalProviderAnthropic: externalProviderBuildAnthropic,
-		ExternalProviderGemini:    externalProviderBuildGemini,
-		ExternalProviderMeta:      externalProviderBuildMeta,
+		ExternalProviderOpenAI:     externalProviderBuildOpenAI,
+		ExternalProviderAnthropic:  externalProviderBuildAnthropic,
+		ExternalProviderGemini:     externalProviderBuildGemini,
+		ExternalProviderMeta:       externalProviderBuildMeta,
+		ExternalProviderOpenRouter: externalProviderBuildOpenRouter,
+		ExternalProviderXAI:        externalProviderBuildXAI,
+		ExternalProviderMoonshot:   externalProviderBuildMoonshot,
 	}
 	extWireEngineSeams = extWireSeams
 	registerServeProvider(extWireProviderName, extWireProvide)
+	serveExternalCoversController = func() bool {
+		if !externalSection.Enabled {
+			return false
+		}
+		return len(externalSection.Routing["controller"].Profiles) > 0
+	}
 }
 
 // ExternalProviderOpenAI is the id of the OpenAI adapter.
@@ -128,8 +144,11 @@ const ExternalProviderAnthropic = anthropic.ProviderName
 
 // ExternalProviderGemini and ExternalProviderMeta are the ids of the Gemini and Meta adapters.
 const (
-	ExternalProviderGemini = gemini.ProviderName
-	ExternalProviderMeta   = meta.ProviderName
+	ExternalProviderGemini     = gemini.ProviderName
+	ExternalProviderMeta       = meta.ProviderName
+	ExternalProviderOpenRouter = openrouter.ProviderName
+	ExternalProviderXAI        = xai.ProviderName
+	ExternalProviderMoonshot   = moonshot.ProviderName
 )
 
 // NewExternalProvider builds the adapter for spec.Provider. It sends nothing.
@@ -259,6 +278,72 @@ func externalProviderBuildMeta(spec ExternalProviderSpec) (ExternalProvider, err
 	return c, nil
 }
 
+func externalProviderBuildOpenRouter(spec ExternalProviderSpec) (ExternalProvider, error) {
+	if spec.Egress == nil || spec.Keys == nil {
+		return nil, contracts.New(contracts.ErrValidationFailed, "cli: external providers need a destination registry and a key source")
+	}
+	base := spec.OpenRouter.BaseURL
+	if base == "" {
+		base = openrouter.DefaultBaseURL
+	}
+	if err := extWireAllowOrigin(spec.Egress, openrouter.ProviderName, base); err != nil {
+		return nil, err
+	}
+	var opts []openrouter.Option
+	if spec.Logger != nil {
+		opts = append(opts, openrouter.WithLogger(spec.Logger))
+	}
+	c, err := openrouter.New(spec.OpenRouter, spec.Egress.Dialer(openrouter.ProviderName), openrouter.KeySource(spec.Keys), opts...)
+	if err != nil {
+		return nil, fmt.Errorf("cli: %w", err)
+	}
+	return c, nil
+}
+
+func externalProviderBuildXAI(spec ExternalProviderSpec) (ExternalProvider, error) {
+	if spec.Egress == nil || spec.Keys == nil {
+		return nil, contracts.New(contracts.ErrValidationFailed, "cli: external providers need a destination registry and a key source")
+	}
+	base := spec.XAI.BaseURL
+	if base == "" {
+		base = xai.DefaultBaseURL
+	}
+	if err := extWireAllowOrigin(spec.Egress, xai.ProviderName, base); err != nil {
+		return nil, err
+	}
+	var opts []xai.Option
+	if spec.Logger != nil {
+		opts = append(opts, xai.WithLogger(spec.Logger))
+	}
+	c, err := xai.New(spec.XAI, spec.Egress.Dialer(xai.ProviderName), xai.KeySource(spec.Keys), opts...)
+	if err != nil {
+		return nil, fmt.Errorf("cli: %w", err)
+	}
+	return c, nil
+}
+
+func externalProviderBuildMoonshot(spec ExternalProviderSpec) (ExternalProvider, error) {
+	if spec.Egress == nil || spec.Keys == nil {
+		return nil, contracts.New(contracts.ErrValidationFailed, "cli: external providers need a destination registry and a key source")
+	}
+	base := spec.Moonshot.BaseURL
+	if base == "" {
+		base = moonshot.DefaultBaseURL
+	}
+	if err := extWireAllowOrigin(spec.Egress, moonshot.ProviderName, base); err != nil {
+		return nil, err
+	}
+	var opts []moonshot.Option
+	if spec.Logger != nil {
+		opts = append(opts, moonshot.WithLogger(spec.Logger))
+	}
+	c, err := moonshot.New(spec.Moonshot, spec.Egress.Dialer(moonshot.ProviderName), moonshot.KeySource(spec.Keys), opts...)
+	if err != nil {
+		return nil, fmt.Errorf("cli: %w", err)
+	}
+	return c, nil
+}
+
 // ---------------------------------------------------------------------------------------------
 // The providers and oauth areas of `alixai serve` (milestone X, X-13).
 //
@@ -308,6 +393,17 @@ type externalConfig struct {
 	RevalidateEvery time.Duration `yaml:"revalidate_every"`
 	// BudgetSweepEvery is how often the timed-out budget reservations are marked expired (default 15 minutes).
 	BudgetSweepEvery time.Duration `yaml:"budget_sweep_every"`
+	// OAuth is the popup / provider-catalog section (1.1.0). Off unless providers are enabled under it.
+	OAuth externalOAuthConfig `yaml:"oauth"`
+	// Credentials lists env/file secret references bound at startup (never plaintext keys in YAML).
+	Credentials []externalCredRefConfig `yaml:"credentials"`
+	// OpenRouter / xAI / Moonshot origins and slash-free model maps (like meta_models).
+	OpenRouterBaseURL string            `yaml:"openrouter_base_url"`
+	XAIBaseURL        string            `yaml:"xai_base_url"`
+	MoonshotBaseURL   string            `yaml:"moonshot_base_url"`
+	OpenRouterModels  map[string]string `yaml:"openrouter_models"`
+	XAIModels         map[string]string `yaml:"xai_models"`
+	MoonshotModels    map[string]string `yaml:"moonshot_models"`
 }
 
 // externalRoute is the routing of one role.
@@ -375,6 +471,9 @@ func (c externalConfig) Validate() error {
 		if _, err := modes.Role(role).External(); err != nil {
 			return contracts.New(contracts.ErrValidationFailed, "external_providers.routing: this role is never routed to an external provider: "+role)
 		}
+		if role == string(modes.RoleTTS) && len(r.Profiles) > 0 && !externalTTSAdapterReady() {
+			return contracts.New(contracts.ErrValidationFailed, "external_providers.routing: external TTS is not available yet (roadmap)")
+		}
 		for _, id := range r.Profiles {
 			if !externalIDRE.MatchString(id) {
 				return contracts.New(contracts.ErrValidationFailed, "external_providers.routing: not a profile id in role "+role)
@@ -386,8 +485,51 @@ func (c externalConfig) Validate() error {
 			}
 		}
 	}
+	for name, v := range map[string]string{
+		"openrouter_base_url": c.OpenRouterBaseURL, "xai_base_url": c.XAIBaseURL, "moonshot_base_url": c.MoonshotBaseURL,
+	} {
+		if v != "" {
+			if _, err := egress.DestinationFromURL(v); err != nil {
+				return contracts.New(contracts.ErrValidationFailed, "external_providers."+name+": not a bare http(s) origin")
+			}
+		}
+	}
+	if err := c.OAuth.Validate(); err != nil {
+		return err
+	}
+	for _, r := range c.Credentials {
+		if err := r.Validate(); err != nil {
+			return err
+		}
+	}
 	return c.extWirePolicy().Validate()
 }
+
+// externalLightTextModelOK refuses a light deployment that has neither a local
+// text model nor an external controller route. It runs after a successful Load
+// (config check and serve), when every section pointer holds the new values —
+// Validate cannot see sibling sections while Load still works on copies.
+func externalLightTextModelOK() error {
+	if !externalSection.Enabled {
+		return nil
+	}
+	if len(inferenceSection.Models) == 0 && len(externalSection.Routing["controller"].Profiles) == 0 {
+		return contracts.New(contracts.ErrValidationFailed,
+			"no text model available: external_providers is enabled with no controller route and no inference.models")
+	}
+	return nil
+}
+
+// externalTTSReady is set when an external TTS adapter registers itself so routing
+// tts to a profile is accepted. Empty today: external TTS is roadmap.
+var externalTTSReady atomic.Bool
+
+// RegisterExternalTTSAdapter marks that an external TTS adapter is available so
+// external_providers.routing may name profiles for tts. Future adapters call this
+// from their composition registration.
+func RegisterExternalTTSAdapter() { externalTTSReady.Store(true) }
+
+func externalTTSAdapterReady() bool { return externalTTSReady.Load() }
 
 // extWireConditions are the failure conditions a routing entry may name for the local fallback.
 var extWireConditions = []modes.Condition{
@@ -481,7 +623,34 @@ func externalServeProvider(_ context.Context, d serveDeps) error {
 	if err != nil {
 		return err
 	}
-	return gateway.Provide[gateway.ProvidersService](d.Services, svc)
+	if err := gateway.Provide[gateway.ProvidersService](d.Services, svc); err != nil {
+		return err
+	}
+	if err := gateway.Provide[gateway.ProvidersOAuthFlowService](d.Services, svc); err != nil {
+		return err
+	}
+	if err := bindConfiguredCredentialRefs(context.Background(), svc, sec); err != nil {
+		return err
+	}
+	return nil
+}
+
+// bindConfiguredCredentialRefs registers external_providers.credentials entries that name an application and tenant.
+func bindConfiguredCredentialRefs(ctx context.Context, a *externalAdmin, sec externalConfig) error {
+	for _, r := range sec.Credentials {
+		if r.Application == "" || r.Tenant == "" {
+			continue // CLI `providers credential add-ref` binds those; config entries without scope wait for an operator
+		}
+		scope := contracts.Scope{
+			DeploymentID: a.deployment, ApplicationID: r.Application, TenantID: r.Tenant,
+			WorkspaceID: r.Tenant, PrincipalID: "credential-ref", Roles: []string{"operator"},
+			CapabilityScopes: []string{"providers.manage"}, SessionID: "credential-ref",
+		}
+		if err := bindCredentialRefsAtStartup(ctx, a, scope, []externalCredRefConfig{r}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type externalAdminDeps struct {
@@ -512,6 +681,8 @@ type externalAdmin struct {
 	resolver   *modes.Resolver
 	deployOps  map[string]bool
 	tenantOps  map[string]bool
+	hostIDPath string           // SIWC ext_agent_host_id persistence
+	oauthEg    *egress.Registry // destination allowlist for token/key exchange
 }
 
 var _ gateway.ProvidersService = (*externalAdmin)(nil)
@@ -546,14 +717,28 @@ func newExternalAdmin(d externalAdminDeps) (*externalAdmin, error) {
 		}
 		val = externalKeyValidator{base: base, deployment: d.DeploymentID, sec: d.Section}
 	}
+	envBackend := credentials.NewEnvBackend("")
+	fileBackend, err := credentials.NewFileBackend(secrets)
+	if err != nil {
+		return nil, err
+	}
 	cs, err := credentials.New(credentials.Config{
-		DB: d.DB, Audit: d.Audit, DeploymentID: d.DeploymentID, Backends: []credentials.Backend{file},
-		Default: credentials.BackendEncryptedFile, Validator: val, Clock: d.Clock, Logger: d.Log,
+		DB: d.DB, Audit: d.Audit, DeploymentID: d.DeploymentID,
+		Backends: []credentials.Backend{file, envBackend, fileBackend},
+		Default:  credentials.BackendEncryptedFile, Validator: val, Clock: d.Clock, Logger: d.Log,
 	})
 	if err != nil {
 		return nil, err
 	}
-	eng, err := oauth.New(oauth.Config{Credentials: cs, Egress: extFinalOAuthRegistry(), Clock: d.Clock, Logger: d.Log})
+	oauthReg := extFinalOAuthRegistry()
+	oauthProviders, err := buildOAuthProviders(d.Section)
+	if err != nil {
+		return nil, err
+	}
+	eng, err := oauth.New(oauth.Config{
+		Credentials: cs, Egress: oauthReg, Providers: oauthProviders, Clock: d.Clock, Logger: d.Log,
+		PopupOrigins: d.Section.OAuth.PopupOrigins,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -580,6 +765,7 @@ func newExternalAdmin(d externalAdminDeps) (*externalAdmin, error) {
 	a := &externalAdmin{
 		deployment: d.DeploymentID, clk: d.Clock, log: d.Log, audit: d.Audit, creds: cs, oauth: eng, reg: reg, egress: eg,
 		budget: bg, modes: mf, resolver: res, deployOps: map[string]bool{}, tenantOps: map[string]bool{},
+		hostIDPath: filepath.Join(d.Dir, "siwc_host_id"), oauthEg: oauthReg,
 	}
 	for _, p := range d.Section.DeploymentOperators {
 		a.deployOps[p] = true
@@ -733,26 +919,7 @@ func (a *externalAdmin) bindIfFree(ctx context.Context, scope contracts.Scope, p
 // ---- OAuth and manual credentials ----
 
 func (a *externalAdmin) OAuthStart(ctx context.Context, scope contracts.Scope, req gateway.ProvidersOAuthStart) (gateway.ProvidersOAuthStarted, error) {
-	pr := oauth.PrepareRequest{ProviderID: req.Provider, Capabilities: req.Capabilities, Reauthorize: req.Reauthorize, SwitchAccount: req.SwitchAccount}
-	consent, err := a.oauth.Prepare(ctx, scope, pr)
-	if err != nil {
-		return gateway.ProvidersOAuthStarted{}, externalOAuthError(err)
-	}
-	au, err := a.oauth.Begin(ctx, scope, oauth.BeginRequest{PrepareRequest: pr, ConsentDigest: consent.Digest, RedirectURI: req.RedirectURI, Label: req.Label})
-	if err != nil {
-		return gateway.ProvidersOAuthStarted{}, externalOAuthError(err)
-	}
-	out := gateway.ProvidersOAuthStarted{
-		AuthorizationURL: au.URL, RedirectURI: au.RedirectURI, ExpiresAt: au.ExpiresAt,
-		Consent: gateway.ProvidersOAuthConsent{
-			ProviderName: au.Consent.ProviderName, Account: au.Consent.Account, DataAccess: au.Consent.DataAccess,
-			Reauthorization: au.Consent.Reauthorization, SwitchAccount: au.Consent.SwitchAccount,
-		},
-	}
-	for _, s := range au.Consent.Scopes {
-		out.Consent.Scopes = append(out.Consent.Scopes, gateway.ProvidersOAuthScope{Name: s.Name, Description: s.Description, DataAccess: s.DataAccess})
-	}
-	return out, nil
+	return a.oauthStartWithOptions(ctx, scope, req)
 }
 
 // externalOAuthError keeps the typed code and the fixed reason, and says "manual_fallback" the way the API documents.
@@ -1401,10 +1568,11 @@ func (s *extWireSender) generatorFor(p pv.ProviderProfile) (providers.Multimodal
 		return c, nil
 	}
 	spec := ExternalProviderSpec{Provider: string(p.ProviderID), Egress: s.reg, Logger: s.log}
+	bearer := extFinalBearerKeys{provider: string(p.ProviderID), service: s.admin.creds, engine: s.admin.oauth}
 	switch string(p.ProviderID) {
 	case ExternalProviderOpenAI:
 		spec.OpenAI = openai.Config{BaseURL: s.sec.OpenAIBaseURL, CredentialRef: ref, Model: string(p.ModelID)}
-		spec.Keys = openai.ServiceKeys{Service: s.admin.creds}
+		spec.Keys = bearer
 	case ExternalProviderAnthropic:
 		spec.Anthropic = anthropic.Config{BaseURL: s.sec.AnthropicBaseURL, CredentialRef: ref, Model: string(p.ModelID)}
 		spec.Keys = anthropic.ServiceKeys{Service: s.admin.creds}
@@ -1422,6 +1590,27 @@ func (s *extWireSender) generatorFor(p pv.ProviderProfile) (providers.Multimodal
 			ReplyModel: reply,
 		}
 		spec.Keys = meta.ServiceKeys{Service: s.admin.creds}
+	case ExternalProviderOpenRouter:
+		wire, reply := string(p.ModelID), ""
+		if w, ok := s.sec.OpenRouterModels[wire]; ok {
+			wire, reply = w, string(p.ModelID)
+		}
+		spec.OpenRouter = openrouter.Config{BaseURL: s.sec.OpenRouterBaseURL, CredentialRef: ref, Model: wire, ReplyModel: reply}
+		spec.Keys = bearer
+	case ExternalProviderXAI:
+		wire, reply := string(p.ModelID), ""
+		if w, ok := s.sec.XAIModels[wire]; ok {
+			wire, reply = w, string(p.ModelID)
+		}
+		spec.XAI = xai.Config{BaseURL: s.sec.XAIBaseURL, CredentialRef: ref, Model: wire, ReplyModel: reply}
+		spec.Keys = bearer
+	case ExternalProviderMoonshot:
+		wire, reply := string(p.ModelID), ""
+		if w, ok := s.sec.MoonshotModels[wire]; ok {
+			wire, reply = w, string(p.ModelID)
+		}
+		spec.Moonshot = moonshot.Config{BaseURL: s.sec.MoonshotBaseURL, CredentialRef: ref, Model: wire, ReplyModel: reply}
+		spec.Keys = bearer
 	default:
 		return nil, contracts.New(contracts.ErrUnavailable, "no external adapter is built for this provider")
 	}
@@ -1938,6 +2127,43 @@ func (w extFinalEngineTokens) Bearer(ctx context.Context, scope contracts.Scope,
 	return w.e.Token(ctx, scope, oauth.TokenRequest{Ref: pv.CredentialRefID(ref), Scopes: scopes, ForceRefresh: forceRefresh})
 }
 
+// extFinalBearerKeys resolves API keys directly and OAuth access tokens through the engine (SIWC refresh +
+// chatgpt.tokens.use.direct gate). oauth_issued_key (OpenRouter) resolves like an API key.
+type extFinalBearerKeys struct {
+	provider string
+	service  *credentials.Service
+	engine   *oauth.Engine
+	scopes   []string
+}
+
+var _ openai.KeySource = extFinalBearerKeys{}
+
+func (k extFinalBearerKeys) Key(ctx context.Context, scope contracts.Scope, ref string) (credentials.Secret, error) {
+	if k.service == nil {
+		return "", contracts.New(contracts.ErrInternal, k.provider+": the credential service is not wired")
+	}
+	got, err := k.service.Get(ctx, scope, pv.CredentialRefID(ref))
+	if err != nil {
+		return "", err
+	}
+	switch got.Kind {
+	case pv.CredentialKindOauth:
+		if k.engine == nil {
+			return "", contracts.New(contracts.ErrInternal, k.provider+": the OAuth engine is not wired")
+		}
+		scopes := k.scopes
+		if k.provider == ExternalProviderOpenAI {
+			scopes = append([]string{}, scopes...)
+			if !slices.Contains(scopes, "chatgpt.tokens.use.direct") {
+				scopes = append(scopes, "chatgpt.tokens.use.direct")
+			}
+		}
+		return k.engine.Token(ctx, scope, oauth.TokenRequest{Ref: pv.CredentialRefID(ref), Scopes: scopes})
+	default:
+		return external.ExtResolveKey(ctx, k.provider, k.service, k.scopes, scope, ref)
+	}
+}
+
 // extFinalCredentialKinds reads the kind of a credential reference in the caller's scope. *credentials.Service implements it.
 type extFinalCredentialKinds interface {
 	Get(ctx context.Context, scope contracts.Scope, ref pv.CredentialRefID) (pv.CredentialRef, error)
@@ -2081,12 +2307,20 @@ type extFinalVoice struct {
 	log      *slog.Logger
 }
 
+// extFinalVoiceSourceHook, when set (providers_external_stt.go), supplies the external speech
+// clients for routed STT/TTS profiles. Nil keeps the dormant NoVoice source.
+var extFinalVoiceSourceHook func(*externalAdmin) extFinalVoiceSource
+
 func extFinalNewVoice(a *externalAdmin, policy modes.PolicySource, text extmodal.TextEgress, log *slog.Logger) (*extFinalVoice, error) {
 	svc, err := extmodal.New(extmodal.Deps{Policy: extmodal.NewMemoryPolicy(), Egress: text, Audio: extAudioEgress{guard: a.egress}, Budgets: a.budget, Clock: a.clk})
 	if err != nil {
 		return nil, err
 	}
-	return &extFinalVoice{svc: svc, modes: a.resolver, policy: policy, profiles: a.reg, source: extFinalNoVoice{}, log: log}, nil
+	source := extFinalVoiceSource(extFinalNoVoice{})
+	if extFinalVoiceSourceHook != nil {
+		source = extFinalVoiceSourceHook(a)
+	}
+	return &extFinalVoice{svc: svc, modes: a.resolver, policy: policy, profiles: a.reg, source: source, log: log}, nil
 }
 
 // extFinalWrapVoice is the voiceLocalAIExternal hook: with external mode on, it routes the speech roles the deployment
@@ -2171,42 +2405,7 @@ func extFinalLocalAllowed(rp modes.RolePolicy, err error) bool {
 	return rp.FallsBackOn(modes.CondEgressDenied)
 }
 
-// extFinalSTT is the speech-to-text of the voice profile with external mode on.
-type extFinalSTT struct{ local voice.STT }
-
-var _ voice.STT = extFinalSTT{}
-
-// Transcribe implements voice.STT.
-func (s extFinalSTT) Transcribe(ctx context.Context, scope contracts.Scope, req voice.TranscribeRequest) (voice.Transcript, error) {
-	v := extFinalVoiceHolder.Load()
-	rt, err := v.route(ctx, scope, modes.RoleSTT)
-	if err != nil {
-		return voice.Transcript{}, err
-	}
-	if !rt.external || rt.kit.STT == nil {
-		return s.localOnly(ctx, scope, req)
-	}
-	got, err := extmodal.NewSTT(v.svc, rt.target, s.local, rt.kit.STT).Transcribe(ctx, scope, req)
-	if err != nil && s.local != nil && extFinalLocalAllowed(rt.policy, err) {
-		return s.local.Transcribe(ctx, scope, req)
-	}
-	return got, err
-}
-
-func (s extFinalSTT) localOnly(ctx context.Context, scope contracts.Scope, req voice.TranscribeRequest) (voice.Transcript, error) {
-	if s.local == nil {
-		return voice.Transcript{}, contracts.New(contracts.ErrUnavailable, "voice: no speech recogniser is installed")
-	}
-	return s.local.Transcribe(ctx, scope, req)
-}
-
-// TranscribeStream implements voice.STT. Raw audio is never streamed out: recognition streams are local.
-func (s extFinalSTT) TranscribeStream(ctx context.Context, scope contracts.Scope, req voice.STTStreamRequest) (voice.STTStream, error) {
-	if s.local == nil {
-		return nil, contracts.New(contracts.ErrUnavailable, "voice: no speech recogniser is installed")
-	}
-	return s.local.TranscribeStream(ctx, scope, req)
-}
+// extFinalSTT lives in providers_external_stt.go (STT adapters + factory).
 
 // extFinalTTS is the text-to-speech of the voice profile with external mode on.
 type extFinalTTS struct{ local voice.TTS }

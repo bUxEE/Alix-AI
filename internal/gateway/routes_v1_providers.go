@@ -36,6 +36,8 @@ import (
 //	GET    /v1/providers/kill-switch, PUT                  the global external-disable switch
 //	POST   /v1/oauth/{provider}/start                      starts browser OAuth, returns the authorization URL
 //	POST   /v1/oauth/callback                              completes it with the redirect the browser followed
+//	GET    /v1/oauth/flows/{flow_id}                       popup-flow status (source of truth for the opener)
+//	DELETE /v1/oauth/flows/{flow_id}                       cancel a pending popup flow (idempotent)
 //
 // # Who may call
 //
@@ -94,6 +96,7 @@ type ProvidersService interface {
 	// Connections lists the provider profiles of the scope's application with their connection status.
 	Connections(ctx context.Context, scope contracts.Scope) ([]pv.ConnectionStatus, error)
 	// OAuthStart prepares the consent and starts the authorization; the result holds the URL.
+	// Presentation, Callback and OpenerOrigin on req are 1.1.0 popup members; a 1.0 implementation may ignore them.
 	OAuthStart(ctx context.Context, scope contracts.Scope, req ProvidersOAuthStart) (ProvidersOAuthStarted, error)
 	// OAuthCallback completes the authorization with the redirect the browser followed. A state that does not
 	// match is refused and the state is spent either way.
@@ -130,6 +133,35 @@ type ProvidersService interface {
 	SetKillSwitch(ctx context.Context, scope contracts.Scope, engage bool, reason string) (ProvidersKillSwitch, error)
 }
 
+// ProvidersOAuthFlowService is the popup-flow half of OAuth (1.1.0). Wanted separately from
+// ProvidersService so a composition root that has not yet grown the methods still compiles;
+// wave-2 wiring provides the same implementation under both interfaces (or merges them).
+type ProvidersOAuthFlowService interface {
+	// OAuthFlowStatus returns the server-side status of a popup OAuth flow. Unknown or foreign-scope ids are
+	// not_found (never permission_denied), so a caller cannot probe another principal's flows.
+	OAuthFlowStatus(ctx context.Context, scope contracts.Scope, flowID string) (ProvidersOAuthFlowStatus, error)
+	// OAuthFlowCancel cancels a pending popup flow. Idempotent for a flow already terminal. Unknown or
+	// foreign-scope ids are not_found.
+	OAuthFlowCancel(ctx context.Context, scope contracts.Scope, flowID string) error
+}
+
+// ProvidersOAuthPresentation is how the authorization URL is shown.
+type ProvidersOAuthPresentation string
+
+// ProvidersOAuthCallbackMode is who receives the provider redirect.
+type ProvidersOAuthCallbackMode string
+
+// The presentation and callback modes of POST /v1/oauth/{provider}/start (1.1.0).
+const (
+	ProvidersOAuthPresentationRedirect ProvidersOAuthPresentation = "redirect"
+	ProvidersOAuthPresentationPopup    ProvidersOAuthPresentation = "popup"
+	ProvidersOAuthCallbackHost         ProvidersOAuthCallbackMode = "host"
+	ProvidersOAuthCallbackLoopback     ProvidersOAuthCallbackMode = "loopback"
+	// ProvidersOAuthLoopbackPlaceholder is the redirect_uri value callers send when callback is loopback.
+	// redirect_uri stays required on the wire (compat); the engine ignores this placeholder.
+	ProvidersOAuthLoopbackPlaceholder = "http://127.0.0.1/oauth/loopback"
+)
+
 // ProvidersOAuthStart is the body of POST /v1/oauth/{provider}/start. The provider comes from the path.
 type ProvidersOAuthStart struct {
 	Provider      pv.ProviderID
@@ -138,6 +170,9 @@ type ProvidersOAuthStart struct {
 	Reauthorize   pv.CredentialRefID
 	SwitchAccount bool
 	Label         string
+	Presentation  ProvidersOAuthPresentation
+	Callback      ProvidersOAuthCallbackMode
+	OpenerOrigin  string
 }
 
 // ProvidersOAuthScope is one scope as the consent shows it.
@@ -163,6 +198,18 @@ type ProvidersOAuthStarted struct {
 	RedirectURI      string                `json:"redirect_uri"`
 	ExpiresAt        time.Time             `json:"expires_at"`
 	Consent          ProvidersOAuthConsent `json:"consent"`
+	FlowID           string                `json:"flow_id,omitempty"`
+	PollIntervalMS   int                   `json:"poll_interval_ms,omitempty"`
+}
+
+// ProvidersOAuthFlowStatus is the body of GET /v1/oauth/flows/{flow_id}.
+type ProvidersOAuthFlowStatus struct {
+	FlowID     string               `json:"flow_id"`
+	Provider   pv.ProviderID        `json:"provider"`
+	Status     string               `json:"status"`
+	Reason     string               `json:"reason,omitempty"`
+	Connection *pv.ConnectionStatus `json:"connection,omitempty"`
+	UpdatedAt  time.Time            `json:"updated_at"`
 }
 
 // ProvidersOAuthCallback is what the redirect carried: where it arrived and its query.
@@ -334,18 +381,20 @@ const (
 )
 
 type providersHandler struct {
-	apps ApplicationService
-	svc  ProvidersService // nil while none is provided
+	apps  ApplicationService
+	svc   ProvidersService          // nil while none is provided
+	flows ProvidersOAuthFlowService // nil until popup flows are wired
 }
 
 func registerV1Providers(rt *Router, d *Deps) {
 	n := d.Needs()
 	apps := Need[ApplicationService](n)
 	svc, _ := Want[ProvidersService](n)
+	flows, _ := Want[ProvidersOAuthFlowService](n)
 	if !n.Ready() {
 		return
 	}
-	h := &providersHandler{apps: apps, svc: svc}
+	h := &providersHandler{apps: apps, svc: svc, flows: flows}
 	v1 := rt.V1()
 	v1.HandleFunc("GET /providers", h.list)
 	v1.HandleFunc("PUT /providers/{provider}/credential", h.submitCredential)
@@ -363,6 +412,8 @@ func registerV1Providers(rt *Router, d *Deps) {
 	v1.HandleFunc("PUT /providers/kill-switch", h.putKillSwitch)
 	v1.HandleFunc("POST /oauth/{provider}/start", h.oauthStart)
 	v1.HandleFunc("POST /oauth/callback", h.oauthCallback)
+	v1.HandleFunc("GET /oauth/flows/{flow_id}", h.oauthFlowStatus)
+	v1.HandleFunc("DELETE /oauth/flows/{flow_id}", h.oauthFlowCancel)
 }
 
 // begin is the start of every handler: the verified scope, a query only where the route allows names, an active
@@ -921,12 +972,18 @@ func (h *providersHandler) putKillSwitch(w http.ResponseWriter, r *http.Request)
 // ---- OAuth ----
 
 type providersOAuthStartBody struct {
-	Capabilities  []string           `json:"capabilities"`
-	RedirectURI   string             `json:"redirect_uri"`
-	Reauthorize   pv.CredentialRefID `json:"reauthorize"`
-	SwitchAccount bool               `json:"switch_account"`
-	Label         string             `json:"label"`
+	Capabilities  []string                   `json:"capabilities"`
+	RedirectURI   string                     `json:"redirect_uri"`
+	Reauthorize   pv.CredentialRefID         `json:"reauthorize"`
+	SwitchAccount bool                       `json:"switch_account"`
+	Label         string                     `json:"label"`
+	Presentation  ProvidersOAuthPresentation `json:"presentation"`
+	Callback      ProvidersOAuthCallbackMode `json:"callback"`
+	OpenerOrigin  string                     `json:"opener_origin"`
 }
+
+var providersOpenerOriginPattern = regexp.MustCompile(`^https?://[A-Za-z0-9._~-]+(:[0-9]{1,5})?$`)
+var providersFlowIDPattern = regexp.MustCompile(`^oaf_[0-9A-HJKMNP-TV-Z]{26}$`)
 
 func (h *providersHandler) oauthStart(w http.ResponseWriter, r *http.Request) {
 	scope, ok := h.begin(w, r, ProvidersOperatorTenant)
@@ -945,9 +1002,39 @@ func (h *providersHandler) oauthStart(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, r, contracts.New(contracts.ErrValidationFailed, "capabilities and redirect_uri are required and bounded"))
 		return
 	}
+	presentation := in.Presentation
+	if presentation == "" {
+		presentation = ProvidersOAuthPresentationRedirect
+	}
+	if presentation != ProvidersOAuthPresentationRedirect && presentation != ProvidersOAuthPresentationPopup {
+		WriteError(w, r, contracts.New(contracts.ErrValidationFailed, "presentation is redirect or popup"))
+		return
+	}
+	callback := in.Callback
+	if callback == "" {
+		callback = ProvidersOAuthCallbackHost
+	}
+	if callback != ProvidersOAuthCallbackHost && callback != ProvidersOAuthCallbackLoopback {
+		WriteError(w, r, contracts.New(contracts.ErrValidationFailed, "callback is host or loopback"))
+		return
+	}
+	if callback == ProvidersOAuthCallbackLoopback && in.RedirectURI != ProvidersOAuthLoopbackPlaceholder {
+		WriteError(w, r, contracts.New(contracts.ErrValidationFailed, "loopback callback needs redirect_uri "+ProvidersOAuthLoopbackPlaceholder))
+		return
+	}
+	if presentation == ProvidersOAuthPresentationPopup {
+		if in.OpenerOrigin == "" || len(in.OpenerOrigin) > 256 || !providersOpenerOriginPattern.MatchString(in.OpenerOrigin) {
+			WriteError(w, r, contracts.New(contracts.ErrValidationFailed, "opener_origin is required for popup and must be an exact origin"))
+			return
+		}
+	} else if in.OpenerOrigin != "" {
+		WriteError(w, r, contracts.New(contracts.ErrValidationFailed, "opener_origin is only for presentation popup"))
+		return
+	}
 	got, err := h.svc.OAuthStart(r.Context(), scope, ProvidersOAuthStart{
 		Provider: prov, Capabilities: in.Capabilities, RedirectURI: in.RedirectURI,
 		Reauthorize: in.Reauthorize, SwitchAccount: in.SwitchAccount, Label: in.Label,
+		Presentation: presentation, Callback: callback, OpenerOrigin: in.OpenerOrigin,
 	})
 	if err != nil {
 		WriteError(w, r, err)
@@ -960,6 +1047,71 @@ func (h *providersHandler) oauthStart(w http.ResponseWriter, r *http.Request) {
 		got.Consent.DataAccess = []string{}
 	}
 	writeJSON(w, http.StatusOK, got)
+}
+
+func providersFlowID(w http.ResponseWriter, r *http.Request) (string, bool) {
+	id := r.PathValue("flow_id")
+	if !providersFlowIDPattern.MatchString(id) {
+		WriteError(w, r, contracts.New(contracts.ErrValidationFailed, "the flow id is malformed"))
+		return "", false
+	}
+	return id, true
+}
+
+func (h *providersHandler) oauthFlowStatus(w http.ResponseWriter, r *http.Request) {
+	scope, ok := h.begin(w, r, ProvidersOperatorTenant)
+	if !ok {
+		return
+	}
+	if h.flows == nil {
+		WriteError(w, r, contracts.New(contracts.ErrUnavailable, "oauth popup flows are not available on this server"))
+		return
+	}
+	id, ok := providersFlowID(w, r)
+	if !ok {
+		return
+	}
+	got, err := h.flows.OAuthFlowStatus(r.Context(), scope, id)
+	if err != nil {
+		providersOAuthFlowError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, got)
+}
+
+func (h *providersHandler) oauthFlowCancel(w http.ResponseWriter, r *http.Request) {
+	scope, ok := h.begin(w, r, ProvidersOperatorTenant)
+	if !ok {
+		return
+	}
+	if h.flows == nil {
+		WriteError(w, r, contracts.New(contracts.ErrUnavailable, "oauth popup flows are not available on this server"))
+		return
+	}
+	id, ok := providersFlowID(w, r)
+	if !ok {
+		return
+	}
+	if err := h.flows.OAuthFlowCancel(r.Context(), scope, id); err != nil {
+		providersOAuthFlowError(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// providersOAuthFlowError maps validation_failed with details.reason not_found to 404
+// (same convention as the RAG area) so a foreign principal cannot distinguish unknown
+// from out-of-scope.
+func providersOAuthFlowError(w http.ResponseWriter, r *http.Request, err error) {
+	var ce *contracts.Error
+	if errors.As(err, &ce) && ce != nil {
+		reason, _ := ce.Details["reason"].(string)
+		if ce.Code == contracts.ErrValidationFailed && reason == "not_found" {
+			WriteErrorStatus(w, r, http.StatusNotFound, err)
+			return
+		}
+	}
+	WriteError(w, r, err)
 }
 
 type providersOAuthCallbackBody struct {

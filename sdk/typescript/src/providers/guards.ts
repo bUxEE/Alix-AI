@@ -62,7 +62,7 @@ export const isConnectionStatus = (value: unknown): value is ConnectionStatus =>
   if (!text(value["as_of"]) || !isProviderRef(value["provider"]) || !isSafeAccount(value["account"])) return false;
   if (!oneOf(value["lifecycle"], LIFECYCLE) || !oneOf(value["state"], STATES) || !oneOf(value["health"], HEALTH)) return false;
   const kind = value["kind"];
-  if (kind !== null && !oneOf(kind, ["oauth", "api_key"])) return false;
+  if (kind !== null && !oneOf(kind, ["oauth", "api_key", "oauth_issued_key"])) return false;
   if (!nullableText(value["connected_at"]) || !nullableText(value["expires_at"]) || !nullableText(value["last_error_kind"])) return false;
   if (!list(value["warnings"]) || !value["warnings"].every((w) => typeof w === "string")) return false;
   const budget = value["budget_state"];
@@ -174,16 +174,36 @@ export const isKillSwitch = (value: unknown): value is KillSwitch =>
 
 /** True when `value` is the answer of startOAuth: an authorization URL and the consent to show. It has no verifier and no token member. */
 export const isOAuthStarted = (value: unknown): value is OAuthStarted => {
-  const keys = ["authorization_url", "redirect_uri", "expires_at", "consent"];
-  if (!isRecord(value) || !closed(value, keys) || !has(value, keys)) return false;
+  const keys = ["authorization_url", "redirect_uri", "expires_at", "consent", "flow_id", "poll_interval_ms"];
+  const required = ["authorization_url", "redirect_uri", "expires_at", "consent"];
+  if (!isRecord(value) || !closed(value, keys) || !has(value, required)) return false;
   const consent = value["consent"];
   const consentKeys = ["provider_name", "account", "scopes", "data_access", "reauthorization", "switch_account"];
-  return (
-    text(value["authorization_url"]) && text(value["redirect_uri"]) && text(value["expires_at"]) && isRecord(consent) && closed(consent, consentKeys) &&
-    has(consent, consentKeys) && text(consent["provider_name"]) && isSafeAccount(consent["account"]) && list(consent["scopes"]) &&
-    consent["scopes"].every((s) => isRecord(s) && closed(s, ["name", "description", "data_access"]) && has(s, ["name", "description", "data_access"])) &&
-    list(consent["data_access"]) && typeof consent["reauthorization"] === "boolean" && typeof consent["switch_account"] === "boolean"
-  );
+  if (
+    !(
+      text(value["authorization_url"]) && text(value["redirect_uri"]) && text(value["expires_at"]) && isRecord(consent) && closed(consent, consentKeys) &&
+      has(consent, consentKeys) && text(consent["provider_name"]) && isSafeAccount(consent["account"]) && list(consent["scopes"]) &&
+      consent["scopes"].every((s) => isRecord(s) && closed(s, ["name", "description", "data_access"]) && has(s, ["name", "description", "data_access"])) &&
+      list(consent["data_access"]) && typeof consent["reauthorization"] === "boolean" && typeof consent["switch_account"] === "boolean"
+    )
+  ) {
+    return false;
+  }
+  if ("flow_id" in value && typeof value["flow_id"] !== "string") return false;
+  if ("poll_interval_ms" in value && (typeof value["poll_interval_ms"] !== "number" || !Number.isInteger(value["poll_interval_ms"]))) return false;
+  return true;
+};
+
+/** True when `value` is a popup OAuth flow status. */
+export const isOAuthFlowStatus = (value: unknown): value is import("./types.js").OAuthFlowStatus => {
+  const keys = ["flow_id", "provider", "status", "reason", "connection", "updated_at"];
+  const required = ["flow_id", "provider", "status", "updated_at"];
+  if (!isRecord(value) || !closed(value, keys) || !has(value, required)) return false;
+  if (!text(value["flow_id"]) || !text(value["provider"]) || !text(value["updated_at"])) return false;
+  if (!oneOf(value["status"], ["pending", "completed", "failed", "expired", "cancelled"])) return false;
+  if ("reason" in value && typeof value["reason"] !== "string") return false;
+  if ("connection" in value && !isConnectionStatus(value["connection"])) return false;
+  return true;
 };
 
 /** True when `value` is a JSON object (the usage export: records and totals). */

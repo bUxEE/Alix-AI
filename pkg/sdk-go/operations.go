@@ -42,6 +42,10 @@ var (
 	opGetApplication      = Operation{"getApplication", http.MethodGet, "/v1/applications/{application_id}", true, true}
 	opListCapabilities    = Operation{"listCapabilities", http.MethodGet, "/v1/capabilities", true, true}
 
+	// Dictation (record-to-text, 1.1.0): not the voice WebSocket.
+	opGetDictationCapabilities = Operation{"getDictationCapabilities", http.MethodGet, "/v1/dictations/capabilities", true, true}
+	opCreateSessionDictation   = Operation{"createSessionDictation", http.MethodPost, "/v1/sessions/{session_id}/dictations", true, false}
+
 	opRegisterRagSource       = Operation{"registerRagSource", http.MethodPost, "/v1/rag/sources", true, false}
 	opListRagSources          = Operation{"listRagSources", http.MethodGet, "/v1/rag/sources", true, true}
 	opReauditRagSources       = Operation{"reauditRagSources", http.MethodPost, "/v1/rag/sources/reaudit", true, false}
@@ -76,6 +80,8 @@ var (
 	opPutProviderKillSwitch   = Operation{"putProviderKillSwitch", http.MethodPut, "/v1/providers/kill-switch", true, false}
 	opStartProviderOAuth      = Operation{"startProviderOAuth", http.MethodPost, "/v1/oauth/{provider}/start", true, false}
 	opCompleteProviderOAuth   = Operation{"completeProviderOAuth", http.MethodPost, "/v1/oauth/callback", true, false}
+	opGetProviderOAuthFlow    = Operation{"getProviderOAuthFlow", http.MethodGet, "/v1/oauth/flows/{flow_id}", true, true}
+	opCancelProviderOAuthFlow = Operation{"cancelProviderOAuthFlow", http.MethodDelete, "/v1/oauth/flows/{flow_id}", true, false}
 )
 
 // Operations lists every operation of the public API this SDK speaks: the root probes, sessions (including
@@ -86,6 +92,7 @@ func Operations() []Operation {
 		opCreateSession, opGetSession, opEndSession, opGetPendingState, opSendTurn, opStreamTurnEvent,
 		opGetAction, opConfirmAction, opRejectAction, opGetActionReceipt,
 		opRegisterApplication, opGetApplication, opListCapabilities,
+		opGetDictationCapabilities, opCreateSessionDictation,
 		opRegisterRagSource, opListRagSources, opReauditRagSources, opGetRagSource, opRemoveRagSource,
 		opSyncRagSource, opRebuildRagSource, opListRagGenerations, opInvalidateRagGeneration,
 		opSearchRag, opAnswerRag, opResolveRagCitation,
@@ -93,6 +100,6 @@ func Operations() []Operation {
 		opListProviders, opPutProviderCredential, opDeleteProviderConn, opAckProviderBillingNote, opGetProviderDisclosure,
 		opGetProviderMode, opPutProviderMode, opGetProviderEgressPolicy, opPutProviderEgressPolicy,
 		opGetProviderBudgets, opPutProviderBudget, opExportProviderUsage, opGetProviderKillSwitch, opPutProviderKillSwitch,
-		opStartProviderOAuth, opCompleteProviderOAuth,
+		opStartProviderOAuth, opCompleteProviderOAuth, opGetProviderOAuthFlow, opCancelProviderOAuthFlow,
 	}
 }

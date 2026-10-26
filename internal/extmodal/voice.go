@@ -207,8 +207,11 @@ type VoiceInput struct {
 	Audio  []byte
 	Format voice.AudioFormat
 	// VADSegmented says the local VAD cut this utterance, so the provider gets speech and not an open
-	// microphone.
+	// microphone. Voice-conversation mode sets this after DetectSpeech.
 	VADSegmented bool
+	// UserSegmented says the host's record and stop buttons cut this utterance (dictation). Either
+	// VADSegmented or UserSegmented must be true before raw audio may leave; an open microphone never does.
+	UserSegmented bool
 	// Class is the data class the session states for the utterance (public, internal, confidential). Empty is
 	// unknown, the most restrictive class: the data-egress guard never lets such audio leave.
 	Class string
@@ -230,9 +233,10 @@ type VoiceResult struct {
 //  2. else a local STT, when installed, transcribes the audio (a failure there is returned, never
 //     answered by sending the audio away);
 //  3. else, only when external STT is admitted AND the provider and tenant both permit raw audio AND
-//     the local VAD cut the utterance AND it fits the provider's limit AND the data-egress guard allows
-//     it (Deps.Audio: the audio of its class, under the audio setting of the egress policy) AND the
-//     provider budget reserves the call, the audio goes to ext; the call is then settled.
+//     the utterance was segmented (local VAD, or the host's record/stop for dictation) AND it fits the
+//     provider's limit AND the data-egress guard allows it (Deps.Audio: the audio of its class, under
+//     the audio setting of the egress policy) AND the provider budget reserves the call, the audio
+//     goes to ext; the call is then settled.
 //
 // The reservation is the length of the audio, rounded up to whole seconds, priced at the profile's
 // price per input audio second (audio_seconds_in) and the request. A profile with no such price, or
@@ -272,8 +276,8 @@ func (s *Service) Transcribe(ctx context.Context, scope contracts.Scope, t Targe
 	if !adm.Policy.RawAudioPermitted() {
 		return deny(ReasonRawAudioNotPermitted, "raw audio leaves only under explicit provider and tenant policy")
 	}
-	if !in.VADSegmented {
-		return deny(ReasonAudioNotSegmented, "raw audio must be cut by the local voice activity detector first")
+	if !in.VADSegmented && !in.UserSegmented {
+		return deny(ReasonAudioNotSegmented, "raw audio must be cut by the local voice activity detector or by the user's record and stop first")
 	}
 	if h := t.mediaHandling(ModSTT); h != nil && h.MaxBytes > 0 && int64(len(in.Audio)) > h.MaxBytes {
 		return deny(ReasonTooLarge, "the utterance is larger than the provider accepts")
@@ -351,20 +355,36 @@ func vadSegmented(ctx context.Context) bool {
 	return v
 }
 
+type userSegmentedKey struct{}
+
+// WithUserSegmented returns a context that tells NewSTT the audio of the call is a user-recorded dictation
+// clip: the host's record and stop buttons defined the utterance (no VAD). Only the dictation path may set
+// it; the marker is per call and is not inherited. Voice-conversation mode must keep using WithVADSegmented.
+func WithUserSegmented(ctx context.Context) context.Context {
+	return context.WithValue(ctx, userSegmentedKey{}, true)
+}
+
+func userSegmented(ctx context.Context) bool {
+	v, _ := ctx.Value(userSegmentedKey{}).(bool)
+	return v
+}
+
 // NewSTT returns a voice.STT with the order of Transcribe: local first, external only under explicit
 // raw-audio policy. The decorator does not assume that its caller cut the audio: an utterance is treated as
-// VAD-segmented only when the call's context carries WithVADSegmented, so a session that hands over whole,
-// client-submitted audio (or any caller that never heard of the marker) gets ReasonAudioNotSegmented before a byte
-// leaves. The class of the audio is the one WithAudioClass put on the call's context; without it the class is
-// unknown and the data-egress guard keeps the audio local. Local recognition is unaffected. Streaming recognition is served by the local recogniser only: raw audio
-// is never streamed out.
+// segmented only when the call's context carries WithVADSegmented (voice conversation) or WithUserSegmented
+// (dictation), so a session that hands over whole, client-submitted audio (or any caller that never heard of
+// the marker) gets ReasonAudioNotSegmented before a byte leaves. The class of the audio is the one
+// WithAudioClass put on the call's context; without it the class is unknown and the data-egress guard keeps
+// the audio local. Local recognition is unaffected. Streaming recognition is served by the local recogniser
+// only: raw audio is never streamed out.
 func NewSTT(s *Service, t Target, local, ext voice.STT) voice.STT {
 	return &sttGate{s: s, t: t, local: local, ext: ext}
 }
 
 func (g *sttGate) Transcribe(ctx context.Context, scope contracts.Scope, req voice.TranscribeRequest) (voice.Transcript, error) {
 	r, err := g.s.Transcribe(ctx, scope, g.t, VoiceInput{
-		Audio: req.Audio, Format: req.Format, Language: req.Language, VADSegmented: vadSegmented(ctx), Class: audioClass(ctx),
+		Audio: req.Audio, Format: req.Format, Language: req.Language,
+		VADSegmented: vadSegmented(ctx), UserSegmented: userSegmented(ctx), Class: audioClass(ctx),
 	}, g.local, g.ext)
 	if err != nil {
 		return voice.Transcript{}, err

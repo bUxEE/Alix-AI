@@ -1,10 +1,11 @@
 import { useCopilotKit } from "@copilotkit/react-core/v2";
 import type { HttpAgent } from "@ag-ui/client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactElement } from "react";
 import { AlixChatPanel } from "@alixai/react/copilotkit";
 import type { AlixKitOptions } from "@alixai/react/copilotkit";
-import { DEMO_PATHS, demoPrompts } from "@alixai/demo-mock";
+import type { VoiceModeOption } from "@alixai/react";
+import { DEMO_PATHS, demoDictationClient, demoPrompts } from "@alixai/demo-mock";
 import type { Citation } from "@alixai/sdk";
 import { agentFor, providerPropsFor, useAgentStatus } from "../lib/agent";
 import { renderPreview } from "../lib/preview";
@@ -57,9 +58,11 @@ export const ChatSection = (): ReactElement => {
   const { lang, theme, text, threadId, notify } = useShell();
   const [variant, setVariant] = useState<Variant>("inline");
   const [progress, setProgress] = useState(true);
+  const [voiceMode, setVoiceMode] = useState<VoiceModeOption>("off");
   const [send, setSend] = useState<Send | undefined>(undefined);
   const agent = agentFor(threadId);
   const status = useAgentStatus(agent);
+  const dictationClient = useMemo(() => demoDictationClient(), []);
   const onReady = useCallback((next: Send | undefined) => setSend(() => next), []);
   const onAction = useCallback<NonNullable<AlixKitOptions["onAction"]>>((action) => notify("onAction", action.label ?? action.action), [notify]);
   const onOpenCitation = useCallback((citation: Citation) => notify("onOpenCitation", `${citation.display_name} ${citation.version}`), [notify]);
@@ -67,6 +70,9 @@ export const ChatSection = (): ReactElement => {
     (request) => notify("onContinueInApp", request.summary ?? request.preparationId ?? ""),
     [notify],
   );
+  const onVoiceStart = useCallback(() => notify("onVoiceStart", "start"), [notify]);
+  const onVoiceStop = useCallback(() => notify("onVoiceStop", "stop"), [notify]);
+  const onVoiceCancel = useCallback(() => notify("onVoiceCancel", "cancel"), [notify]);
   const blocked = send === undefined || status.running || status.confirmationOpen;
 
   return (
@@ -81,6 +87,16 @@ export const ChatSection = (): ReactElement => {
             { value: "popup", label: text.chat.variants.popup },
           ]}
           onChange={setVariant}
+        />
+        <Segmented
+          label={text.chat.voice}
+          value={voiceMode}
+          options={[
+            { value: "off", label: text.chat.voiceModes.off },
+            { value: "dictation", label: text.chat.voiceModes.dictation },
+            { value: "conversation", label: text.chat.voiceModes.conversation },
+          ]}
+          onChange={setVoiceMode}
         />
         <label className="demo-check">
           <input type="checkbox" className="no-validation" checked={progress} onChange={(event) => setProgress(event.target.checked)} />
@@ -99,7 +115,7 @@ export const ChatSection = (): ReactElement => {
             </div>
           )}
           <AlixChatPanel
-            key={`${threadId}:${variant}:${progress ? "p" : ""}`}
+            key={`${threadId}:${variant}:${progress ? "p" : ""}:${voiceMode}`}
             runtimeUrl={DEMO_PATHS.copilotRuntime}
             providerProps={providerPropsFor(agent)}
             threadId={threadId}
@@ -108,6 +124,9 @@ export const ChatSection = (): ReactElement => {
             variant={variant}
             defaultOpen
             showProgress={progress}
+            voice={voiceMode}
+            {...(voiceMode === "dictation" && { dictationClient, language: lang })}
+            {...(voiceMode === "conversation" && { onVoiceStart, onVoiceStop, onVoiceCancel })}
             renderPreview={renderPreview}
             onAction={onAction}
             onOpenCitation={onOpenCitation}

@@ -67,6 +67,7 @@ export {
   isEgressPolicyView,
   isKillSwitch,
   isOAuthStarted,
+  isOAuthFlowStatus,
   isProviderBudgets,
   isProviderList,
   isProviderMode,

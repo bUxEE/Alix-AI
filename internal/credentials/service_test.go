@@ -795,3 +795,52 @@ func TestRefreshRotationKeepsAConcurrentReauthorization(t *testing.T) {
 		t.Fatalf("after the refresh: %s %v %v", got.Status, got.Warnings, got.Binding.Scopes)
 	}
 }
+
+func TestOwnerPrincipalResolveGate(t *testing.T) {
+	g := newRig(t)
+	owner := "usr_plan_owner"
+	g.scope.PrincipalID = owner
+	use := Use{Provider: "fake", Purpose: "inference"}
+
+	siwc, err := g.svc.AddOAuth(bg, g.scope, OAuthGrant{
+		ProviderID: "fake", Scopes: []string{"chat.write"}, Access: Secret(tKey),
+		OwnerPrincipal: owner,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := g.svc.Resolve(bg, g.scope, string(siwc.RefID), use); err != nil {
+		t.Fatalf("owner resolve: %v", err)
+	}
+
+	otherPrincipal := g.scope
+	otherPrincipal.PrincipalID = "usr_other"
+	_, err = g.svc.Resolve(bg, otherPrincipal, string(siwc.RefID), use)
+	mustCode(t, err, contracts.ErrScopeViolation, ReasonPrincipalMismatch)
+
+	otherTenant := g.scope
+	otherTenant.TenantID = tTenant2
+	_, err = g.svc.Resolve(bg, otherTenant, string(siwc.RefID), use)
+	mustCode(t, err, contracts.ErrScopeViolation, ReasonNotBound)
+
+	// OpenRouter issued keys and Gemini-style OAuth (no OwnerPrincipal) stay tenant-scoped.
+	issued, err := g.svc.AddOAuthIssuedKey(bg, g.scope, OAuthIssuedKeyGrant{
+		ProviderID: "fake", Scopes: []string{"api"}, Key: Secret(tKey2),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := g.svc.Resolve(bg, otherPrincipal, string(issued.RefID), use); err != nil {
+		t.Fatalf("issued key must resolve for another principal of the same tenant: %v", err)
+	}
+
+	gemini, err := g.svc.AddOAuth(bg, g.scope, OAuthGrant{
+		ProviderID: "fake", Scopes: []string{"chat.write"}, Access: Secret(tKey2),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := g.svc.Resolve(bg, otherPrincipal, string(gemini.RefID), use); err != nil {
+		t.Fatalf("tenant-scoped OAuth must resolve for another principal: %v", err)
+	}
+}

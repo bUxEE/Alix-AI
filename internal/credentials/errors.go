@@ -38,6 +38,8 @@ const (
 	ReasonUnsupported        Reason = "unsupported"
 	ReasonCorrupt            Reason = "corrupt_record"
 	ReasonInsecure           Reason = "insecure_permissions"
+	// ReasonPrincipalMismatch: a principal-bound credential (SIWC) was resolved by another principal.
+	ReasonPrincipalMismatch Reason = "credential_principal_mismatch"
 )
 
 func fail(code contracts.ErrCode, r Reason, msg string) *contracts.Error {

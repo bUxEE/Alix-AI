@@ -1,0 +1,61 @@
+# STT-only LocalAI profile: speech recognition alone (no LLM, no embedder, no TTS).
+# Use as an override on top of compose.yaml (loopback, API key, hardening stay from the base).
+# Operator chooses the local STT pack via model list + backend (ADR 0040 ladder).
+#
+#   # Balanced candidate — Parakeet TDT 0.6B v3 (default of this file; CPU via parakeet.cpp, GPU optional)
+#   LOCALAI_MAX_ACTIVE_BACKENDS=1 \
+#     docker compose -f compose.yaml -f compose.stt-only.yaml up -d
+#
+#   # Balanced candidate — Whisper large-v3-turbo
+#   STT_MEM_LIMIT=4g LOCALAI_EXTERNAL_BACKENDS=whisper \
+#     STT_MODELS_CONFIG=/configuration/models.stt-only-turbo.yaml \
+#     LOCALAI_MAX_ACTIVE_BACKENDS=1 \
+#     docker compose -f compose.yaml -f compose.stt-only.yaml up -d
+#
+#   # Performance candidate — Whisper large-v3
+#   STT_MEM_LIMIT=8g STT_CPUS=4 LOCALAI_EXTERNAL_BACKENDS=whisper \
+#     STT_MODELS_CONFIG=/configuration/models.stt-only-large-v3.yaml \
+#     LOCALAI_MAX_ACTIVE_BACKENDS=1 \
+#     docker compose -f compose.yaml -f compose.stt-only.yaml up -d
+#
+#   # Lite — Whisper tiny (en-stt)
+#   STT_MEM_LIMIT=1g LOCALAI_EXTERNAL_BACKENDS=whisper \
+#     STT_MODELS_CONFIG=/configuration/models.stt-only-lite.yaml \
+#     LOCALAI_MAX_ACTIVE_BACKENDS=1 \
+#     docker compose -f compose.yaml -f compose.stt-only.yaml up -d
+#
+# EMULATED: cgroup caps on this container, never a certified machine. Numbers measured under this
+# file must be labelled "emulated". memswap_limit == mem_limit disables swap.
+#
+# LOCALAI_MAX_ACTIVE_BACKENDS is NOT set here on purpose: this file is an "other" overlay that the
+# hardening scanner also layers with lite/balanced, and a value of 1 would fail HC-29 on those
+# combinations. Pass LOCALAI_MAX_ACTIVE_BACKENDS=1 on the command line for a real STT-only run.
+# Do not put that value in .env (it would override every profile).
+#
+# Resource caps (defaults sized for Parakeet Q4_K / turbo on CPU; not measurements):
+#   Parakeet / turbo (default mem 4g): model files ~547–675 MB; worker RSS unmeasured.
+#   large-v3: STT_MEM_LIMIT=8g (weights ~1.01 GB; expect higher RSS — Performance).
+#   Lite: STT_MEM_LIMIT=1g (Whisper tiny peaks ~202 MiB in M4-06).
+#
+# Models: config/models.stt-only*.yaml. Backends: stt-only/backend-gallery.yaml.
+
+services:
+  localai:
+    mem_limit: ${STT_MEM_LIMIT:-4g}
+    memswap_limit: ${STT_MEM_LIMIT:-4g}
+    cpus: ${STT_CPUS:-2}
+    environment:
+      LOCALAI_THREADS: "${STT_CPUS:-2}"
+      # Default: Parakeet. Whisper variants: LOCALAI_EXTERNAL_BACKENDS=whisper + STT_MODELS_CONFIG.
+      LOCALAI_EXTERNAL_BACKENDS: ${LOCALAI_EXTERNAL_BACKENDS:-cpu-parakeet-cpp}
+      LOCALAI_MODELS_CONFIG_FILE: ${STT_MODELS_CONFIG:-/configuration/models.stt-only.yaml}
+      LOCALAI_BACKEND_GALLERIES: '[{"name":"alixai-pinned","url":"file:///backends/alixai-backend-gallery.yaml"}]'
+    volumes:
+      - ./stt-only/backend-gallery.yaml:/backends/alixai-backend-gallery.yaml:ro
+      - ./config/models.stt-only.yaml:/configuration/models.stt-only.yaml:ro
+      - ./config/models.stt-only-lite.yaml:/configuration/models.stt-only-lite.yaml:ro
+      - ./config/models.stt-only-turbo.yaml:/configuration/models.stt-only-turbo.yaml:ro
+      - ./config/models.stt-only-large-v3.yaml:/configuration/models.stt-only-large-v3.yaml:ro
+    labels:
+      ai.alixai.profile: stt-only
+      ai.alixai.evidence: emulated

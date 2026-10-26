@@ -24,10 +24,16 @@ Resolved on **2026-10-02**. Re-resolve with the commands under "Bumping".
 | `compose.lite.yaml` | Override: 8 GB / 4 CPU. |
 | `compose.balanced.yaml` | Override: 16 GB / 8 CPU. |
 | `compose.4g.yaml` | Override: 4 GB / 4 CPU (experimental, text-only). |
+| `compose.stt-only.yaml` | Override: STT alone (no LLM, no embedder). Default Parakeet; Lite Whisper tiny via env. |
 | `compose.readonly-models.yaml` | Optional override: `/models` read-only (a mismatching model file can no longer be deleted and replaced at start). Needs the guard switch below. |
 | `.env.example` | Copy to `.env`. Holds `LOCALAI_API_KEY` and a few tunables. |
 | `config/models.yaml` | Model definitions with pinned source and sha256. Mounted read-only. |
-| `config/backend-gallery.yaml` | Digest-pinned backend catalogue, the only gallery LocalAI sees. Mounted read-only **at `/backends/alixai-backend-gallery.yaml`**: LocalAI v4.10.0 reads a `file://` gallery only from inside its backends directory. |
+| `config/models.stt-only.yaml` | STT-only model list: Parakeet TDT 0.6B v3 Q4_K (ADR 0040). |
+| `config/models.stt-only-lite.yaml` | STT-only model list: Whisper tiny (Lite / `en-stt`). |
+| `config/models.stt-only-turbo.yaml` | STT-only model list: Whisper large-v3-turbo q5_0 (`whisper-turbo-stt`). |
+| `config/models.stt-only-large-v3.yaml` | STT-only model list: Whisper large-v3 q5_0 (`whisper-large-v3-stt`). |
+| `config/backend-gallery.yaml` | Digest-pinned backend catalogue (LLM only), the gallery LocalAI sees by default. Mounted read-only **at `/backends/alixai-backend-gallery.yaml`**: LocalAI v4.10.0 reads a `file://` gallery only from inside its backends directory. |
+| `stt-only/backend-gallery.yaml` | STT backends only (`cpu-parakeet-cpp`, `whisper`); mounted by `compose.stt-only.yaml`. |
 | `entrypoint.sh` | Guard that runs before LocalAI: refuses a weak or placeholder key, unwritable data dirs (a read-only `/models` only with `ALIXAI_MODELS_READONLY=true`), a writable config dir, and a `debug` or `trace` log level (unless `ALIXAI_ALLOW_VERBOSE_LOG=true`). |
 | `smoke.sh` | Start, wait for readiness, check posture, one chat completion, tear down. |
 | `hardening.md` | Every LocalAI admin, agent, gallery, p2p and web-UI surface, and how it is handled. |
@@ -80,7 +86,52 @@ Override files add `mem_limit`, `memswap_limit` and `cpus`, plus `LOCALAI_THREAD
 | `compose.lite.yaml` | 8 GB | 4 | 2: controller, embedder | Lite certified target |
 | `compose.balanced.yaml` | 16 GB | 8 | 4: controller, embedder, speech to text, text to speech | Balanced |
 | `compose.4g.yaml` | 4 GB | 4 | 1: the controller (retrieval is lexical) | experimental 4 GB |
+| `compose.stt-only.yaml` | 4 GB default (`STT_MEM_LIMIT`: 1g Lite, 8g large-v3) | 2 (raise with `STT_CPUS`) | 1: speech to text only | STT-only (no LLM) |
 | `compose.yaml` alone | none | none | 2, the Lite shape | unconstrained run |
+
+### STT-only profile and local STT ladder
+
+Operators choose the local STT pack per deployment (`voice.active_pack` / install). Ladder (ADR 0040); all
+larger options are **candidates** until voicebench passes — no default flip without gates:
+
+| Profile | Pack | Engine | Notes |
+| --- | --- | --- | --- |
+| Lite | `en-stt` | whisper.cpp tiny | Qualified-emulated English input only |
+| Balanced | `parakeet-stt` **or** `whisper-turbo-stt` | parakeet.cpp / whisper.cpp | Both candidate; CPU; GPU optional |
+| Performance | `whisper-large-v3-stt`, `parakeet-stt`, or `whisper-turbo-stt` | whisper.cpp / parakeet.cpp | large-v3 is Performance-only (weights ~1.01 GB) |
+
+Parakeet does **not** need NVIDIA hardware: `parakeet.cpp` is a ggml port that runs on CPU; CUDA/Metal/Vulkan
+are optional acceleration (parakeet.cpp README). Whisper.cpp is the same story.
+
+For speech recognition without a controller or embedder:
+
+```bash
+cd deploy/container/localai
+cp .env.example .env   # set LOCALAI_API_KEY
+# Parakeet (pack parakeet-stt) — default of compose.stt-only.yaml
+LOCALAI_MAX_ACTIVE_BACKENDS=1 \
+  docker compose -f compose.yaml -f compose.stt-only.yaml up -d
+# Whisper large-v3-turbo (pack whisper-turbo-stt)
+STT_MEM_LIMIT=4g LOCALAI_EXTERNAL_BACKENDS=whisper \
+  STT_MODELS_CONFIG=/configuration/models.stt-only-turbo.yaml \
+  LOCALAI_MAX_ACTIVE_BACKENDS=1 \
+  docker compose -f compose.yaml -f compose.stt-only.yaml up -d
+# Whisper large-v3 (pack whisper-large-v3-stt, Performance)
+STT_MEM_LIMIT=8g STT_CPUS=4 LOCALAI_EXTERNAL_BACKENDS=whisper \
+  STT_MODELS_CONFIG=/configuration/models.stt-only-large-v3.yaml \
+  LOCALAI_MAX_ACTIVE_BACKENDS=1 \
+  docker compose -f compose.yaml -f compose.stt-only.yaml up -d
+# Lite Whisper tiny (en-stt)
+STT_MEM_LIMIT=1g LOCALAI_EXTERNAL_BACKENDS=whisper \
+  STT_MODELS_CONFIG=/configuration/models.stt-only-lite.yaml \
+  LOCALAI_MAX_ACTIVE_BACKENDS=1 \
+  docker compose -f compose.yaml -f compose.stt-only.yaml up -d
+```
+
+Pass `LOCALAI_MAX_ACTIVE_BACKENDS=1` on the command line (one STT worker). Do not put it in `.env` (that
+would override every profile). The base image digest is unchanged; STT backends come from
+`stt-only/backend-gallery.yaml`, not the default LLM catalogue. Validate with
+`docker compose -f compose.yaml -f compose.stt-only.yaml config -q`.
 
 - `memswap_limit` equals `mem_limit`, so the container gets no swap ("avoid swap").
 - **Anything measured under these files is labelled `emulated`**, never `certified`. Each profile also sets the

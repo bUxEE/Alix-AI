@@ -122,6 +122,49 @@ func (e *Engine) clientAuth(ctx context.Context, scope contracts.Scope, p Provid
 	return "", "", nil
 }
 
+// exchangeIssuedKey posts the OpenRouter-style JSON key exchange and returns the issued API key.
+func (e *Engine) exchangeIssuedKey(ctx context.Context, scope contracts.Scope, p ProviderConfig, code string, verifier credentials.Secret) (credentials.Secret, error) {
+	ctx, cancel := context.WithTimeout(ctx, e.timeout)
+	defer cancel()
+	body, err := json.Marshal(map[string]string{
+		"code":                  code,
+		"code_verifier":         verifier.Reveal(),
+		"code_challenge_method": "S256",
+	})
+	if err != nil {
+		return "", &exchangeError{transient: true}
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, p.KeyExchangeEndpoint, bytes.NewReader(body))
+	if err != nil {
+		return "", &exchangeError{transient: true}
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	resp, err := e.client(scope.ApplicationID).Do(req)
+	if err != nil {
+		err = egress.StripURL(err)
+		if egress.IsDenied(err) {
+			return "", &exchangeError{egress: true}
+		}
+		return "", &exchangeError{transient: true}
+	}
+	defer resp.Body.Close()
+	raw, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBytes+1))
+	if err != nil || len(raw) > maxResponseBytes {
+		return "", &exchangeError{transient: true}
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", errorFromResponse(resp.StatusCode, raw)
+	}
+	var m struct {
+		Key string `json:"key"`
+	}
+	if err := json.Unmarshal(raw, &m); err != nil || m.Key == "" {
+		return "", badResponse()
+	}
+	return credentials.Secret(m.Key), nil
+}
+
 // tokenCall posts a token request and parses the response.
 func (e *Engine) tokenCall(ctx context.Context, scope contracts.Scope, p ProviderConfig, form url.Values) (*tokenSet, error) {
 	user, pass, err := e.clientAuth(ctx, scope, p, form)

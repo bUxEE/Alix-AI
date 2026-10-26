@@ -12,6 +12,7 @@ import {
   isEgressPolicyView,
   isKillSwitch,
   isOAuthStarted,
+  isOAuthFlowStatus,
   isProviderBudgets,
   isProviderList,
   isProviderMode,
@@ -149,6 +150,10 @@ export interface ProvidersClient {
    * is unknown, replayed, expired or issued to another scope is refused and spent. The code and the state are sent and never echoed or logged.
    */
   completeOAuth: (input: OAuthCallbackInput, options?: CallOptions) => Promise<ConnectionStatus>;
+  /** Reads the server-side status of a popup OAuth flow (1.1.0). Unknown or foreign-scope ids are `not_found`. */
+  getOAuthFlow: (flowId: string, options?: CallOptions) => Promise<import("./types.js").OAuthFlowStatus>;
+  /** Cancels a pending popup OAuth flow (idempotent). */
+  cancelOAuthFlow: (flowId: string, options?: CallOptions) => Promise<void>;
 }
 
 const DEFAULT_TIMEOUT_MS = 30_000;
@@ -238,9 +243,11 @@ const egressLevel = (level: unknown, sourceId: unknown): void => {
 interface Sending<T> {
   operation: ProvidersOperationId;
   provider?: string;
+  flowId?: string;
   query?: URLSearchParams;
   body?: unknown;
-  guard: (value: unknown) => value is T;
+  guard?: (value: unknown) => value is T;
+  empty?: boolean;
   /** A value that must appear nowhere in the answer or in an error (a credential, an authorization code). */
   secret?: string;
 }
@@ -303,7 +310,7 @@ export const createProvidersClient = (options: ProvidersClientOptions): Provider
   const requestTimeout = timeout(options.timeoutMs, DEFAULT_TIMEOUT_MS, "timeoutMs");
 
   const send = async <T>(sending: Sending<T>, callOptions: CallOptions | undefined): Promise<T> => {
-    const { operation, provider, query, body, guard, secret } = sending;
+    const { operation, provider, flowId, query, body, guard, empty, secret } = sending;
     const spec = PROVIDERS_OPERATIONS[operation];
     const scope = callScope(operation, callOptions?.signal, timeout(callOptions?.timeoutMs, requestTimeout, "timeoutMs"), spec.safe);
     /** The error the host should see for whatever a fetch or a body read threw. */
@@ -330,7 +337,9 @@ export const createProvidersClient = (options: ProvidersClientOptions): Provider
       // The call may have been aborted while the host was minting the token: do not spend it.
       if (scope.signal.aborted) throw scope.signal.reason;
 
-      const path = spec.path.replace("{provider}", provider === undefined ? "" : encodeURIComponent(provider));
+      const path = spec.path
+        .replace("{provider}", provider === undefined ? "" : encodeURIComponent(provider))
+        .replace("{flow_id}", flowId === undefined ? "" : encodeURIComponent(flowId));
       const search = query !== undefined && query.size > 0 ? `?${query.toString()}` : "";
       const headers: Record<string, string> = { Accept: "application/json", Authorization: `Bearer ${token}` };
       if (body !== undefined) headers["Content-Type"] = "application/json";
@@ -358,6 +367,16 @@ export const createProvidersClient = (options: ProvidersClientOptions): Provider
         }
         throw refusal;
       }
+      if (empty === true) {
+        if (response.status !== 204 && (await response.text()).length > 0) {
+          throw sdkError("internal", "the server answered with a body where none was expected", {
+            status: response.status,
+            requestId: response.headers.get("X-Request-ID") ?? undefined,
+            details: { operation, reason: "unexpected_body" },
+          });
+        }
+        return undefined as T;
+      }
       let text: string;
       try {
         text = await response.text();
@@ -377,7 +396,7 @@ export const createProvidersClient = (options: ProvidersClientOptions): Provider
       } catch (cause) {
         throw sdkError("internal", "the server answered with a body that is not JSON", { cause, status: response.status, requestId, details: { operation, reason: "not_json" } });
       }
-      if (!guard(parsed)) throw unexpected("unexpected_shape", `the server's ${operation} response has an unexpected shape`);
+      if (guard === undefined || !guard(parsed)) throw unexpected("unexpected_shape", `the server's ${operation} response has an unexpected shape`);
       return parsed;
     } catch (error) {
       throw scrub(error, secret);
@@ -549,6 +568,9 @@ export const createProvidersClient = (options: ProvidersClientOptions): Provider
         ...(input.reauthorize !== undefined && { reauthorize: input.reauthorize }),
         ...(input.switch_account === true && { switch_account: true }),
         ...(label !== undefined && { label }),
+        ...(input.presentation !== undefined && { presentation: input.presentation }),
+        ...(input.callback !== undefined && { callback: input.callback }),
+        ...(input.opener_origin !== undefined && { opener_origin: input.opener_origin }),
       };
       return send({ operation: "startProviderOAuth", provider: id, body, guard: isOAuthStarted }, callOptions);
     },
@@ -560,6 +582,16 @@ export const createProvidersClient = (options: ProvidersClientOptions): Provider
       const query = typeof input.query === "string" ? input.query.replace(/^\?/, "") : "";
       if (query.length === 0 || query.length > 4096) throw invalid("query", "it is required, at most 4096 characters");
       return send({ operation: "completeProviderOAuth", body: { redirect_uri: input.redirect_uri, query }, guard: isConnectionStatus, secret: query }, callOptions);
+    },
+
+    getOAuthFlow: async (flowId, callOptions) => {
+      if (typeof flowId !== "string" || flowId.length === 0) throw invalid("flowId", "it is required");
+      return send({ operation: "getProviderOAuthFlow", flowId, guard: isOAuthFlowStatus }, callOptions);
+    },
+
+    cancelOAuthFlow: async (flowId, callOptions) => {
+      if (typeof flowId !== "string" || flowId.length === 0) throw invalid("flowId", "it is required");
+      await send({ operation: "cancelProviderOAuthFlow", flowId, empty: true }, callOptions);
     },
   };
 };

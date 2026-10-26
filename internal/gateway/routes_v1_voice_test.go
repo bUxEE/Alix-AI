@@ -55,6 +55,9 @@ func init() {
 		if err := voice.Register(reg, providers.RoleTTS, rig.tts); err != nil {
 			t.Fatal(err)
 		}
+		if err := voice.Register(reg, providers.RoleVAD, vfake.New(vfake.WithName("fake-vad"))); err != nil {
+			t.Fatal(err)
+		}
 		svc, err := vsession.New(vsession.Deps{Providers: reg, Clock: e.clk})
 		if err != nil {
 			t.Fatal(err)

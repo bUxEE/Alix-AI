@@ -8,9 +8,18 @@ import {
   type ConversationSummary,
   type DiagramBlock,
   type PermittedAction,
+  type VoiceModeOption,
 } from "@alixai/vue";
 import { computed, onActivated, onMounted, ref } from "vue";
-import { DEMO_PATHS, DEMO_THREAD_ID, demoPrompts, demoUploader, fetchDemoJson, type DemoPrompt } from "../../../demo-mock/src/index";
+import {
+  DEMO_PATHS,
+  DEMO_THREAD_ID,
+  demoDictationClient,
+  demoPrompts,
+  demoUploader,
+  fetchDemoJson,
+  type DemoPrompt,
+} from "../../../demo-mock/src/index";
 import DemoAttachmentImages from "../components/DemoAttachmentImages.vue";
 import DemoFlowchart from "../components/DemoFlowchart.vue";
 import DemoHostLog from "../components/DemoHostLog.vue";
@@ -29,8 +38,15 @@ import { locale, requestedThread, useDemoText } from "../state";
 const text = useDemoText();
 const client = createAguiClient({ endpoint: DEMO_PATHS.agui });
 const threadId = ref(DEMO_THREAD_ID);
+const voiceMode = ref<VoiceModeOption>("off");
+const dictationClient = demoDictationClient();
 const uploader = demoUploader();
 const chat = useAlixChat({ client, threadId: () => threadId.value, language: () => locale.value });
+const voiceOptions = computed(() => [
+  { value: "off" as const, label: text("chat.voice.off") },
+  { value: "dictation" as const, label: text("chat.voice.dictation") },
+  { value: "conversation" as const, label: text("chat.voice.conversation") },
+]);
 
 const conversations = useDemoResource(async (signal) => (await fetchDemoJson<{ conversations: ConversationSummary[] }>(DEMO_PATHS.conversations, "", { signal })).conversations);
 onMounted(() => void conversations.refresh());
@@ -68,7 +84,8 @@ type HostEvent =
   | { kind: "continue"; id: string }
   | { kind: "action"; action: string }
   | { kind: "open"; name: string }
-  | { kind: "download"; name: string };
+  | { kind: "download"; name: string }
+  | { kind: "voice"; phase: "start" | "stop" | "cancel" };
 
 const log = useHostLog<HostEvent>();
 
@@ -80,6 +97,9 @@ const onDownload = (file: AlixAttachment): void => {
   log.push({ kind: "download", name: file.name });
   void downloadDemoFile(file);
 };
+const onVoiceStart = (): void => log.push({ kind: "voice", phase: "start" });
+const onVoiceStop = (): void => log.push({ kind: "voice", phase: "stop" });
+const onVoiceCancel = (): void => log.push({ kind: "voice", phase: "cancel" });
 
 const describe = (entry: HostEvent): string => {
   switch (entry.kind) {
@@ -91,6 +111,12 @@ const describe = (entry: HostEvent): string => {
       return text("chat.log.action", { action: entry.action });
     case "open":
       return text("chat.log.open", { name: entry.name });
+    case "voice":
+      return entry.phase === "start"
+        ? text("chat.log.voiceStart")
+        : entry.phase === "stop"
+          ? text("chat.log.voiceStop")
+          : text("chat.log.voiceCancel");
     default:
       return text("chat.log.download", { name: entry.name });
   }
@@ -109,13 +135,40 @@ const describe = (entry: HostEvent): string => {
       {{ text("chat.lede") }}
     </template>
     <div class="alix-row alix-demo-chat-row">
-      <div class="alix-col-12 alix-col-lg-8 alix-d-flex alix-flex-column alix-demo-chat-panel alix-sticky-lg-top">
+      <div class="alix-col-12 alix-col-lg-8 alix-d-flex alix-flex-column alix-ga-3 alix-demo-chat-panel alix-sticky-lg-top">
+        <div
+          :aria-label="text('chat.voice')"
+          class="alix-d-flex alix-align-center alix-ga-3 alix-flex-wrap"
+        >
+          <span class="alix-text-sm alix-text-muted">
+            {{ text("chat.voice") }}
+          </span>
+          <div
+            class="alix-d-flex alix-demo-segmented"
+            role="radiogroup"
+          >
+            <button
+              v-for="option in voiceOptions"
+              :key="option.value"
+              :aria-checked="voiceMode === option.value"
+              class="alix-demo-segment alix-text-xs"
+              role="radio"
+              type="button"
+              @click="voiceMode = option.value"
+            >
+              {{ option.label }}
+            </button>
+          </div>
+        </div>
         <AlixChatPanel
           :chat="chat"
+          :dictation-client="voiceMode === 'dictation' ? dictationClient : undefined"
+          :language="locale"
           :thread-id="threadId"
           :conversations="conversations.data.value"
           :conversations-loading="conversations.state.isLoading.value"
           :uploader="uploader"
+          :voice="voiceMode"
           :max-file-mb="8"
           :title="text('chat.panelTitle')"
           accept="image/png,image/jpeg,image/webp,application/pdf,text/csv,text/plain"
@@ -126,6 +179,9 @@ const describe = (entry: HostEvent): string => {
           @open-citation="onCitation"
           @open-file="onOpen"
           @select="select"
+          @voice-cancel="onVoiceCancel"
+          @voice-start="onVoiceStart"
+          @voice-stop="onVoiceStop"
         >
           <template #attachments="{ item }">
             <DemoAttachmentImages

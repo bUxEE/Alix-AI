@@ -90,6 +90,7 @@ type providersState struct {
 	budgets     []map[string]any
 	spent       map[string][2]int64 // budget id -> daily, monthly
 	flows       map[string]*oauthFlow
+	popupFlows  map[string]*oauthPopupFlow
 	usage       map[string]any
 	stateSeq    int
 }
@@ -863,6 +864,9 @@ func (c *call) oauthStart() {
 		Reauthorize   string   `json:"reauthorize"`
 		SwitchAccount bool     `json:"switch_account"`
 		Label         string   `json:"label"`
+		Presentation  string   `json:"presentation"`
+		Callback      string   `json:"callback"`
+		OpenerOrigin  string   `json:"opener_origin"`
 	}
 	if !c.providersDecode(&in) {
 		return
@@ -884,7 +888,7 @@ func (c *call) oauthStart() {
 		"response_type": {"code"}, "state": {state}, "code_challenge": {"ch" + randomSegment(16)}, "code_challenge_method": {"S256"},
 		"nonce": {"no" + randomSegment(8)}, "redirect_uri": {in.RedirectURI},
 	}.Encode()
-	c.json(http.StatusOK, map[string]any{
+	out := map[string]any{
 		"authorization_url": authURL, "redirect_uri": in.RedirectURI, "expires_at": c.f.stamp(expires),
 		"consent": map[string]any{
 			"provider_name": seed.ID, "account": map[string]any{"account_id": nil, "organization_id": nil, "project_id": nil},
@@ -892,7 +896,62 @@ func (c *call) oauthStart() {
 			"data_access":     []string{"the permitted request content"},
 			"reauthorization": in.Reauthorize != "", "switch_account": in.SwitchAccount,
 		},
+	}
+	if in.Presentation == "popup" {
+		flowID := "oaf_" + ulid(c.f.now())
+		if ps.popupFlows == nil {
+			ps.popupFlows = map[string]*oauthPopupFlow{}
+		}
+		ps.popupFlows[flowID] = &oauthPopupFlow{
+			provider: seed.ID, tenant: c.claims.TenantID, principal: c.claims.PrincipalID,
+			application: c.claims.ApplicationID, workspace: c.claims.WorkspaceID,
+			status: "pending", updated: c.f.now(),
+		}
+		out["flow_id"] = flowID
+		out["poll_interval_ms"] = 1000
+	}
+	c.json(http.StatusOK, out)
+}
+
+type oauthPopupFlow struct {
+	provider, tenant, principal, application, workspace, status string
+	updated                                                     time.Time
+}
+
+func (c *call) oauthFlowStatus() {
+	if !c.providersBegin(false) {
+		return
+	}
+	id := c.r.PathValue("flow_id")
+	ps := &c.f.providers
+	fl := ps.popupFlows[id]
+	if fl == nil || fl.principal != c.claims.PrincipalID || fl.tenant != c.claims.TenantID ||
+		fl.application != c.claims.ApplicationID || fl.workspace != c.claims.WorkspaceID {
+		c.fail(http.StatusNotFound, contracts.ErrValidationFailed, "no such flow", "reason", "not_found")
+		return
+	}
+	c.json(http.StatusOK, map[string]any{
+		"flow_id": id, "provider": fl.provider, "status": fl.status, "updated_at": c.f.stamp(fl.updated),
 	})
+}
+
+func (c *call) oauthFlowCancel() {
+	if !c.providersBegin(false) {
+		return
+	}
+	id := c.r.PathValue("flow_id")
+	ps := &c.f.providers
+	fl := ps.popupFlows[id]
+	if fl == nil || fl.principal != c.claims.PrincipalID || fl.tenant != c.claims.TenantID ||
+		fl.application != c.claims.ApplicationID || fl.workspace != c.claims.WorkspaceID {
+		c.fail(http.StatusNotFound, contracts.ErrValidationFailed, "no such flow", "reason", "not_found")
+		return
+	}
+	if fl.status == "pending" {
+		fl.status = "cancelled"
+		fl.updated = c.f.now()
+	}
+	c.w.WriteHeader(http.StatusNoContent)
 }
 
 func (c *call) oauthCallback() {

@@ -414,7 +414,7 @@ restricted; credentials and raw database content never leave), per-source `local
 (secure manual key entry as a fallback). A consumer chat subscription is **not** API access — AlixAI will say so during setup.
 Full design: [docs/architecture/external-provider-mode.md](docs/architecture/external-provider-mode.md); operator and
 integrator guides: [docs/operations/external-mode.md](docs/operations/external-mode.md) and
-[docs/integration/external-mode.md](docs/integration/external-mode.md).
+[docs/integration/external-mode.md](docs/integration/external-mode.md). Light setups with no local LLM (per-layer local/external via `routing`): [docs/operations/guides/light-external.md](docs/operations/guides/light-external.md).
 
 ## Optional decision layer
 
@@ -507,6 +507,7 @@ impact.
 | [docs/release-gates.md](docs/release-gates.md) | The release criteria for 1.0. |
 | [docs/architecture/](docs/architecture/) | Overview, module map and import tiers, decision layer. |
 | [docs/decisions/](docs/decisions/) | Architecture decision records — what was decided, the alternatives, how to reverse it. |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Near-term roadmap: external TTS adapters, Parakeet Balanced STT after gates, provider OAuth, certification and review gaps. |
 | [docs/integration/guides/](docs/integration/guides/) | Getting started, readiness discovery, CopilotKit. |
 | [docs/integration/](docs/integration/) | The application package format, conversation and action objects, AG-UI, External mode. |
 | [docs/operations/guides/](docs/operations/guides/) | Local machine, server, private VPS, operator commands, backup and restore, upgrades, troubleshooting. |

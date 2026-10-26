@@ -9,7 +9,7 @@ services:
   localai:
     environment:
       LOCALAI_BACKEND_GALLERIES: '[{"name":"alixai-pinned","url":"file:///backends/alixai-backend-gallery.yaml"}]'
-      LOCALAI_EXTERNAL_BACKENDS: ${LOCALAI_EXTERNAL_BACKENDS:-whisper,piper,kokoros}
+      LOCALAI_EXTERNAL_BACKENDS: ${LOCALAI_EXTERNAL_BACKENDS:-whisper,piper,kokoros,cpu-parakeet-cpp}
       # the watchdog would unload an idle voice worker in the middle of a pause between phases
       LOCALAI_WATCHDOG_IDLE: "false"
     volumes:

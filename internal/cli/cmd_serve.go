@@ -40,6 +40,11 @@ import (
 	"github.com/buxee/alix-ai/pkg/contracts"
 )
 
+// serveExternalCoversController reports whether external_providers.routing names
+// profiles for the controller so a deployment with empty inference.models is still
+// ready. The external build replaces this in init; the noexternal build leaves it false.
+var serveExternalCoversController = func() bool { return false }
+
 func init() {
 	// The adapter does not register its own section; the composition root does.
 	config.Register(localaiSectionName, &localaiSection)
@@ -146,6 +151,9 @@ func runServe(ctx context.Context, env *Env, args []string) error {
 	if err := env.Config.LoadFrom(*path, env.LookupEnv); err != nil {
 		return err
 	}
+	if err := configCheckAfterLoad(); err != nil {
+		return err
+	}
 	core := env.Config.Core()
 	// The ring behind the diagnostics bundle's recent errors sees every record from here on.
 	log, errRing := opsWrapLogger(alog.NewWithWriter(core.Log, env.Stderr), core.Log.RedactKeys)
@@ -217,13 +225,24 @@ func runServe(ctx context.Context, env *Env, args []string) error {
 
 	reg, off := startInference(ctx, log, clk, localaiSection, inferenceSection)
 	if off != nil {
-		log.Error("the inference path is off", slog.String("reason", off.reason), slog.String("err_text", off.err.Error()))
-		checks = append(checks, gateway.Check{
-			Name: "inference",
-			Fn: func(context.Context) error {
-				return contracts.New(contracts.ErrUnavailable, "inference path is off: "+off.reason)
-			},
-		})
+		// Empty inference.models with the controller routed externally is a light
+		// deployment (no local LLM): keep the local selector fail-closed, mark the
+		// controller covered so /readyz is green, and do not add a failing check.
+		// A configured local model that failed pin/hash verification still blocks.
+		if len(inferenceSection.Models) == 0 && serveExternalCoversController() {
+			log.Info("local inference path unused: text controller routed externally",
+				slog.String("reason", providers.ExternalCoverReason),
+				slog.String("inference_off", off.reason))
+			reg.MarkExternallyCovered(providers.RoleController)
+		} else {
+			log.Error("the inference path is off", slog.String("reason", off.reason), slog.String("err_text", off.err.Error()))
+			checks = append(checks, gateway.Check{
+				Name: "inference",
+				Fn: func(context.Context) error {
+					return contracts.New(contracts.ErrUnavailable, "inference path is off: "+off.reason)
+				},
+			})
+		}
 	}
 
 	// The public API (milestone M1-16): every service the /v1 handlers use is

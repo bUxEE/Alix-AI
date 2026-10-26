@@ -46,7 +46,9 @@
 // ("sha256:" and 8 hex digits of the key's SHA-256) is shown; the record always warns that a manual key may grant broader
 // access than OAuth scopes, and a provider report of excessive permissions or an unsupported account policy stores the
 // reference quarantined: it is never released. Rotate, Revoke and RevokeTenant implement rotation and immediate
-// revocation; AddOAuth and Rotate are what internal/oauth uses to store and rotate tokens.
+// revocation; AddOAuth and Rotate are what internal/oauth uses to store and rotate tokens. AddOAuthIssuedKey stores
+// a provider-issued API key from browser login (kind oauth_issued_key: fingerprint like a manual key, no
+// broader_than_oauth_scopes warning, no refresh).
 //
 // # Secrets in text
 //

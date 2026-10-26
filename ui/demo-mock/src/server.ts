@@ -7,6 +7,7 @@ import { effectiveSettings, initialUserSettings, integrationAudit, providerHealt
 import { createFileStore } from "./files/store";
 import { BodyTooLargeError, isRecord, readJson, sendEmpty, sendError, sendJson } from "./http";
 import { DEMO_PATHS, DEMO_THREAD_ID } from "./paths";
+import { createDictationHandler, type DictationMode } from "./voice/dictation";
 import { createVoiceServer } from "./voice/server";
 
 // The whole mock as a connect-style middleware and an upgrade handler, so a Vite dev server, a preview server or a plain
@@ -21,6 +22,11 @@ export interface DemoMockOptions {
   maxFileMb?: number;
   /** How replies are spoken on the voice socket: "system" (default) with the machine's own voice, "silent" for tests. */
   voice?: "system" | "silent";
+  /**
+   * Dictation HTTP: `available` (default) answers capabilities and scripted transcripts; `disabled` hides the control
+   * (`available: false`); `unavailable` answers 503 as a deployment with no STT.
+   */
+  dictation?: DictationMode;
 }
 
 export interface DemoMock {
@@ -39,6 +45,7 @@ export const createDemoMock = (options: DemoMockOptions = {}): DemoMock => {
   const threads = createThreadStore(DEMO_THREAD_ID);
   const agui = createAguiHandler({ pace, threads, files });
   const voice = createVoiceServer({ pace, voice: options.voice ?? "system" });
+  const dictation = createDictationHandler(options.dictation ?? "available");
   let userSettings: SettingsUserRecord = initialUserSettings();
 
   const split = (rawUrl: string | undefined): { path: string; query: URLSearchParams } | undefined => {
@@ -73,6 +80,7 @@ export const createDemoMock = (options: DemoMockOptions = {}): DemoMock => {
   const route = async (req: IncomingMessage, res: ServerResponse, path: string, query: URLSearchParams): Promise<boolean> => {
     const method = req.method ?? "GET";
     if (await agui.handle(req, res, path, query)) return true;
+    if (await dictation.handle(req, res, path, query)) return true;
     if (path.startsWith("/v1/files") && (await files.handle(req, res, path))) return true;
     const get = method === "GET";
     if (get && path === DEMO_PATHS.healthz) sendJson(res, 200, { status: "ok" });

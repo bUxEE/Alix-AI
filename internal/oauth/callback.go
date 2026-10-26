@@ -60,6 +60,16 @@ func (e *Engine) Complete(ctx context.Context, scope contracts.Scope, cb Callbac
 		e.log.Warn("oauth callback refused", "tenant", scope.TenantID, "reason", string(ReasonOf(err)))
 		return Connection{}, err
 	}
+	conn, err := e.completeTaken(ctx, scope, f, cb)
+	if err != nil {
+		e.markFlowFailed(pendingKey(f), ReasonOf(err))
+		return Connection{}, err
+	}
+	e.markFlowCompleted(pendingKey(f), conn)
+	return conn, nil
+}
+
+func (e *Engine) completeTaken(ctx context.Context, scope contracts.Scope, f *pendingFlow, cb CallbackRequest) (Connection, error) {
 	refuse := func(err error) (Connection, error) {
 		e.log.Warn("oauth callback refused", "provider", string(f.provider), "tenant", f.scope.TenantID, "reason", string(ReasonOf(err)))
 		return Connection{}, err
@@ -87,8 +97,12 @@ func (e *Engine) Complete(ctx context.Context, scope contracts.Scope, cb Callbac
 	if !validCode(cb.Code) {
 		return refuse(fail(contracts.ErrValidationFailed, ReasonBadRequest, "oauth: the callback has no valid code"))
 	}
-	if !e.clk.Now().Before(f.expires) { // the flow expired while the lookup was in flight
+	if !e.clk.Now().Before(f.expires) {
 		return refuse(fail(contracts.ErrExpired, ReasonStateExpired, "oauth: the authorization expired; start again"))
+	}
+
+	if p.GrantKind == GrantIssuedKey {
+		return e.completeIssuedKey(ctx, scope, p, f, cb.Code, refuse)
 	}
 
 	form := url.Values{}
@@ -96,11 +110,18 @@ func (e *Engine) Complete(ctx context.Context, scope contracts.Scope, cb Callbac
 	form.Set("code", cb.Code)
 	form.Set("redirect_uri", f.redirectURI)
 	form.Set("code_verifier", f.verifier.Reveal())
-	ts, err := e.tokenCall(ctx, scope, p, form)
+	if f.resource != "" {
+		form.Set("resource", f.resource)
+	}
+	// Use the flow's effective client id (SIWC issued id) for the token request.
+	pTok := p
+	if f.clientID != "" {
+		pTok.ClientID = f.clientID
+	}
+	ts, err := e.tokenCall(ctx, scope, pTok, form)
 	if err != nil {
 		return refuse(asTyped(err))
 	}
-	// From here on the provider holds a grant: any failure revokes it again.
 	abort := func(err error) (Connection, error) {
 		e.revokeAtProvider(ctx, scope, p, ts.access, ts.refresh)
 		return refuse(err)
@@ -110,7 +131,13 @@ func (e *Engine) Complete(ctx context.Context, scope contracts.Scope, cb Callbac
 		if ts.idToken.Empty() {
 			return abort(fail(contracts.ErrUnauthenticated, ReasonIDToken, "oauth: the provider returned no ID token"))
 		}
-		if claims, err = e.validateIDToken(p, ts.idToken, f.nonce); err != nil {
+		audClient := f.clientID
+		if audClient == "" {
+			audClient = p.ClientID
+		}
+		pAud := p
+		pAud.ClientID = audClient
+		if claims, err = e.validateIDToken(pAud, ts.idToken, f.nonce); err != nil {
 			return abort(err)
 		}
 	}
@@ -134,10 +161,14 @@ func (e *Engine) Complete(ctx context.Context, scope contracts.Scope, cb Callbac
 	}
 	var ref providers.CredentialRef
 	if f.reauth == "" {
-		ref, err = e.cr.AddOAuth(ctx, scope, credentials.OAuthGrant{ProviderID: p.ID, Label: label, Scopes: permitted,
-			Account: acct, Access: ts.access, Refresh: ts.refresh, ExpiresAt: &expires})
+		grant := credentials.OAuthGrant{ProviderID: p.ID, Label: label, Scopes: permitted,
+			Account: acct, Access: ts.access, Refresh: ts.refresh, ExpiresAt: &expires}
+		// SIWC ChatGPT plan usage is the signed-in person's alone: bind the credential to this principal.
+		if slices.Contains(permitted, "chatgpt.tokens.use.direct") {
+			grant.OwnerPrincipal = scope.PrincipalID
+		}
+		ref, err = e.cr.AddOAuth(ctx, scope, grant)
 	} else {
-		// Stored under the reference's lock: a refresh in flight finishes first, or starts from these tokens.
 		unlock := e.lockRef(scope, f.reauth)
 		var oldAccess, oldRefresh credentials.Secret
 		if switched {
@@ -150,7 +181,7 @@ func (e *Engine) Complete(ctx context.Context, scope contracts.Scope, cb Callbac
 		ref, err = e.cr.Rotate(ctx, scope, f.reauth, rot)
 		unlock()
 		if err == nil && switched {
-			e.revokeAtProvider(ctx, scope, p, oldAccess, oldRefresh) // the old account's grant is not left behind
+			e.revokeAtProvider(ctx, scope, p, oldAccess, oldRefresh)
 		}
 	}
 	if err != nil {
@@ -158,13 +189,18 @@ func (e *Engine) Complete(ctx context.Context, scope contracts.Scope, cb Callbac
 		e.revokeAtProvider(ctx, scope, p, ts.access, ts.refresh)
 		return Connection{}, err
 	}
-	if len(excess) > 0 { // the provider granted more than was asked: quarantine, never silently accept
+	if issued := issuedClientID(ts.members); issued != "" {
+		// Persist the SIWC issued client id as the account project id (safe identifier); composition
+		// roots that need it on re-auth read it from the credential account fields.
+		if ref.Account.ProjectID == nil {
+			ref.Account.ProjectID = &issued
+			_, _ = e.cr.Rotate(ctx, scope, ref.RefID, credentials.Rotation{Key: ts.access, Refresh: ts.refresh, ExpiresAt: &expires, Account: &ref.Account})
+		}
+	}
+	if len(excess) > 0 {
 		q, ferr := e.cr.Flag(ctx, scope, ref.RefID, credentials.Flag{Status: providers.CredentialRefStatusQuarantined,
 			Warning: providers.ConnectionWarningExcessivePermissionsReported})
 		if ferr != nil {
-			// Not quarantined: the over-scoped grant is revoked here and at the provider instead. A local revocation
-			// that cannot be recorded either (the same audit path) still deletes the stored tokens, so the grant is
-			// unusable even where the provider has no revocation endpoint.
 			e.log.Error("oauth over-granted connection could not be quarantined", "provider", string(p.ID), "tenant", scope.TenantID, "reason", string(credentials.ReasonOf(ferr)))
 			_, _ = e.cr.Revoke(ctx, scope, ref.RefID)
 			e.revokeAtProvider(ctx, scope, p, ts.access, ts.refresh)
@@ -174,6 +210,42 @@ func (e *Engine) Complete(ctx context.Context, scope contracts.Scope, cb Callbac
 	}
 	e.log.Info("oauth authorization completed", "provider", string(p.ID), "tenant", scope.TenantID, "ref", string(ref.RefID), "switched", switched)
 	return Connection{Ref: ref, Scopes: permitted, ConsentedAt: e.clk.Now(), Reauthorized: f.reauth != "", Switched: switched}, nil
+}
+
+func issuedClientID(members map[string]any) string {
+	if members == nil {
+		return ""
+	}
+	for _, k := range []string{"client_id", "issued_client_id"} {
+		if s, ok := members[k].(string); ok && strings.HasPrefix(s, "oaiapp_") {
+			return s
+		}
+	}
+	return ""
+}
+
+func (e *Engine) completeIssuedKey(ctx context.Context, scope contracts.Scope, p ProviderConfig, f *pendingFlow, code string, refuse func(error) (Connection, error)) (Connection, error) {
+	key, err := e.exchangeIssuedKey(ctx, scope, p, code, f.verifier)
+	if err != nil {
+		return refuse(asTyped(err))
+	}
+	label := f.label
+	if label == "" {
+		label = string(p.ID)
+	}
+	scopes := f.scopes
+	if len(scopes) == 0 {
+		scopes = []string{"api"}
+	}
+	ref, err := e.cr.AddOAuthIssuedKey(ctx, scope, credentials.OAuthIssuedKeyGrant{
+		ProviderID: p.ID, Label: label, Scopes: scopes, Key: key,
+	})
+	if err != nil {
+		e.log.Error("oauth issued key could not be stored", "provider", string(p.ID), "tenant", scope.TenantID, "reason", string(credentials.ReasonOf(err)))
+		return Connection{}, err
+	}
+	e.log.Info("oauth issued-key authorization completed", "provider", string(p.ID), "tenant", scope.TenantID, "ref", string(ref.RefID))
+	return Connection{Ref: ref, Scopes: scopes, ConsentedAt: e.clk.Now()}, nil
 }
 
 // asTyped turns an exchange failure into the typed error; other errors pass through.

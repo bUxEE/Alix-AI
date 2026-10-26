@@ -1,0 +1,24 @@
+# STT-only backend catalogue (mounted by compose.stt-only.yaml over the main gallery).
+# Digests resolved from quay.io tags of LocalAI v4.10.0 (parakeet 2026-10-26, whisper 2026-10-04).
+- name: "cpu-parakeet-cpp"
+  alias: "parakeet-cpp"
+  version: "v4.10.0"
+  license: mit
+  description: "parakeet.cpp CPU backend (NVIDIA Parakeet GGUF speech to text), v4.10.0-cpu-parakeet-cpp"
+  tags:
+    - stt
+    - cpu
+  uri: "quay.io/go-skynet/local-ai-backends@sha256:372c7135a4939d78714bc284ece62e75a6279e07d5be9d5ed31622386c90bb75"
+  mirrors:
+    - "docker.io/localai/localai-backends@sha256:372c7135a4939d78714bc284ece62e75a6279e07d5be9d5ed31622386c90bb75"
+- name: "whisper"
+  alias: "whisper"
+  version: "v4.10.0"
+  license: mit
+  description: "whisper.cpp CPU backend (speech to text), v4.10.0-cpu-whisper"
+  tags:
+    - stt
+    - cpu
+  uri: "quay.io/go-skynet/local-ai-backends@sha256:cd3d42dbc15b7a6cf29a1e3c8509bd7a29abc16cce766178349de66898bd1475"
+  mirrors:
+    - "docker.io/localai/localai-backends@sha256:cd3d42dbc15b7a6cf29a1e3c8509bd7a29abc16cce766178349de66898bd1475"

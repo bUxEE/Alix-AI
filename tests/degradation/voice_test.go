@@ -128,6 +128,9 @@ func newVoice(t *testing.T, withTTS bool) *voiceRig {
 	if err := voice.Register(reg, providers.RoleSTT, r.stt); err != nil {
 		t.Fatal(err)
 	}
+	if err := voice.Register(reg, providers.RoleVAD, vfake.New(vfake.WithName("fake-vad"))); err != nil {
+		t.Fatal(err)
+	}
 	if withTTS {
 		if err := voice.Register(reg, providers.RoleTTS, r.tts); err != nil {
 			t.Fatal(err)

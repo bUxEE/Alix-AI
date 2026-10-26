@@ -15,6 +15,7 @@ deferred M7 kits), so everything here is a configuration file, a command line or
 | [Backup and restore](backup-restore.md) | Making, verifying and restoring a signed backup; disaster recovery. |
 | [Upgrades](upgrades.md) | Staged upgrade, rollback and interrupted-upgrade recovery. |
 | [Troubleshooting](troubleshooting.md) | A symptom, its cause and the fix. |
+| [Light External (no local LLM)](light-external.md) | Chat (and optional local STT) with External mode, no LocalAI LLM; per-layer routing presets. |
 
 Policies that go with them: [compatibility and deprecation](../../policies/compatibility.md), [vulnerability response](../../policies/vulnerability-response.md),
 [SECURITY.md](../../../SECURITY.md).

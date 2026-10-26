@@ -185,6 +185,10 @@ func TestSecNoArbitraryRegistrationRoutes(t *testing.T) {
 					if o.Route() != "POST /v1/applications" {
 						t.Errorf("%s accepts an archive: only a package registration may", o.Route())
 					}
+				case "audio/wav":
+					if o.Route() != "POST /v1/sessions/{session_id}/dictations" {
+						t.Errorf("%s accepts audio/wav: only dictation may", o.Route())
+					}
 				default:
 					t.Errorf("%s accepts the media type %s", o.Route(), b.Media)
 				}

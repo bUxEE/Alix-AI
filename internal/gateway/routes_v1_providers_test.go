@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/buxee/alix-ai/internal/identity"
 	"github.com/buxee/alix-ai/pkg/contracts"
 	"github.com/buxee/alix-ai/pkg/contracts/gen/common"
 	pv "github.com/buxee/alix-ai/pkg/contracts/gen/providers"
@@ -26,7 +27,7 @@ import (
 
 const providersTestSecret = "sk-live-TOPSECRET-0123456789abcdef"
 
-// providersTestFake is the scripted ProvidersService of one test environment.
+// providersTestFake is the scripted ProvidersService (and ProvidersOAuthFlowService) of one test environment.
 type providersTestFake struct {
 	mu        sync.Mutex
 	operators map[string]ProvidersOperatorLevel // principal ids the deployment lists as operators
@@ -36,6 +37,7 @@ type providersTestFake struct {
 	keys      []string // the revealed values the service received
 	keyErr    error
 	pending   map[string]contracts.Scope // OAuth states by value
+	flows     map[string]providersTestFlow
 	modes     map[string]pv.DeploymentMode
 	audit     []providersTestAudit
 	kill      ProvidersKillSwitch
@@ -101,7 +103,7 @@ func (f *providersTestFake) OAuthStart(_ context.Context, sc contracts.Scope, re
 	f.enter("OAuthStart", sc)
 	state := "st-" + strings.Repeat("a", 20)
 	f.pending[state] = sc
-	return ProvidersOAuthStarted{
+	out := ProvidersOAuthStarted{
 		AuthorizationURL: "https://idp.example.test/authorize?client_id=alixai&code_challenge=CH&code_challenge_method=S256&state=" + state + "&nonce=N",
 		RedirectURI:      req.RedirectURI,
 		ExpiresAt:        time.Date(2026, 1, 1, 0, 10, 0, 0, time.UTC),
@@ -109,7 +111,48 @@ func (f *providersTestFake) OAuthStart(_ context.Context, sc contracts.Scope, re
 			ProviderName: "Example", Scopes: []ProvidersOAuthScope{{Name: "model.request", Description: "Send model requests", DataAccess: "prompts"}},
 			DataAccess: []string{"prompts you send"},
 		},
-	}, nil
+	}
+	if req.Presentation == ProvidersOAuthPresentationPopup {
+		id := "oaf_01J0000000000000000000000T"
+		f.flows[id] = providersTestFlow{scope: sc, provider: req.Provider, status: "pending", updated: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)}
+		out.FlowID = id
+		out.PollIntervalMS = 1000
+	}
+	return out, nil
+}
+
+type providersTestFlow struct {
+	scope    contracts.Scope
+	provider pv.ProviderID
+	status   string
+	updated  time.Time
+}
+
+func (f *providersTestFake) OAuthFlowStatus(_ context.Context, sc contracts.Scope, flowID string) (ProvidersOAuthFlowStatus, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.enter("OAuthFlowStatus", sc)
+	fl, ok := f.flows[flowID]
+	if !ok || fl.scope.PrincipalID != sc.PrincipalID || fl.scope.TenantID != sc.TenantID || fl.scope.ApplicationID != sc.ApplicationID || fl.scope.WorkspaceID != sc.WorkspaceID {
+		return ProvidersOAuthFlowStatus{}, contracts.New(contracts.ErrValidationFailed, "no such flow").WithDetails("reason", "not_found")
+	}
+	return ProvidersOAuthFlowStatus{FlowID: flowID, Provider: fl.provider, Status: fl.status, UpdatedAt: fl.updated}, nil
+}
+
+func (f *providersTestFake) OAuthFlowCancel(_ context.Context, sc contracts.Scope, flowID string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.enter("OAuthFlowCancel", sc)
+	fl, ok := f.flows[flowID]
+	if !ok || fl.scope.PrincipalID != sc.PrincipalID || fl.scope.TenantID != sc.TenantID || fl.scope.ApplicationID != sc.ApplicationID || fl.scope.WorkspaceID != sc.WorkspaceID {
+		return contracts.New(contracts.ErrValidationFailed, "no such flow").WithDetails("reason", "not_found")
+	}
+	if fl.status == "pending" {
+		fl.status = "cancelled"
+		fl.updated = time.Date(2026, 1, 1, 0, 1, 0, 0, time.UTC)
+		f.flows[flowID] = fl
+	}
+	return nil
 }
 
 func (f *providersTestFake) OAuthCallback(_ context.Context, sc contracts.Scope, cb ProvidersOAuthCallback) (pv.ConnectionStatus, error) {
@@ -287,10 +330,14 @@ func init() {
 		f := &providersTestFake{
 			operators: map[string]ProvidersOperatorLevel{},
 			pending:   map[string]contracts.Scope{},
+			flows:     map[string]providersTestFlow{},
 			modes:     map[string]pv.DeploymentMode{},
 		}
 		providersFakeSets.Store(e, f)
 		if err := Provide[ProvidersService](s, f); err != nil {
+			t.Fatal(err)
+		}
+		if err := Provide[ProvidersOAuthFlowService](s, f); err != nil {
 			t.Fatal(err)
 		}
 	})
@@ -820,4 +867,81 @@ func TestProviderOperatorRoutesEdgeCases(t *testing.T) {
 	providersOperator(e, ProvidersOperatorTenant)
 	wantError(t, e.call(http.MethodGet, "/v1/providers/usage/export?scope=application", nil), http.StatusForbidden, contracts.ErrPermissionDenied)
 	_ = f
+}
+
+// Popup start returns flow_id and poll_interval_ms; redirect start does not; opener_origin and
+// loopback placeholder are validated at the gateway.
+func TestOAuthPopupStartAndFlowRoutes(t *testing.T) {
+	e, f := providersEnv(t)
+	providersOperator(e, ProvidersOperatorTenant)
+
+	wantError(t, e.call(http.MethodPost, "/v1/oauth/openrouter/start", map[string]any{
+		"capabilities": []string{"chat"}, "redirect_uri": "http://127.0.0.1:5555/cb",
+		"presentation": "popup",
+	}), http.StatusBadRequest, contracts.ErrValidationFailed)
+
+	start := e.call(http.MethodPost, "/v1/oauth/openrouter/start", map[string]any{
+		"capabilities": []string{"chat"}, "redirect_uri": ProvidersOAuthLoopbackPlaceholder,
+		"presentation": "popup", "callback": "loopback", "opener_origin": "http://127.0.0.1:3000",
+	})
+	wantStatus(t, start, http.StatusOK)
+	settingsValidateSpec(t, "OAuthStarted", start.Body.Bytes())
+	var started ProvidersOAuthStarted
+	if err := json.Unmarshal(start.Body.Bytes(), &started); err != nil {
+		t.Fatal(err)
+	}
+	if started.FlowID == "" || started.PollIntervalMS <= 0 {
+		t.Fatalf("popup start missing flow members: %+v", started)
+	}
+
+	st := e.call(http.MethodGet, "/v1/oauth/flows/"+started.FlowID, nil)
+	wantStatus(t, st, http.StatusOK)
+	settingsValidateSpec(t, "OAuthFlowStatus", st.Body.Bytes())
+
+	f.mu.Lock()
+	f.operators["usr_other"] = ProvidersOperatorTenant
+	f.mu.Unlock()
+	wantError(t, e.call(http.MethodGet, "/v1/oauth/flows/"+started.FlowID, nil, withPrincipal("usr_other")), http.StatusNotFound, contracts.ErrValidationFailed)
+	wantError(t, e.call(http.MethodGet, "/v1/oauth/flows/oaf_01J0000000000000000000000Z", nil), http.StatusNotFound, contracts.ErrValidationFailed)
+	wantError(t, e.call(http.MethodGet, "/v1/oauth/flows/bad", nil), http.StatusBadRequest, contracts.ErrValidationFailed)
+
+	wantStatus(t, e.call(http.MethodDelete, "/v1/oauth/flows/"+started.FlowID, nil), http.StatusNoContent)
+	wantStatus(t, e.call(http.MethodDelete, "/v1/oauth/flows/"+started.FlowID, nil), http.StatusNoContent)
+
+	redirect := e.call(http.MethodPost, "/v1/oauth/openai/start", map[string]any{
+		"capabilities": []string{"chat"}, "redirect_uri": "http://127.0.0.1:5555/cb",
+	})
+	wantStatus(t, redirect, http.StatusOK)
+	var plain ProvidersOAuthStarted
+	_ = json.Unmarshal(redirect.Body.Bytes(), &plain)
+	if plain.FlowID != "" || plain.PollIntervalMS != 0 {
+		t.Errorf("redirect start unexpectedly set flow members: %+v", plain)
+	}
+	wantError(t, e.call(http.MethodPost, "/v1/oauth/openai/start", map[string]any{
+		"capabilities": []string{"chat"}, "redirect_uri": "http://127.0.0.1:5555/cb",
+		"presentation": "redirect", "opener_origin": "http://127.0.0.1:3000",
+	}), http.StatusBadRequest, contracts.ErrValidationFailed)
+	wantError(t, e.call(http.MethodPost, "/v1/oauth/openai/start", map[string]any{
+		"capabilities": []string{"chat"}, "redirect_uri": "http://127.0.0.1:5555/cb",
+		"callback": "loopback",
+	}), http.StatusBadRequest, contracts.ErrValidationFailed)
+}
+
+// Without the popup-flow service the flow routes answer unavailable after the operator gate.
+func TestOAuthFlowRoutesUnavailableWithoutFlowService(t *testing.T) {
+	e, _ := providersEnv(t)
+	providersOperator(e, ProvidersOperatorTenant)
+	h := &providersHandler{apps: e.apps, svc: providersFakeOf(e), flows: nil}
+	scope := e.scopeOf()
+	ctx, err := identity.WithScope(context.Background(), scope)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "/v1/oauth/flows/oaf_01J0000000000000000000000A", nil).WithContext(ctx)
+	req.SetPathValue("flow_id", "oaf_01J0000000000000000000000A")
+	rec := httptest.NewRecorder()
+	h.oauthFlowStatus(rec, req)
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("status = %d, want 503 (%s)", rec.Code, rec.Body.String())
+	}
 }

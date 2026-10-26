@@ -47,3 +47,12 @@ export type { AlixMessages, DeepPartial } from "./i18n/messages.js";
 export { ALIXAI_TOKENS, themeStyle } from "./tokens.js";
 export type { AlixToken } from "./tokens.js";
 export * from "./voice/index.js";
+export { AlixDictationButton, useAlixDictation, insertAtCaret, insertIntoCopilotTextarea, createAlixMicrophone } from "./dictation/index.js";
+export type {
+  AlixDictation,
+  AlixDictationButtonProps,
+  AlixCaptureMicrophone,
+  DictationPhase,
+  UseAlixDictationOptions,
+  VoiceModeOption,
+} from "./dictation/index.js";

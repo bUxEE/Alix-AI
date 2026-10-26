@@ -328,6 +328,9 @@ class OAuthStartRequest(BaseModel):
     reauthorize: Optional[str] = None
     switch_account: Optional[bool] = None
     label: Optional[Annotated[str, Field(max_length=128)]] = None
+    presentation: Optional[Literal["redirect", "popup"]] = None
+    callback: Optional[Literal["host", "loopback"]] = None
+    opener_origin: Optional[Annotated[str, Field(max_length=256, pattern='^https?://[A-Za-z0-9._~-]+(:[0-9]{1,5})?$')]] = None
 
 
 class OAuthStartedConsentScopesItem(BaseModel):
@@ -353,6 +356,8 @@ class OAuthStarted(BaseModel):
     redirect_uri: str
     expires_at: str
     consent: OAuthStartedConsent
+    flow_id: Optional[Annotated[str, Field(pattern='^oaf_[0-9A-HJKMNP-TV-Z]{26}$')]] = None
+    poll_interval_ms: Optional[Annotated[int, Field(ge=250, le=10000)]] = None
 
 
 class OAuthCallbackRequest(BaseModel):

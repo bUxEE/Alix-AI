@@ -23,6 +23,8 @@ export interface DemoText {
     readonly variant: string;
     readonly variants: { readonly inline: string; readonly sidebar: string; readonly popup: string };
     readonly progress: string;
+    readonly voice: string;
+    readonly voiceModes: { readonly off: string; readonly dictation: string; readonly conversation: string };
     readonly tryThese: string;
     readonly running: string;
     readonly confirmationOpen: string;
@@ -93,6 +95,8 @@ const en: DemoText = {
     variant: "Layout",
     variants: { inline: "Inline", sidebar: "Sidebar", popup: "Popup" },
     progress: "Progress line",
+    voice: "Voice on the composer",
+    voiceModes: { off: "Off", dictation: "Dictation", conversation: "Conversation" },
     tryThese: "Try these",
     running: "The assistant is answering.",
     confirmationOpen: "A confirmation is open. Approve or decline it in the chat first: AG-UI starts no new run until it is answered.",
@@ -178,6 +182,8 @@ const it: DemoText = {
     variant: "Disposizione",
     variants: { inline: "Nella pagina", sidebar: "Barra laterale", popup: "Popup" },
     progress: "Riga di avanzamento",
+    voice: "Voce sul compositore",
+    voiceModes: { off: "Spenta", dictation: "Dettatura", conversation: "Conversazione" },
     tryThese: "Prova questi",
     running: "L'assistente sta rispondendo.",
     confirmationOpen: "C'è una conferma aperta. Approvala o rifiutala nella chat: AG-UI non avvia un'altra esecuzione finché non ha risposta.",

@@ -56,6 +56,8 @@ var roots = map[string]rootType{
 	"egress-decision":     root[EgressDecision](),
 	"egress-disclosure":   root[EgressDisclosure](),
 	"egress-policy":       root[EgressPolicy](),
+	"oauth-flow-status":   root[OauthFlowStatus](),
+	"oauth-popup-result":  root[OauthPopupResult](),
 	"price-table":         root[PriceTable](),
 	"provider-error":      root[ProviderError](),
 	"provider-profile":    root[ProviderProfile](),

@@ -21,6 +21,8 @@ BACKENDS=(
   "piper|piper|sha256:d02327c0f851d3858724d3ee5d977241e7c617a0ed575eca58b28e57ec10792a"
   # the English-only Kokoro challenger (Rust, ONNX; protocol stop rule: measured because a Piper voice failed a gate), v4.10.0-cpu-kokoros
   "kokoros|kokoros|sha256:613c05d872ad1e1b24b4cbbd981cef4f80c6e1369221c54c8ca23bb0a0872d7b"
+  # Parakeet TDT candidate (ADR 0040), v4.10.0-cpu-parakeet-cpp; digest resolved 2026-10-26
+  "cpu-parakeet-cpp|parakeet-cpp|sha256:372c7135a4939d78714bc284ece62e75a6279e07d5be9d5ed31622386c90bb75"
 )
 for b in "${BACKENDS[@]}"; do
   IFS='|' read -r name alias digest <<<"$b"

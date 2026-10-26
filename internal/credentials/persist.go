@@ -26,12 +26,14 @@ func init() { store.RegisterMigrations("credentials", migrations) }
 const tenantWhere = "application_id = ? AND tenant_id = ? AND workspace_id = ''"
 
 // row is one stored reference: the typed document the host may see and the private routing facts
-// (where the value lives) that it may not.
+// (where the value lives) that it may not. ownerPrincipal is not in the public document: when set,
+// Resolve refuses every other principal of the same tenant (SIWC plan binding).
 type row struct {
-	ref        providers.CredentialRef
-	backend    BackendName
-	locator    string
-	hasRefresh bool
+	ref            providers.CredentialRef
+	backend        BackendName
+	locator        string
+	hasRefresh     bool
+	ownerPrincipal string // empty → tenant-scoped; set → application+principal bound
 }
 
 func (r row) slot() Slot {
@@ -64,16 +66,16 @@ func wrapStore(err error, msg string) error {
 	return contracts.New(contracts.ErrUnavailable, msg)
 }
 
-const rowColumns = "document, deployment_id, provider_id, kind, status, backend, locator, has_refresh"
+const rowColumns = "document, deployment_id, provider_id, kind, status, backend, locator, has_refresh, owner_principal_id"
 
 type scanner interface{ Scan(dest ...any) error }
 
 func scanRow(sc scanner, app, tenant string) (row, error) {
 	var (
-		doc, dep, prov, kind, status, backend, locator string
-		hasRefresh                                     int
+		doc, dep, prov, kind, status, backend, locator, owner string
+		hasRefresh                                            int
 	)
-	if err := sc.Scan(&doc, &dep, &prov, &kind, &status, &backend, &locator, &hasRefresh); err != nil {
+	if err := sc.Scan(&doc, &dep, &prov, &kind, &status, &backend, &locator, &hasRefresh, &owner); err != nil {
 		return row{}, err
 	}
 	ref, err := decodeRef(doc)
@@ -87,7 +89,7 @@ func scanRow(sc scanner, app, tenant string) (row, error) {
 		string(ref.Kind) != kind || string(ref.Status) != status {
 		return row{}, fail(contracts.ErrInternal, ReasonCorrupt, "credentials: a stored reference does not match its row")
 	}
-	return row{ref: ref, backend: BackendName(backend), locator: locator, hasRefresh: hasRefresh == 1}, nil
+	return row{ref: ref, backend: BackendName(backend), locator: locator, hasRefresh: hasRefresh == 1, ownerPrincipal: owner}, nil
 }
 
 // loadRow reads one reference of the tenant, or found=false.
@@ -146,11 +148,11 @@ func insertRow(ctx context.Context, q store.Querier, r row, now time.Time) error
 	_, err = q.ExecContext(ctx,
 		`INSERT INTO credentials_refs
 		   (application_id, tenant_id, workspace_id, ref_id, deployment_id, provider_id, kind, status,
-		    backend, locator, has_refresh, document, created_at, updated_at)
-		 VALUES (?, ?, '', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		    backend, locator, has_refresh, document, created_at, updated_at, owner_principal_id)
+		 VALUES (?, ?, '', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		string(b.ApplicationID), string(b.TenantID), string(r.ref.RefID), string(b.DeploymentID), string(b.ProviderID),
 		string(r.ref.Kind), string(r.ref.Status), string(r.backend), r.locator, b2i(r.hasRefresh), string(doc),
-		now.UnixMilli(), now.UnixMilli())
+		now.UnixMilli(), now.UnixMilli(), r.ownerPrincipal)
 	return wrapStore(err, "credentials: storing a reference failed")
 }
 

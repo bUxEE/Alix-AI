@@ -54,6 +54,18 @@ export const voiceEn = {
   "common.discard": "Discard",
   "common.retry": "Try again",
   "common.reconnecting": "Connection lost. Reconnecting…",
+  "dictation.start": "Dictate",
+  "dictation.stop": "Stop dictation",
+  "dictation.cancel": "Cancel dictation",
+  "dictation.recording": "Recording, {seconds}s",
+  "dictation.transcribing": "Turning speech into text",
+  "dictation.requesting": "Waiting for the microphone",
+  "dictation.error.permission": "Microphone access was denied. Allow it in the browser, or type instead.",
+  "dictation.error.unavailable": "Dictation is not available right now.",
+  "dictation.error.silent": "That clip was too short or silent. Try again.",
+  "dictation.error.generic": "Dictation did not work. Try again, or type instead.",
+  "dictation.live.recording": "Recording",
+  "dictation.live.done": "Text inserted into the message box",
 } as const;
 
 export type AlixVoiceMessageKey = keyof typeof voiceEn;
@@ -108,6 +120,18 @@ export const voiceIt: AlixVoiceMessages = {
   "common.discard": "Scarta",
   "common.retry": "Riprova",
   "common.reconnecting": "Connessione persa. Riconnessione in corso…",
+  "dictation.start": "Dettatura",
+  "dictation.stop": "Interrompi la dettatura",
+  "dictation.cancel": "Annulla la dettatura",
+  "dictation.recording": "Registrazione, {seconds}s",
+  "dictation.transcribing": "Trascrizione in corso",
+  "dictation.requesting": "Attesa del microfono",
+  "dictation.error.permission": "Accesso al microfono negato. Consentilo nel browser, oppure scrivi.",
+  "dictation.error.unavailable": "La dettatura non è disponibile in questo momento.",
+  "dictation.error.silent": "La registrazione era troppo breve o silenziosa. Riprova.",
+  "dictation.error.generic": "La dettatura non è riuscita. Riprova, oppure scrivi.",
+  "dictation.live.recording": "Registrazione",
+  "dictation.live.done": "Testo inserito nel messaggio",
 };
 
 export const VOICE_MESSAGES: Readonly<Record<string, AlixVoiceMessages>> = Object.freeze({ en: voiceEn, it: voiceIt });

@@ -29,6 +29,8 @@ export const PROVIDERS_OPERATIONS = {
   putProviderKillSwitch: { method: "PUT", path: "/v1/providers/kill-switch", safe: false },
   startProviderOAuth: { method: "POST", path: "/v1/oauth/{provider}/start", safe: false },
   completeProviderOAuth: { method: "POST", path: "/v1/oauth/callback", safe: false },
+  getProviderOAuthFlow: { method: "GET", path: "/v1/oauth/flows/{flow_id}", safe: true },
+  cancelProviderOAuthFlow: { method: "DELETE", path: "/v1/oauth/flows/{flow_id}", safe: false },
 } as const satisfies Record<string, ProvidersOperationSpec>;
 
 export type ProvidersOperationId = keyof typeof PROVIDERS_OPERATIONS;

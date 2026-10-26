@@ -164,6 +164,9 @@ func attestSpeak(t *testing.T, r *extFinalVoiceRig, reply func() dialogue.Result
 	if err := voice.Register(reg, providers.RoleSTT, r.locSTT); err != nil {
 		t.Fatal(err)
 	}
+	if err := voice.Register(reg, providers.RoleVAD, vfake.New(vfake.WithName("fake-vad"))); err != nil {
+		t.Fatal(err)
+	}
 	if err := voice.Register(reg, providers.RoleTTS, extFinalTTS{local: r.locTTS}); err != nil {
 		t.Fatal(err)
 	}

@@ -71,6 +71,24 @@ func (p Pack) Provides(role providers.Role) bool {
 	return false
 }
 
+// DictationOK reports whether the pack can serve record-to-text dictation: it needs STT.
+// VAD is not required (ADR 0039); the user's record and stop are the segmentation.
+func (p Pack) DictationOK() bool { return p.Provides(providers.RoleSTT) }
+
+// ConversationOK reports whether the pack can serve voice-conversation mode: STT with a VAD
+// in front (ADR 0015). An STT-only pack is refused here and remains valid for dictation.
+func (p Pack) ConversationOK() error {
+	if !p.Provides(providers.RoleSTT) {
+		return contracts.New(contracts.ErrUnavailable, "voice: the pack does not provide speech recognition").
+			WithDetails("role", providers.RoleSTT.String()).WithDetails("effect", providers.RoleSTT.Effect())
+	}
+	if !p.Provides(providers.RoleVAD) {
+		return contracts.New(contracts.ErrUnavailable, "voice: voice conversation needs a VAD in front of STT; an STT-only pack is for dictation").
+			WithDetails("role", providers.RoleVAD.String()).WithDetails("effect", providers.RoleVAD.Effect())
+	}
+	return nil
+}
+
 func (p Pack) clone() Pack {
 	p.Roles = append([]providers.Role(nil), p.Roles...)
 	return p

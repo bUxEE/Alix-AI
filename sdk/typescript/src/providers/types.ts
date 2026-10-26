@@ -178,12 +178,18 @@ export type UsageExport = Record<string, unknown>;
 export interface OAuthStartInput {
   /** The capabilities to connect for; the engine requests the smallest set of provider scopes they map to. */
   capabilities: string[];
-  /** Where the provider sends the browser back: a loopback URI on a port the host bound, or a registered HTTPS redirect. */
+  /** Where the provider sends the browser back. For callback `loopback` send `http://127.0.0.1/oauth/loopback`. */
   redirect_uri: string;
   /** An existing connection to renew (re-consent or account switch). */
   reauthorize?: string;
   switch_account?: boolean;
   label?: string;
+  /** `redirect` (default) or `popup` (1.1.0). */
+  presentation?: "redirect" | "popup";
+  /** `host` (default) or `loopback` (1.1.0). */
+  callback?: "host" | "loopback";
+  /** Exact origin of the host page; required when presentation is `popup`. */
+  opener_origin?: string;
 }
 
 /** One scope as the consent shows it. */
@@ -211,6 +217,20 @@ export interface OAuthStarted {
   redirect_uri: string;
   expires_at: string;
   consent: OAuthConsent;
+  /** Present when presentation was `popup`; poll getOAuthFlow with it. */
+  flow_id?: string;
+  /** Suggested polling interval when flow_id is set. */
+  poll_interval_ms?: number;
+}
+
+/** Server-side status of a popup OAuth flow (1.1.0). */
+export interface OAuthFlowStatus {
+  flow_id: string;
+  provider: string;
+  status: "pending" | "completed" | "failed" | "expired" | "cancelled";
+  reason?: string;
+  connection?: ConnectionStatus;
+  updated_at: string;
 }
 
 /** The redirect the browser followed, relayed by the host. */

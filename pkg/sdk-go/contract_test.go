@@ -20,6 +20,7 @@ import (
 	"github.com/buxee/alix-ai/pkg/contracts/gen/decision"
 	pv "github.com/buxee/alix-ai/pkg/contracts/gen/providers"
 	"github.com/buxee/alix-ai/pkg/contracts/gen/rag"
+	"github.com/buxee/alix-ai/pkg/contracts/gen/voice"
 	sdkgo "github.com/buxee/alix-ai/pkg/sdk-go"
 	"github.com/buxee/alix-ai/pkg/sdk-go/sdktest"
 )
@@ -51,14 +52,19 @@ func TestOperationsCoverTheImplementedAreas(t *testing.T) {
 	implemented := map[string]bool{"root": true, "sessions": true, "actions": true, "apps": true, "rag": true, "providers": true, "oauth": true}
 	// The decision area is spoken in part on purpose: the read-only status. The operator-only configuration
 	// (getDecisionConfig, putDecisionConfig) is not part of the SDK surface.
-	partial := map[string]bool{"getDecisionStatus": true}
+	// Voice is spoken in part: dictation HTTP only (not the WebSocket openVoiceSession).
+	partial := map[string]bool{
+		"getDecisionStatus":        true,
+		"getDictationCapabilities": true,
+		"createSessionDictation":   true,
+	}
 	have := map[string]bool{}
 	for _, op := range sdkgo.Operations() {
 		have[op.ID] = true
 	}
 	for _, o := range s.ops {
-		if o.area == "decision" && have[o.id] != partial[o.id] {
-			t.Errorf("%s: the SDK speaks only the decision status (have=%v)", o.id, have[o.id])
+		if (o.area == "decision" || o.area == "voice") && have[o.id] != partial[o.id] {
+			t.Errorf("%s: the SDK speaks only the partial %s surface (have=%v)", o.id, o.area, have[o.id])
 		}
 		if implemented[o.area] && !have[o.id] {
 			t.Errorf("%s (%s %s, area %s) is in the document and the SDK does not speak it", o.id, o.method, o.path, o.area)
@@ -67,7 +73,7 @@ func TestOperationsCoverTheImplementedAreas(t *testing.T) {
 	// Areas the SDK does not implement stay out on purpose: the TypeScript SDK does not speak them either
 	// (files, settings and history are not part of the SDK surface of M3-09 and M3-10).
 	for _, o := range s.ops {
-		if !implemented[o.area] && o.area != "decision" && have[o.id] {
+		if !implemented[o.area] && o.area != "decision" && o.area != "voice" && have[o.id] {
 			t.Errorf("%s is spoken by the SDK but belongs to the unimplemented area %s", o.id, o.area)
 		}
 	}
@@ -532,6 +538,21 @@ func TestFakeAnswersConformToOpenAPI(t *testing.T) {
 	failsWith("no decision service", err, contracts.ErrUnavailable)
 	fake.SetDecisionUnavailable(false)
 
+	// Dictation (record-to-text, 1.1.0): capabilities and one-shot create; not the voice WebSocket.
+	_, err = client.Dictations().Capabilities(ctx)
+	must("dictation capabilities", err)
+	fake.SetDictationText("book Tuesday")
+	_, err = client.Dictations().Create(ctx, "ses-1", wavClip(0.5), &sdkgo.DictationCreateOptions{Language: "en"})
+	must("dictation create", err)
+	fake.SetDictationSilent(true)
+	_, err = client.Dictations().Create(ctx, "ses-1", wavClip(0.2), nil)
+	failsWith("a silent clip", err, contracts.ErrValidationFailed)
+	fake.SetDictationSilent(false)
+	fake.SetDictationUnavailable(true)
+	_, err = client.Dictations().Capabilities(ctx)
+	failsWith("no transcription service", err, contracts.ErrUnavailable)
+	fake.SetDictationUnavailable(false)
+
 	// External Provider Mode: the providers and OAuth areas, every operation, with a recorded client (checked against the
 	// document) and a plain one (the budget create, which the document's request schema cannot describe)
 	exerciseProvidersConformance(t, fake,
@@ -668,6 +689,8 @@ var goTypes = map[string]func() any{
 	"answerRag":                func() any { return new(rag.AnswerResult) },
 	"resolveRagCitation":       func() any { return new(sdkgo.CitationResolution) },
 	"getDecisionStatus":        func() any { return new(decision.DecisionStatus) },
+	"getDictationCapabilities": func() any { return new(voice.TranscriptionCapabilities) },
+	"createSessionDictation":   func() any { return new(voice.DictationTranscript) },
 	"listProviders":            func() any { return new(sdkgo.ProviderList) },
 	"putProviderCredential":    func() any { return new(pv.ConnectionStatus) },
 	"deleteProviderConnection": func() any { return new(pv.ConnectionStatus) },
@@ -684,10 +707,12 @@ var goTypes = map[string]func() any{
 	"putProviderKillSwitch":    func() any { return new(sdkgo.KillSwitch) },
 	"startProviderOAuth":       func() any { return new(sdkgo.OAuthStarted) },
 	"completeProviderOAuth":    func() any { return new(pv.ConnectionStatus) },
+	"getProviderOAuthFlow":     func() any { return new(pv.OauthFlowStatus) },
+	"cancelProviderOAuthFlow":  func() any { return nil }, // 204
 }
 
 func (c *conformance) checkGoType(opID string, body []byte) {
-	if opID == "removeRagSource" || opID == "streamTurnEvents" {
+	if opID == "removeRagSource" || opID == "streamTurnEvents" || opID == "cancelProviderOAuthFlow" {
 		return
 	}
 	newValue, ok := goTypes[opID]

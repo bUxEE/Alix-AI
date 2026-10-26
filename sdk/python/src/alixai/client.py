@@ -41,6 +41,7 @@ from alixai.types import Liveness
 from alixai.validate import confirmation_token, context_token, normalize_base_url, path_id
 
 if TYPE_CHECKING:
+    from alixai.dictation import AsyncDictationsApi, DictationsApi
     from alixai.providers import AsyncProvidersApi, ProvidersApi
 
 T = TypeVar("T")
@@ -86,6 +87,8 @@ class Call(Generic[T]):
     report_503: bool = False
     #: The call waits on the model or on the host's commit: the turn timeout applies.
     long: bool = False
+    #: True when success is an empty 204 (no JSON body).
+    empty: bool = False
     timeout_ms: Optional[int] = None
     what: str = "response"
     #: The query string, as pairs (a name may repeat).
@@ -369,6 +372,16 @@ class _ClientBase:
         status = response.status_code
         if not (response.is_success or (call.report_503 and status == 503)):
             raise error_from_response(response)
+        if call.empty:
+            if status != 204 and response.content:
+                raise sdk_error(
+                    "internal",
+                    "the server answered with a body where none was expected",
+                    status=status,
+                    request_id=response.headers.get("x-request-id"),
+                    details={"operation": call.operation, "reason": "unexpected_body"},
+                )
+            return call.parse(None)
         try:
             body = json.loads(response.content)
         except ValueError as exc:
@@ -430,6 +443,13 @@ class AlixAIClient:
     def close(self) -> None:
         if self._owned:
             self._http.close()
+
+    @property
+    def dictations(self) -> "DictationsApi":
+        """Record-to-text dictation (1.1.0): capabilities and clip transcription. Not the voice WebSocket."""
+        from alixai.dictation import DictationsApi
+
+        return DictationsApi(self)
 
     @property
     def providers(self) -> "ProvidersApi":
@@ -592,6 +612,13 @@ class AlixAIAsyncClient:
     async def aclose(self) -> None:
         if self._owned:
             await self._http.aclose()
+
+    @property
+    def dictations(self) -> "AsyncDictationsApi":
+        """Record-to-text dictation (1.1.0); see :class:`alixai.dictation.AsyncDictationsApi`."""
+        from alixai.dictation import AsyncDictationsApi
+
+        return AsyncDictationsApi(self)
 
     @property
     def providers(self) -> "AsyncProvidersApi":

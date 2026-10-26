@@ -19,13 +19,14 @@ const modulePath = "github.com/buxee/alix-ai/"
 // provider conformance suite.
 func TestImportsStayWithinAdapterTier(t *testing.T) {
 	allowed := map[string]bool{
-		"pkg/contracts":               true,
-		"pkg/contracts/gen/providers": true,
-		"internal/clock":              true,
-		"internal/providers":          true,
-		"internal/egress":             true,
-		"internal/credentials":        true,
-		"adapters/external":           true,
+		"pkg/contracts":                true,
+		"pkg/contracts/gen/providers":  true,
+		"internal/clock":               true,
+		"internal/providers":           true,
+		"internal/egress":              true,
+		"internal/credentials":         true,
+		"adapters/external":            true,
+		"adapters/external/chatcompat": true,
 	}
 	files, err := filepath.Glob("*.go")
 	if err != nil || len(files) < 8 {

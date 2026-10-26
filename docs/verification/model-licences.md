@@ -75,3 +75,16 @@ in their manifests. They were not re-checked for this page. Two open points are 
 **engine** is GPL-3.0 (it runs as a separate backend process; shipping it inside an image creates redistribution
 obligations), and the Italian Piper voice was fine-tuned from an English voice whose dataset licence was not reviewed. Treat
 voice packs as unreviewed until a later release says otherwise.
+
+### 5.1 Local STT candidates (ADR 0040)
+
+Checked on **2026-10-26** at the revisions the packs pin. Not a qualification and not legal advice; human sign-off still owed.
+
+| Component | Pin | Licence (as declared) | Where seen | Notes |
+| --- | --- | --- | --- | --- |
+| NVIDIA Parakeet TDT 0.6B v3 (weights) | model card `nvidia/parakeet-tdt-0.6b-v3` | **CC-BY-4.0** | Hub card `license: cc-by-4.0` | AlixAI does not bundle weights |
+| Pack GGUF (`tdt-0.6b-v3-q4_k.gguf`) | `mudler/parakeet-cpp-gguf` @ `c77726e46ceaab96b5a5a3328915edb44c73209d`, 675200864 bytes, sha256 `993d73fe…1d5ee8` | inherits upstream CC-BY-4.0 | pack manifest + Hub LFS oid | LocalAI/parakeet.cpp conversion |
+| NVIDIA first-party Q8_0 GGUF (not the pack pin) | `parakeet-tdt-0.6b-v3.q8_0.gguf`, 713975456 bytes, sha256 `e3880d0a…f4d32e` | CC-BY-4.0 | Hub file metadata | recorded for operators; not installed by the pack |
+| `parakeet.cpp` engine / LocalAI `parakeet-cpp` backend | LocalAI v4.10.0 backend image `v4.10.0-cpu-parakeet-cpp` @ `sha256:372c7135…90bb75` | **MIT** | `mudler/parakeet.cpp` LICENSE | CPU and optional GPU; not part of the pack |
+| Whisper large-v3-turbo q5_0 (`whisper-turbo-stt`) | `ggerganov/whisper.cpp` @ `5359861c739e…`, `ggml-large-v3-turbo-q5_0.bin`, 574041195 bytes, sha256 `39422170…ffa7e2` | **MIT** | Hub card `license: mit` | multilingual Whisper; Balanced candidate |
+| Whisper large-v3 q5_0 (`whisper-large-v3-stt`) | same repo, `ggml-large-v3-q5_0.bin`, 1081140203 bytes, sha256 `d75795ec…d98ad1` | **MIT** | Hub card `license: mit` | Performance candidate; larger than Balanced STT budget expects |

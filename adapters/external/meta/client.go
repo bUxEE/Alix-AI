@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/buxee/alix-ai/adapters/external"
+	"github.com/buxee/alix-ai/adapters/external/chatcompat"
 	"github.com/buxee/alix-ai/internal/clock"
 	"github.com/buxee/alix-ai/internal/credentials"
 	"github.com/buxee/alix-ai/internal/egress"
@@ -60,6 +61,7 @@ type Client struct {
 	jitter func() float64
 	model  modelProfile
 	routes routeSet
+	compat *chatcompat.Client
 }
 
 // Option adjusts a Client under construction.
@@ -110,6 +112,18 @@ func New(cfg Config, dialer *egress.Dialer, keys KeySource, opts ...Option) (*Cl
 	if c.log == nil {
 		c.log = slog.New(slog.DiscardHandler)
 	}
+	if cfg.Dialect == DialectOpenAICompat {
+		co, err := chatcompat.New(ProviderName, compatConfig(cfg), dialer, keys, compatOptions(c)...)
+		if err != nil {
+			return nil, err
+		}
+		c.compat = co
+		hc := dialer.HTTPClient(0)
+		hc.CheckRedirect = external.ExtRefuseRedirects
+		hc.Transport = &external.ExtRouteGuard{Next: hc.Transport, Origin: origin, Routes: c.routes.all(), Err: external.ExtForbiddenRoute(ProviderName)}
+		c.hc = hc
+		return c, nil
+	}
 	hc := dialer.HTTPClient(0)
 	hc.CheckRedirect = external.ExtRefuseRedirects
 	hc.Transport = &external.ExtRouteGuard{Next: hc.Transport, Origin: origin, Routes: c.routes.all(), Err: external.ExtForbiddenRoute(ProviderName)}
@@ -159,6 +173,9 @@ func (r routeSet) all() []route { return []route{r.chat, r.health, r.models} }
 
 // AllowedEndpoints lists the routes the client may call, as "METHOD /path".
 func (c *Client) AllowedEndpoints() []string {
+	if c.compat != nil {
+		return c.compat.AllowedEndpoints()
+	}
 	out := []string{c.routes.chat.Method + " " + c.routes.chat.Path, c.routes.models.Method + " " + c.routes.models.Path}
 	if c.routes.health.Path != c.routes.models.Path {
 		out = append(out, c.routes.health.Method+" "+c.routes.health.Path)

@@ -33,9 +33,9 @@ func TestExportedOAuthFactsBuildAValidEngineConfig(t *testing.T) {
 		ClientID:     "client-id-of-the-operators-project",
 		Capabilities: map[string][]string{OAuthCapability: InferenceScopes},
 		Scopes: []oauth.ScopeInfo{{
-			Name:        ScopeCloudPlatform,
+			Name:        ScopeRetriever,
 			Description: "Call the Gemini API as the signed-in Google account",
-			DataAccess:  "The scope covers Google Cloud for the account; AlixAI uses it to call the Gemini API only. Prompts sent are processed under the Cloud project's terms.",
+			DataAccess:  "Generative Language API on the Cloud project; prompts sent are processed under that project's terms.",
 		}},
 		DataAccess:      OAuthConsentNotes(),
 		ExtraAuthParams: OAuthAuthParams(),

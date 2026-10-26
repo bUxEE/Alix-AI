@@ -1,0 +1,8 @@
+{
+  "available": false,
+  "locality": "none",
+  "max_seconds": 60,
+  "sample_rate_hz": 16000,
+  "format": "audio/wav",
+  "languages": []
+}

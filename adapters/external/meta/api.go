@@ -18,7 +18,10 @@ const healthTimeout = 10 * time.Second
 // model. It answers from the built-in table and the operator's overrides and
 // makes no call, so capability gating never sends data. Models and CheckModel
 // ask the host.
-func (c *Client) Capabilities(context.Context) (providers.ModelCapabilities, error) {
+func (c *Client) Capabilities(ctx context.Context) (providers.ModelCapabilities, error) {
+	if c.compat != nil {
+		return c.compat.Capabilities(ctx)
+	}
 	caps := c.capabilities(c.model)
 	if err := caps.Validate(); err != nil {
 		return providers.ModelCapabilities{}, err
@@ -33,6 +36,9 @@ func (c *Client) Capabilities(context.Context) (providers.ModelCapabilities, err
 // responds; it says nothing about the key, which Models and CheckModel verify.
 // A network failure is reported as unavailable, not as a failed probe.
 func (c *Client) Health(ctx context.Context) (providers.HealthReport, error) {
+	if c.compat != nil {
+		return c.compat.Health(ctx)
+	}
 	ctx, cancel := context.WithTimeout(ctx, healthTimeout)
 	defer cancel()
 	rep, err := c.call(ctx, contracts.Scope{}, c.routes.health, nil, "application/json")
@@ -57,6 +63,9 @@ const maxListedModels = 4096
 // Models lists the model ids the key can use (GET <prefix>/models), sorted. It
 // verifies the key as a side effect: a rejected key is an authentication error.
 func (c *Client) Models(ctx context.Context, scope contracts.Scope) ([]string, error) {
+	if c.compat != nil {
+		return c.compat.Models(ctx, scope)
+	}
 	if err := scope.Validate(); err != nil {
 		return nil, notSent(err)
 	}
@@ -91,6 +100,9 @@ func (c *Client) Models(ctx context.Context, scope contracts.Scope) ([]string, e
 
 // CheckModel verifies the key and that the configured model is offered to it.
 func (c *Client) CheckModel(ctx context.Context, scope contracts.Scope) error {
+	if c.compat != nil {
+		return c.compat.CheckModel(ctx, scope)
+	}
 	ids, err := c.Models(ctx, scope)
 	if err != nil {
 		return err

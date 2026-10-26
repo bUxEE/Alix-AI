@@ -103,6 +103,11 @@ type Fake struct {
 	providers providersState
 	files     map[string]*fileEntry
 	now       func() time.Time
+
+	dictationUnavailable bool
+	dictationDisabled    bool
+	dictationSilent      bool
+	dictationText        string
 }
 
 // New starts a fake AlixAI server on a loopback port.
@@ -380,6 +385,8 @@ func (f *Fake) routes() http.Handler {
 		"answerRag":                (*call).ragAnswer,
 		"resolveRagCitation":       (*call).ragResolve,
 		"getDecisionStatus":        (*call).decisionStatus,
+		"getDictationCapabilities": (*call).dictationCapabilities,
+		"createSessionDictation":   (*call).dictationCreate,
 		"listProviders":            (*call).providersList,
 		"putProviderCredential":    (*call).providersCredential,
 		"deleteProviderConnection": (*call).providersDisconnect,
@@ -396,6 +403,8 @@ func (f *Fake) routes() http.Handler {
 		"putProviderKillSwitch":    (*call).providersPutKill,
 		"startProviderOAuth":       (*call).oauthStart,
 		"completeProviderOAuth":    (*call).oauthCallback,
+		"getProviderOAuthFlow":     (*call).oauthFlowStatus,
+		"cancelProviderOAuthFlow":  (*call).oauthFlowCancel,
 	}
 	for _, op := range sdkgo.Operations() {
 		handle := handlers[op.ID]

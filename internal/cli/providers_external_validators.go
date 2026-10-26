@@ -9,7 +9,10 @@ import (
 	"github.com/buxee/alix-ai/adapters/external/anthropic"
 	"github.com/buxee/alix-ai/adapters/external/gemini"
 	"github.com/buxee/alix-ai/adapters/external/meta"
+	"github.com/buxee/alix-ai/adapters/external/moonshot"
 	"github.com/buxee/alix-ai/adapters/external/openai"
+	"github.com/buxee/alix-ai/adapters/external/openrouter"
+	"github.com/buxee/alix-ai/adapters/external/xai"
 	"github.com/buxee/alix-ai/internal/credentials"
 	"github.com/buxee/alix-ai/internal/egress"
 	"github.com/buxee/alix-ai/pkg/contracts"
@@ -20,8 +23,7 @@ import (
 // the fallback where OAuth is not offered). Each makes the one minimal authenticated request that proves the key
 // works, through the destination allowlist, with the candidate key and nothing else: no tenant, no prompt.
 //
-//	openai     GET /v1/models (the model list)
-//	meta       GET <prefix>/models (the model list)
+//	openai / openrouter / xai / moonshot / meta  GET …/models (the model list)
 //	anthropic  GET /v1/models/<model> (a model of the adapter's table)
 //	gemini     GET /v1beta/models/<model>, key in the x-goog-api-key header (never the URL)
 //
@@ -31,10 +33,13 @@ import (
 // extGapProbeModel is the model id the single-model probes ask for: the cheapest tier of each adapter's table. It
 // is never used to generate anything.
 const (
-	extGapProbeModelAnthropic = "claude-haiku-4-5"
-	extGapProbeModelGemini    = "gemini-2.5-flash-lite"
-	extGapProbeModelOpenAI    = "gpt-4.1-mini"
-	extGapProbeModelMeta      = "llama-4-maverick"
+	extGapProbeModelAnthropic  = "claude-haiku-4-5"
+	extGapProbeModelGemini     = "gemini-2.5-flash-lite"
+	extGapProbeModelOpenAI     = "gpt-4.1-mini"
+	extGapProbeModelMeta       = "llama-4-maverick"
+	extGapProbeModelOpenRouter = "openrouter-probe"
+	extGapProbeModelXAI        = "grok-4"
+	extGapProbeModelMoonshot   = "moonshot-v1-8k"
 )
 
 // extGapProbeSpec is the adapter spec of a provider for the key probe, over a fresh destination registry that
@@ -54,6 +59,16 @@ func (v externalKeyValidator) extGapProbeSpec(provider string, key credentials.S
 			Dialect: meta.Dialect(v.sec.MetaDialect), BaseURL: v.sec.MetaBaseURL, APIPrefix: v.sec.MetaAPIPrefix, CredentialRef: ref,
 			Model: extGapProbeModelMeta,
 		}
+	case ExternalProviderOpenRouter:
+		wire := extGapProbeModelOpenRouter
+		if w, ok := v.sec.OpenRouterModels[wire]; ok {
+			wire = w
+		}
+		spec.OpenRouter = openrouter.Config{BaseURL: v.sec.OpenRouterBaseURL, CredentialRef: ref, Model: wire}
+	case ExternalProviderXAI:
+		spec.XAI = xai.Config{BaseURL: v.sec.XAIBaseURL, CredentialRef: ref, Model: extGapProbeModelXAI}
+	case ExternalProviderMoonshot:
+		spec.Moonshot = moonshot.Config{BaseURL: v.sec.MoonshotBaseURL, CredentialRef: ref, Model: extGapProbeModelMoonshot}
 	default:
 		return ExternalProviderSpec{}, false
 	}

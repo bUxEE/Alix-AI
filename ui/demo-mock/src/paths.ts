@@ -24,10 +24,15 @@ export const DEMO_PATHS = Object.freeze({
   fileList: "/demo/files",
   /** Mock only: the `runtimeUrl` for CopilotKit. It answers `/info` with no agents, so the page's self-managed HttpAgent is used. */
   copilotRuntime: "/demo/copilotkit",
+  /** Dictation capabilities: `GET /v1/dictations/capabilities`. */
+  dictationCapabilities: "/v1/dictations/capabilities",
 } as const);
 
 /** The voice WebSocket of a session: `GET /v1/sessions/{session_id}/voice` with `Upgrade: websocket`. */
 export const voicePath = (sessionId: string): string => `/v1/sessions/${encodeURIComponent(sessionId)}/voice`;
+
+/** One-shot dictation: `POST /v1/sessions/{session_id}/dictations` with raw `audio/wav`. */
+export const dictationPath = (sessionId: string): string => `/v1/sessions/${encodeURIComponent(sessionId)}/dictations`;
 
 /** The thread the demo opens first: it has a short history, so the panel shows something on its first connect. */
 export const DEMO_THREAD_ID = "ses_demo_welcome";

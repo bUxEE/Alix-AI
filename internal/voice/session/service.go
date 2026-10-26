@@ -270,8 +270,16 @@ func (s *Service) Open(ctx context.Context, scope contracts.Scope, o Options) (*
 			return nil, unavailable(providers.RoleSTT, "no language pack is active")
 		case !pack.Provides(providers.RoleSTT):
 			return nil, unavailable(providers.RoleSTT, "the active language pack does not provide speech recognition")
+		case !pack.Provides(providers.RoleVAD):
+			// Voice conversation keeps a VAD in front of STT (ADR 0015). An STT-only pack is for
+			// dictation (ADR 0039), not this WebSocket.
+			return nil, unavailable(providers.RoleVAD, "voice conversation needs a VAD in the active pack; an STT-only pack is for dictation")
 		}
 		packID, packSpeech = pack.ID, pack.Provides(providers.RoleTTS)
+	}
+	// With or without a pack registry, conversation mode needs a VAD provider registered.
+	if _, err := voice.LookupVAD(s.d.Providers); err != nil {
+		return nil, unavailable(providers.RoleVAD, "voice conversation needs a voice activity detector in front of speech recognition; use dictation for an STT-only pack")
 	}
 	var tts voice.TTS
 	if !o.NoSpeech && packSpeech {

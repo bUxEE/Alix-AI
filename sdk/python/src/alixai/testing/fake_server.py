@@ -295,6 +295,10 @@ class FakeAlixAIServer:
         self._ready = True
         self._decision_status: Optional[Json] = None
         self._decision_unavailable = False
+        self._dictation_unavailable = False
+        self._dictation_disabled = False
+        self._dictation_silent = False
+        self._dictation_text = "book Tuesday"
         self._providers = ProvidersFake(self)
         self._sessions: dict[tuple[str, str, str, str], _Session] = {}
         self._preparations: dict[str, _Prepared] = {}
@@ -330,6 +334,22 @@ class FakeAlixAIServer:
     def set_decision_unavailable(self, unavailable: bool = True) -> None:
         """Makes the status answer 503 ``unavailable``, as a server without a decision service does, or restores it."""
         self._decision_unavailable = unavailable
+
+    def set_dictation_unavailable(self, unavailable: bool = True) -> None:
+        """Makes dictation routes answer 503 ``unavailable`` (no transcription service)."""
+        self._dictation_unavailable = unavailable
+
+    def set_dictation_disabled(self, disabled: bool = True) -> None:
+        """Reports capabilities with ``available: false`` (and create answers unavailable)."""
+        self._dictation_disabled = disabled
+
+    def set_dictation_silent(self, silent: bool = True) -> None:
+        """Makes create answer ``validation_failed`` with ``details.reason`` ``silent``."""
+        self._dictation_silent = silent
+
+    def set_dictation_text(self, text: str) -> None:
+        """Sets the scripted transcript returned by create."""
+        self._dictation_text = text
 
     def configure_providers(self, config: Optional[ProvidersConfig] = None) -> None:
         """Switches the providers and OAuth areas of External Provider Mode on with this configuration (default:
@@ -1129,6 +1149,44 @@ class FakeAlixAIServer:
             status = dict(self._decision_status) if self._decision_status is not None else decision_status_document()
             status["generated_at"] = self._iso(self._now())
             return self._json(200, status)
+        if operation == "getDictationCapabilities":
+            if self._dictation_unavailable:
+                return self._problem("unavailable", "the server has no transcription service")
+            available = not self._dictation_disabled
+            return self._json(
+                200,
+                {
+                    "available": available,
+                    "locality": "local" if available else "none",
+                    "max_seconds": 60,
+                    "sample_rate_hz": 16000,
+                    "format": "audio/wav",
+                    "languages": ["en", "it"] if available else [],
+                },
+            )
+        if operation == "createSessionDictation":
+            if params["session_id"] != scope.session_id:
+                return self._level_violation("session")
+            if self._dictation_unavailable or self._dictation_disabled:
+                return self._problem("unavailable", "the server has no transcription service")
+            ctype = (request.headers.get("content-type") or "").split(";")[0].strip().lower()
+            if ctype != "audio/wav":
+                return self._problem("validation_failed", "Content-Type must be audio/wav", status=415)
+            if not raw or len(raw) < 44 or raw[0:4] != b"RIFF":
+                return self._problem("validation_failed", "the body is not a WAV", details={"reason": "malformed_wav"})
+            if self._dictation_silent:
+                return self._problem("validation_failed", "the clip is silent or too short", details={"reason": "silent"})
+            language = request.url.params.get("language") or "en"
+            return self._json(
+                200,
+                {
+                    "text": self._dictation_text,
+                    "language": language,
+                    "duration_ms": max(1, (len(raw) - 44) // 32),
+                    "locality": "local",
+                    "segment_kind": "user_recorded",
+                },
+            )
         if operation in PROVIDERS_OPERATIONS:
             return self._providers.handle(operation, scope, params, request, body, raw)
         if operation == "getHealth":

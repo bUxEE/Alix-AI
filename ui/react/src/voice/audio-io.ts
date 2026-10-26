@@ -1,9 +1,8 @@
 import type { voice } from "@alixai/sdk";
-import type { AlixMicrophone, AlixPlayer } from "./types.js";
+import type { AlixPlayer } from "./types.js";
 
-// The browser's microphone and loudspeaker, behind the two small ports the controller uses. Nothing here runs until a person
-// presses talk (the microphone) or speech arrives (the player), so importing or rendering on a server touches no browser API.
-// No audio leaves the page except through the voice session, and none is kept.
+// Microphone capture lives in dictation/capture.ts so dictation can import it without the player.
+export { createAlixMicrophone } from "../dictation/capture.js";
 
 interface BrowserWindow {
   AudioContext?: typeof AudioContext;
@@ -14,62 +13,6 @@ const audioContextClass = (): typeof AudioContext | undefined => {
   if (typeof window === "undefined") return undefined;
   const host = window as unknown as BrowserWindow;
   return host.AudioContext ?? host.webkitAudioContext;
-};
-
-/** Frames of this many samples reach the controller: about 85 ms at 48 kHz, short enough for the level bars to feel live. */
-const FRAME = 4096;
-
-export const createAlixMicrophone = (): AlixMicrophone => {
-  let generation = 0;
-  let release = (): void => undefined;
-
-  const stop = (): void => {
-    generation += 1; // a start that is still waiting for permission is abandoned
-    release();
-    release = (): void => undefined;
-  };
-
-  const start: AlixMicrophone["start"] = async (onChunk) => {
-    stop();
-    const mine = generation;
-    const devices = typeof navigator === "undefined" ? undefined : navigator.mediaDevices;
-    const Context = audioContextClass();
-    if (devices === undefined || typeof devices.getUserMedia !== "function" || Context === undefined) {
-      throw new Error("this browser has no microphone access here (it needs a secure page)");
-    }
-    // Echo cancellation matters: the microphone sits next to the loudspeaker while the assistant speaks.
-    const stream = await devices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
-    if (mine !== generation) {
-      for (const track of stream.getTracks()) track.stop();
-      return;
-    }
-    const context = new Context();
-    const source = context.createMediaStreamSource(stream);
-    const node = context.createScriptProcessor(FRAME, 1, 1);
-    const silent = context.createGain();
-    silent.gain.value = 0;
-    node.onaudioprocess = (event) => {
-      onChunk(new Float32Array(event.inputBuffer.getChannelData(0)), context.sampleRate);
-    };
-    source.connect(node);
-    node.connect(silent);
-    silent.connect(context.destination);
-    release = (): void => {
-      node.onaudioprocess = null;
-      try {
-        source.disconnect();
-        node.disconnect();
-        silent.disconnect();
-      } catch {
-        // already disconnected
-      }
-      for (const track of stream.getTracks()) track.stop();
-      void context.close().catch(() => undefined);
-    };
-    if (context.state === "suspended") await context.resume();
-  };
-
-  return { start, stop };
 };
 
 export const createAlixPlayer = (): AlixPlayer => {

@@ -230,4 +230,17 @@ export const it: Record<MessageKey, string> = {
   "voice.state.processing": "Elaborazione",
   "voice.state.speaking": "Sto parlando",
   "voice.state.unavailable": "La voce non è disponibile",
+
+  "dictation.start": "Dettatura",
+  "dictation.stop": "Interrompi la dettatura",
+  "dictation.cancel": "Annulla la dettatura",
+  "dictation.recording": "Registrazione, {seconds}s",
+  "dictation.transcribing": "Trascrizione in corso",
+  "dictation.requesting": "Attesa del microfono",
+  "dictation.error.permission": "Accesso al microfono negato. Consentilo nel browser, oppure scrivi.",
+  "dictation.error.unavailable": "La dettatura non è disponibile in questo momento.",
+  "dictation.error.silent": "La registrazione era troppo breve o silenziosa. Riprova.",
+  "dictation.error.generic": "La dettatura non è riuscita. Riprova, oppure scrivi.",
+  "dictation.live.recording": "Registrazione",
+  "dictation.live.done": "Testo inserito nel messaggio",
 };

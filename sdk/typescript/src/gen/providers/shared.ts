@@ -168,15 +168,19 @@ export type Counter = number;
 /**
  * CredentialKind mirrors urn:alixai:schema:providers:shared:v1#/$defs/credentialKind.
  *
- * oauth: browser-based OAuth authorization (preferred whenever the provider supports it). api_key:
- * manual API key or token entry, a fallback for providers or deployments without a suitable OAuth
- * flow.
+ * oauth: browser-based OAuth authorization that yields access and refresh tokens (preferred
+ * whenever the provider supports it). api_key: manual API key or token entry, a fallback for
+ * providers or deployments without a suitable OAuth flow. oauth_issued_key: the user completed a
+ * browser OAuth (or PKCE) login and the provider issued a user-controlled API key rather than
+ * access/refresh tokens (for example OpenRouter); connection status can say connected via browser
+ * login without claiming a refreshable OAuth token pair.
  *
  * Only the values listed in the schema are valid.
  */
 export type CredentialKind =
   | "oauth"
-  | "api_key";
+  | "api_key"
+  | "oauth_issued_key";
 
 /**
  * CredentialRefID mirrors urn:alixai:schema:providers:shared:v1#/$defs/credentialRefId.

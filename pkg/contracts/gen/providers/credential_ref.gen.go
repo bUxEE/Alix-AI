@@ -32,9 +32,11 @@ type CredentialRef struct {
 	// Authority: alixai.
 	RefID CredentialRefID `json:"ref_id" alixai:"alixai"`
 
-	// oauth: browser-based OAuth authorization (preferred whenever the provider supports it).
-	// api_key: manual API key or token entry, a fallback for providers or deployments without
-	// a suitable OAuth flow.
+	// oauth: browser-based OAuth authorization with access/refresh tokens. api_key: manual API
+	// key entry. oauth_issued_key: browser login that stored a provider-issued API key (no
+	// refresh token pair). An oauth_issued_key carries a masked fingerprint like api_key and
+	// records authorized_at like oauth; it does not carry the broader_than_oauth_scopes
+	// warning of a hand-entered key.
 	//
 	// Authority: alixai.
 	Kind CredentialKind `json:"kind" alixai:"alixai"`

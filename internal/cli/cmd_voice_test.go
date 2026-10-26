@@ -51,18 +51,32 @@ models:
       spdx: MIT
       url: https://example.test/licence
       redistribution_notes: "test licence"
+  vad:
+    name: "vad model"
+    engine: silero-vad
+    registry_id: null
+    files:
+      - name: vad-%[1]s.bin
+        url: https://example.test/vad-%[1]s.bin
+        revision: 0123456789abcdef0123456789abcdef01234567
+        size_bytes: %[2]d
+        sha256: %[3]s
+    licence:
+      spdx: MIT
+      url: https://example.test/licence
+      redistribution_notes: "test licence"
 quality:
   stt_wer: null
   tts_time_to_first_audio_ms: null
   tts_real_time_factor: null
   measurement: null
 resources:
-  disk_bytes: %[2]d
+  disk_bytes: %[4]d
   steady_rss_mb: null
   peak_rss_mb: null
   cpu_cores: null
 notes: []
-`, id, len(data), hex.EncodeToString(sum[:])))
+`, id, len(data), hex.EncodeToString(sum[:]), 2*len(data)))
 }
 
 // voiceUseTestManifests makes the voice commands approve the test packs "en" and
@@ -83,8 +97,11 @@ func voiceUseTestManifests(t *testing.T) {
 func voiceFetched(t *testing.T, id string) string {
 	t.Helper()
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "stt-"+id+".bin"), voiceTestPackBytes(id), 0o600); err != nil {
-		t.Fatal(err)
+	data := voiceTestPackBytes(id)
+	for _, name := range []string{"stt-" + id + ".bin", "vad-" + id + ".bin"} {
+		if err := os.WriteFile(filepath.Join(dir, name), data, 0o600); err != nil {
+			t.Fatal(err)
+		}
 	}
 	return dir
 }

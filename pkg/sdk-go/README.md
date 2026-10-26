@@ -19,7 +19,8 @@ is the core in the same repository commit. The changelog is the last section of 
 | Attachments on a turn (up to four uploaded file ids) | The turn member only (`WithAttachments`). **No upload, download or preview** |
 | Conversation helper, history, privacy and settings | **Not in this SDK** |
 | RAG client (sources, search, grounded answers with citations) | Complete: `client.RAG()` |
-| Voice | **Not in this SDK** (TypeScript only). **Full-duplex voice is not claimed** by any SDK |
+| Voice conversation (WebSocket) | **Not in this SDK** (TypeScript only). **Full-duplex voice is not claimed** by any SDK |
+| Dictation (record-to-text) | Complete (1.1.0): `client.Dictations().Capabilities` / `Create` |
 | Providers, modes, budgets (External provider mode) | Complete for the providers and OAuth operations (X-14): `client.Providers()`. **Opt-in and off by default**; a deployment without it answers `unavailable` |
 | Decision status | Read-only (D-10): `client.Decision().Status`. Advisory information, never an authorisation |
 | AG-UI proxy for CopilotKit and AG-UI frontends | Complete (M3-27): package `agui`. CopilotKit is not a dependency |
@@ -185,6 +186,10 @@ suite; `contract_test.go` and `spec_test.go` hold it to the OpenAPI document.
 
 ## Changelog
 
+### Unreleased
+
+**Added.** Generated contract types for popup OAuth (`flow_id` polling, `oauth-popup-result` postMessage shape, `oauth_issued_key` credential kind) and for dictation (`TranscriptionCapabilities`, `DictationTranscript`). Core serve wires `TranscriptionService` for `GET /v1/dictations/capabilities` and `POST /v1/sessions/{id}/dictations` (local or external STT; body cap from `max_seconds`). Dictation HTTP client: `Dictations().Capabilities` and `Dictations().Create` (record-to-text; not the voice WebSocket).
+
 ### 1.0.0
 
 First public release. Tested against the core in the same repository commit.
@@ -203,5 +208,5 @@ against `schemas/api/openapi.yaml` by `spec_test.go` and `contract_test.go`; the
 - Package `agui`: the AG-UI proxy with a server-side secret store (M3-27).
 - Package `sdktest`: the fake AlixAI server.
 
-**Not in this SDK.** Voice (TypeScript only; full-duplex voice is not claimed by any SDK); file upload, download and preview; conversation helpers; history, privacy and settings; the
+**Not in this SDK.** Voice conversation WebSocket (TypeScript only; full-duplex voice is not claimed by any SDK); file upload, download and preview; conversation helpers; history, privacy and settings; the
 operator-only decision configuration routes. The Lite profile is uncertified and nothing here depends on it.

@@ -1,0 +1,30 @@
+{
+  "flow_id": "oaf_01J0000000000000000000000B",
+  "provider": "openrouter",
+  "status": "completed",
+  "connection": {
+    "as_of": "2026-10-02T09:00:00Z",
+    "provider": {
+      "profile_id": "pprf_01J0000000000000000000000R",
+      "provider_id": "openrouter",
+      "model_id": "auto",
+      "model_version": "2025-10-01"
+    },
+    "lifecycle": "qualified",
+    "state": "connected",
+    "kind": "oauth_issued_key",
+    "account": {
+      "account_id": "or-user-118273645",
+      "organization_id": null,
+      "project_id": null
+    },
+    "connected_at": "2026-10-02T08:00:05Z",
+    "expires_at": null,
+    "warnings": [],
+    "health": "healthy",
+    "last_error_kind": null,
+    "budget_state": "ok",
+    "billing_notice_acknowledged": true
+  },
+  "updated_at": "2026-10-02T08:01:00Z"
+}

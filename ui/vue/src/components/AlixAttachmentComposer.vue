@@ -100,7 +100,14 @@ const onPaste = (event: ClipboardEvent): void => {
   }
 };
 
-defineExpose({ focus: (): void => field.value?.focus() });
+defineExpose({
+  focus: (): void => field.value?.focus(),
+  selectionStart: (): number => field.value?.selectionStart ?? text.value.length,
+  selectionEnd: (): number => field.value?.selectionEnd ?? field.value?.selectionStart ?? text.value.length,
+  setSelection: (start: number, end: number = start): void => {
+    field.value?.setSelectionRange(start, end);
+  },
+});
 </script>
 
 <template>

@@ -229,6 +229,19 @@ export const en = {
   "voice.state.processing": "Processing",
   "voice.state.speaking": "Speaking",
   "voice.state.unavailable": "Voice is not available",
+
+  "dictation.start": "Dictate",
+  "dictation.stop": "Stop dictation",
+  "dictation.cancel": "Cancel dictation",
+  "dictation.recording": "Recording, {seconds}s",
+  "dictation.transcribing": "Turning speech into text",
+  "dictation.requesting": "Waiting for the microphone",
+  "dictation.error.permission": "Microphone access was denied. Allow it in the browser, or type instead.",
+  "dictation.error.unavailable": "Dictation is not available right now.",
+  "dictation.error.silent": "That clip was too short or silent. Try again.",
+  "dictation.error.generic": "Dictation did not work. Try again, or type instead.",
+  "dictation.live.recording": "Recording",
+  "dictation.live.done": "Text inserted into the message box",
 } as const satisfies Record<string, string>;
 
 export type MessageKey = keyof typeof en;

@@ -16,7 +16,9 @@ how to back out. Write it before or with the change, not after.
    `superseded by NNNN`. Typo and link fixes are fine.
 
 Numbers 0021-0028 hold the external-provider-mode decisions below, 0029 the decision layer, 0030 and 0031 its
-deployment and default-enable policy (written provisional by D-01, finalised by D-08), and 0032-0037 are taken. The next free number is 0038.
+deployment and default-enable policy (written provisional by D-01, finalised by D-08), 0032-0038 are taken,
+0039 amends voice VAD rules for dictation, and 0040 is the Parakeet local-STT provisional. The next free
+number is 0041.
 
 ## Index
 
@@ -49,7 +51,9 @@ indicative or "owed", and no document may present that default as settled.
 | [0012](0012-lite-install-native-vs-container.md) | Native process versus container as the preferred Lite install | accepted | 3 | Full container stack (rootless Podman and Quadlet first, Compose supported); native packages always supported | M5-02 |
 | [0013](0013-application-context-token.md) | Application context token: PASETO, JWT profile or mutually authenticated exchange | accepted | 4 | Strict JWT profile, one algorithm (`EdDSA`; switch to `Ed25519` when golang-jwt and PyJWT support it), in-tree verifier, single-use jti; mutual-auth local IPC as a seam | M1-06 |
 | [0014](0014-parser-sandbox.md) | Cross-platform sandbox for parsers and optional adapters | accepted | 5 | Out-of-process worker, one disposable process per document: mandatory process and resource limits everywhere (Windows Job Objects; Linux rlimits + raw Landlock + seccomp), best-effort OS confinement, fail closed; wazero rejected; macOS and linux/arm64 untested | M2-04 |
-| [0015](0015-voice-models-lite.md) | Voice models that meet quality and memory gates on CPU-only Lite hardware | provisional | 6 | Optional per-language packs: whisper.cpp base STT, Piper TTS, Kokoro as challenger; voice may be Balanced-only | M4-06 |
+| [0015](0015-voice-models-lite.md) | Voice models that meet quality and memory gates on CPU-only Lite hardware | accepted (STT default on Balanced superseded in part by [0040](0040-parakeet-local-stt.md); dictation without VAD amended by [0039](0039-dictation-without-vad.md)) | 6 | Optional per-language packs: whisper.cpp tiny STT on Lite (`en-stt`); Italian and TTS Balanced-only / candidate | M4-06 |
+| [0039](0039-dictation-without-vad.md) | Dictation without VAD (amendment of 0015 for user-recorded clips) | accepted | — | STT-only packs for dictation; voice conversation still requires VAD; format/length/energy mitigations | 1.1.0 |
+| [0040](0040-parakeet-local-stt.md) | Local STT ladder: Parakeet and Whisper large (candidates until voicebench) | provisional | — | Lite tiny; Balanced Parakeet or turbo; Performance large-v3 / Parakeet / turbo — defaults only after gates | 1.1.0 |
 | [0016](0016-multi-app-process-model.md) | Several applications per process, or one isolated deployment per security domain | accepted | 7 | Several applications per process only within one security domain; one deployment per domain recommended | M3-15 |
 | [0017](0017-policy-expression-format.md) | Stable policy-expression format for host overrides | accepted | 8 | Closed declarative `policy/v1` data format (raise-only by grammar); Cedar as the planned extension | M1-07 |
 | [0018](0018-resource-accounting-quotas.md) | Resource accounting and quotas for shared multi-tenant deployments | accepted | 9 | In-process token buckets and semaphores per application and tenant, persisted daily counters, per-tenant job cap | M5-06 |
@@ -80,5 +84,6 @@ changes Local mode. The architecture they sit in is [external-provider-mode.md](
 | [0027](0027-external-language-realization.md) | External natural-language realisation while the local model is the controller | provisional | 7 | Hybrid only, from a verified `DialogueDirective` with the facts-only envelope, final text must pass fact verification, template fallback | X-22 |
 | [0028](0028-provider-change-and-terms-policy.md) | Support policy when a provider changes model behaviour or terms | provisional | 8 | Pin model version ids; 30-day review ceiling; quarantine on stale review or a changed terms hash, version or region; a changed version keeps the profile id and resets qualification | X-05 (implemented), schema follow-ups |
 | [0037](0037-integration-readiness-discovery.md) | Integration readiness discovery: operator-launched, model-assisted, evidence-bound, advisory | accepted | 1 | Deterministic scan plus a model that only proposes; every finding cites evidence a verifier re-reads; never certifies or activates; CLI first | M8 |
+| [0038](0038-popup-oauth-and-provider-catalog.md) | Popup OAuth and the provider catalog (SIWC, Google, OpenRouter) | accepted | — | Popup + postMessage + flow poll; SIWC loopback-only; Google operator client; OpenRouter issued key; Anthropic/xAI/Kimi key-only | 1.1.0 |
 
 Related: [architecture overview](../architecture/overview.md), [external provider mode](../architecture/external-provider-mode.md) and [module map](../architecture/module-map.md).

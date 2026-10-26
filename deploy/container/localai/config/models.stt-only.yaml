@@ -1,0 +1,14 @@
+# STT-only LocalAI models (mounted by compose.stt-only.yaml over /configuration/models.yaml).
+# Default: Parakeet TDT 0.6B v3 Q4_K for the Balanced candidate pack (models/voice-packs/parakeet-stt.yaml).
+# No LLM and no embedder. Pins match the voice pack (revision, size, sha256).
+#
+# Lite Whisper tiny variant: use models.stt-only-lite.yaml instead (see compose.stt-only.yaml).
+- name: parakeet-tdt-0.6b-v3
+  backend: parakeet-cpp
+  known_usecases: [transcript]
+  parameters:
+    model: tdt-0.6b-v3-q4_k.gguf
+  download_files:
+    - filename: tdt-0.6b-v3-q4_k.gguf
+      uri: https://huggingface.co/mudler/parakeet-cpp-gguf/resolve/c77726e46ceaab96b5a5a3328915edb44c73209d/tdt-0.6b-v3-q4_k.gguf
+      sha256: 993d73feb4206dadda865ab25bd64b50c48dc4d013c3bf6126a721f28b1d5ee8

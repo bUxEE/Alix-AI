@@ -1,0 +1,2 @@
+data: {"id":"chatcmpl-fixture-stream-0001","object":"chat.completion.chunk","created":1760000000,"model":"llama-4-scout","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+

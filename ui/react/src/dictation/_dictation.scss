@@ -1,0 +1,71 @@
+@use "../styles/mixins" as m;
+
+.alix-dictation {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--alixai-space-2);
+  flex-wrap: wrap;
+
+  &__btn {
+    @include m.pressable;
+
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: var(--alixai-target);
+    height: var(--alixai-target);
+    padding: 0;
+    border: 1px solid var(--alixai-border-strong);
+    border-radius: 50%;
+    background: var(--alixai-surface);
+    color: var(--alixai-text);
+    cursor: pointer;
+
+    &[data-size="lg"] {
+      width: 4rem;
+      height: 4rem;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover:not([aria-disabled="true"]) {
+        background: var(--alixai-surface-sunken);
+      }
+    }
+
+    &[data-state="recording"] {
+      border-color: var(--alixai-accent);
+      background: var(--alixai-accent);
+      color: var(--alixai-on-accent);
+    }
+
+    &[aria-busy="true"] {
+      opacity: 0.7;
+      cursor: wait;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+  }
+
+  &__elapsed {
+    color: var(--alixai-text-muted);
+    font-size: var(--alixai-text-sm);
+  }
+
+  &__error {
+    flex-basis: 100%;
+    margin: 0;
+    padding: var(--alixai-space-2) var(--alixai-space-3);
+    border-radius: var(--alixai-radius-md);
+    background: var(--alixai-warn-soft);
+    color: var(--alixai-warn);
+    font-size: var(--alixai-text-sm);
+  }
+
+  &__sr {
+    @include m.visually-hidden;
+  }
+}

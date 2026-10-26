@@ -33,7 +33,7 @@ from pydantic import SecretStr
 from alixai.client import AlixAIAsyncClient, AlixAIClient, Call
 from alixai.errors import AlixAIError, sdk_error
 from alixai.gen.api import EgressPolicyView, OAuthStarted, ProviderBudgets, ProviderKillSwitch, ProviderList, ProviderMode
-from alixai.gen.providers import BillingNoticeAcknowledgement, ConnectionStatus, ContentEgress, DataEgressPolicy, EgressDisclosure, ProviderBudget
+from alixai.gen.providers import BillingNoticeAcknowledgement, ConnectionStatus, ContentEgress, DataEgressPolicy, EgressDisclosure, OAuthFlowStatus, ProviderBudget
 
 __all__ = [
     "AsyncProvidersApi",
@@ -43,6 +43,7 @@ __all__ = [
     "DataEgressPolicy",
     "EgressDisclosure",
     "EgressPolicyView",
+    "OAuthFlowStatus",
     "OAuthStarted",
     "ProviderBudget",
     "ProviderBudgets",
@@ -68,6 +69,8 @@ _EGRESS_ELIGIBLE = ("public", "internal", "confidential")
 _ROLES = ("conversational_controller", "language_realization", "vision", "image_generation", "embedding", "stt", "tts")
 _SUBJECTS = ("provider", "tenant", "workspace", "principal")
 _CHANNELS = ("interactive", "background")
+_PRESENTATIONS = ("redirect", "popup")
+_CALLBACKS = ("host", "loopback")
 
 
 def is_manual_fallback(error: object) -> bool:
@@ -403,7 +406,8 @@ class _ProviderCalls:
 
     @staticmethod
     def start_oauth(
-        provider: Any, capabilities: Any, redirect_uri: Any, reauthorize: Any, switch_account: Any, label: Any, timeout_ms: Any
+        provider: Any, capabilities: Any, redirect_uri: Any, reauthorize: Any, switch_account: Any, label: Any, timeout_ms: Any,
+        presentation: Any = None, callback: Any = None, opener_origin: Any = None,
     ) -> Call[OAuthStarted]:
         name = _provider(provider)
         listed = _strings("capabilities", capabilities, 64, required=True)
@@ -416,9 +420,37 @@ class _ProviderCalls:
             document["switch_account"] = True
         if (text := _bounded("label", label, 128)) is not None:
             document["label"] = text
+        if presentation is not None:
+            if presentation not in _PRESENTATIONS:
+                raise _invalid("presentation", "it must be redirect or popup")
+            document["presentation"] = presentation
+        if callback is not None:
+            if callback not in _CALLBACKS:
+                raise _invalid("callback", "it must be host or loopback")
+            document["callback"] = callback
+        if (origin := _bounded("opener_origin", opener_origin, 256)) is not None:
+            document["opener_origin"] = origin
         return Call(
             "startProviderOAuth", OAuthStarted.model_validate, {"provider": name}, body=_body(document), content_type="application/json",
             timeout_ms=_timeout(timeout_ms), what="oauth start",
+        )
+
+    @staticmethod
+    def get_oauth_flow(flow_id: Any, timeout_ms: Any) -> Call[OAuthFlowStatus]:
+        if not isinstance(flow_id, str) or not flow_id:
+            raise _invalid("flow_id", "it is required")
+        return Call(
+            "getProviderOAuthFlow", OAuthFlowStatus.model_validate, {"flow_id": flow_id},
+            timeout_ms=_timeout(timeout_ms), what="oauth flow status",
+        )
+
+    @staticmethod
+    def cancel_oauth_flow(flow_id: Any, timeout_ms: Any) -> Call[None]:
+        if not isinstance(flow_id, str) or not flow_id:
+            raise _invalid("flow_id", "it is required")
+        return Call(
+            "cancelProviderOAuthFlow", lambda _body: None, {"flow_id": flow_id}, empty=True,
+            timeout_ms=_timeout(timeout_ms), what="oauth flow cancel",
         )
 
     @staticmethod
@@ -589,12 +621,29 @@ class ProvidersApi:
         reauthorize: Optional[str] = None,
         switch_account: bool = False,
         label: Optional[str] = None,
+        presentation: Optional[str] = None,
+        callback: Optional[str] = None,
+        opener_origin: Optional[str] = None,
         timeout_ms: Optional[int] = None,
     ) -> OAuthStarted:
         """Prepares the consent for the requested capabilities and begins the browser authorization. Open ``authorization_url`` in
-        the user's browser and show ``consent`` first. A provider without OAuth for API access answers ``validation_failed`` with
-        ``details.reason`` ``manual_fallback`` (test with :func:`is_manual_fallback`): use :meth:`submit_credential` for it."""
-        return self._client._execute(_ProviderCalls.start_oauth(provider, capabilities, redirect_uri, reauthorize, switch_account, label, timeout_ms))
+        the user's browser and show ``consent`` first. ``presentation`` ``popup`` (1.1.0) keeps the host page in place and returns
+        ``flow_id`` for :meth:`get_oauth_flow`; ``opener_origin`` is required with it. A provider without OAuth for API access answers
+        ``validation_failed`` with ``details.reason`` ``manual_fallback`` (test with :func:`is_manual_fallback`): use
+        :meth:`submit_credential` for it."""
+        return self._client._execute(
+            _ProviderCalls.start_oauth(
+                provider, capabilities, redirect_uri, reauthorize, switch_account, label, timeout_ms, presentation, callback, opener_origin,
+            )
+        )
+
+    def get_oauth_flow(self, flow_id: str, *, timeout_ms: Optional[int] = None) -> OAuthFlowStatus:
+        """Reads the server-side status of a popup OAuth flow (1.1.0). Unknown or foreign-scope ids are ``not_found``."""
+        return self._client._execute(_ProviderCalls.get_oauth_flow(flow_id, timeout_ms))
+
+    def cancel_oauth_flow(self, flow_id: str, *, timeout_ms: Optional[int] = None) -> None:
+        """Cancels a pending popup OAuth flow (idempotent). Unknown or foreign-scope ids are ``not_found``."""
+        self._client._execute(_ProviderCalls.cancel_oauth_flow(flow_id, timeout_ms))
 
     def complete_oauth(self, *, redirect_uri: str, query: str, timeout_ms: Optional[int] = None) -> ConnectionStatus:
         """Relays the redirect the browser followed, with a FRESH context token of the principal that started the flow (tokens are
@@ -735,12 +784,25 @@ class AsyncProvidersApi:
         reauthorize: Optional[str] = None,
         switch_account: bool = False,
         label: Optional[str] = None,
+        presentation: Optional[str] = None,
+        callback: Optional[str] = None,
+        opener_origin: Optional[str] = None,
         timeout_ms: Optional[int] = None,
     ) -> OAuthStarted:
         """See :meth:`ProvidersApi.start_oauth`."""
         return await self._client._execute(
-            _ProviderCalls.start_oauth(provider, capabilities, redirect_uri, reauthorize, switch_account, label, timeout_ms)
+            _ProviderCalls.start_oauth(
+                provider, capabilities, redirect_uri, reauthorize, switch_account, label, timeout_ms, presentation, callback, opener_origin,
+            )
         )
+
+    async def get_oauth_flow(self, flow_id: str, *, timeout_ms: Optional[int] = None) -> OAuthFlowStatus:
+        """See :meth:`ProvidersApi.get_oauth_flow`."""
+        return await self._client._execute(_ProviderCalls.get_oauth_flow(flow_id, timeout_ms))
+
+    async def cancel_oauth_flow(self, flow_id: str, *, timeout_ms: Optional[int] = None) -> None:
+        """See :meth:`ProvidersApi.cancel_oauth_flow`."""
+        await self._client._execute(_ProviderCalls.cancel_oauth_flow(flow_id, timeout_ms))
 
     async def complete_oauth(self, *, redirect_uri: str, query: str, timeout_ms: Optional[int] = None) -> ConnectionStatus:
         """See :meth:`ProvidersApi.complete_oauth`."""

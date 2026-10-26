@@ -21,6 +21,9 @@ import (
 // that is cut off, malformed, ends without the [DONE] sentinel, or ends without
 // a finish reason and usage yields an error from Recv and no success.
 func (c *Client) GenerateStream(ctx context.Context, scope contracts.Scope, req providers.RichRequest) (providers.RichStream, error) {
+	if c.compat != nil {
+		return c.compat.GenerateStream(ctx, scope, req)
+	}
 	p, err := c.prepare(scope, req, true)
 	if err != nil {
 		return nil, err

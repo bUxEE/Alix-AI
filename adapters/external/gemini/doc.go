@@ -62,17 +62,16 @@
 //	https://ai.google.dev/gemini-api/docs/rate-limits
 //	https://ai.google.dev/gemini-api/docs/thinking
 //
-// OAuth (read 2026-10-08): scopes named are
-// https://www.googleapis.com/auth/cloud-platform (gcloud based setup) and
-// https://www.googleapis.com/auth/generative-language.retriever (retrieval; the
-// programmatic example uses it alone). The page names no scope specific to
-// generateContent, so the "inference" capability requests cloud-platform, the
-// one named for calling the API, and that is broad; the narrowest scope that
-// works is to be confirmed live. Consent screen: the Cloud project needs an
-// OAuth consent screen of user type External; while it is in testing each user
-// must be a listed test user; an unverified app shows "Google hasn't verified
-// this app", which is expected in testing; a production app must add and verify
-// its scopes with Google. Live consent needs a human (X-H02).
+// OAuth (read 2026-10-26): the official page names
+// https://www.googleapis.com/auth/cloud-platform (gcloud ADC sample, broad) and
+// https://www.googleapis.com/auth/generative-language.retriever (programmatic
+// InstalledAppFlow example uses it alone with the Gemini client). The
+// "inference" capability therefore requests only generative-language.retriever.
+// Consent screen: the Cloud project needs an OAuth consent screen of user type
+// External; while it is in testing each user must be a listed test user; an
+// unverified app shows "Google hasn't verified this app", which is expected in
+// testing; a production app must add and verify its scopes with Google. Live
+// consent needs a human (X-H02).
 //
 // Endpoint: POST https://generativelanguage.googleapis.com/v1beta/models/{model}:
 // generateContent and :streamGenerateContent?alt=sse. The model is in the path.

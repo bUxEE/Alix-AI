@@ -19,6 +19,7 @@ import (
 	"github.com/buxee/alix-ai/internal/providers/voice"
 	"github.com/buxee/alix-ai/internal/providers/voice/fake"
 	"github.com/buxee/alix-ai/internal/verify"
+	"github.com/buxee/alix-ai/internal/voice/profile"
 	"github.com/buxee/alix-ai/pkg/contracts"
 )
 
@@ -812,6 +813,27 @@ func TestSpeakerRecognitionNeverAuthorizes(t *testing.T) {
 			t.Error("a turn ran")
 		}
 	})
+}
+
+// ADR 0039: an STT-only pack serves dictation, not the voice-conversation WebSocket.
+func TestOpenRefusesSTTOnlyPack(t *testing.T) {
+	h := newHarness(t)
+	sttOnly := profile.Pack{ID: "en-stt", Language: "en", Roles: []providers.Role{providers.RoleSTT}}
+	packs, err := profile.NewPacks(profile.NewMemoryCatalog(sttOnly), profile.NopLoader{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := packs.Activate(t.Context(), "en-stt"); err != nil {
+		t.Fatal(err)
+	}
+	svc, err := New(Deps{Providers: h.reg, Packs: packs, Clock: h.clk})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = svc.Open(t.Context(), testScope("ses-1"), Options{Turns: h.turns})
+	if contracts.CodeOf(err) != contracts.ErrUnavailable {
+		t.Fatalf("Open STT-only pack = %v, want unavailable", err)
+	}
 }
 
 // Requirement 7 and 8: a language pack is activated explicitly, and voice is

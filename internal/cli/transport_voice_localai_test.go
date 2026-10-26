@@ -148,9 +148,9 @@ func TestVoiceProviderFactoryBuildsTheLocalAIVoiceClient(t *testing.T) {
 	}
 
 	// A pack that provides fewer roles gives fewer providers, found through the recorded activation
-	// when the configuration names none.
-	t.Run("an STT-only pack and the recorded activation", func(t *testing.T) {
-		voiceUseTestManifests(t) // en and it, STT only
+	// when the configuration names none. Test manifests are STT+VAD (conversation-capable, no TTS).
+	t.Run("an STT+VAD pack and the recorded activation", func(t *testing.T) {
+		voiceUseTestManifests(t)
 		voiceResetConfig(t)
 		voiceEnableConfig(t, "")
 		voiceLocalAIUseRuntime(t, srv.URL) // after the configuration load, which resets the sections
@@ -163,8 +163,8 @@ func TestVoiceProviderFactoryBuildsTheLocalAIVoiceClient(t *testing.T) {
 		if err != nil {
 			t.Fatalf("factory: %v", err)
 		}
-		if got.STT == nil || got.TTS != nil || got.VAD != nil {
-			t.Errorf("an STT-only pack must give STT only: stt %v tts %v vad %v", got.STT, got.TTS, got.VAD)
+		if got.STT == nil || got.VAD == nil || got.TTS != nil {
+			t.Errorf("an STT+VAD pack must give STT and VAD only: stt %v tts %v vad %v", got.STT, got.TTS, got.VAD)
 		}
 	})
 }

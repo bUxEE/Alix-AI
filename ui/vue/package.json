@@ -37,6 +37,10 @@
       "types": "./src/index.ts",
       "import": "./src/index.ts"
     },
+    "./dictation": {
+      "types": "./src/dictation/index.ts",
+      "import": "./src/dictation/index.ts"
+    },
     "./styles": {
       "sass": "./src/styles/index.scss",
       "default": "./src/styles/index.scss"

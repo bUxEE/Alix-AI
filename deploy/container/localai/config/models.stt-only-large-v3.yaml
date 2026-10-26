@@ -1,0 +1,10 @@
+# STT-only: Whisper large-v3 q5_0 (pack whisper-large-v3-stt). Pins match models/voice-packs/whisper-large-v3-stt.yaml.
+- name: whisper-large-v3
+  backend: whisper
+  known_usecases: [transcript]
+  parameters:
+    model: ggml-large-v3-q5_0.bin
+  download_files:
+    - filename: ggml-large-v3-q5_0.bin
+      uri: https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-large-v3-q5_0.bin
+      sha256: d75795ecff3f83b5faa89d1900604ad8c780abd5739fae406de19f23ecd98ad1

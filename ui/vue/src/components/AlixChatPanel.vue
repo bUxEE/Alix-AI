@@ -1,12 +1,16 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
+import type { voice } from "@alixai/sdk";
 import type { AguiClient } from "../agui/client";
 import type { AlixAttachment, AlixUiCall, ChatItem, ConversationSummary } from "../agui/types";
 import { useOnline } from "../composables/useBrowser";
 import { useAlixChat, type AlixChat } from "../composables/useAlixChat";
 import { useAttachmentQueue, type AttachmentQueue } from "../composables/useAttachmentQueue";
+import AlixDictationButton from "../dictation/AlixDictationButton.vue";
+import { insertAtCaret, type VoiceModeOption } from "../dictation";
 import { useAlix } from "../i18n";
 import type { Citation, DiagramBlock, PermittedAction } from "../sdk-types";
+import AlixVoiceButton from "../voice/AlixVoiceButton.vue";
 import AlixAttachmentComposer from "./AlixAttachmentComposer.vue";
 import AlixConversationList from "./AlixConversationList.vue";
 import AlixMessageStream from "./AlixMessageStream.vue";
@@ -41,6 +45,13 @@ const props = withDefaults(
     autoConnect?: boolean;
     citationDisplay?: "inline" | "footnote" | "panel";
     links?: boolean;
+    /**
+     * Voice surface on the composer. Default `off` (1.0 behaviour: chat only).
+     * `dictation` shows record-to-text; `conversation` shows the talk button for voice-chat mode.
+     */
+    voice?: VoiceModeOption;
+    /** Required when `voice` is `dictation`: the SDK dictation client for this deployment. */
+    dictationClient?: voice.DictationClient;
   }>(),
   {
     client: undefined,
@@ -57,6 +68,8 @@ const props = withDefaults(
     autoConnect: true,
     citationDisplay: "panel",
     links: true,
+    voice: "off",
+    dictationClient: undefined,
   },
 );
 
@@ -68,6 +81,9 @@ const emit = defineEmits<{
   "download-file": [file: AlixAttachment];
   select: [id: string];
   new: [];
+  "voice-start": [];
+  "voice-stop": [];
+  "voice-cancel": [];
 }>();
 
 const { t } = useAlix();
@@ -83,6 +99,8 @@ const slots = defineSlots<{
   "header-actions"?: () => unknown;
   conversations?: () => unknown;
   "composer-actions"?: () => unknown;
+  "dictation-button"?: () => unknown;
+  "voice-button"?: () => unknown;
   empty?: () => unknown;
   message?: (props: { item: Entry<"message"> }) => unknown;
   attachments?: (props: { item: Entry<"attachments"> }) => unknown;
@@ -111,6 +129,23 @@ const queue: AttachmentQueue | undefined = props.uploader === undefined ? undefi
 
 const draft = ref("");
 const showList = ref(false);
+const composer = ref<{
+  focus: () => void;
+  selectionStart: () => number;
+  selectionEnd: () => number;
+  setSelection: (start: number, end?: number) => void;
+} | null>(null);
+
+const insertDictation = (text: string): void => {
+  const start = composer.value?.selectionStart() ?? draft.value.length;
+  const end = composer.value?.selectionEnd() ?? start;
+  const next = insertAtCaret(draft.value, text, start, end);
+  draft.value = next.text;
+  void nextTick(() => {
+    composer.value?.setSelection(next.caret);
+    composer.value?.focus();
+  });
+};
 
 const hasList = computed(() => props.conversations !== undefined);
 const state = chat.state;
@@ -334,6 +369,7 @@ defineExpose({ chat });
         :files="queue?.files.value ?? []"
         :max-file-mb="maxFileMb"
         :running="chat.running.value"
+        ref="composer"
         @add-files="queue?.add($event)"
         @remove-file="queue?.remove($event)"
         @send="send"
@@ -341,6 +377,27 @@ defineExpose({ chat });
       >
         <template #actions>
           <slot name="composer-actions" />
+          <slot
+            v-if="voice === 'dictation' && dictationClient && (threadId ?? '') !== ''"
+            name="dictation-button"
+          >
+            <AlixDictationButton
+              :client="dictationClient"
+              :language="language"
+              :session-id="threadId ?? ''"
+              @transcript="insertDictation"
+            />
+          </slot>
+          <slot
+            v-else-if="voice === 'conversation'"
+            name="voice-button"
+          >
+            <AlixVoiceButton
+              @cancel="emit('voice-cancel')"
+              @start="emit('voice-start')"
+              @stop="emit('voice-stop')"
+            />
+          </slot>
         </template>
       </AlixAttachmentComposer>
     </div>

@@ -48,7 +48,7 @@ describe("the operation table", () => {
     const spec = loadSpec();
     const documented = spec.operations.filter((o) => o.area === "providers" || o.area === "oauth");
     expect(Object.keys(providers.PROVIDERS_OPERATIONS).sort()).toEqual(documented.map((o) => o.operationId).sort());
-    expect(documented).toHaveLength(16);
+    expect(documented).toHaveLength(18);
     for (const o of documented) {
       const row = providers.PROVIDERS_OPERATIONS[o.operationId as P.ProvidersOperationId];
       expect({ method: row.method, path: row.path, safe: row.safe, authenticated: o.authenticated }, o.operationId).toEqual({
@@ -65,14 +65,14 @@ describe("the operation table", () => {
     expect(Object.keys(client).sort()).toEqual(
       [
         "list", "submitCredential", "disconnect", "acknowledgeBillingNotice", "getDisclosure", "getMode", "setMode", "getEgressPolicy", "setEgressPolicy",
-        "getBudgets", "setBudget", "exportUsage", "getKillSwitch", "setKillSwitch", "startOAuth", "completeOAuth",
+        "getBudgets", "setBudget", "exportUsage", "getKillSwitch", "setKillSwitch", "startOAuth", "completeOAuth", "getOAuthFlow", "cancelOAuthFlow",
       ].sort(),
     );
   });
 });
 
 describe("every operation against the fake, every answer validated against the document", () => {
-  it("drives all sixteen and checks the status and the body of each", async () => {
+  it("drives all eighteen and checks the status and the body of each", async () => {
     const spec = loadSpec();
     const fake = providers.createFakeProvidersServer({ config: { ...providers.defaultProvidersConfig(), tenantAdmins: ["admin-2"] } });
     const violations: string[] = [];
@@ -84,6 +84,7 @@ describe("every operation against the fake, every answer validated against the d
       const operation = recorded?.operation ?? "";
       checked.add(operation);
       if (!spec.declaredStatuses(operation).includes(response.status)) violations.push(`${operation}: undeclared status ${response.status}`);
+      if (response.status === 204) return response;
       const validate = spec.responseValidator(operation, response.status);
       if (validate === undefined) violations.push(`${operation} ${response.status}: no schema`);
       else if (!validate(await response.clone().json())) violations.push(`${operation} ${response.status}: ${explain(validate)}`);
@@ -102,6 +103,13 @@ describe("every operation against the fake, every answer validated against the d
     const state = new URL(started.authorization_url).searchParams.get("state");
     await operator.completeOAuth({ redirect_uri: "http://127.0.0.1:8123/callback", query: `?code=c0de&state=${state}` });
     await failure(operator.completeOAuth({ redirect_uri: "http://127.0.0.1:8123/callback", query: `code=c0de&state=${state}` }));
+    const popup = await operator.startOAuth("openai", {
+      capabilities: ["chat"], redirect_uri: "http://127.0.0.1/oauth/loopback",
+      presentation: "popup", callback: "loopback", opener_origin: "http://127.0.0.1:3000",
+    });
+    expect(popup.flow_id).toBeTruthy();
+    await operator.getOAuthFlow(popup.flow_id!);
+    await operator.cancelOAuthFlow(popup.flow_id!);
     await operator.getMode();
     await operator.setMode("deployment", "external");
     await operator.getDisclosure("openai", { source: ["src_a"], estimated_toks_in: 100 });

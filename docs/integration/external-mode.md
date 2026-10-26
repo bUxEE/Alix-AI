@@ -42,7 +42,13 @@ All provider routes are operator-only: the caller is an operator named in the de
 
 The disclosure is what plan section 6.3 requires before data leaves; show it when the user is about to use a provider. `connection-status` carries no reference id, fingerprint or scope list; a provider key or token is never returned to any client, and `PUT /v1/providers/{provider}/credential` is write-only.
 
-Setup flows your admin settings can drive: billing acknowledgement (`POST /v1/providers/{provider}/billing-notice/ack`, both confirmations true; the text to show is in section 9 of the operator guide), OAuth (`POST /v1/oauth/{provider}/start` returns the authorization URL and consent for you to show and open in the user's browser; relay the browser's redirect with `POST /v1/oauth/callback` using a fresh token of the same principal), and the manual-key fallback (send it only from your server, never from browser code, and never log it). No OAuth registration is configured in this release, so `start` answers `validation_failed` with `details.reason` `manual_fallback`.
+Setup flows your admin settings can drive: billing acknowledgement (`POST /v1/providers/{provider}/billing-notice/ack`, both confirmations true; the text to show is in section 9 of the operator guide), OAuth (popup or redirect — see below; without an enabled catalog entry `start` answers `validation_failed` with `details.reason` `manual_fallback`), and the manual-key fallback (send it only from your server, never from browser code, and never log it).
+
+### Popup OAuth (1.1.0)
+
+Connecting a provider from a popup must not navigate the host page. Call `start` with `presentation: "popup"` and `opener_origin` set to the exact origin of the host page (scheme://host[:port]). That origin is validated against the operator allowlist `external_providers.oauth.popup_origins` (never `*`) and is used only as the `targetOrigin` of the callback page's `postMessage`. The start response includes `flow_id` and `poll_interval_ms`. Poll `GET /v1/oauth/flows/{flow_id}` as the source of truth: provider login pages often send `Cross-Origin-Opener-Policy`, which nulls `window.opener`. The callback page may post `{ "type": "alixai.oauth.result", "flow_id", "status" }` (schema `oauth-popup-result`) as a fast path only; it never carries a code, state, token or error text. `DELETE /v1/oauth/flows/{flow_id}` cancels a pending flow when the user closes the popup (idempotent).
+
+With `callback: "loopback"`, AlixAI binds an ephemeral `127.0.0.1` listener and completes the exchange itself. `redirect_uri` stays required on the wire for compatibility; send the placeholder `http://127.0.0.1/oauth/loopback`. A connection that stores a provider-issued API key from browser login (for example OpenRouter PKCE) reports `kind: "oauth_issued_key"` so status can say connected via browser login without claiming access/refresh tokens.
 
 ## 4. Errors you may see
 

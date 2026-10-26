@@ -10,6 +10,8 @@ export * from "./data-classification.js";
 export * from "./egress-decision.js";
 export * from "./egress-disclosure.js";
 export * from "./egress-policy.js";
+export * from "./oauth-flow-status.js";
+export * from "./oauth-popup-result.js";
 export * from "./price-table.js";
 export * from "./provider-error.js";
 export * from "./provider-profile.js";

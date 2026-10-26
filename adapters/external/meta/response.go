@@ -57,6 +57,9 @@ var hostRunKeys = []string{"executed_tools", "function_call", "audio", "images",
 // adapter never follows a tool call with a second request; a proposal goes back
 // to the caller as data.
 func (c *Client) Generate(ctx context.Context, scope contracts.Scope, req providers.RichRequest) (providers.RichResult, error) {
+	if c.compat != nil {
+		return c.compat.Generate(ctx, scope, req)
+	}
 	p, err := c.prepare(scope, req, false)
 	if err != nil {
 		return providers.RichResult{}, err

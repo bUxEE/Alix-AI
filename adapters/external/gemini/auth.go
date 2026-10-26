@@ -75,23 +75,22 @@ const (
 	OAuthTokenEndpoint         = "https://oauth2.googleapis.com/token"
 	OAuthRevocationEndpoint    = "https://oauth2.googleapis.com/revoke"
 
-	// ScopeCloudPlatform is the scope the vendor's page names for the gcloud
-	// based setup of Gemini API OAuth. It is broad (all of Google Cloud for
-	// the account): the page names no narrower scope for generateContent, so
-	// the narrowest known to work is still to be confirmed live (X-H02).
+	// ScopeCloudPlatform is named by the vendor's gcloud ADC sample. It is broad
+	// (all of Google Cloud for the project). Prefer ScopeRetriever for Gemini.
 	ScopeCloudPlatform = "https://www.googleapis.com/auth/cloud-platform"
-	// ScopeRetriever is the scope the vendor's page names for the semantic
-	// retrieval service. This adapter does not use it.
+	// ScopeRetriever is the scope the official programmatic OAuth example uses
+	// alone with the Gemini client (https://ai.google.dev/gemini-api/docs/oauth,
+	// read 2026-10-26).
 	ScopeRetriever = "https://www.googleapis.com/auth/generative-language.retriever"
 
 	// OAuthCapability is the capability name the engine maps to InferenceScopes.
 	OAuthCapability = "inference"
 )
 
-// InferenceScopes are the scopes the "inference" capability requests: the one
-// scope the vendor's page names for calling the API with OAuth, and nothing
-// more.
-var InferenceScopes = []string{ScopeCloudPlatform}
+// InferenceScopes are the scopes the "inference" capability requests: the
+// narrowest scope the official page's programmatic example uses for the
+// Gemini client (read 2026-10-26).
+var InferenceScopes = []string{ScopeRetriever}
 
 // OAuthAuthParams are the extra authorization parameters Google needs for a
 // refresh token ("access_type=offline"); none is reserved by the engine.

@@ -1,0 +1,42 @@
+# Voice language pack manifest (schema: pack-manifest.schema.json, urn:alixai:schema:voice:language-pack:v1).
+# STT-only multilingual candidate (ADR 0040). The schema has one BCP 47 language tag per pack: mul marks
+# multiple languages; the 25 European languages the model card lists are named in notes. No VAD role:
+# dictation clips are user-segmented. Voice-conversation mode still pairs STT with Silero VAD (ADR 0015).
+# Quality and resource figures stay null until voicebench measures them on LocalAI.
+id: parakeet-stt
+name: "Multilingual speech input (Parakeet TDT 0.6B v3, parakeet.cpp)"
+version: "1"
+language: mul
+status: candidate
+models:
+  stt:
+    name: "NVIDIA Parakeet TDT 0.6B v3, Q4_K (parakeet.cpp GGUF via mudler/parakeet-cpp-gguf)"
+    engine: parakeet.cpp
+    registry_id: null
+    files:
+      - name: tdt-0.6b-v3-q4_k.gguf
+        url: https://huggingface.co/mudler/parakeet-cpp-gguf/resolve/c77726e46ceaab96b5a5a3328915edb44c73209d/tdt-0.6b-v3-q4_k.gguf
+        revision: c77726e46ceaab96b5a5a3328915edb44c73209d
+        size_bytes: 675200864
+        sha256: 993d73feb4206dadda865ab25bd64b50c48dc4d013c3bf6126a721f28b1d5ee8
+    licence:
+      spdx: CC-BY-4.0
+      url: https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3
+      redistribution_notes: "Model weights CC-BY-4.0 per the NVIDIA model card (licence field cc-by-4.0, checked 2026-10-26). The GGUF here is the LocalAI/parakeet.cpp conversion in mudler/parakeet-cpp-gguf at the pinned revision; file size and sha256 are the Hugging Face LFS oid and byte size published for that path (checked 2026-10-26). The parakeet.cpp ENGINE is MIT (mudler/parakeet.cpp LICENSE). AlixAI does not bundle weights: the operator fetches the pinned file. Final sign-off is a human licence review."
+quality:
+  stt_wer: null
+  tts_time_to_first_audio_ms: null
+  tts_real_time_factor: null
+  measurement: null
+resources:
+  disk_bytes: 675200864
+  steady_rss_mb: null
+  peak_rss_mb: null
+  cpu_cores: null
+notes:
+  - "Candidate STT-only pack (ADR 0040). Opt-in until voicebench on real LocalAI clears the Balanced STT gates (docs/evidence/m4-voice/protocol.md). Never a default while status is candidate."
+  - "Languages (NVIDIA card, 25 European): bg, hr, cs, da, nl, en, et, fi, fr, de, el, hu, it, lv, lt, mt, pl, pt, ro, ru, sk, sl, es, sv, uk. Schema language is mul (one tag per pack)."
+  - "LocalAI declares the backend as parakeet-cpp (backend: parakeet-cpp, parameters.model: the GGUF file name). Engine field here is parakeet.cpp, matching ADR 0015. Runs on CPU via ggml; GPU (CUDA/Metal/Vulkan) is optional — not NVIDIA-hardware-required (parakeet.cpp README). Pinned LocalAI v4.10.0 ships this backend; install from deploy/container/localai/stt-only/backend-gallery.yaml (and the voicebench stack gallery)."
+  - "Q4_K is the smallest LocalAI-oriented quant in mudler/parakeet-cpp-gguf for this model (~675 MB). NVIDIA also publishes a first-party Q8_0 GGUF (parakeet-tdt-0.6b-v3.q8_0.gguf, 713975456 bytes, sha256 e3880d0aaaaf2c308ea2c35016b2b895c423eb3fda924c1b463d1c19b7f4d32e at nvidia/parakeet-tdt-0.6b-v3). Third-party Q4_K_M files (~485 MB) exist elsewhere; this pack pins the LocalAI gallery conversion only."
+  - "PROFILE DEFAULTS (shipped state): Lite keeps en-stt (Whisper tiny). Balanced and Performance do NOT default to this pack while it is candidate. ONE-LINE FLIP after a passing voicebench run: change this pack's status to qualified-emulated and set the deployment voice.active_pack (or operator install target) to parakeet-stt for Balanced/Performance; leave Lite on en-stt. Documented in ADR 0040."
+  - "Dictation: no VAD role in this pack (user-segmented clips). Conversation mode: keep Silero VAD in front of STT (ADR 0015); install a pack or overlay that provides VAD, or pair this STT with the VAD from en-stt / en / it."

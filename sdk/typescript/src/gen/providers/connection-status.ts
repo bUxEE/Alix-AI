@@ -49,7 +49,8 @@ export interface ConnectionStatus {
   state: ConnectionStatusState;
 
   /**
-   * How the provider is connected: oauth or api_key, or null when not connected.
+   * How the provider is connected: oauth, api_key or oauth_issued_key (browser login that
+   * stored a provider-issued API key), or null when not connected.
    *
    * @authority alixai
    */

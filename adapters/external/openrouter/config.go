@@ -1,0 +1,67 @@
+package openrouter
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/buxee/alix-ai/adapters/external"
+	"github.com/buxee/alix-ai/adapters/external/chatcompat"
+	"github.com/buxee/alix-ai/internal/providers"
+)
+
+const (
+	ProviderName   = "openrouter"
+	DefaultBaseURL = "https://openrouter.ai"
+)
+
+const defaultAPIPrefix = "/api/v1"
+
+// Config configures one OpenRouter profile.
+type Config struct {
+	BaseURL         string
+	APIPrefix       string
+	CredentialRef   string
+	Model           string
+	ReplyModel      string
+	Profiles        map[string]string
+	ReasoningEffort string
+
+	MaxContextToks       int
+	MaxOutputToks        int
+	DefaultMaxOutputToks int
+	MaxTools             int
+	Prices               *providers.PriceTable
+	NoForcedToolChoice   bool
+
+	RequestTimeout   time.Duration
+	StreamTimeout    time.Duration
+	MaxResponseBytes int64
+	Retry            external.RetryPolicy
+}
+
+func (c Config) baseURL() string {
+	if c.BaseURL == "" {
+		return DefaultBaseURL
+	}
+	return c.BaseURL
+}
+
+func (c Config) String() string {
+	return fmt.Sprintf("openrouter.Config{BaseURL:%s Model:%s}", c.baseURL(), c.Model)
+}
+
+func (c Config) compat() chatcompat.Config {
+	prefix := c.APIPrefix
+	if prefix == "" {
+		prefix = defaultAPIPrefix
+	}
+	return chatcompat.Config{
+		BaseURL: c.baseURL(), APIPrefix: prefix, CredentialRef: c.CredentialRef,
+		WireModel: c.Model, ReplyModel: c.ReplyModel, ReasoningEffort: c.ReasoningEffort, Profiles: c.Profiles,
+		MaxContextToks: c.MaxContextToks, MaxOutputToks: c.MaxOutputToks, DefaultMaxOutputToks: c.DefaultMaxOutputToks,
+		MaxTools: c.MaxTools, Prices: c.Prices, NoForcedToolChoice: c.NoForcedToolChoice,
+		RequestTimeout: c.RequestTimeout, StreamTimeout: c.StreamTimeout, MaxResponseBytes: c.MaxResponseBytes, Retry: c.Retry,
+	}
+}
+
+func (c Config) Validate() error { return c.compat().Validate() }

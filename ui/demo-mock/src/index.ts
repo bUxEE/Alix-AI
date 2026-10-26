@@ -1,4 +1,4 @@
-import type { voice } from "@alixai/sdk";
+import { voice } from "@alixai/sdk";
 import { DEMO_PATHS } from "./paths";
 
 // @alixai/demo-mock, browser side: the prompt registry, the paths and a few helpers a demo page uses to talk to the mock. Nothing
@@ -6,9 +6,9 @@ import { DEMO_PATHS } from "./paths";
 
 export { demoPrompt, demoPrompts, detectLocale, matchScenario } from "./prompts";
 export type { DemoLocale, DemoPrompt, DemoScenarioId, DemoText, ScenarioMatch } from "./prompts";
-export { DEMO_PATHS, DEMO_THREAD_ID, voicePath } from "./paths";
+export { DEMO_PATHS, DEMO_THREAD_ID, dictationPath, voicePath } from "./paths";
 
-/** The context token the demo hands to the SDK's voice client. The mock does not check tokens; a real host mints one per connection. */
+/** The context token the demo hands to the SDK's voice / dictation clients. The mock does not check tokens; a real host mints one per connection. */
 export const demoContextToken = (): string => "demo-context-token";
 
 /** The voice socket factory for a browser. A browser WebSocket cannot send `Authorization`; the mock does not ask for it. */
@@ -22,6 +22,14 @@ export const demoVoiceOptions = (sessionId: string, options: { base?: string; la
   webSocket: demoVoiceSocket,
   ...(options.language !== undefined && { language: options.language }),
 });
+
+/** Dictation (record-to-text) client for the mock: capabilities + create on the same origin. */
+export const demoDictationClient = (options: { base?: string } = {}): voice.DictationClient =>
+  voice.createDictationClient({
+    baseUrl: options.base ?? (typeof globalThis.location !== "undefined" ? globalThis.location.origin : "http://127.0.0.1"),
+    getContextToken: demoContextToken,
+    allowInsecureHttp: true,
+  });
 
 const errorMessage = async (response: Response): Promise<string> => {
   try {

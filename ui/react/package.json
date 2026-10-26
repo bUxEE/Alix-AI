@@ -20,6 +20,10 @@
       "types": "./dist/copilotkit.d.ts",
       "import": "./dist/copilotkit.js"
     },
+    "./dictation": {
+      "types": "./dist/dictation/index.d.ts",
+      "import": "./dist/dictation/index.js"
+    },
     "./styles.scss": "./src/styles/index.scss",
     "./tokens.scss": "./src/styles/_tokens.scss",
     "./package.json": "./package.json"

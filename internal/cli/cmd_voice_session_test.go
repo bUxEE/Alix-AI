@@ -50,7 +50,7 @@ func voiceSessionSetup(t *testing.T, pin, activated string, installed ...string)
 	r := &voiceSessionRig{voiceServeRig: newVoiceServeRig(t), stt: vfake.New(), tts: vfake.New(), defaultFactory: voiceProviderFactory}
 	r.deps.Services = gateway.NewServices()
 	voiceUseFactory(t, func(context.Context) (profile.Providers, error) {
-		return profile.Providers{STT: r.stt, TTS: r.tts, Close: func() error {
+		return profile.Providers{STT: r.stt, TTS: r.tts, VAD: vfake.New(vfake.WithName("fake-vad")), Close: func() error {
 			if r.onClose != nil {
 				r.onClose()
 			}

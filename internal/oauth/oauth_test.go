@@ -903,15 +903,17 @@ func TestUnsupportedProviderReportsManualFallback(t *testing.T) {
 	if g.idp.total() != 0 {
 		t.Fatal("a provider without OAuth caused a network call")
 	}
-	// The recorded support: key-based providers have none, Google offers OAuth, each with a dated source.
-	for id, want := range map[providers.ProviderID]bool{"openai": false, "anthropic": false, "gemini": true} {
+	// The recorded support (checked 2026-10-26): SIWC/Google/OpenRouter offer OAuth; Anthropic/xAI/Kimi do not.
+	for id, want := range map[providers.ProviderID]bool{
+		"openai": true, "anthropic": false, "gemini": true, "openrouter": true, "xai": false, "moonshot": false,
+	} {
 		s, ok := SupportFor(id)
 		if !ok || s.OAuth != want || s.Source == "" || !strings.HasPrefix(s.Checked, "2026-") {
 			t.Errorf("support for %s: %+v", id, s)
 		}
 	}
-	if _, ok := SupportFor("meta"); ok {
-		t.Error("an unverified provider must not be recorded")
+	if s, ok := SupportFor("meta"); !ok || s.OAuth {
+		t.Errorf("meta support: %+v (recorded as key-only)", s)
 	}
 }
 

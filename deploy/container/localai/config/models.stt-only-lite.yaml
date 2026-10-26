@@ -1,0 +1,11 @@
+# STT-only LocalAI models for the Lite Whisper tiny variant of compose.stt-only.yaml.
+# Pins match models/voice-packs/en-stt.yaml (Whisper tiny q5_1). No LLM, embedder, VAD or TTS.
+- name: whisper-tiny
+  backend: whisper
+  known_usecases: [transcript]
+  parameters:
+    model: ggml-tiny-q5_1.bin
+  download_files:
+    - filename: ggml-tiny-q5_1.bin
+      uri: https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny-q5_1.bin
+      sha256: 818710568da3ca15689e31a743197b520007872ff9576237bda97bd1b469c3d7

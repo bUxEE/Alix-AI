@@ -664,6 +664,21 @@ func exerciseProvidersConformance(t *testing.T, fake *sdktest.Fake, recorded, pl
 	_, err = p.CompleteOAuth(ctx, sdkgo.OAuthCallbackInput{RedirectURI: in.RedirectURI, Query: query})
 	hasCode(t, "replayed state", err, contracts.ErrConflict)
 
+	popup := must[*sdkgo.OAuthStarted](t, "popup start")(p.StartOAuth(ctx, "openai", sdkgo.OAuthStartInput{
+		Capabilities: []string{"chat"}, RedirectURI: "http://127.0.0.1/oauth/loopback",
+		Presentation: "popup", Callback: "loopback", OpenerOrigin: "http://127.0.0.1:3000",
+	}))
+	if popup.FlowID == "" {
+		t.Fatal("popup start returned no flow_id")
+	}
+	must[*pv.OauthFlowStatus](t, "flow status")(p.GetOAuthFlow(ctx, popup.FlowID))
+	if err := p.CancelOAuthFlow(ctx, popup.FlowID); err != nil {
+		t.Fatalf("cancel flow: %v", err)
+	}
+	if err := p.CancelOAuthFlow(ctx, popup.FlowID); err != nil {
+		t.Fatalf("cancel again: %v", err)
+	}
+
 	must[*sdkgo.ProviderMode](t, "get mode")(p.GetMode(ctx))
 	must[*sdkgo.ProviderMode](t, "set mode")(p.SetMode(ctx, sdkgo.ModeLevelDeployment, pv.DeploymentModeExternal))
 	must[*pv.EgressDisclosure](t, "disclosure")(p.GetDisclosure(ctx, "openai", sdkgo.DisclosureQuery{SourceIDs: []string{"src_a"}}))

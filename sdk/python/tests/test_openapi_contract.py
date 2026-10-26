@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import gzip
 import json
+import struct
 from typing import Any
 
 import httpx
@@ -251,6 +252,37 @@ def test_every_answer_of_the_fake_server_conforms_to_the_document_across_all_ope
     fake.set_decision_unavailable()
     swallow(client.get_decision_status)  # 503 unavailable
     fake.set_decision_unavailable(False)
+
+    # Dictation (record-to-text, 1.1.0): capabilities and one-shot create; not the voice WebSocket.
+    def _wav(seconds: float = 0.5, rate: int = 16000) -> bytes:
+        n = int(rate * seconds)
+        pcm = b"\x00\x10" * n
+        return struct.pack(
+            "<4sI4s4sIHHIIHH4sI",
+            b"RIFF",
+            36 + len(pcm),
+            b"WAVE",
+            b"fmt ",
+            16,
+            1,
+            1,
+            rate,
+            rate * 2,
+            2,
+            16,
+            b"data",
+            len(pcm),
+        ) + pcm
+
+    client.dictations.capabilities()
+    fake.set_dictation_text("book Tuesday")
+    client.dictations.create("ses-1", _wav(), language="en")
+    fake.set_dictation_silent(True)
+    swallow(lambda: client.dictations.create("ses-1", _wav(0.2)))
+    fake.set_dictation_silent(False)
+    fake.set_dictation_unavailable(True)
+    swallow(client.dictations.capabilities)
+    fake.set_dictation_unavailable(False)
 
     # External Provider Mode: the providers and OAuth areas, every operation, through the recording transport (checked against the
     # document) and through a plain one (the budget create, which the document's request schema, the whole Budget, cannot describe)

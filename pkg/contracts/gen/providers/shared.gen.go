@@ -340,23 +340,27 @@ type Counter int64
 
 // CredentialKind mirrors urn:alixai:schema:providers:shared:v1#/$defs/credentialKind.
 //
-// oauth: browser-based OAuth authorization (preferred whenever the provider supports it). api_key:
-// manual API key or token entry, a fallback for providers or deployments without a suitable OAuth
-// flow.
+// oauth: browser-based OAuth authorization that yields access and refresh tokens (preferred
+// whenever the provider supports it). api_key: manual API key or token entry, a fallback for
+// providers or deployments without a suitable OAuth flow. oauth_issued_key: the user completed a
+// browser OAuth (or PKCE) login and the provider issued a user-controlled API key rather than
+// access/refresh tokens (for example OpenRouter); connection status can say connected via browser
+// login without claiming a refreshable OAuth token pair.
 //
 // Only the values listed in the schema are valid.
 type CredentialKind string
 
 // The valid values of CredentialKind.
 const (
-	CredentialKindOauth  CredentialKind = "oauth"
-	CredentialKindAPIKey CredentialKind = "api_key"
+	CredentialKindOauth          CredentialKind = "oauth"
+	CredentialKindAPIKey         CredentialKind = "api_key"
+	CredentialKindOauthIssuedKey CredentialKind = "oauth_issued_key"
 )
 
 // Valid reports whether v is one of the values the schema lists.
 func (v CredentialKind) Valid() bool {
 	switch v {
-	case CredentialKindOauth, CredentialKindAPIKey:
+	case CredentialKindOauth, CredentialKindAPIKey, CredentialKindOauthIssuedKey:
 		return true
 	}
 	return false

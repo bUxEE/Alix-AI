@@ -23,6 +23,30 @@ func roleStatuses(ss []providers.RoleStatus) map[providers.Role]providers.RoleSt
 	return m
 }
 
+func TestRegistryExternallyCoveredControllerIsReadyWithoutLocalProvider(t *testing.T) {
+	reg := providers.NewRegistry(clock.NewFake(time.Date(2026, 10, 2, 8, 0, 0, 0, time.UTC)))
+	if reg.Overall() != providers.HealthUnavailable {
+		t.Fatalf("empty Overall = %s", reg.Overall())
+	}
+	reg.MarkExternallyCovered(providers.RoleController)
+	if !reg.ExternallyCovered(providers.RoleController) {
+		t.Fatal("ExternallyCovered was not recorded")
+	}
+	if reg.Has(providers.RoleController) || reg.Usable(providers.RoleController) {
+		t.Fatal("external cover must not register a local provider")
+	}
+	if reg.Overall() != providers.HealthOK {
+		t.Fatalf("Overall = %s, want ok when the controller is covered externally", reg.Overall())
+	}
+	s := reg.Status(providers.RoleController)
+	if s.Configured || s.Status != providers.HealthOK || s.Reason != providers.ExternalCoverReason || s.Effect != "" {
+		t.Fatalf("Status = %+v, want ok with reason %q and no local provider", s, providers.ExternalCoverReason)
+	}
+	if len(reg.Degraded()) != 0 {
+		t.Fatalf("Degraded = %+v, want none", reg.Degraded())
+	}
+}
+
 func TestRegistryDegradedRoles(t *testing.T) {
 	start := time.Date(2026, 10, 2, 8, 0, 0, 0, time.UTC)
 	clk := clock.NewFake(start)

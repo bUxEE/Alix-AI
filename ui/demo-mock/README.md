@@ -8,10 +8,10 @@ A scripted, offline stand-in for the AlixAI gateway, for the demo apps of the Vu
 // vite.config.ts of a demo app
 import { alixDemoMock } from "../demo-mock/src/plugin";
 
-export default defineConfig({ plugins: [vue(), alixDemoMock()] }); // options: { basePath?, pace?, maxFileMb? }
+export default defineConfig({ plugins: [vue(), alixDemoMock()] }); // options: { basePath?, pace?, maxFileMb?, voice?, dictation? }
 ```
 
-The browser code imports `../demo-mock/src/index` for `demoPrompts` (the "try these" buttons), `DEMO_PATHS`, `DEMO_THREAD_ID` and a few helpers: `demoUploader`, `fetchDemoPreview` (returns a `blob:` URL), `demoVoiceOptions`, and `fetchDemoJson`. That file is browser safe.
+The browser code imports `../demo-mock/src/index` for `demoPrompts` (the "try these" buttons), `DEMO_PATHS`, `DEMO_THREAD_ID` and a few helpers: `demoUploader`, `fetchDemoPreview` (returns a `blob:` URL), `demoVoiceOptions`, `demoDictationClient`, and `fetchDemoJson`. That file is browser safe.
 
 - **Vue kit:**
   - `createAguiClient({ endpoint: DEMO_PATHS.agui })`, and `threadId` (start with `DEMO_THREAD_ID`).
@@ -24,6 +24,8 @@ The browser code imports `../demo-mock/src/index` for `demoPrompts` (the "try th
   - Pass `renderPreview` (fed by `fetchDemoPreview`) to draw image attachments. Pass `showProgress` to draw the progress line.
 - **Voice (both kits):**
   - `voice.createVoiceSession(demoVoiceOptions(threadId, { language }))`. The mock asks for no token header.
+- **Dictation (both kits):**
+  - `demoDictationClient()` for `voice: "dictation"` on the chat panel. Import the button from `@alixai/vue/dictation` or `@alixai/react/dictation` when the host wants record-to-text without conversation mode.
 
 ## What it serves
 
@@ -34,6 +36,7 @@ The browser code imports `../demo-mock/src/index` for `demoPrompts` (the "try th
 | `POST /v1/files`, `GET\|DELETE /v1/files/{id}`, `/content`, `/preview` | Multipart upload. The type is sniffed, uploads are limited to 8 MB, and SVG and HTML are refused. Raster and text files have previews. Fixtures (PNG floor plan and chart, PDFs, CSV) are generated at start. |
 | `GET\|PUT /v1/settings/user`, `GET /v1/settings/{effective,profiles,capabilities,integration-audit,providers}`, `GET /v1/rag/sources`, `POST /v1/rag/sources/reaudit`, `/healthz`, `/readyz` | Panel data of the shapes in `schemas/api`. |
 | `WS /v1/sessions/{id}/voice` | The voice protocol, in order:<ol><li>`session.started`</li><li>`capture.started`</li><li>interim transcripts</li><li>`transcript.final`</li><li>`turn.completed`</li><li>`response`</li><li>`playback.started`</li><li>the reply's own words as PCM chunks, recorded once with the machine's own voice (Windows speech, macOS `say`, `espeak-ng`) into the git-ignored `.voice-cache`, or silence where there is no voice</li><li>`playback.done`</li></ol>It also handles corrections, cancel and barge-in, and `?speak=false`. |
+| `GET /v1/dictations/capabilities`, `POST /v1/sessions/{id}/dictations` | Record-to-text (not the WebSocket). Capabilities report local STT; create accepts `audio/wav` PCM s16le mono 16 kHz and returns a scripted transcript. Silent or too-short clips answer `validation_failed` (`details.reason: silent`). Option `dictation: "disabled"` hides the control; `dictation: "unavailable"` answers 503. |
 | `GET\|POST /demo/conversations`, `DELETE /demo/conversations/{id}`, `GET /demo/files`, `/demo/copilotkit/info` | Mock-only helpers. |
 
 ## Prompts

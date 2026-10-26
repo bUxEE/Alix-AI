@@ -148,6 +148,9 @@ func (e *Engine) doRefresh(ctx context.Context, scope contracts.Scope, prov prov
 	form := url.Values{}
 	form.Set("grant_type", "refresh_token")
 	form.Set("refresh_token", rv.Reveal())
+	if p.Resource != "" {
+		form.Set("resource", p.Resource)
+	}
 	ts, err := e.tokenCall(ctx, scope, p, form)
 	if err != nil {
 		xe, ok := err.(*exchangeError)

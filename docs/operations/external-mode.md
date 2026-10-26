@@ -4,6 +4,8 @@ Status: written in task X-24 and updated in tasks X-26 and X-27, 2026-10-08. Des
 
 ## 0. Read this first: what external mode is
 
+For a chat-only (or STT-local) deployment with **no local LLM**, see [Light External deployments](guides/light-external.md): per-layer choice through `external_providers.routing`, including setups with no LocalAI at all.
+
 **External mode is optional, off by default, network-dependent and billed by the provider.**
 
 - **It is off.** With `external_providers.enabled` false (the default) AlixAI behaves exactly as Local mode: no external service is built, no connection is opened, every `/v1/providers` and `/v1/oauth` route answers `unavailable`. A binary built with `-tags noexternal` contains no external adapter at all.
@@ -18,14 +20,14 @@ Status: written in task X-24 and updated in tasks X-26 and X-27, 2026-10-08. Des
 | --- | --- |
 | Operator API (modes, egress policy, budgets, usage export, kill switch, credentials, billing acknowledgement, OAuth start and callback) | built, `alixai serve` provides it when the section below is enabled; writes are also checked inside the service (a mode, a provider-wide budget, the usage of the whole application, the kill switch and the deployment and application policy need a deployment operator) |
 | Credential service (encrypted file), egress guard, budgets, mode resolver, kill switch | built and used by that API |
-| Provider adapters | OpenAI, Anthropic, Gemini (API key, or OAuth token) and Meta (Model API or a hosted Llama endpoint) are built into the default binary. A Gemini profile uses the API key or the OAuth access token of the credential bound to it, chosen per call from the kind of the reference (the shared OAuth engine refreshes the token); no OAuth provider registration is configured in this release, so a Gemini connection is still made with a manual key. A manual key is validated against its own provider on submit (OpenAI and Meta: the model list; Anthropic and Gemini: one model, the Gemini key in the `x-goog-api-key` header and never in a URL); a key the provider rejects is refused and not stored, an unreachable provider stores nothing |
+| Provider adapters | OpenAI, Anthropic, Gemini (API key or OAuth), Meta, OpenRouter, xAI and Moonshot (Kimi) are built into the default binary. OAuth is off until `external_providers.oauth.providers.<id>` is enabled (presets: openai SIWC, gemini/google-stt, openrouter). A Gemini or OpenAI (SIWC) profile uses the API key or the OAuth access token of the bound credential, chosen per call from the kind of the reference (the shared OAuth engine refreshes tokens). Slash-bearing wire ids map through `meta_models` / `openrouter_models` / `xai_models` / `moonshot_models`. A manual key is validated against its own provider on submit; a key the provider rejects is refused and not stored |
 | Provider profile lifecycle | **operator commands**, section 3a (`alixai providers ...`), offline against the data directory |
 | Turn routing in `alixai serve` | the **controller** role is routed by `internal/dialogue/extmode` when the mode is External and `external_providers.routing` names profiles for it; under Hybrid the controller stays local. Everything else stays as it was |
 | Hybrid realisation (`internal/modes/hybrid`) | **called** from the response step of the dialogue core (`dialogue.ResponseRealiser`, implemented by the provider selector `serve` builds the engine with). In Hybrid mode, when `routing.realisation` names profiles, the directive goes to Hybrid, which applies its fail-closed rules (egress policy, `hybrid_fact_class`, budget, verification) and answers from the provider, the local model or the template; model text is verified again in the core. In Local and External mode, with the kill switch engaged, or with nothing routed, the seam declines and the reply is written exactly as before. `hybrid_fact_class` empty keeps every Hybrid turn local |
 | RAG answers | **External mode** answers a question from the excerpts the egress guard lets through (`allow_excerpt` sources of an allowed class) with the external answerer, over the same citation resolver as the local one, so every reference opens through `/v1/rag/citations`; a source that must stay local gives `no_supported_evidence` with reason `egress_restricted` and nothing is sent. **Local and Hybrid** answer locally, unchanged |
 | Scheduled terms revalidation | runs: `providerreg.revalidate` is queued at start and every `revalidate_every` (default one hour) on the RAG stack's queue and pool, under the service identity `providerreg.revalidate`, class 6 (maintenance) |
 | Budget sweep of stale reservations | runs: `providerbudget.sweep` is queued at start and every `budget_sweep_every` (default 15 minutes) for each application with a live profile, on the same queue and pool, under the service identity `providerbudget.sweep`, class 6 (maintenance); it marks timed-out reservations expired and drops their holds (a timed-out hold was already ignored, so the sweep changes no figure) |
-| Multimodal text gate (`extmodal.TextEgress` over the egress guard) | built; no vision, image or speech route uses it yet, and the voice factory is wired (X-28): with external mode on, the speech roles named under `routing` (`stt`, `tts`) go through the `extmodal` gates (local transcript and local recogniser first; external speech only for attested, verified response text, after the modality, raw-audio and egress checks). It stays dormant: no adapter provides external speech clients yet, every modality is off until a modality policy enables it, every reply of every acknowledged turn is attested (M9-02: `dialogue.Deps.OnReply` fires after the engine's own verify step with the text that passed `verify.Realise`, or the template that replaced it, and `serve` wires it to `extmodal.Service.Attest`), so a reply the engine wrote itself is as speakable as one Hybrid wrote; text that was not attested (a defect shown after the engine, a response with no provenance, text that fails the verifier) is displayed and never spoken, and an external synthesis of it is refused and falls back to the local voice only when the role's `local_fallback` names `egress_denied`. Raw audio goes to an external recogniser only for a call whose context carries `extmodal.WithVADSegmented`, which no session sets today, so external recognition stays off; and even then only when the data-egress guard allows the audio, as a governed `audio_content` part of the class its session states (`extmodal.WithAudioClass`; no class is unknown and never leaves) under the egress policy's `audio` setting (off by default, section 4), with a recorded decision, and the provider budget reserves the call at the profile's `audio_seconds_in` price for the length of the audio rounded up to whole seconds (no price or no known length: refused), then settles it. Spoken text, vision questions and image prompts are sent as category `user_message` at class `internal`, and a file excerpt as `file_content` at class `confidential`, which leaves only where every level of the egress policy turns its `files` setting on up to `confidential` (section 4) |
+| Multimodal / speech gate (`extmodal`) | built. With external mode on, routed `stt` / `tts` go through the gates (local first). External TTS still needs attested verified text. External STT adapters are registered for OpenAI, Google STT v2, Deepgram and ElevenLabs (`adapters/external/stt/...`); a profile with role `stt` and an active credential can serve them. Raw audio leaves only when segmented (`WithVADSegmented` for voice conversation, or `WithUserSegmented` for dictation), modality and raw-audio policy admit it, the data-egress guard allows the audio class under the egress policy's `audio` setting (**off by default**, section 4), and the provider budget reserves `audio_seconds_in` for the server-computed duration rounded up (no price → refused). Dictation: `POST /v1/sessions/{id}/dictations` (see [voice integration](../integration/voice.md)). Spoken text, vision and file excerpts follow the same egress categories as before |
 | SDK helpers for these routes | in the SDKs (task X-14) |
 
 ## 1. Enabling it
@@ -52,7 +54,7 @@ External mode needs every item below. Missing one leaves the deployment local, w
      budget_sweep_every: 15m
    ```
 
-   Other keys: `anthropic_base_url`, `gemini_base_url`, `meta_base_url`, `meta_dialect` (`meta-model-api`, the default, or `openai-compatible` for a hosted Llama endpoint, which needs `meta_base_url`), `meta_api_prefix` and `meta_models` (maps the slash-free model id of a profile to the wire id, because a registry model id cannot contain `/`). Every base URL is a bare origin.
+   Other keys: `anthropic_base_url`, `gemini_base_url`, `meta_base_url`, `meta_dialect` (`meta-model-api`, the default, or `openai-compatible` for a hosted Llama endpoint, which needs `meta_base_url`), `meta_api_prefix` and `meta_models` (maps the slash-free model id of a profile to the wire id, because a registry model id cannot contain `/`), plus `openrouter_base_url` / `xai_base_url` / `moonshot_base_url` and matching `*_models` maps. Every base URL is a bare origin. OAuth catalog and env/file credential refs: section 3.
 
    Operators are read from these two lists and from nothing a token says: a token claiming an admin role is as powerless as one claiming nothing, and with both lists empty nobody can call any route. A deployment operator is also a tenant administrator. Every entry names the application whose verified token the operator arrives with: each application's issuer chooses the subject (`sub`) it signs, so `usr_ops` of `app_console` and `usr_ops` of any other application are different principals, and only the listed one passes. An entry without the application (`usr_ops`, `ten_acme/usr_admin`, the form of earlier builds) is refused at start-up.
 3. Check the file: `alixai config check -config file.yaml` (prints `config ok`; a malformed operator entry stops it).
@@ -97,7 +99,38 @@ Routes are for operators only. A `GET /v1/providers` lists the application's reg
 
 **Billing acknowledgement first (section 9).** `POST /v1/providers/{provider}/billing-notice/ack` with `{"notice_version": "...", "consumer_subscription_is_not_api_access": true, "separate_api_billing_understood": true}`. Both confirmations must be true and the version must be the profile's current one; a changed notice invalidates the acknowledgement.
 
-**OAuth is preferred where the provider offers it.** `POST /v1/oauth/{provider}/start` returns the authorization URL and the consent (provider, account, scopes, data access); the host opens it in the user's browser; the host relays the redirect with `POST /v1/oauth/callback` (`redirect_uri`, `query`). The flow uses PKCE, a single-use `state` and a bound redirect URI, and tokens go only to the credential service. **No OAuth provider registration is configured in this release, so `start` answers `validation_failed` with reason `manual_fallback`**: use the manual key.
+**OAuth is preferred where the provider officially offers it** (ADR [0038](../decisions/0038-popup-oauth-and-provider-catalog.md)). Enable a catalog entry under `external_providers.oauth` (off by default; unknown provider keys are refused):
+
+```yaml
+external_providers:
+  oauth:
+    popup_origins: ["https://console.example.com"]   # exact origins for presentation popup; empty refuses popup
+    providers:
+      openai:      { enabled: true, loopback: true }                 # SIWC: loopback only; no client_id needed
+      gemini:      { enabled: true, client_id: "...", client_secret_ref: "cred_...", redirect_uris: ["https://…/cb"], loopback: true }
+      google-stt:  { enabled: true, client_id: "..." }               # same Google client shape; cloud-platform scope
+      openrouter:  { enabled: true, loopback: true }
+```
+
+`POST /v1/oauth/{provider}/start` returns the authorization URL and consent. With `presentation: "popup"` and `opener_origin` on the allowlist, the response includes `flow_id` / `poll_interval_ms`; poll `GET /v1/oauth/flows/{flow_id}` (cancel with `DELETE`). With `callback: "host"` the host relays `POST /v1/oauth/callback`. With `callback: "loopback"` send redirect_uri `http://127.0.0.1/oauth/loopback`; AlixAI binds an ephemeral `127.0.0.1` listener, completes the exchange, and serves a minimal callback page (postMessage to the exact opener origin, or a close message for the CLI). Tokens and issued keys go only to the credential service.
+
+| Provider | How to connect | Operator must register |
+| --- | --- | --- |
+| OpenAI (SIWC) | Browser login, **loopback only** (same-machine). Plan usage is the signed-in person's ChatGPT plan; the credential resolves only for that application+principal (`--for` on CLI login). Remote deployments: manual key. | Nothing (dynamic client registration). Persist `ext_agent_host_id` is automatic under `<data_dir>/external/siwc_host_id`. |
+| Gemini / google-stt | Browser login (loopback Desktop client or host https Web client). Gemini OAuth uses `generative-language.retriever` only; google-stt uses `cloud-platform` (whole Cloud project — prefer a dedicated project). | Your own Google OAuth client id (+ secret for Web) in the catalog entry. |
+| OpenRouter | Browser PKCE → issued API key (`oauth_issued_key`, no refresh). Prefer `127.0.0.1` (AlixAI refuses `localhost`). | Nothing beyond enabling the catalog entry. |
+| Anthropic, xAI, Moonshot | **No** official third-party OAuth; use a manual key (or reach their models through OpenRouter). | — |
+
+Operator CLI (offline against the data directory, same pattern as other `alixai providers` commands):
+
+- `alixai providers login <openai|gemini|google-stt|openrouter> -operator … -application …` — opens the system browser on a loopback flow (`--no-browser` prints the URL only). For **openai** (SIWC), `--for <application>/<principal>` is required and must match `-application`: that principal owns the ChatGPT plan binding. Other providers ignore `--for`.
+- `alixai providers credential add-ref -provider … -label … (-env ALIXAI_SECRET_… \| -file name)` — registers an env or secret-directory file reference (value re-read on every use).
+
+**Three ways to add an API key** (all end in `internal/credentials`; never put a literal key in YAML — `config check` refuses members that look like one):
+
+1. Settings UI → `PUT /v1/providers/{provider}/credential` (relayed by the host server).
+2. Env / mounted file via config: `external_providers.credentials: [{provider, label, env: ALIXAI_SECRET_ANTHROPIC_KEY, application, tenant}]` or `{…, file: anthropic.key, application, tenant}` (file is a name under `<data_dir>/external/secrets/`). Bound at serve start when application and tenant are set.
+3. CLI `alixai providers credential add-ref` as above.
 
 **Manual key (protected fallback).** `PUT /v1/providers/{provider}/credential` with `{"key": "...", "label": "...", "expires_at": "...", "scopes": []}`, sent only from an authenticated server-side settings flow, never from browser code. AlixAI validates the key with one minimally scoped request (the model list), stores it in the encrypted file and answers with the connection status only; afterwards only a masked fingerprint exists. A manual key can grant broader access than OAuth scopes, and the status says so (`broader_than_oauth_scopes`). Rotation is a new submit; revocation is the disconnect below. A key is never in a prompt, a log, a URL or an error.
 
@@ -117,6 +150,20 @@ This is the DATA gate. A level with no policy is disabled; a RAG source with no 
 - Every decision is an audit record without content; a denied request is `permission_denied` and the model cannot override it.
 
 Before a request is made a host can show the user what would leave: `GET /v1/providers/{provider}/disclosure?role=&source=&estimated_toks_in=&max_output_toks=` returns the provider and model, the data categories, whether RAG excerpts are included, the stated retention and training terms (`unknown` stays `unknown`), an upper-bound cost, the budget status and whether it will fail or fall back.
+
+### Routing speech-to-text (`stt`)
+
+Put a profile id under `external_providers.routing.stt` (same shape as `controller`). The profile must list role `stt`, declare media handling for audio, state retention, and set an `audio_seconds_in` price (no price → external STT is refused as not estimable). Supported provider ids: `openai` (POST `/v1/audio/transcriptions`), `google-stt` (Speech-to-Text v2 Recognize / Chirp 3), `deepgram` (POST `/v1/listen`), `elevenlabs` (POST `/v1/speech-to-text`). Credentials use the existing manual key flow (Google may use the `google-stt` OAuth connection once connected).
+
+**Audio egress for dictation.** Raw audio stays home until the egress policy's **`audio` setting** is enabled at every required level (deployment, application, tenant, workspace); it stays **off by default**. Use `PUT /v1/providers/egress-policy` with body fields `level`, `expected_revision`, and `audio: { "enabled": true, "max_class": "public" | "internal" | "confidential" }` (same shape as `files`, section 4). `max_class` must be at least the class dictation attaches to the clip. That class is `dictation.audio_class` in config (`public` | `internal` | `confidential`, default `internal`; override `ALIXAI_DICTATION_AUDIO_CLASS`). Example:
+
+```yaml
+dictation:
+  max_seconds: 60
+  audio_class: internal   # must be ≤ every level's audio.max_class
+```
+
+Dictation marks the clip user-segmented; voice conversation still needs a VAD cut. See [light-external](guides/light-external.md) for the all-external preset.
 
 ## 5. Application packages
 
@@ -146,7 +193,7 @@ The text below is the recommended wording. AlixAI does not ship a notice: the te
 
 | Provider | Billing-boundary text |
 | --- | --- |
-| OpenAI | A ChatGPT subscription does not include API access. OpenAI API usage is a separate product with its own billing, keys and limits. Signing in with ChatGPT does not give AlixAI an API credential. |
+| OpenAI | A ChatGPT subscription does not include separate API-key billing. For same-machine deployments, Sign in with ChatGPT (SIWC) may use the signed-in person's own ChatGPT plan for eligible Responses API calls (`store: false`); that connection is bound to that principal only. Remote or multi-user hosts use a manual OpenAI API key, billed separately. |
 | Anthropic | A Claude subscription does not include API access. Anthropic Console / API usage is a separate product with its own billing and keys. |
 | Google Gemini | Gemini API access uses API credentials tied to a Google Cloud project; quota and billing follow that project's configuration, not a consumer Gemini or Google One plan. |
 | Meta | Consumer Meta AI access must not be assumed to grant Meta Model API or hosted Llama access. Check that your endpoint and account actually offer the API you configure. |

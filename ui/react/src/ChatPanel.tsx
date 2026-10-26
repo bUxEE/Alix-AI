@@ -1,11 +1,15 @@
 import { CopilotChat, CopilotKitProvider, CopilotPopup, CopilotSidebar } from "@copilotkit/react-core/v2";
-import { isValidElement, useEffect, useMemo, useState } from "react";
-import type { ComponentProps, ReactElement, ReactNode } from "react";
+import type { voice } from "@alixai/sdk";
+import { isValidElement, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import type { ComponentProps, ReactElement, ReactNode, RefObject } from "react";
 import { useAlixAISuggestions } from "@alixai/copilotkit-adapter/react";
+import { AlixDictationButton, insertIntoCopilotTextarea, type VoiceModeOption } from "./dictation/index.js";
 import { AlixProvider, useAlixText } from "./i18n/context.js";
 import type { AlixProviderProps } from "./i18n/context.js";
 import { alixProviderProps, useAlixConfirmation } from "./register.js";
 import type { AlixKitOptions } from "./register.js";
+import { AlixVoiceButton } from "./voice/AlixVoiceButton.js";
 
 // The panel is CopilotKit's chat. What the kit adds around it: the provider props with no cloud and no telemetry, the AlixAI
 // renderers, the confirmation sheet for interrupts, the follow-up suggestions of the core, the theme tokens, and the
@@ -26,6 +30,22 @@ export interface AlixChatPanelProps extends Pick<AlixProviderProps, "locale" | "
   defaultOpen?: boolean;
   /** More props for CopilotKit's provider (headers, credentials, properties). Cloud keys are always removed. */
   providerProps?: Omit<ProviderProps, "runtimeUrl" | "children">;
+  /**
+   * Voice surface on the composer. Default `off` (chat only).
+   * `dictation` shows record-to-text; `conversation` shows the talk button for voice-chat mode.
+   */
+  voice?: VoiceModeOption;
+  /** Required when `voice` is `dictation`: the SDK dictation client for this deployment. */
+  dictationClient?: voice.DictationClient;
+  /** BCP 47 hint for dictation transcription. */
+  language?: string;
+  onVoiceStart?: () => void;
+  onVoiceStop?: () => void;
+  onVoiceCancel?: () => void;
+  /** Replaces the default dictation control when `voice` is `dictation`. */
+  dictationButton?: ReactNode;
+  /** Replaces the default talk control when `voice` is `conversation`. */
+  voiceButton?: ReactNode;
   children?: ReactNode;
 }
 
@@ -110,6 +130,93 @@ const messageView = {
   },
 };
 
+const ChatComposerVoice = ({
+  panelRef,
+  voice,
+  threadId,
+  dictationClient,
+  language,
+  onVoiceStart,
+  onVoiceStop,
+  onVoiceCancel,
+  dictationButton,
+  voiceButton,
+}: {
+  panelRef: RefObject<HTMLElement | null>;
+  voice: VoiceModeOption;
+  threadId?: string;
+  dictationClient?: voice.DictationClient;
+  language?: string;
+  onVoiceStart?: () => void;
+  onVoiceStop?: () => void;
+  onVoiceCancel?: () => void;
+  dictationButton?: ReactNode;
+  voiceButton?: ReactNode;
+}): ReactElement | null => {
+  const [host, setHost] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (voice === "off") {
+      setHost(null);
+      return undefined;
+    }
+    const panel = panelRef.current;
+    if (panel === null) return undefined;
+    let mount: HTMLSpanElement | undefined;
+    const attach = (): void => {
+      const send = panel.querySelector('[data-testid="copilot-send-button"]');
+      if (!(send instanceof HTMLElement) || !(send.parentElement instanceof HTMLElement)) {
+        setHost(null);
+        return;
+      }
+      if (mount === undefined || !mount.isConnected) {
+        mount = document.createElement("span");
+        mount.className = "alix-composer-voice-mount";
+        send.parentElement.insertBefore(mount, send);
+      }
+      setHost(mount);
+    };
+    attach();
+    const observer = new MutationObserver(attach);
+    observer.observe(panel, { childList: true, subtree: true });
+    return () => {
+      observer.disconnect();
+      mount?.remove();
+      setHost(null);
+    };
+  }, [panelRef, voice, threadId, dictationClient, language]);
+
+  if (voice === "off" || host === null) return null;
+
+  const sessionId = threadId ?? "";
+  const dictation =
+    voice === "dictation" && dictationClient !== undefined && sessionId !== ""
+      ? (dictationButton ?? (
+          <AlixDictationButton
+            client={dictationClient}
+            language={language}
+            sessionId={sessionId}
+            onTranscript={(text) => insertIntoCopilotTextarea(panelRef.current, text)}
+          />
+        ))
+      : null;
+
+  const talk =
+    voice === "conversation"
+      ? (voiceButton ?? (
+          <AlixVoiceButton
+            onStart={onVoiceStart}
+            onStop={onVoiceStop}
+            onCancel={onVoiceCancel}
+          />
+        ))
+      : null;
+
+  const node = dictation ?? talk;
+  if (node === null) return null;
+  return createPortal(node, host);
+};
+
 const Chat = ({
   agentId,
   threadId,
@@ -155,7 +262,16 @@ export const AlixChatPanel = ({
   showState,
   onContinueInApp,
   components,
+  voice = "off",
+  dictationClient,
+  language,
+  onVoiceStart,
+  onVoiceStop,
+  onVoiceCancel,
+  dictationButton,
+  voiceButton,
 }: AlixChatPanelProps): ReactElement => {
+  const panelRef = useRef<HTMLDivElement>(null);
   // CopilotKit wants its renderer arrays stable: a new array on every render is an error and remounts every drawn activity.
   const provider = useMemo(
     () =>
@@ -175,7 +291,11 @@ export const AlixChatPanel = ({
   );
   return (
     <AlixProvider {...(locale !== undefined && { locale })} {...(messages !== undefined && { messages })} {...(timeZone !== undefined && { timeZone })}>
-      <Panel theme={theme} {...(locale !== undefined && { locale })}>
+      <Panel
+        ref={panelRef}
+        theme={theme}
+        {...(locale !== undefined && { locale })}
+      >
         <CopilotKitProvider {...provider}>
           <Chat
             agentId={agentId}
@@ -183,6 +303,18 @@ export const AlixChatPanel = ({
             {...(threadId !== undefined && { threadId })}
             {...(defaultOpen !== undefined && { defaultOpen })}
             {...(onContinueInApp !== undefined && { onContinueInApp })}
+          />
+          <ChatComposerVoice
+            panelRef={panelRef}
+            voice={voice}
+            {...(threadId !== undefined && { threadId })}
+            {...(dictationClient !== undefined && { dictationClient })}
+            {...(language !== undefined && { language })}
+            {...(onVoiceStart !== undefined && { onVoiceStart })}
+            {...(onVoiceStop !== undefined && { onVoiceStop })}
+            {...(onVoiceCancel !== undefined && { onVoiceCancel })}
+            {...(dictationButton !== undefined && { dictationButton })}
+            {...(voiceButton !== undefined && { voiceButton })}
           />
           {children}
         </CopilotKitProvider>
@@ -207,12 +339,23 @@ const useSystemDark = (): boolean => {
 
 // CopilotKit's own stylesheet switches its dark variants (the input, the menus) on a `.dark` ancestor, not on the colour scheme:
 // the panel carries that class whenever its tokens are dark, so CopilotKit's parts and the AlixAI parts change together.
-const Panel = ({ theme, locale, children }: { theme: "auto" | "light" | "dark"; locale?: string; children: ReactNode }): ReactElement => {
+const Panel = ({
+  ref,
+  theme,
+  locale,
+  children,
+}: {
+  ref?: RefObject<HTMLDivElement | null>;
+  theme: "auto" | "light" | "dark";
+  locale?: string;
+  children: ReactNode;
+}): ReactElement => {
   const text = useAlixText().chat;
   const systemDark = useSystemDark();
   const dark = theme === "dark" || (theme === "auto" && systemDark);
   return (
     <div
+      ref={ref}
       className={dark ? "alix-root alix-panel dark" : "alix-root alix-panel"}
       role="region"
       aria-label={text.label}

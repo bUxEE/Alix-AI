@@ -1,0 +1,42 @@
+# Voice language pack manifest (schema: pack-manifest.schema.json, urn:alixai:schema:voice:language-pack:v1).
+# STT-only multilingual candidate (ADR 0040): Whisper large-v3 for Performance only. Disk ~1.0 GB (q5_0);
+# expected worker RSS is well above the Balanced STT row (1000 MiB), so Balanced is not the target.
+# Schema language is mul. No VAD role for dictation; conversation mode still uses Silero VAD (ADR 0015).
+id: whisper-large-v3-stt
+name: "Multilingual speech input (Whisper large-v3 q5_0, whisper.cpp)"
+version: "1"
+language: mul
+status: candidate
+models:
+  stt:
+    name: "Whisper large-v3, multilingual, Q5_0 (whisper.cpp ggml)"
+    engine: whisper.cpp
+    registry_id: null
+    files:
+      - name: ggml-large-v3-q5_0.bin
+        url: https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-large-v3-q5_0.bin
+        revision: 5359861c739e955e79d9a303bcbc70fb988958b1
+        size_bytes: 1081140203
+        sha256: d75795ecff3f83b5faa89d1900604ad8c780abd5739fae406de19f23ecd98ad1
+    licence:
+      spdx: MIT
+      url: https://huggingface.co/ggerganov/whisper.cpp/blob/5359861c739e955e79d9a303bcbc70fb988958b1/README.md
+      redistribution_notes: "MIT, declared by the whisper.cpp model repository card (licence mit on the Hub, checked 2026-10-26); upstream OpenAI Whisper weights are MIT. The ggml file is a third-party conversion by the whisper.cpp project. Size and sha256 are the Hugging Face LFS oid and byte size at the pinned revision (checked 2026-10-26). AlixAI does not bundle weights. Final sign-off is a human licence review."
+quality:
+  stt_wer: null
+  tts_time_to_first_audio_ms: null
+  tts_real_time_factor: null
+  measurement: null
+resources:
+  disk_bytes: 1081140203
+  steady_rss_mb: null
+  peak_rss_mb: null
+  cpu_cores: null
+notes:
+  - "Candidate STT-only pack (ADR 0040). Performance-only Whisper option. Opt-in until voicebench; never a default while candidate."
+  - "large-v3 multilingual (en, it, and the other Whisper languages). Pin is q5_0 (~1.01 GB). Full f16 ggml-large-v3.bin is ~2.88 GB upstream; no q8_0 file was published at this revision in ggerganov/whisper.cpp."
+  - "Target profile: Performance only. Memory reason: ~1.01 GB weights alone; with whisper.cpp overhead the worker is expected to exceed the Balanced STT budget (1000 MiB, docs/operations/resource-budgets.md). Balanced should use whisper-turbo-stt or parakeet-stt instead. RSS unmeasured until voicebench."
+  - "LocalAI: backend whisper, parameters.model: ggml-large-v3-q5_0.bin. CPU via whisper.cpp; GPU optional."
+  - "distil-large-v3 is not shipped: English-only, so it cannot serve Italian. See ADR 0040."
+  - "ONE-LINE FLIP after gates: status qualified-emulated and voice.active_pack = whisper-large-v3-stt for Performance deployments that choose this over Parakeet/turbo."
+  - "Dictation: no VAD in this pack. Conversation mode: keep Silero VAD in front of STT (ADR 0015)."

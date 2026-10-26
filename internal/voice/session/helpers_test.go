@@ -302,6 +302,9 @@ func newHarness(t *testing.T, opts ...harnessOpt) *harness {
 	if err := voice.Register(h.reg, providers.RoleSTT, h.stt); err != nil {
 		t.Fatal(err)
 	}
+	if err := voice.Register(h.reg, providers.RoleVAD, fake.New(fake.WithName("fake-vad"))); err != nil {
+		t.Fatal(err)
+	}
 	if h.tts != nil {
 		if err := voice.Register(h.reg, providers.RoleTTS, h.tts); err != nil {
 			t.Fatal(err)
@@ -509,7 +512,7 @@ func timeFact(field, v string) act.Fact {
 type testCatalog struct{}
 
 func (testCatalog) List(context.Context) ([]profile.Pack, error) {
-	return []profile.Pack{{ID: "en", Language: "en", Roles: []providers.Role{providers.RoleSTT, providers.RoleTTS}}}, nil
+	return []profile.Pack{{ID: "en", Language: "en", Roles: []providers.Role{providers.RoleSTT, providers.RoleTTS, providers.RoleVAD}}}, nil
 }
 
 func newTestPacks(t testing.TB) *profile.Packs {

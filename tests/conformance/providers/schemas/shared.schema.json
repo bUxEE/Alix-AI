@@ -276,9 +276,9 @@
     },
     "credentialKind": {
       "title": "Credential kind",
-      "description": "oauth: browser-based OAuth authorization (preferred whenever the provider supports it). api_key: manual API key or token entry, a fallback for providers or deployments without a suitable OAuth flow.",
+      "description": "oauth: browser-based OAuth authorization that yields access and refresh tokens (preferred whenever the provider supports it). api_key: manual API key or token entry, a fallback for providers or deployments without a suitable OAuth flow. oauth_issued_key: the user completed a browser OAuth (or PKCE) login and the provider issued a user-controlled API key rather than access/refresh tokens (for example OpenRouter); connection status can say connected via browser login without claiming a refreshable OAuth token pair.",
       "type": "string",
-      "enum": ["oauth", "api_key"]
+      "enum": ["oauth", "api_key", "oauth_issued_key"]
     },
     "connectionWarning": {
       "title": "Connection warning",

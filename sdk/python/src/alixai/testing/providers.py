@@ -33,7 +33,7 @@ PROVIDERS_OPERATIONS = frozenset(
         "listProviders", "putProviderCredential", "deleteProviderConnection", "ackProviderBillingNotice", "getProviderDisclosure",
         "getProviderMode", "putProviderMode", "getProviderEgressPolicy", "putProviderEgressPolicy", "getProviderBudgets",
         "putProviderBudget", "exportProviderUsage", "getProviderKillSwitch", "putProviderKillSwitch", "startProviderOAuth",
-        "completeProviderOAuth",
+        "completeProviderOAuth", "getProviderOAuthFlow", "cancelProviderOAuthFlow",
     }
 )
 
@@ -108,6 +108,20 @@ class _Flow:
     expires: float
 
 
+@dataclass
+class _PopupFlow:
+    provider: str
+    tenant: str
+    principal: str
+    application: str
+    workspace: str
+    status: str
+    updated: float
+
+
+_POPUP_FLOW_ID = "oaf_01J0000000000000000000000T"
+
+
 class ProvidersFake:
     """The state and the handlers of the providers area. Created and driven by :class:`FakeAlixAIServer`."""
 
@@ -126,6 +140,7 @@ class ProvidersFake:
         self.budgets: list[Json] = []
         self.spent: dict[str, tuple[int, int]] = {}
         self.flows: dict[str, _Flow] = {}
+        self.popup_flows: dict[str, _PopupFlow] = {}
         self.usage: Json = {"records": [], "totals": []}
 
     def configure(self, config: ProvidersConfig) -> None:
@@ -504,7 +519,7 @@ class ProvidersFake:
         seed = self._provider_or_refusal(params)
         if isinstance(seed, httpx.Response):
             return seed
-        if not self._closed(body, {"capabilities", "redirect_uri", "reauthorize", "switch_account", "label"}):
+        if not self._closed(body, {"capabilities", "redirect_uri", "reauthorize", "switch_account", "label", "presentation", "callback", "opener_origin"}):
             return self._bad()
         caps, redirect = body.get("capabilities"), body.get("redirect_uri")
         if not isinstance(caps, list) or not 1 <= len(caps) <= 64 or not isinstance(redirect, str) or not 1 <= len(redirect) <= 512:
@@ -517,16 +532,51 @@ class ProvidersFake:
         url = "https://auth.fake.test/authorize?" + urlencode(
             {"response_type": "code", "state": state, "code_challenge": "ch" + random_segment(15), "code_challenge_method": "S256", "nonce": "no" + random_segment(6), "redirect_uri": redirect}
         )
-        return self._ok(
-            {
-                "authorization_url": url, "redirect_uri": redirect, "expires_at": self._stamp(expires),
-                "consent": {
-                    "provider_name": seed.id, "account": {"account_id": None, "organization_id": None, "project_id": None},
-                    "scopes": [{"name": "model.request", "description": "Send model requests", "data_access": "the permitted request content"}],
-                    "data_access": ["the permitted request content"], "reauthorization": bool(body.get("reauthorize")), "switch_account": body.get("switch_account") is True,
-                },
-            }
-        )
+        out: Json = {
+            "authorization_url": url, "redirect_uri": redirect, "expires_at": self._stamp(expires),
+            "consent": {
+                "provider_name": seed.id, "account": {"account_id": None, "organization_id": None, "project_id": None},
+                "scopes": [{"name": "model.request", "description": "Send model requests", "data_access": "the permitted request content"}],
+                "data_access": ["the permitted request content"], "reauthorization": bool(body.get("reauthorize")), "switch_account": body.get("switch_account") is True,
+            },
+        }
+        if body.get("presentation") == "popup":
+            self.popup_flows[_POPUP_FLOW_ID] = _PopupFlow(
+                seed.id, scope.tenant_id, scope.principal_id, scope.application_id, scope.workspace_id, "pending", self._s._now(),
+            )
+            out["flow_id"] = _POPUP_FLOW_ID
+            out["poll_interval_ms"] = 1000
+        return self._ok(out)
+
+    def _popup_or_not_found(self, scope: "_Scope", params: dict[str, str]) -> "tuple[_PopupFlow, str] | httpx.Response":
+        flow_id = params.get("flow_id", "")
+        flow = self.popup_flows.get(flow_id)
+        if (
+            flow is None
+            or flow.principal != scope.principal_id
+            or flow.tenant != scope.tenant_id
+            or flow.application != scope.application_id
+            or flow.workspace != scope.workspace_id
+        ):
+            return self._s._problem("validation_failed", "no such flow", status=404, details={"reason": "not_found"})
+        return flow, flow_id
+
+    def _getProviderOAuthFlow(self, scope: "_Scope", params: dict[str, str], request: httpx.Request, body: Any) -> httpx.Response:
+        found = self._popup_or_not_found(scope, params)
+        if isinstance(found, httpx.Response):
+            return found
+        flow, flow_id = found
+        return self._ok({"flow_id": flow_id, "provider": flow.provider, "status": flow.status, "updated_at": self._stamp(flow.updated)})
+
+    def _cancelProviderOAuthFlow(self, scope: "_Scope", params: dict[str, str], request: httpx.Request, body: Any) -> httpx.Response:
+        found = self._popup_or_not_found(scope, params)
+        if isinstance(found, httpx.Response):
+            return found
+        flow, _flow_id = found
+        if flow.status == "pending":
+            flow.status = "cancelled"
+            flow.updated = self._s._now()
+        return httpx.Response(204)
 
     def _completeProviderOAuth(self, scope: "_Scope", params: dict[str, str], request: httpx.Request, body: Any) -> httpx.Response:
         if not self._closed(body, {"redirect_uri", "query"}):
