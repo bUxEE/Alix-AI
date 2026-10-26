@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:providers:principal-llm:v1",
+  "title": "Principal LLM account",
+  "description": "The caller's own LLM bindings and status for the application (ADR 0041). Scope is the verified token's principal; never another person's.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["principal_id", "application_id", "bindings", "updated_at"],
+  "properties": {
+    "principal_id": {
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+    },
+    "application_id": {
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+    },
+    "bindings": {
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "maxItems": 3,
+      "items": { "$ref": "urn:alixai:schema:providers:principal-llm-binding:v1" }
+    },
+    "updated_at": {
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    }
+  }
+}

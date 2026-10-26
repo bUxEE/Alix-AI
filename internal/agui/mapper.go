@@ -33,6 +33,8 @@ const (
 
 	// DirectiveName is the name of the CUSTOM event that carries the dialogue directive.
 	DirectiveName = "alixai.directive"
+	// MemoryProposalName is the CUSTOM event for an assistant-proposed memory item (ADR 0042).
+	MemoryProposalName = "alixai.memory_proposal"
 
 	// ReasonConfirmation is the reason of the interrupt of a prepared action.
 	ReasonConfirmation = "confirmation_required"
@@ -311,6 +313,8 @@ func identify(ev conversation.TurnEvent) (turnID string, seq int64, ok bool) {
 		return string(v.TurnID), int64(v.Seq), true
 	case conversation.BlockEvent:
 		return string(v.TurnID), int64(v.Seq), true
+	case conversation.MemoryProposalEvent:
+		return string(v.TurnID), int64(v.Seq), true
 	}
 	return "", 0, false
 }
@@ -366,6 +370,9 @@ func (m *Mapper) Map(ev conversation.TurnEvent) ([]Emitted, error) {
 		m.pendErr = &e // the run ends with it at the done event: a RUN_ERROR is terminal, and the text that explains it is still to come
 	case conversation.DoneEvent:
 		m.done(b, v)
+	case conversation.MemoryProposalEvent:
+		b.closeText()
+		b.emit(NewCustom(MemoryProposalName, rawJSON(v.Memory)))
 	}
 	if b.err != nil {
 		return b.fail(b.err)

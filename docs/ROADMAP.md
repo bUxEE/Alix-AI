@@ -19,6 +19,14 @@ and reviewed. See [Project status](../README.md#project-status) and
 - **OAuth for Anthropic / xAI / Kimi** if and when those vendors offer third-party OAuth for API access. Today:
   API key, or their models through OpenRouter's OAuth. Never impersonate another product's OAuth client.
 
+## Per-user accounts and memory (1.2 design; implementation next)
+
+- **Per-principal LLM accounts** ([ADR 0041](decisions/0041-per-principal-llm-accounts.md)): operator-approved catalog;
+  each user binds provider/model and their own credential; companies keep egress policy. Contract and stubs land in 1.2;
+  router Resolve and persistence follow.
+- **Long-term memory** ([ADR 0042](decisions/0042-long-term-memory.md)): per principal × tenant × workspace, consent-gated
+  proposals, fenced into context. Contract and stubs in 1.2; store and context assembly follow.
+
 ## Verification still owed (from the 1.0 "not done" list)
 
 - **Real hardware certification** of the Lite (and later Balanced) profile on a real 8 GB x86-64 machine;

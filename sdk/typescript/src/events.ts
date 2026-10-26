@@ -20,6 +20,7 @@ export const TURN_EVENT_TYPES = [
   "error",
   "done",
   "block",
+  "memory_proposal",
 ] as const satisfies readonly TurnEvent["type"][];
 
 type EventTypeName = (typeof TURN_EVENT_TYPES)[number];
@@ -66,6 +67,7 @@ const VARIANT_CHECKS: Record<EventTypeName, (event: Record<string, unknown>) => 
     return undefined;
   },
   block: (e) => (isRecord(e["block"]) && typeof e["block"]["type"] === "string" ? undefined : "block must be an object with a type"),
+  memory_proposal: (e) => (isRecord(e["memory"]) && typeof e["memory"]["id"] === "string" ? undefined : "memory_proposal.memory must be an object with an id"),
 };
 
 const isEventType = (value: unknown): value is EventTypeName =>

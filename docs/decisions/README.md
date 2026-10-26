@@ -17,8 +17,8 @@ how to back out. Write it before or with the change, not after.
 
 Numbers 0021-0028 hold the external-provider-mode decisions below, 0029 the decision layer, 0030 and 0031 its
 deployment and default-enable policy (written provisional by D-01, finalised by D-08), 0032-0038 are taken,
-0039 amends voice VAD rules for dictation, and 0040 is the Parakeet local-STT provisional. The next free
-number is 0041.
+0039 amends voice VAD rules for dictation, 0040 is the Parakeet local-STT provisional, and 0041–0042 are
+per-principal LLM accounts and long-term memory (1.2.0). The next free number is 0043.
 
 ## Index
 
@@ -85,5 +85,7 @@ changes Local mode. The architecture they sit in is [external-provider-mode.md](
 | [0028](0028-provider-change-and-terms-policy.md) | Support policy when a provider changes model behaviour or terms | provisional | 8 | Pin model version ids; 30-day review ceiling; quarantine on stale review or a changed terms hash, version or region; a changed version keeps the profile id and resets qualification | X-05 (implemented), schema follow-ups |
 | [0037](0037-integration-readiness-discovery.md) | Integration readiness discovery: operator-launched, model-assisted, evidence-bound, advisory | accepted | 1 | Deterministic scan plus a model that only proposes; every finding cites evidence a verifier re-reads; never certifies or activates; CLI first | M8 |
 | [0038](0038-popup-oauth-and-provider-catalog.md) | Popup OAuth and the provider catalog (SIWC, Google, OpenRouter) | accepted | — | Popup + postMessage + flow poll; SIWC loopback-only; Google operator client; OpenRouter issued key; Anthropic/xAI/Kimi key-only | 1.1.0 |
+| [0041](0041-per-principal-llm-accounts.md) | Per-principal LLM accounts and the provider catalog | accepted | — | Operator catalog (`credential_mode: per_principal`); bind per (application, principal); reserved tenant bucket for keys; resolve owner check for all kinds | 1.2.0 |
+| [0042](0042-long-term-memory.md) | Long-term memory (principal × tenant × workspace) | accepted | — | Consent-gated items; TurnEvent `memory_proposal` → AG-UI CUSTOM `alixai.memory_proposal`; no silent writes | 1.2.0 |
 
 Related: [architecture overview](../architecture/overview.md), [external provider mode](../architecture/external-provider-mode.md) and [module map](../architecture/module-map.md).

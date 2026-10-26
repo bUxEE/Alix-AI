@@ -3,6 +3,13 @@
 All notable changes to this package. The format follows [Keep a Changelog](https://keepachangelog.com/); versions follow semantic versioning once 1.0.0
 ships, with the rules of [compatibility.md](../../docs/policies/compatibility.md).
 
+## Unreleased / 1.2.0
+
+### Added
+
+- `client.me` (catalog, LLM bindings, credential, billing ack, OAuth start) and `client.memory` (list/create/patch/delete/confirm/reject) for ADR 0041 / 0042; routes may answer `unavailable` until the core wires them.
+- Migration note: upgrade the SDK before a core that emits `memory_proposal` turn events.
+
 ## 1.1.0 — 2026-10-26
 
 ### Added

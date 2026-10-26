@@ -70,6 +70,7 @@ export type {
   RichBlock,
   TokenEvent,
   TurnEvent,
+  MemoryProposalEvent,
 } from "./gen/conversation/index.js";
 export type * as types from "./gen/index.js";
 
@@ -78,3 +79,6 @@ export * as rag from "./rag/index.js";
 export * as voice from "./voice/index.js";
 export * as providers from "./providers/index.js";
 export * as decision from "./decision/index.js";
+export * as me from "./me/index.js";
+export * as memory from "./memory/index.js";
+

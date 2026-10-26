@@ -1,0 +1,209 @@
+# Long-term memory (ADR 0042, release 1.2.0). Scope is the verified token (principal × tenant ×
+# workspace). Implemented by internal/gateway/routes_v1_memory.go over MemoryService (Wanted;
+# unwired → unavailable). No silent writes; proposals confirm/reject only via structured calls.
+paths:
+  /v1/memory:
+    get:
+      operationId: listMemory
+      tags: [memory]
+      summary: List or search memory items in the token scope
+      description: |
+        Items for the verified application, tenant, workspace and principal only. Optional `q` and
+        `status` filter. Never another scope.
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 256
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [proposed, active, rejected]
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 256
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+      responses:
+        '200':
+          description: The page of items.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryList'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+    post:
+      operationId: createMemory
+      tags: [memory]
+      summary: Create a memory item on the user's explicit request
+      description: |
+        Host create after the user asked. Origin `user_explicit`, status `active`. No silent writes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemoryCreate'
+      responses:
+        '201':
+          description: The created item.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryItem'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '413':
+          $ref: ../openapi.yaml#/components/responses/PayloadTooLarge
+        '415':
+          $ref: ../openapi.yaml#/components/responses/UnsupportedMediaType
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/memory/{id}:
+    patch:
+      operationId: patchMemory
+      tags: [memory]
+      summary: Edit a memory item in the token scope
+      parameters:
+        - $ref: '#/components/parameters/MemoryId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemoryPatch'
+      responses:
+        '200':
+          description: The updated item.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryItem'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: '#/components/responses/MemoryNotFound'
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+    delete:
+      operationId: deleteMemory
+      tags: [memory]
+      summary: Delete a memory item in the token scope
+      parameters:
+        - $ref: '#/components/parameters/MemoryId'
+      responses:
+        '204':
+          description: Deleted (idempotent for an unknown id of this scope).
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/memory/{id}/confirm:
+    post:
+      operationId: confirmMemory
+      tags: [memory]
+      summary: Confirm an assistant-proposed memory item
+      description: |
+        Structured consent only. An expired proposal is `validation_failed` with `details.reason`
+        `memory_proposal_expired`. Typed chat text never confirms.
+      parameters:
+        - $ref: '#/components/parameters/MemoryId'
+      responses:
+        '200':
+          description: The item now active.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryItem'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: '#/components/responses/MemoryNotFound'
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/memory/{id}/reject:
+    post:
+      operationId: rejectMemory
+      tags: [memory]
+      summary: Reject an assistant-proposed memory item
+      parameters:
+        - $ref: '#/components/parameters/MemoryId'
+      responses:
+        '200':
+          description: The item now rejected.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryItem'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: '#/components/responses/MemoryNotFound'
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+components:
+  parameters:
+    MemoryId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^mem_[0-9A-HJKMNP-TV-Z]{26}$'
+  responses:
+    MemoryNotFound:
+      description: No memory item with this id in the token scope (`validation_failed` / not found).
+      content:
+        application/json:
+          schema:
+            $ref: ../openapi.yaml#/components/schemas/Error
+  schemas:
+    MemoryList:
+      $ref: ../../memory/memory-list.schema.json
+    MemoryItem:
+      $ref: ../../memory/memory-item.schema.json
+    MemoryCreate:
+      $ref: ../../memory/memory-create.schema.json
+    MemoryPatch:
+      $ref: ../../memory/memory-patch.schema.json

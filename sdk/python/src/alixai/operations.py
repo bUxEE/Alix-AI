@@ -61,6 +61,21 @@ OPERATIONS: Mapping[str, Operation] = {
     "completeProviderOAuth": Operation("POST", "/v1/oauth/callback", True),
     "getProviderOAuthFlow": Operation("GET", "/v1/oauth/flows/{flow_id}", True),
     "cancelProviderOAuthFlow": Operation("DELETE", "/v1/oauth/flows/{flow_id}", True),
+    # Per-principal LLM (ADR 0041) and long-term memory (ADR 0042).
+    "getProviderCatalog": Operation("GET", "/v1/providers/catalog", True),
+    "getPrincipalLlm": Operation("GET", "/v1/me/llm", True),
+    "putPrincipalLlmRole": Operation("PUT", "/v1/me/llm/{role}", True),
+    "deletePrincipalLlmRole": Operation("DELETE", "/v1/me/llm/{role}", True),
+    "putPrincipalProviderCredential": Operation("PUT", "/v1/me/providers/{provider}/credential", True),
+    "deletePrincipalProviderCredential": Operation("DELETE", "/v1/me/providers/{provider}/credential", True),
+    "ackPrincipalProviderBillingNotice": Operation("POST", "/v1/me/providers/{provider}/billing-notice/ack", True),
+    "startPrincipalOAuth": Operation("POST", "/v1/me/oauth/{provider}/start", True),
+    "listMemory": Operation("GET", "/v1/memory", True),
+    "createMemory": Operation("POST", "/v1/memory", True),
+    "patchMemory": Operation("PATCH", "/v1/memory/{id}", True),
+    "deleteMemory": Operation("DELETE", "/v1/memory/{id}", True),
+    "confirmMemory": Operation("POST", "/v1/memory/{id}/confirm", True),
+    "rejectMemory": Operation("POST", "/v1/memory/{id}/reject", True),
 }
 
 _PLACEHOLDER = re.compile(r"\{([a-z_]+)\}")

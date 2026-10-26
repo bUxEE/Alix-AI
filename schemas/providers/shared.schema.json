@@ -164,6 +164,24 @@
         "tts"
       ]
     },
+    "credentialMode": {
+      "title": "Credential mode",
+      "description": "How a catalog or registry profile obtains a credential (ADR 0041). tenant: the 1.1 operator/tenant binding. per_principal: the profile carries no credential; each principal binds their own. deployment_local: local models, no per-scope choice.",
+      "type": "string",
+      "enum": ["tenant", "per_principal", "deployment_local"]
+    },
+    "principalLlmRole": {
+      "title": "Principal LLM role",
+      "description": "Roles a principal may bind to a catalog profile (ADR 0041). TTS is reserved and not bindable here.",
+      "type": "string",
+      "enum": ["conversational_controller", "language_realization", "stt"]
+    },
+    "reservedPrincipalCredentialTenant": {
+      "title": "Reserved principal-credential tenant",
+      "description": "The frozen credential-ref.binding.tenant_id value used for principal-owned credentials (ADR 0041). Not a company tenant; never used for sessions or RAG.",
+      "type": "string",
+      "const": "alixai-principal-credential"
+    },
     "modality": {
       "title": "Modality",
       "description": "An input or output modality of a model.",

@@ -1,0 +1,359 @@
+# Per-principal LLM account and catalog (ADR 0041, release 1.2.0). Self-service only: the verified
+# token's principal. Implemented by internal/gateway/routes_v1_me.go over PrincipalLLMService (Wanted;
+# unwired → unavailable). Never returns a secret. Keys arrive through the host server only.
+paths:
+  /v1/providers/catalog:
+    get:
+      operationId: getProviderCatalog
+      tags: [providers]
+      summary: Operator-approved provider catalog a principal may pick
+      description: |
+        Catalog entries for per-principal LLM bindings. No secrets. Any authenticated principal of an
+        active application may read it. A profile not in this catalog is `provider_not_in_catalog` when
+        chosen. Answers `unavailable` until the principal-LLM service is wired.
+      responses:
+        '200':
+          description: The catalog.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderCatalog'
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/me/llm:
+    get:
+      operationId: getPrincipalLlm
+      tags: [me]
+      summary: The caller's LLM bindings and status
+      description: |
+        Bindings of the token's principal for the token's application. Never another principal. No secrets.
+      responses:
+        '200':
+          description: The account.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrincipalLlm'
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/me/llm/{role}:
+    put:
+      operationId: putPrincipalLlmRole
+      tags: [me]
+      summary: Bind a catalog profile to one LLM role
+      description: |
+        Chooses a catalog profile (and optional model) for the role. A profile not in the catalog is
+        `validation_failed` with `details.reason` `provider_not_in_catalog`. Self only.
+      parameters:
+        - $ref: '#/components/parameters/PrincipalLlmRole'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrincipalLlmBindingUpdate'
+      responses:
+        '200':
+          description: The updated account.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrincipalLlm'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '413':
+          $ref: ../openapi.yaml#/components/responses/PayloadTooLarge
+        '415':
+          $ref: ../openapi.yaml#/components/responses/UnsupportedMediaType
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+    delete:
+      operationId: deletePrincipalLlmRole
+      tags: [me]
+      summary: Clear the binding for one LLM role
+      parameters:
+        - $ref: '#/components/parameters/PrincipalLlmRole'
+      responses:
+        '200':
+          description: The updated account.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrincipalLlm'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/me/providers/{provider}/credential:
+    put:
+      operationId: putPrincipalProviderCredential
+      tags: [me]
+      summary: Submit the caller's own provider credential (write-only)
+      description: |
+        Host-relayed manual key for the token's principal. Write-only: never returned, logged or put in
+        an error. Stored with reserved tenant_id `alixai-principal-credential` and owner_principal_id
+        set (ADR 0041). Self only.
+      parameters:
+        - $ref: '#/components/parameters/ProviderId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrincipalCredentialSubmit'
+      responses:
+        '200':
+          description: Safe connection status for this principal.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrincipalCredentialStatus'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '413':
+          $ref: ../openapi.yaml#/components/responses/PayloadTooLarge
+        '415':
+          $ref: ../openapi.yaml#/components/responses/UnsupportedMediaType
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+    delete:
+      operationId: deletePrincipalProviderCredential
+      tags: [me]
+      summary: Revoke the caller's own provider credential
+      parameters:
+        - $ref: '#/components/parameters/ProviderId'
+      responses:
+        '200':
+          description: Safe connection status after revoke.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrincipalCredentialStatus'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/me/providers/{provider}/billing-notice/ack:
+    post:
+      operationId: ackPrincipalProviderBillingNotice
+      tags: [me]
+      summary: Acknowledge the billing notice for the caller's provider
+      parameters:
+        - $ref: '#/components/parameters/ProviderId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrincipalBillingAck'
+      responses:
+        '200':
+          description: The acknowledgement.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrincipalBillingAckResult'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '409':
+          $ref: ../openapi.yaml#/components/responses/Conflict
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/me/oauth/{provider}/start:
+    post:
+      operationId: startPrincipalOAuth
+      tags: [me]
+      summary: Start popup/redirect OAuth bound to the caller
+      description: |
+        Reuses the 1.1 OAuth engine; the resulting credential is owner-bound to the token's principal
+        (ADR 0041). Self only. Providers without official third-party OAuth answer `validation_failed`
+        with `details.reason` `manual_fallback`.
+      parameters:
+        - $ref: '#/components/parameters/ProviderId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrincipalOAuthStart'
+      responses:
+        '200':
+          description: Authorization URL and consent.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrincipalOAuthStarted'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+components:
+  parameters:
+    PrincipalLlmRole:
+      name: role
+      in: path
+      required: true
+      description: conversational_controller, language_realization or stt.
+      schema:
+        type: string
+        enum: [conversational_controller, language_realization, stt]
+    ProviderId:
+      name: provider
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^[a-z][a-z0-9_-]{0,31}$'
+  schemas:
+    ProviderCatalog:
+      $ref: ../../providers/provider-catalog.schema.json
+    PrincipalLlm:
+      $ref: ../../providers/principal-llm.schema.json
+    PrincipalLlmBindingUpdate:
+      $ref: ../../providers/principal-llm-binding-update.schema.json
+    PrincipalCredentialSubmit:
+      type: object
+      additionalProperties: false
+      required: [key]
+      properties:
+        key:
+          type: string
+          minLength: 1
+          maxLength: 8192
+          description: Write-only. Never echoed.
+        label:
+          type: string
+          minLength: 1
+          maxLength: 80
+    PrincipalCredentialStatus:
+      type: object
+      additionalProperties: false
+      required: [provider_id, status]
+      properties:
+        provider_id:
+          type: string
+          pattern: '^[a-z][a-z0-9_-]{0,31}$'
+        status:
+          type: string
+          enum: [missing, pending, active, expired, revoked, invalid, quarantined, reauthorization_required]
+        account:
+          type: object
+          additionalProperties: true
+          description: Safe account identifiers only; may be empty.
+    PrincipalBillingAck:
+      type: object
+      additionalProperties: false
+      required: [notice_version, consumer_subscription_is_not_api_access, separate_api_billing_understood]
+      properties:
+        notice_version:
+          type: string
+          minLength: 1
+          maxLength: 64
+        consumer_subscription_is_not_api_access:
+          type: boolean
+          const: true
+        separate_api_billing_understood:
+          type: boolean
+          const: true
+    PrincipalBillingAckResult:
+      type: object
+      additionalProperties: false
+      required: [provider_id, notice_version, acknowledged_at]
+      properties:
+        provider_id:
+          type: string
+          pattern: '^[a-z][a-z0-9_-]{0,31}$'
+        notice_version:
+          type: string
+        acknowledged_at:
+          type: string
+          format: date-time
+    PrincipalOAuthStart:
+      type: object
+      additionalProperties: false
+      required: [capabilities, redirect_uri]
+      properties:
+        capabilities:
+          type: array
+          minItems: 1
+          maxItems: 16
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+        redirect_uri:
+          type: string
+          minLength: 1
+          maxLength: 2048
+        presentation:
+          type: string
+          enum: [redirect, popup]
+        callback:
+          type: string
+          enum: [host, loopback]
+        opener_origin:
+          type: string
+          minLength: 1
+          maxLength: 256
+        label:
+          type: string
+          minLength: 1
+          maxLength: 80
+    PrincipalOAuthStarted:
+      type: object
+      additionalProperties: false
+      required: [authorization_url, redirect_uri, expires_at]
+      properties:
+        authorization_url:
+          type: string
+        redirect_uri:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+        flow_id:
+          type: string
+        poll_interval_ms:
+          type: integer
+          minimum: 0
+        consent:
+          type: object
+          additionalProperties: true

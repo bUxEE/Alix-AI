@@ -1189,6 +1189,110 @@ class FakeAlixAIServer:
             )
         if operation in PROVIDERS_OPERATIONS:
             return self._providers.handle(operation, scope, params, request, body, raw)
+        if operation == "getProviderCatalog":
+            return self._json(200, {"entries": []})
+        if operation == "getPrincipalLlm":
+            return self._json(
+                200,
+                {
+                    "principal_id": scope.principal_id,
+                    "application_id": scope.application_id,
+                    "bindings": [],
+                    "updated_at": "2026-10-26T00:00:00Z",
+                },
+            )
+        if operation == "putPrincipalLlmRole":
+            return self._json(
+                200,
+                {
+                    "principal_id": scope.principal_id,
+                    "application_id": scope.application_id,
+                    "bindings": [
+                        {
+                            "role": params.get("role", "conversational_controller"),
+                            "profile_id": (body or {}).get("profile_id", "pprf_01J0000000000000000000000A"),
+                            "provider_id": "openai",
+                            "model_id": (body or {}).get("model_id") or "gpt-test",
+                            "credential_status": "missing",
+                            "billing_notice_acked": False,
+                            "updated_at": "2026-10-26T00:00:00Z",
+                        }
+                    ],
+                    "updated_at": "2026-10-26T00:00:00Z",
+                },
+            )
+        if operation == "deletePrincipalLlmRole":
+            return self._json(
+                200,
+                {
+                    "principal_id": scope.principal_id,
+                    "application_id": scope.application_id,
+                    "bindings": [],
+                    "updated_at": "2026-10-26T00:00:00Z",
+                },
+            )
+        if operation in ("putPrincipalProviderCredential", "deletePrincipalProviderCredential"):
+            status = "active" if operation.startswith("put") else "revoked"
+            return self._json(200, {"provider_id": params.get("provider", "openai"), "status": status})
+        if operation == "ackPrincipalProviderBillingNotice":
+            return self._json(
+                200,
+                {
+                    "provider_id": params.get("provider", "openai"),
+                    "notice_version": (body or {}).get("notice_version", "2026-01"),
+                    "acknowledged_at": "2026-10-26T00:00:00Z",
+                },
+            )
+        if operation == "startPrincipalOAuth":
+            return self._json(
+                200,
+                {
+                    "authorization_url": "https://example.test/oauth",
+                    "redirect_uri": (body or {}).get("redirect_uri", "http://127.0.0.1/cb"),
+                    "expires_at": "2026-10-26T00:01:00Z",
+                },
+            )
+        if operation == "listMemory":
+            return self._json(200, {"items": []})
+        if operation == "createMemory":
+            return self._json(
+                201,
+                {
+                    "id": "mem_01J0000000000000000000000A",
+                    "application_id": scope.application_id,
+                    "tenant_id": scope.tenant_id,
+                    "workspace_id": scope.workspace_id,
+                    "principal_id": scope.principal_id,
+                    "text": (body or {}).get("text", "note"),
+                    "origin": "user_explicit",
+                    "status": "active",
+                    "data_class": "internal",
+                    "created_at": "2026-10-26T00:00:00Z",
+                    "updated_at": "2026-10-26T00:00:00Z",
+                },
+            )
+        if operation in ("patchMemory", "confirmMemory", "rejectMemory"):
+            status = "active"
+            if operation == "rejectMemory":
+                status = "rejected"
+            return self._json(
+                200,
+                {
+                    "id": params.get("id", "mem_01J0000000000000000000000A"),
+                    "application_id": scope.application_id,
+                    "tenant_id": scope.tenant_id,
+                    "workspace_id": scope.workspace_id,
+                    "principal_id": scope.principal_id,
+                    "text": (body or {}).get("text", "note") if body else "note",
+                    "origin": "user_explicit",
+                    "status": status,
+                    "data_class": "internal",
+                    "created_at": "2026-10-26T00:00:00Z",
+                    "updated_at": "2026-10-26T00:00:00Z",
+                },
+            )
+        if operation == "deleteMemory":
+            return httpx.Response(204, headers={"X-Request-ID": "req_fake"})
         if operation == "getHealth":
             report = self._ready_report()
             health = {**report, "application": {"application_id": scope.application_id, "status": self._app_status}}

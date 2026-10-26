@@ -83,6 +83,7 @@ at any depth, a withheld value (the confirmation secret of the run) and an event
 | first event of the run | `RUN_STARTED(threadId, runId)`, then `ACTIVITY_SNAPSHOT` `alixai.attachments` if the message had files, then the initial `STATE_SNAPSHOT` (or `STATE_DELTA` in patch mode) |
 | `progress` | `STEP_STARTED(stage)` and `STEP_FINISHED(stage)`; stages that have a percentage, a job or a capability, or report `progress`, also an `ACTIVITY_SNAPSHOT` `alixai.progress` updated by `ACTIVITY_DELTA` (`replace /state`, `add /percent`) |
 | `directive` | `CUSTOM` `alixai.directive` (the directive as the TurnEvent API sends it) |
+| `memory_proposal` | `CUSTOM` `alixai.memory_proposal` (ADR 0042; confirm/reject via `/v1/memory/{id}/confirm` or `/reject`, never typed text) |
 | `token` | `TEXT_MESSAGE_START` (role assistant) once, `TEXT_MESSAGE_CONTENT` per fragment, `TEXT_MESSAGE_END` when anything else arrives or the turn ends |
 | `block` markdown, code | a complete assistant text message (code as a fenced block whose fence is longer than any backtick run in it) |
 | `block` table, chart, diagram, citation_list, action_card, clarification_choices, confirmation_panel; `clarification` | `ACTIVITY_SNAPSHOT` of type `alixai.block.<type>`, content the validated block as it is |

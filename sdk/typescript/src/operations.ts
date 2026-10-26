@@ -6,7 +6,7 @@
 import { RAG_OPERATIONS } from "./rag/operations.js";
 import type { RagOperationId } from "./rag/operations.js";
 
-export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
+export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 export interface OperationSpec {
   readonly method: HttpMethod;

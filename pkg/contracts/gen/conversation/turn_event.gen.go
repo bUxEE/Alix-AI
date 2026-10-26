@@ -9,6 +9,7 @@ import (
 
 	"github.com/buxee/alix-ai/pkg/contracts/gen/actions"
 	"github.com/buxee/alix-ai/pkg/contracts/gen/common"
+	"github.com/buxee/alix-ai/pkg/contracts/gen/memory"
 )
 
 // TurnEvent mirrors urn:alixai:schema:conversation:turn-event:v1.
@@ -25,11 +26,11 @@ import (
 //
 // It is a union discriminated by the "type" property: exactly one of TokenEvent, DirectiveEvent,
 // ClarificationEvent, PreparedActionEvent, ReceiptEvent, CitationEvent, ProgressEvent, ErrorEvent,
-// DoneEvent, BlockEvent.
+// DoneEvent, BlockEvent, MemoryProposalEvent.
 type TurnEvent struct {
 	// Value holds the variant: one of TokenEvent, DirectiveEvent, ClarificationEvent,
 	// PreparedActionEvent, ReceiptEvent, CitationEvent, ProgressEvent, ErrorEvent, DoneEvent,
-	// BlockEvent. The zero value holds none and cannot be encoded.
+	// BlockEvent, MemoryProposalEvent. The zero value holds none and cannot be encoded.
 	Value TurnEventValue
 }
 
@@ -48,6 +49,7 @@ func (ProgressEvent) isTurnEvent()       {}
 func (ErrorEvent) isTurnEvent()          {}
 func (DoneEvent) isTurnEvent()           {}
 func (BlockEvent) isTurnEvent()          {}
+func (MemoryProposalEvent) isTurnEvent() {}
 
 // MarshalJSON encodes the variant that is set. The discriminator is written by
 // the variant itself, so it can never disagree with the variant's type.
@@ -135,6 +137,12 @@ func (u *TurnEvent) UnmarshalJSON(data []byte) error {
 		u.Value = v
 	case "block":
 		v, err := decodeStrict[BlockEvent](data)
+		if err != nil {
+			return fmt.Errorf("TurnEvent: %w", err)
+		}
+		u.Value = v
+	case "memory_proposal":
+		v, err := decodeStrict[MemoryProposalEvent](data)
 		if err != nil {
 			return fmt.Errorf("TurnEvent: %w", err)
 		}
@@ -371,6 +379,37 @@ func (v ErrorEvent) MarshalJSON() ([]byte, error) {
 	type plain ErrorEvent
 	a := plain(v)
 	a.Type = "error"
+	return json.Marshal(a)
+}
+
+// MemoryProposalEvent mirrors
+// urn:alixai:schema:conversation:turn-event:v1#/$defs/memoryProposalEvent.
+//
+// An assistant-proposed long-term memory item awaiting user consent (ADR 0042). Confirm or reject
+// only through POST /v1/memory/{id}/confirm or /reject; typed text never confirms. Mapped to AG-UI
+// CUSTOM event alixai.memory_proposal.
+type MemoryProposalEvent struct {
+	// Authority: alixai.
+	Type string `json:"type" alixai:"alixai"`
+
+	// Authority: alixai.
+	TurnID actions.TurnID `json:"turn_id" alixai:"alixai"`
+
+	// Authority: alixai.
+	Seq Seq `json:"seq" alixai:"alixai"`
+
+	// The proposed item (status proposed). Never instructions.
+	//
+	// Authority: alixai.
+	Memory memory.MemoryItem `json:"memory" alixai:"alixai"`
+}
+
+// MarshalJSON encodes the value with its const members forced to the value the
+// schema fixes and with required arrays and maps never null.
+func (v MemoryProposalEvent) MarshalJSON() ([]byte, error) {
+	type plain MemoryProposalEvent
+	a := plain(v)
+	a.Type = "memory_proposal"
 	return json.Marshal(a)
 }
 

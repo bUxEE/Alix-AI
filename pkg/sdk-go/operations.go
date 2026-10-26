@@ -82,6 +82,24 @@ var (
 	opCompleteProviderOAuth   = Operation{"completeProviderOAuth", http.MethodPost, "/v1/oauth/callback", true, false}
 	opGetProviderOAuthFlow    = Operation{"getProviderOAuthFlow", http.MethodGet, "/v1/oauth/flows/{flow_id}", true, true}
 	opCancelProviderOAuthFlow = Operation{"cancelProviderOAuthFlow", http.MethodDelete, "/v1/oauth/flows/{flow_id}", true, false}
+
+	// Per-principal LLM account and catalog (ADR 0041, 1.2.0).
+	opGetProviderCatalog                = Operation{"getProviderCatalog", http.MethodGet, "/v1/providers/catalog", true, true}
+	opGetPrincipalLlm                   = Operation{"getPrincipalLlm", http.MethodGet, "/v1/me/llm", true, true}
+	opPutPrincipalLlmRole               = Operation{"putPrincipalLlmRole", http.MethodPut, "/v1/me/llm/{role}", true, false}
+	opDeletePrincipalLlmRole            = Operation{"deletePrincipalLlmRole", http.MethodDelete, "/v1/me/llm/{role}", true, false}
+	opPutPrincipalProviderCredential    = Operation{"putPrincipalProviderCredential", http.MethodPut, "/v1/me/providers/{provider}/credential", true, false}
+	opDeletePrincipalProviderCredential = Operation{"deletePrincipalProviderCredential", http.MethodDelete, "/v1/me/providers/{provider}/credential", true, false}
+	opAckPrincipalProviderBillingNotice = Operation{"ackPrincipalProviderBillingNotice", http.MethodPost, "/v1/me/providers/{provider}/billing-notice/ack", true, false}
+	opStartPrincipalOAuth               = Operation{"startPrincipalOAuth", http.MethodPost, "/v1/me/oauth/{provider}/start", true, false}
+
+	// Long-term memory (ADR 0042, 1.2.0).
+	opListMemory    = Operation{"listMemory", http.MethodGet, "/v1/memory", true, true}
+	opCreateMemory  = Operation{"createMemory", http.MethodPost, "/v1/memory", true, false}
+	opPatchMemory   = Operation{"patchMemory", http.MethodPatch, "/v1/memory/{id}", true, false}
+	opDeleteMemory  = Operation{"deleteMemory", http.MethodDelete, "/v1/memory/{id}", true, false}
+	opConfirmMemory = Operation{"confirmMemory", http.MethodPost, "/v1/memory/{id}/confirm", true, false}
+	opRejectMemory  = Operation{"rejectMemory", http.MethodPost, "/v1/memory/{id}/reject", true, false}
 )
 
 // Operations lists every operation of the public API this SDK speaks: the root probes, sessions (including
@@ -101,5 +119,8 @@ func Operations() []Operation {
 		opGetProviderMode, opPutProviderMode, opGetProviderEgressPolicy, opPutProviderEgressPolicy,
 		opGetProviderBudgets, opPutProviderBudget, opExportProviderUsage, opGetProviderKillSwitch, opPutProviderKillSwitch,
 		opStartProviderOAuth, opCompleteProviderOAuth, opGetProviderOAuthFlow, opCancelProviderOAuthFlow,
+		opGetProviderCatalog, opGetPrincipalLlm, opPutPrincipalLlmRole, opDeletePrincipalLlmRole,
+		opPutPrincipalProviderCredential, opDeletePrincipalProviderCredential, opAckPrincipalProviderBillingNotice, opStartPrincipalOAuth,
+		opListMemory, opCreateMemory, opPatchMemory, opDeleteMemory, opConfirmMemory, opRejectMemory,
 	}
 }

@@ -3,6 +3,13 @@
 All notable changes to this package. The format follows [Keep a Changelog](https://keepachangelog.com/); versions follow semantic versioning once 1.0.0
 ships, with the rules of [compatibility.md](../../docs/policies/compatibility.md).
 
+## Unreleased / 1.2.0
+
+### Added
+
+- Operation tables `me.ME_OPERATIONS` and `memory.MEMORY_OPERATIONS` for per-principal LLM accounts (ADR 0041) and long-term memory (ADR 0042); TurnEvent type `memory_proposal` / `MemoryProposalEvent`.
+- Migration note: upgrade the SDK before a core that emits `memory_proposal` events (fail-closed decode).
+
 ## 1.1.0 — 2026-10-26
 
 ### Added

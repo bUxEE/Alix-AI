@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:memory:memory-list:v1",
+  "title": "Memory list",
+  "description": "Bounded list of memory items for the token scope (ADR 0042).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["items"],
+  "properties": {
+    "items": {
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "maxItems": 200,
+      "items": { "$ref": "urn:alixai:schema:memory:memory-item:v1" }
+    },
+    "next_cursor": {
+      "description": "Opaque resume cursor when more items exist; null when the page is complete.",
+      "x-alixai-authority": "alixai",
+      "oneOf": [
+        { "type": "string", "minLength": 1, "maxLength": 256 },
+        { "type": "null" }
+      ]
+    }
+  }
+}

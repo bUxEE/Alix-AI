@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:providers:provider-catalog:v1",
+  "title": "Provider catalog",
+  "description": "What a principal may pick for their LLM account (ADR 0041). No secrets.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["entries"],
+  "properties": {
+    "entries": {
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "maxItems": 256,
+      "items": { "$ref": "urn:alixai:schema:providers:provider-catalog-entry:v1" }
+    }
+  }
+}

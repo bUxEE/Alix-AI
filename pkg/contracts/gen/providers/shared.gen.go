@@ -392,6 +392,57 @@ func (v *CredentialKind) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// CredentialMode mirrors urn:alixai:schema:providers:shared:v1#/$defs/credentialMode.
+//
+// How a catalog or registry profile obtains a credential (ADR 0041). tenant: the 1.1
+// operator/tenant binding. per_principal: the profile carries no credential; each principal binds
+// their own. deployment_local: local models, no per-scope choice.
+//
+// Only the values listed in the schema are valid.
+type CredentialMode string
+
+// The valid values of CredentialMode.
+const (
+	CredentialModeTenant          CredentialMode = "tenant"
+	CredentialModePerPrincipal    CredentialMode = "per_principal"
+	CredentialModeDeploymentLocal CredentialMode = "deployment_local"
+)
+
+// Valid reports whether v is one of the values the schema lists.
+func (v CredentialMode) Valid() bool {
+	switch v {
+	case CredentialModeTenant, CredentialModePerPrincipal, CredentialModeDeploymentLocal:
+		return true
+	}
+	return false
+}
+
+// MarshalJSON refuses to encode a value outside the enum, so an unset or
+// corrupt value fails instead of producing a document the schema rejects.
+func (v CredentialMode) MarshalJSON() ([]byte, error) {
+	if !v.Valid() {
+		return nil, fmt.Errorf("CredentialMode: %v is not a valid value", string(v))
+	}
+	return json.Marshal(string(v))
+}
+
+// UnmarshalJSON accepts only the values the schema lists; null and anything
+// else is an error.
+func (v *CredentialMode) UnmarshalJSON(data []byte) error {
+	if bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
+		return fmt.Errorf("CredentialMode: null is not a valid value")
+	}
+	var raw string
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return fmt.Errorf("CredentialMode: %w", err)
+	}
+	if !CredentialMode(raw).Valid() {
+		return fmt.Errorf("CredentialMode: %v is not a valid value", raw)
+	}
+	*v = CredentialMode(raw)
+	return nil
+}
+
 // CredentialRefID mirrors urn:alixai:schema:providers:shared:v1#/$defs/credentialRefId.
 //
 // Opaque ID of a credential held by the credential service. It names a secret; it never contains
@@ -759,6 +810,56 @@ type ModelRef struct {
 // `^[A-Za-z0-9][A-Za-z0-9._:+-]{0,63}$`.
 type ModelVersion string
 
+// PrincipalLlmRole mirrors urn:alixai:schema:providers:shared:v1#/$defs/principalLlmRole.
+//
+// Roles a principal may bind to a catalog profile (ADR 0041). TTS is reserved and not bindable
+// here.
+//
+// Only the values listed in the schema are valid.
+type PrincipalLlmRole string
+
+// The valid values of PrincipalLlmRole.
+const (
+	PrincipalLlmRoleConversationalController PrincipalLlmRole = "conversational_controller"
+	PrincipalLlmRoleLanguageRealization      PrincipalLlmRole = "language_realization"
+	PrincipalLlmRoleSTT                      PrincipalLlmRole = "stt"
+)
+
+// Valid reports whether v is one of the values the schema lists.
+func (v PrincipalLlmRole) Valid() bool {
+	switch v {
+	case PrincipalLlmRoleConversationalController, PrincipalLlmRoleLanguageRealization, PrincipalLlmRoleSTT:
+		return true
+	}
+	return false
+}
+
+// MarshalJSON refuses to encode a value outside the enum, so an unset or
+// corrupt value fails instead of producing a document the schema rejects.
+func (v PrincipalLlmRole) MarshalJSON() ([]byte, error) {
+	if !v.Valid() {
+		return nil, fmt.Errorf("PrincipalLlmRole: %v is not a valid value", string(v))
+	}
+	return json.Marshal(string(v))
+}
+
+// UnmarshalJSON accepts only the values the schema lists; null and anything
+// else is an error.
+func (v *PrincipalLlmRole) UnmarshalJSON(data []byte) error {
+	if bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
+		return fmt.Errorf("PrincipalLlmRole: null is not a valid value")
+	}
+	var raw string
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return fmt.Errorf("PrincipalLlmRole: %w", err)
+	}
+	if !PrincipalLlmRole(raw).Valid() {
+		return fmt.Errorf("PrincipalLlmRole: %v is not a valid value", raw)
+	}
+	*v = PrincipalLlmRole(raw)
+	return nil
+}
+
 // ProfileID mirrors urn:alixai:schema:providers:shared:v1#/$defs/profileId.
 //
 // ID of one provider and model profile in the registry. Minted by the AlixAI core: prefix pprf, an
@@ -959,6 +1060,13 @@ type ReportID string
 // JSON Schema constraints (enforced by schema validation, not by this type): pattern
 // `^rsv_[0-9A-HJKMNP-TV-Z]{26}$`.
 type ReservationID string
+
+// ReservedPrincipalCredentialTenant mirrors
+// urn:alixai:schema:providers:shared:v1#/$defs/reservedPrincipalCredentialTenant.
+//
+// The frozen credential-ref.binding.tenant_id value used for principal-owned credentials (ADR
+// 0041). Not a company tenant; never used for sessions or RAG.
+type ReservedPrincipalCredentialTenant string
 
 // Residency mirrors urn:alixai:schema:providers:shared:v1#/$defs/residency.
 //

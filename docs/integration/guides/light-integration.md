@@ -89,6 +89,29 @@ External STT for dictation needs `routing.stt` naming a profile with role `stt`,
 | `/readyz` 503 | No text model cover, LocalAI down, or warming | Light External: ensure controller route + External cover; see troubleshooting §2 and light-external readiness notes |
 | Dictation `validation_failed` | Wrong audio format/length/energy | Send WAV PCM s16le mono 16 kHz within limits ([ADR 0039](../../decisions/0039-dictation-without-vad.md)) |
 
+## Multiple companies, shared views and per-user accounts
+
+Hosts that serve several companies for one signed-in person map scope like this **today** (1.1 behaviour; no core
+cross-tenant read):
+
+| Host idea | AlixAI scope |
+| --- | --- |
+| Company | `tenant_id` |
+| Optional area / site | `workspace_id` |
+| Signed-in user | `principal_id` (same id in every company) |
+| Shared / “all my companies” view | A **personal tenant** for that user; the HOST fills it (aggregate of the user’s companies) through an `api` RAG source with tenant mode `request` |
+
+Rules that must stay:
+
+- Never use binding mode `shared` for user data.
+- One session per scope; mint a fresh context token per view (and per request).
+- AlixAI never mixes tenants in one turn; the shared view is still one tenant (the personal one).
+
+**Coming in 1.2:** per-user LLM accounts (each principal picks catalog provider/model and brings their own key;
+companies still gate egress) — [ADR 0041](../../decisions/0041-per-principal-llm-accounts.md). Long-term memory per
+principal × tenant × workspace with consent-gated proposals — [ADR 0042](../../decisions/0042-long-term-memory.md).
+Routes exist as stubs (`unavailable` until wired).
+
 ## Spike order
 
 1. Run AlixAI on loopback; `config check` / `providers layers` green for your light setup ([light-external.md](../../operations/guides/light-external.md)).

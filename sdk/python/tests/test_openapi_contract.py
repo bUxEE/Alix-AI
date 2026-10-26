@@ -295,6 +295,29 @@ def test_every_answer_of_the_fake_server_conforms_to_the_document_across_all_ope
         lambda **claims: provider_client(fake.transport, **claims),
     )
 
+    client.me.catalog()
+    client.me.llm()
+    client.me.put_role("conversational_controller", {"profile_id": "pprf_01J0000000000000000000000A"})
+    client.me.delete_role("conversational_controller")
+    client.me.submit_credential("openai", "sk-test")
+    client.me.delete_credential("openai")
+    client.me.acknowledge_billing_notice(
+        "openai",
+        {
+            "notice_version": "2026-01",
+            "consumer_subscription_is_not_api_access": True,
+            "separate_api_billing_understood": True,
+        },
+    )
+    client.me.start_oauth("openai", capabilities=["chat"], redirect_uri="http://127.0.0.1:5555/cb")
+    client.memory.list()
+    created = client.memory.create({"text": "prefer dark mode"})
+    mid = created["id"]
+    client.memory.patch(mid, {"text": "prefer light mode"})
+    client.memory.confirm(mid)
+    client.memory.reject(mid)
+    client.memory.delete(mid)
+
     # failure paths: scope, validation, authentication, availability, quarantine, ended session
     swallow(lambda: client.get_session("ses-9"))  # scope_violation
     swallow(lambda: client.get_application("someone-else"))

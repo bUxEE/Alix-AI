@@ -13,7 +13,8 @@
     { "$ref": "#/$defs/progressEvent" },
     { "$ref": "#/$defs/errorEvent" },
     { "$ref": "#/$defs/doneEvent" },
-    { "$ref": "#/$defs/blockEvent" }
+    { "$ref": "#/$defs/blockEvent" },
+    { "$ref": "#/$defs/memoryProposalEvent" }
   ],
   "$defs": {
     "seq": {
@@ -300,6 +301,31 @@
         "block": {
           "x-alixai-authority": "alixai",
           "$ref": "urn:alixai:schema:conversation:rich-block:v1"
+        }
+      }
+    },
+    "memoryProposalEvent": {
+      "description": "An assistant-proposed long-term memory item awaiting user consent (ADR 0042). Confirm or reject only through POST /v1/memory/{id}/confirm or /reject; typed text never confirms. Mapped to AG-UI CUSTOM event alixai.memory_proposal.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "turn_id", "seq", "memory"],
+      "properties": {
+        "type": {
+          "x-alixai-authority": "alixai",
+          "const": "memory_proposal"
+        },
+        "turn_id": {
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/turnId"
+        },
+        "seq": {
+          "x-alixai-authority": "alixai",
+          "$ref": "#/$defs/seq"
+        },
+        "memory": {
+          "description": "The proposed item (status proposed). Never instructions.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:memory:memory-item:v1"
         }
       }
     }

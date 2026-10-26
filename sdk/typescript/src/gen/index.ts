@@ -6,6 +6,7 @@ export * as bench from "./bench/index.js";
 export * as common from "./common/index.js";
 export * as conversation from "./conversation/index.js";
 export * as decision from "./decision/index.js";
+export * as memory from "./memory/index.js";
 export * as models from "./models/index.js";
 export * as policy from "./policy/index.js";
 export * as providers from "./providers/index.js";

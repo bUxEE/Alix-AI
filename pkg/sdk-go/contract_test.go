@@ -18,6 +18,7 @@ import (
 	"github.com/buxee/alix-ai/pkg/contracts/gen/actions"
 	"github.com/buxee/alix-ai/pkg/contracts/gen/conversation"
 	"github.com/buxee/alix-ai/pkg/contracts/gen/decision"
+	memgen "github.com/buxee/alix-ai/pkg/contracts/gen/memory"
 	pv "github.com/buxee/alix-ai/pkg/contracts/gen/providers"
 	"github.com/buxee/alix-ai/pkg/contracts/gen/rag"
 	"github.com/buxee/alix-ai/pkg/contracts/gen/voice"
@@ -49,7 +50,7 @@ func TestOperationTableMatchesOpenAPI(t *testing.T) {
 
 func TestOperationsCoverTheImplementedAreas(t *testing.T) {
 	s := loadSpec(t)
-	implemented := map[string]bool{"root": true, "sessions": true, "actions": true, "apps": true, "rag": true, "providers": true, "oauth": true}
+	implemented := map[string]bool{"root": true, "sessions": true, "actions": true, "apps": true, "rag": true, "providers": true, "oauth": true, "me": true, "memory": true}
 	// The decision area is spoken in part on purpose: the read-only status. The operator-only configuration
 	// (getDecisionConfig, putDecisionConfig) is not part of the SDK surface.
 	// Voice is spoken in part: dictation HTTP only (not the WebSocket openVoiceSession).
@@ -567,6 +568,38 @@ func TestFakeAnswersConformToOpenAPI(t *testing.T) {
 			return cl
 		})
 
+	// Per-principal LLM (ADR 0041) and long-term memory (ADR 0042).
+	_, err = client.Me().Catalog(ctx)
+	must("provider catalog", err)
+	_, err = client.Me().LLM(ctx)
+	must("principal llm", err)
+	_, err = client.Me().PutRole(ctx, "conversational_controller", pv.PrincipalLlmBindingUpdate{ProfileID: "pprf_01J0000000000000000000000A"})
+	must("put principal llm role", err)
+	_, err = client.Me().DeleteRole(ctx, "conversational_controller")
+	must("delete principal llm role", err)
+	_, err = client.Me().SubmitCredential(ctx, "openai", "sk-test")
+	must("principal credential", err)
+	_, err = client.Me().DeleteCredential(ctx, "openai")
+	must("delete principal credential", err)
+	_, err = client.Me().AcknowledgeBillingNotice(ctx, "openai", sdkgo.PrincipalBillingAck{
+		NoticeVersion: "2026-01", ConsumerSubscriptionIsNotAPIAccess: true, SeparateAPIBillingUnderstood: true,
+	})
+	must("principal billing ack", err)
+	_, err = client.Me().StartOAuth(ctx, "openai", sdkgo.PrincipalOAuthStart{Capabilities: []string{"chat"}, RedirectURI: "http://127.0.0.1:5555/cb"})
+	must("principal oauth start", err)
+	_, err = client.Memory().List(ctx, nil)
+	must("memory list", err)
+	created, err := client.Memory().Create(ctx, memgen.MemoryCreate{Text: "prefer dark mode"})
+	must("memory create", err)
+	patched := memgen.MemoryText("prefer light mode")
+	_, err = client.Memory().Patch(ctx, string(created.ID), memgen.MemoryPatch{Text: &patched})
+	must("memory patch", err)
+	_, err = client.Memory().Confirm(ctx, string(created.ID))
+	must("memory confirm", err)
+	_, err = client.Memory().Reject(ctx, string(created.ID))
+	must("memory reject", err)
+	must("memory delete", client.Memory().Delete(ctx, string(created.ID)))
+
 	// failure paths: scope, authentication, availability, readiness, quarantine, ended session
 	_, err = client.GetSession(ctx, "ses-9")
 	failsWith("another session", err, contracts.ErrScopeViolation)
@@ -684,35 +717,49 @@ var goTypes = map[string]func() any{
 			Generations []rag.IndexGeneration `json:"generations"`
 		})
 	},
-	"invalidateRagGeneration":  func() any { return new(rag.IndexGeneration) },
-	"searchRag":                func() any { return new(rag.SearchResponse) },
-	"answerRag":                func() any { return new(rag.AnswerResult) },
-	"resolveRagCitation":       func() any { return new(sdkgo.CitationResolution) },
-	"getDecisionStatus":        func() any { return new(decision.DecisionStatus) },
-	"getDictationCapabilities": func() any { return new(voice.TranscriptionCapabilities) },
-	"createSessionDictation":   func() any { return new(voice.DictationTranscript) },
-	"listProviders":            func() any { return new(sdkgo.ProviderList) },
-	"putProviderCredential":    func() any { return new(pv.ConnectionStatus) },
-	"deleteProviderConnection": func() any { return new(pv.ConnectionStatus) },
-	"ackProviderBillingNotice": func() any { return new(pv.BillingNoticeAck) },
-	"getProviderDisclosure":    func() any { return new(pv.EgressDisclosure) },
-	"getProviderMode":          func() any { return new(sdkgo.ProviderMode) },
-	"putProviderMode":          func() any { return new(sdkgo.ProviderMode) },
-	"getProviderEgressPolicy":  func() any { return new(sdkgo.EgressPolicyView) },
-	"putProviderEgressPolicy":  func() any { return new(pv.EgressPolicy) },
-	"getProviderBudgets":       func() any { return new(sdkgo.ProviderBudgets) },
-	"putProviderBudget":        func() any { return new(pv.Budget) },
-	"exportProviderUsage":      func() any { return new(sdkgo.UsageExport) },
-	"getProviderKillSwitch":    func() any { return new(sdkgo.KillSwitch) },
-	"putProviderKillSwitch":    func() any { return new(sdkgo.KillSwitch) },
-	"startProviderOAuth":       func() any { return new(sdkgo.OAuthStarted) },
-	"completeProviderOAuth":    func() any { return new(pv.ConnectionStatus) },
-	"getProviderOAuthFlow":     func() any { return new(pv.OauthFlowStatus) },
-	"cancelProviderOAuthFlow":  func() any { return nil }, // 204
+	"invalidateRagGeneration":           func() any { return new(rag.IndexGeneration) },
+	"searchRag":                         func() any { return new(rag.SearchResponse) },
+	"answerRag":                         func() any { return new(rag.AnswerResult) },
+	"resolveRagCitation":                func() any { return new(sdkgo.CitationResolution) },
+	"getDecisionStatus":                 func() any { return new(decision.DecisionStatus) },
+	"getDictationCapabilities":          func() any { return new(voice.TranscriptionCapabilities) },
+	"createSessionDictation":            func() any { return new(voice.DictationTranscript) },
+	"listProviders":                     func() any { return new(sdkgo.ProviderList) },
+	"putProviderCredential":             func() any { return new(pv.ConnectionStatus) },
+	"deleteProviderConnection":          func() any { return new(pv.ConnectionStatus) },
+	"ackProviderBillingNotice":          func() any { return new(pv.BillingNoticeAck) },
+	"getProviderDisclosure":             func() any { return new(pv.EgressDisclosure) },
+	"getProviderMode":                   func() any { return new(sdkgo.ProviderMode) },
+	"putProviderMode":                   func() any { return new(sdkgo.ProviderMode) },
+	"getProviderEgressPolicy":           func() any { return new(sdkgo.EgressPolicyView) },
+	"putProviderEgressPolicy":           func() any { return new(pv.EgressPolicy) },
+	"getProviderBudgets":                func() any { return new(sdkgo.ProviderBudgets) },
+	"putProviderBudget":                 func() any { return new(pv.Budget) },
+	"exportProviderUsage":               func() any { return new(sdkgo.UsageExport) },
+	"getProviderKillSwitch":             func() any { return new(sdkgo.KillSwitch) },
+	"putProviderKillSwitch":             func() any { return new(sdkgo.KillSwitch) },
+	"startProviderOAuth":                func() any { return new(sdkgo.OAuthStarted) },
+	"completeProviderOAuth":             func() any { return new(pv.ConnectionStatus) },
+	"getProviderOAuthFlow":              func() any { return new(pv.OauthFlowStatus) },
+	"cancelProviderOAuthFlow":           func() any { return nil }, // 204
+	"getProviderCatalog":                func() any { return new(pv.ProviderCatalog) },
+	"getPrincipalLlm":                   func() any { return new(pv.PrincipalLlm) },
+	"putPrincipalLlmRole":               func() any { return new(pv.PrincipalLlm) },
+	"deletePrincipalLlmRole":            func() any { return new(pv.PrincipalLlm) },
+	"putPrincipalProviderCredential":    func() any { return new(sdkgo.PrincipalCredentialStatus) },
+	"deletePrincipalProviderCredential": func() any { return new(sdkgo.PrincipalCredentialStatus) },
+	"ackPrincipalProviderBillingNotice": func() any { return new(sdkgo.PrincipalBillingAckResult) },
+	"startPrincipalOAuth":               func() any { return new(sdkgo.PrincipalOAuthStarted) },
+	"listMemory":                        func() any { return new(memgen.MemoryList) },
+	"createMemory":                      func() any { return new(memgen.MemoryItem) },
+	"patchMemory":                       func() any { return new(memgen.MemoryItem) },
+	"deleteMemory":                      func() any { return nil }, // 204
+	"confirmMemory":                     func() any { return new(memgen.MemoryItem) },
+	"rejectMemory":                      func() any { return new(memgen.MemoryItem) },
 }
 
 func (c *conformance) checkGoType(opID string, body []byte) {
-	if opID == "removeRagSource" || opID == "streamTurnEvents" || opID == "cancelProviderOAuthFlow" {
+	if opID == "removeRagSource" || opID == "streamTurnEvents" || opID == "cancelProviderOAuthFlow" || opID == "deleteMemory" {
 		return
 	}
 	newValue, ok := goTypes[opID]

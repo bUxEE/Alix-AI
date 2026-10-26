@@ -5,6 +5,7 @@ import type { PreparedAction } from "../actions/prepared-action.js";
 import type { JobID, PreparationID, TurnID } from "../actions/shared.js";
 import type { Error } from "../common/error.js";
 import type { CapabilityID } from "../common/ids.js";
+import type { MemoryItem } from "../memory/memory-item.js";
 import type { Citation } from "./citation.js";
 import type { DialogueDirective } from "./dialogue-directive.js";
 import type { ClarificationChoicesBlock, RichBlock } from "./rich-block.js";
@@ -24,7 +25,7 @@ import type { ClarificationChoicesBlock, RichBlock } from "./rich-block.js";
  *
  * It is a union discriminated by the "type" property: exactly one of TokenEvent, DirectiveEvent,
  * ClarificationEvent, PreparedActionEvent, ReceiptEvent, CitationEvent, ProgressEvent, ErrorEvent,
- * DoneEvent, BlockEvent.
+ * DoneEvent, BlockEvent, MemoryProposalEvent.
  */
 export type TurnEvent =
   | TokenEvent
@@ -36,7 +37,8 @@ export type TurnEvent =
   | ProgressEvent
   | ErrorEvent
   | DoneEvent
-  | BlockEvent;
+  | BlockEvent
+  | MemoryProposalEvent;
 
 /**
  * BlockEvent mirrors urn:alixai:schema:conversation:turn-event:v1#/$defs/blockEvent.
@@ -236,6 +238,38 @@ export interface ErrorEvent {
    * @authority alixai
    */
   error: Error;
+}
+
+/**
+ * MemoryProposalEvent mirrors
+ * urn:alixai:schema:conversation:turn-event:v1#/$defs/memoryProposalEvent.
+ *
+ * An assistant-proposed long-term memory item awaiting user consent (ADR 0042). Confirm or reject
+ * only through POST /v1/memory/{id}/confirm or /reject; typed text never confirms. Mapped to AG-UI
+ * CUSTOM event alixai.memory_proposal.
+ */
+export interface MemoryProposalEvent {
+  /**
+   * @authority alixai
+   */
+  type: "memory_proposal";
+
+  /**
+   * @authority alixai
+   */
+  turn_id: TurnID;
+
+  /**
+   * @authority alixai
+   */
+  seq: Seq;
+
+  /**
+   * The proposed item (status proposed). Never instructions.
+   *
+   * @authority alixai
+   */
+  memory: MemoryItem;
 }
 
 /**

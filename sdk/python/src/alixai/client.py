@@ -42,6 +42,8 @@ from alixai.validate import confirmation_token, context_token, normalize_base_ur
 
 if TYPE_CHECKING:
     from alixai.dictation import AsyncDictationsApi, DictationsApi
+    from alixai.me import AsyncMeApi, MeApi
+    from alixai.memory_api import AsyncMemoryApi, MemoryApi
     from alixai.providers import AsyncProvidersApi, ProvidersApi
 
 T = TypeVar("T")
@@ -452,6 +454,20 @@ class AlixAIClient:
         return DictationsApi(self)
 
     @property
+    def me(self) -> "MeApi":
+        """Per-principal LLM account (ADR 0041)."""
+        from alixai.me import MeApi
+
+        return MeApi(self)
+
+    @property
+    def memory(self) -> "MemoryApi":
+        """Long-term memory (ADR 0042)."""
+        from alixai.memory_api import MemoryApi
+
+        return MemoryApi(self)
+
+    @property
     def providers(self) -> "ProvidersApi":
         """The operator-facing providers and OAuth area of External Provider Mode (off by default; see :class:`alixai.providers.ProvidersApi`)."""
         from alixai.providers import ProvidersApi
@@ -619,6 +635,18 @@ class AlixAIAsyncClient:
         from alixai.dictation import AsyncDictationsApi
 
         return AsyncDictationsApi(self)
+
+    @property
+    def me(self) -> "AsyncMeApi":
+        from alixai.me import AsyncMeApi
+
+        return AsyncMeApi(self)
+
+    @property
+    def memory(self) -> "AsyncMemoryApi":
+        from alixai.memory_api import AsyncMemoryApi
+
+        return AsyncMemoryApi(self)
 
     @property
     def providers(self) -> "AsyncProvidersApi":

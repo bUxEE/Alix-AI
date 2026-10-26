@@ -183,6 +183,20 @@ export type CredentialKind =
   | "oauth_issued_key";
 
 /**
+ * CredentialMode mirrors urn:alixai:schema:providers:shared:v1#/$defs/credentialMode.
+ *
+ * How a catalog or registry profile obtains a credential (ADR 0041). tenant: the 1.1
+ * operator/tenant binding. per_principal: the profile carries no credential; each principal binds
+ * their own. deployment_local: local models, no per-scope choice.
+ *
+ * Only the values listed in the schema are valid.
+ */
+export type CredentialMode =
+  | "tenant"
+  | "per_principal"
+  | "deployment_local";
+
+/**
  * CredentialRefID mirrors urn:alixai:schema:providers:shared:v1#/$defs/credentialRefId.
  *
  * Opaque ID of a credential held by the credential service. It names a secret; it never contains
@@ -389,6 +403,19 @@ export interface ModelRef {
 export type ModelVersion = string;
 
 /**
+ * PrincipalLlmRole mirrors urn:alixai:schema:providers:shared:v1#/$defs/principalLlmRole.
+ *
+ * Roles a principal may bind to a catalog profile (ADR 0041). TTS is reserved and not bindable
+ * here.
+ *
+ * Only the values listed in the schema are valid.
+ */
+export type PrincipalLlmRole =
+  | "conversational_controller"
+  | "language_realization"
+  | "stt";
+
+/**
  * ProfileID mirrors urn:alixai:schema:providers:shared:v1#/$defs/profileId.
  *
  * ID of one provider and model profile in the registry. Minted by the AlixAI core: prefix pprf, an
@@ -536,6 +563,15 @@ export type ReportID = string;
  * `^rsv_[0-9A-HJKMNP-TV-Z]{26}$`.
  */
 export type ReservationID = string;
+
+/**
+ * ReservedPrincipalCredentialTenant mirrors
+ * urn:alixai:schema:providers:shared:v1#/$defs/reservedPrincipalCredentialTenant.
+ *
+ * The frozen credential-ref.binding.tenant_id value used for principal-owned credentials (ADR
+ * 0041). Not a company tenant; never used for sessions or RAG.
+ */
+export type ReservedPrincipalCredentialTenant = string;
 
 /**
  * Residency mirrors urn:alixai:schema:providers:shared:v1#/$defs/residency.

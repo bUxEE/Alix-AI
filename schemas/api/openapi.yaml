@@ -129,6 +129,10 @@ x-alixai-areas:
     $ref: paths/agui.yaml
   events:
     $ref: paths/events.yaml
+  me:
+    $ref: paths/me.yaml
+  memory:
+    $ref: paths/memory.yaml
 
 components:
   securitySchemes:
