@@ -105,6 +105,8 @@ jobs:
     #   G204 internal/supervisor/exec.go, internal/rag/parse/runner.go, adapters/mcp/transport.go: the three subprocess
     #        launchers by design (supervised LocalAI, the sandboxed parser worker, audited MCP stdio commands); each has
     #        its own tests (SEC-016, SEC-048, SEC-051)
+    #   G204 internal/cli/providers_oauth.go: fixed program per OS (rundll32 / open / xdg-open), no shell; argument is a
+    #        validated https or loopback-http URL (validatedBrowserURL)
     #   G302 internal/rag/parse/runner.go: the worker executable is made owner-executable (0700); internal/trust/sigmanifest.go
     #        G301/G302: signature files are public and world-readable by design
     #   G404 internal/store/tx.go (retry jitter), internal/rag/vector/vectortest (fixtures): not security randomness
@@ -140,7 +142,7 @@ jobs:
           -severity=medium -confidence=medium -exclude-generated
           -exclude=G101,G103,G104,G115,G304
           -exclude-dir=tools -exclude-dir=tests -exclude-dir=examples -exclude-dir=testdata
-          -exclude-rules="internal/supervisor/exec\.go:G204;internal/rag/parse/runner\.go:G204,G302;adapters/mcp/transport\.go:G204;internal/trust/sigmanifest\.go:G301,G302;internal/store/tx\.go:G404;internal/rag/vector/vectortest/.*:G404;internal/cli/cmd_backup\.go:G703;pkg/sdk-go/agui/proxy\.go:G704;deploy/container/alixai/netctl/main\.go:G704;internal/stream/sse\.go:G705;internal/gateway/routes_v1_events\.go:G705;adapters/native/adapter\.go:G118;cmd/alixai-conformance/.*:G122,G302"
+          -exclude-rules="internal/supervisor/exec\.go:G204;internal/rag/parse/runner\.go:G204,G302;adapters/mcp/transport\.go:G204;internal/cli/providers_oauth\.go:G204;internal/trust/sigmanifest\.go:G301,G302;internal/store/tx\.go:G404;internal/rag/vector/vectortest/.*:G404;internal/cli/cmd_backup\.go:G703;pkg/sdk-go/agui/proxy\.go:G704;deploy/container/alixai/netctl/main\.go:G704;internal/stream/sse\.go:G705;internal/gateway/routes_v1_events\.go:G705;adapters/native/adapter\.go:G118;cmd/alixai-conformance/.*:G122,G302"
           ./...
 
   secret-scan:

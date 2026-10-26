@@ -170,6 +170,43 @@ func TestOpenSystemBrowserInjectable(t *testing.T) {
 	}
 }
 
+func TestValidatedBrowserURL(t *testing.T) {
+	ok := []struct {
+		in, want string
+	}{
+		{"https://example.com/auth", "https://example.com/auth"},
+		{"https://example.com/auth?q=1#frag", "https://example.com/auth?q=1#frag"},
+		{"http://127.0.0.1:8765/callback", "http://127.0.0.1:8765/callback"},
+		{"http://[::1]/callback", "http://[::1]/callback"},
+		{"HTTPS://Example.COM/Path", "https://Example.COM/Path"},
+	}
+	for _, tc := range ok {
+		got, err := validatedBrowserURL(tc.in)
+		if err != nil || got != tc.want {
+			t.Fatalf("accept %q: got %q %v, want %q", tc.in, got, err, tc.want)
+		}
+	}
+	refuse := []string{
+		"",
+		"http://localhost/callback",
+		"http://example.com/",
+		"http://0.0.0.0/",
+		"file:///etc/passwd",
+		"javascript:alert(1)",
+		"https://user:pass@example.com/",
+		"https:///nohost",
+		"-https://example.com/",
+		"https://example.com/\n",
+		"https://example.com/\x00",
+		strings.Repeat("https://example.com/", 300),
+	}
+	for _, in := range refuse {
+		if got, err := validatedBrowserURL(in); err == nil {
+			t.Fatalf("must refuse %q, got %q", in, got)
+		}
+	}
+}
+
 func TestParseLoginFor(t *testing.T) {
 	app, principal, err := parseLoginFor("app_demo/usr_owner")
 	if err != nil || app != "app_demo" || principal != "usr_owner" {

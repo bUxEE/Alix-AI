@@ -469,6 +469,10 @@ docs/                  architecture, ADRs, integration guides, operations, secur
 
 ## Project status
 
+### Unreleased
+
+- Harden the CLI OAuth system-browser opener: only validated `https` or loopback `http` URLs; fixed OS program names, no shell.
+
 **1.2.0 is released** (minor, additive on 1.1.0). What 1.2.0 adds: per-principal LLM accounts ([ADR 0041](docs/decisions/0041-per-principal-llm-accounts.md)) — operator catalog (`alixai providers catalog-*`), `GET /v1/providers/catalog`, `/v1/me/llm…` and `/v1/me/providers/…`, reserved-tenant credentials, router resolution (principal binding → deployment default → local or `llm_not_configured`); long-term memory ([ADR 0042](docs/decisions/0042-long-term-memory.md)) — `memory.enabled` (default off), `/v1/memory`, consent-gated `memory_proposal` on task proposals and turn events, retention erase for memory and principal LLM accounts; downloadable exports from a turn's verified rich blocks — `POST /v1/sessions/{session_id}/exports` (`csv` / `xlsx` / `html` / `md`, capability `exports.create`, durable turn-block store); UI kit fullscreen chat overlay and opt-in answer download actions (host-supplied exporter; kits never call AlixAI). Source builds report `1.2.0-dev`; packages declaring `[1.0.0, 2.0.0)` still validate. Contract changes are additive and frozen into `schemas/_frozen/v1`. Release archives stay reproducible (GoReleaser `--parallelism 1`; `tools/release` skips local model weights). Not verified in 1.2: live provider runs, voicebench on real hardware, real 8 GB certification, independent security review. Summary:
 
 | Status | Areas |

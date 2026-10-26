@@ -564,14 +564,61 @@ func parseLoginFor(raw string) (app, principal string, err error) {
 // openSystemBrowser opens rawURL in the OS browser without a shell string. Tests replace it.
 var openSystemBrowser = openSystemBrowserOS
 
+const browserURLMaxLen = 4096
+
+// validatedBrowserURL accepts only https URLs, or http URLs whose host is the
+// loopback IP literal 127.0.0.1 / ::1. It refuses userinfo, empty host, control
+// characters, a leading "-", and anything longer than browserURLMaxLen.
+func validatedBrowserURL(rawURL string) (string, error) {
+	if rawURL == "" || len(rawURL) > browserURLMaxLen {
+		return "", fmt.Errorf("browser url refused: empty or too long")
+	}
+	if strings.HasPrefix(rawURL, "-") {
+		return "", fmt.Errorf("browser url refused: leading dash")
+	}
+	if strings.IndexFunc(rawURL, func(r rune) bool { return r < 0x20 || r == 0x7f }) >= 0 {
+		return "", fmt.Errorf("browser url refused: control character")
+	}
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return "", fmt.Errorf("browser url refused: %w", err)
+	}
+	if u.User != nil {
+		return "", fmt.Errorf("browser url refused: userinfo")
+	}
+	host := u.Hostname()
+	if host == "" {
+		return "", fmt.Errorf("browser url refused: empty host")
+	}
+	switch strings.ToLower(u.Scheme) {
+	case "https":
+		// ok
+	case "http":
+		if host != "127.0.0.1" && host != "::1" {
+			return "", fmt.Errorf("browser url refused: http host is not loopback")
+		}
+	default:
+		return "", fmt.Errorf("browser url refused: scheme %q", u.Scheme)
+	}
+	out := u.String()
+	if out == "" || len(out) > browserURLMaxLen || strings.HasPrefix(out, "-") {
+		return "", fmt.Errorf("browser url refused: re-serialised form unsafe")
+	}
+	return out, nil
+}
+
 func openSystemBrowserOS(rawURL string) error {
+	safe, err := validatedBrowserURL(rawURL)
+	if err != nil {
+		return err
+	}
 	switch runtime.GOOS {
 	case "windows":
-		return exec.Command("rundll32", "url.dll,FileProtocolHandler", rawURL).Start()
+		return exec.Command("rundll32", "url.dll,FileProtocolHandler", safe).Start()
 	case "darwin":
-		return exec.Command("open", rawURL).Start()
+		return exec.Command("open", safe).Start()
 	default:
-		return exec.Command("xdg-open", rawURL).Start()
+		return exec.Command("xdg-open", safe).Start()
 	}
 }
 
