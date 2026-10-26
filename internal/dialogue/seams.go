@@ -123,6 +123,7 @@ const (
 	ItemDirective   ItemKind = "directive" // the directive a response is written from
 	// ItemClientContext is the one message of what the client's screen supplied (readable context, UI tool descriptions).
 	ItemClientContext ItemKind = "client_context"
+	ItemMemory        ItemKind = "memory"
 )
 
 // ItemMeta is the internal metadata every context item carries. It is for the

@@ -133,12 +133,44 @@
           "type": "string"
         }
       },
+      "MemoryId": {
+        "in": "path",
+        "name": "id",
+        "required": true,
+        "schema": {
+          "pattern": "^mem_[0-9A-HJKMNP-TV-Z]{26}$",
+          "type": "string"
+        }
+      },
       "PreparationId": {
         "in": "path",
         "name": "preparation_id",
         "required": true,
         "schema": {
           "pattern": "^[A-Za-z0-9_.-]{1,128}$",
+          "type": "string"
+        }
+      },
+      "PrincipalLlmRole": {
+        "description": "conversational_controller, language_realization or stt.",
+        "in": "path",
+        "name": "role",
+        "required": true,
+        "schema": {
+          "enum": [
+            "conversational_controller",
+            "language_realization",
+            "stt"
+          ],
+          "type": "string"
+        }
+      },
+      "ProviderId": {
+        "in": "path",
+        "name": "provider",
+        "required": true,
+        "schema": {
+          "pattern": "^[a-z][a-z0-9_-]{0,31}$",
           "type": "string"
         }
       },
@@ -268,6 +300,16 @@
           }
         },
         "description": "The session has ended; a new session needs a new authenticated context (`expired`)."
+      },
+      "MemoryNotFound": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "description": "No memory item with this id in the token scope (`validation_failed` / not found)."
       },
       "OAuthFlowNotFound": {
         "content": {
@@ -1597,6 +1639,18 @@
         ],
         "type": "object"
       },
+      "MemoryCreate": {
+        "$ref": "schemas/memory/memory-create.schema.json"
+      },
+      "MemoryItem": {
+        "$ref": "schemas/memory/memory-item.schema.json"
+      },
+      "MemoryList": {
+        "$ref": "schemas/memory/memory-list.schema.json"
+      },
+      "MemoryPatch": {
+        "$ref": "schemas/memory/memory-patch.schema.json"
+      },
       "OAuthCallbackRequest": {
         "additionalProperties": false,
         "properties": {
@@ -1939,6 +1993,191 @@
       "PreparedAction": {
         "$ref": "schemas/actions/prepared-action.schema.json"
       },
+      "PrincipalBillingAck": {
+        "additionalProperties": false,
+        "properties": {
+          "consumer_subscription_is_not_api_access": {
+            "const": true,
+            "type": "boolean"
+          },
+          "notice_version": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "separate_api_billing_understood": {
+            "const": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "notice_version",
+          "consumer_subscription_is_not_api_access",
+          "separate_api_billing_understood"
+        ],
+        "type": "object"
+      },
+      "PrincipalBillingAckResult": {
+        "additionalProperties": false,
+        "properties": {
+          "acknowledged_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "notice_version": {
+            "type": "string"
+          },
+          "provider_id": {
+            "pattern": "^[a-z][a-z0-9_-]{0,31}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider_id",
+          "notice_version",
+          "acknowledged_at"
+        ],
+        "type": "object"
+      },
+      "PrincipalCredentialStatus": {
+        "additionalProperties": false,
+        "properties": {
+          "account": {
+            "additionalProperties": true,
+            "description": "Safe account identifiers only; may be empty.",
+            "type": "object"
+          },
+          "provider_id": {
+            "pattern": "^[a-z][a-z0-9_-]{0,31}$",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "missing",
+              "pending",
+              "active",
+              "expired",
+              "revoked",
+              "invalid",
+              "quarantined",
+              "reauthorization_required"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider_id",
+          "status"
+        ],
+        "type": "object"
+      },
+      "PrincipalCredentialSubmit": {
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "description": "Write-only. Never echoed.",
+            "maxLength": 8192,
+            "minLength": 1,
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 80,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "key"
+        ],
+        "type": "object"
+      },
+      "PrincipalLlm": {
+        "$ref": "schemas/providers/principal-llm.schema.json"
+      },
+      "PrincipalLlmBindingUpdate": {
+        "$ref": "schemas/providers/principal-llm-binding-update.schema.json"
+      },
+      "PrincipalOAuthStart": {
+        "additionalProperties": false,
+        "properties": {
+          "callback": {
+            "enum": [
+              "host",
+              "loopback"
+            ],
+            "type": "string"
+          },
+          "capabilities": {
+            "items": {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 16,
+            "minItems": 1,
+            "type": "array"
+          },
+          "label": {
+            "maxLength": 80,
+            "minLength": 1,
+            "type": "string"
+          },
+          "opener_origin": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "presentation": {
+            "enum": [
+              "redirect",
+              "popup"
+            ],
+            "type": "string"
+          },
+          "redirect_uri": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "capabilities",
+          "redirect_uri"
+        ],
+        "type": "object"
+      },
+      "PrincipalOAuthStarted": {
+        "additionalProperties": false,
+        "properties": {
+          "authorization_url": {
+            "type": "string"
+          },
+          "consent": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "flow_id": {
+            "type": "string"
+          },
+          "poll_interval_ms": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "redirect_uri": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "authorization_url",
+          "redirect_uri",
+          "expires_at"
+        ],
+        "type": "object"
+      },
       "ProviderBudget": {
         "$ref": "schemas/providers/budget.schema.json"
       },
@@ -1969,6 +2208,9 @@
           "states"
         ],
         "type": "object"
+      },
+      "ProviderCatalog": {
+        "$ref": "schemas/providers/provider-catalog.schema.json"
       },
       "ProviderConnectionStatus": {
         "$ref": "schemas/providers/connection-status.schema.json"
@@ -4848,6 +5090,604 @@
         }
       ]
     },
+    "/v1/me/llm": {
+      "get": {
+        "description": "Bindings of the token's principal for the token's application. Never another principal. No secrets.\n",
+        "operationId": "getPrincipalLlm",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrincipalLlm"
+                }
+              }
+            },
+            "description": "The account."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "The caller's LLM bindings and status",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/v1/me/llm/{role}": {
+      "delete": {
+        "operationId": "deletePrincipalLlmRole",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PrincipalLlmRole"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrincipalLlm"
+                }
+              }
+            },
+            "description": "The updated account."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Clear the binding for one LLM role",
+        "tags": [
+          "me"
+        ]
+      },
+      "put": {
+        "description": "Chooses a catalog profile (and optional model) for the role. A profile not in the catalog is\n`validation_failed` with `details.reason` `provider_not_in_catalog`. Self only.\n",
+        "operationId": "putPrincipalLlmRole",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PrincipalLlmRole"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrincipalLlmBindingUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrincipalLlm"
+                }
+              }
+            },
+            "description": "The updated account."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Bind a catalog profile to one LLM role",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/v1/me/oauth/{provider}/start": {
+      "post": {
+        "description": "Reuses the 1.1 OAuth engine; the resulting credential is owner-bound to the token's principal\n(ADR 0041). Self only. Providers without official third-party OAuth answer `validation_failed`\nwith `details.reason` `manual_fallback`.\n",
+        "operationId": "startPrincipalOAuth",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProviderId"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrincipalOAuthStart"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrincipalOAuthStarted"
+                }
+              }
+            },
+            "description": "Authorization URL and consent."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Start popup/redirect OAuth bound to the caller",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/v1/me/providers/{provider}/billing-notice/ack": {
+      "post": {
+        "operationId": "ackPrincipalProviderBillingNotice",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProviderId"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrincipalBillingAck"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrincipalBillingAckResult"
+                }
+              }
+            },
+            "description": "The acknowledgement."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Acknowledge the billing notice for the caller's provider",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/v1/me/providers/{provider}/credential": {
+      "delete": {
+        "operationId": "deletePrincipalProviderCredential",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProviderId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrincipalCredentialStatus"
+                }
+              }
+            },
+            "description": "Safe connection status after revoke."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Revoke the caller's own provider credential",
+        "tags": [
+          "me"
+        ]
+      },
+      "put": {
+        "description": "Host-relayed manual key for the token's principal. Write-only: never returned, logged or put in\nan error. Stored with reserved tenant_id `alixai-principal-credential` and owner_principal_id\nset (ADR 0041). Self only.\n",
+        "operationId": "putPrincipalProviderCredential",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProviderId"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrincipalCredentialSubmit"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrincipalCredentialStatus"
+                }
+              }
+            },
+            "description": "Safe connection status for this principal."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Submit the caller's own provider credential (write-only)",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/v1/memory": {
+      "get": {
+        "description": "Items for the verified application, tenant, workspace and principal only. Optional `q` and\n`status` filter. Never another scope.\n",
+        "operationId": "listMemory",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "maxLength": 256,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "proposed",
+                "active",
+                "rejected"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 256,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 200,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryList"
+                }
+              }
+            },
+            "description": "The page of items."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "List or search memory items in the token scope",
+        "tags": [
+          "memory"
+        ]
+      },
+      "post": {
+        "description": "Host create after the user asked. Origin `user_explicit`, status `active`. No silent writes.\n",
+        "operationId": "createMemory",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemoryCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryItem"
+                }
+              }
+            },
+            "description": "The created item."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Create a memory item on the user's explicit request",
+        "tags": [
+          "memory"
+        ]
+      }
+    },
+    "/v1/memory/{id}": {
+      "delete": {
+        "operationId": "deleteMemory",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MemoryId"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted (idempotent for an unknown id of this scope)."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Delete a memory item in the token scope",
+        "tags": [
+          "memory"
+        ]
+      },
+      "patch": {
+        "operationId": "patchMemory",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MemoryId"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemoryPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryItem"
+                }
+              }
+            },
+            "description": "The updated item."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/MemoryNotFound"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Edit a memory item in the token scope",
+        "tags": [
+          "memory"
+        ]
+      }
+    },
+    "/v1/memory/{id}/confirm": {
+      "post": {
+        "description": "Structured consent only. An expired proposal is `validation_failed` with `details.reason`\n`memory_proposal_expired`. Typed chat text never confirms.\n",
+        "operationId": "confirmMemory",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MemoryId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryItem"
+                }
+              }
+            },
+            "description": "The item now active."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/MemoryNotFound"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Confirm an assistant-proposed memory item",
+        "tags": [
+          "memory"
+        ]
+      }
+    },
+    "/v1/memory/{id}/reject": {
+      "post": {
+        "operationId": "rejectMemory",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MemoryId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryItem"
+                }
+              }
+            },
+            "description": "The item now rejected."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/MemoryNotFound"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Reject an assistant-proposed memory item",
+        "tags": [
+          "memory"
+        ]
+      }
+    },
     "/v1/oauth/callback": {
       "post": {
         "description": "Passes the redirect the browser followed to the OAuth engine, with the token's scope (which must be the scope that started the flow, principal included). A state that is unknown, replayed, expired or issued to another scope is refused and spent; nothing is stored unless every check passed. The code and the state are never echoed or logged. Operator only (a tenant administrator of the deployment's own configuration unless said otherwise); `permission_denied` for everybody else, before the body is read. Used by the host-callback path; a loopback popup flow completes inside AlixAI and does not call this route.\n",
@@ -5264,6 +6104,37 @@
           }
         },
         "summary": "Create or change a budget",
+        "tags": [
+          "providers"
+        ]
+      }
+    },
+    "/v1/providers/catalog": {
+      "get": {
+        "description": "Catalog entries for per-principal LLM bindings. No secrets. Any authenticated principal of an\nactive application may read it. A profile not in this catalog is `provider_not_in_catalog` when\nchosen. Answers `unavailable` until the principal-LLM service is wired.\n",
+        "operationId": "getProviderCatalog",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderCatalog"
+                }
+              }
+            },
+            "description": "The catalog."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Operator-approved provider catalog a principal may pick",
         "tags": [
           "providers"
         ]

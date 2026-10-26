@@ -6,7 +6,7 @@ from typing import Annotated, Literal, Optional, Union
 from alixai.gen.common.ids import Identifier
 from pydantic import BaseModel, ConfigDict, Field
 
-__all__ = ['ProviderId', 'ModelId', 'ModelVersion', 'ProfileId', 'CredentialRefId', 'EgressPolicyId', 'EgressDecisionId', 'EnvelopeId', 'UsageId', 'BudgetId', 'ReservationId', 'ReportId', 'AcknowledgementId', 'FileId', 'SourceId', 'MicroUnits', 'Counter', 'Currency', 'RegionCode', 'Sha256', 'ReasonCode', 'EgressMode', 'EgressLevel', 'DeploymentMode', 'Role', 'Modality', 'MeterUnit', 'Channel', 'SendCategory', 'BlockedCategory', 'RetentionMode', 'TrainingUse', 'Residency', 'BudgetStatus', 'ProviderErrorKind', 'ProfileLifecycle', 'CredentialKind', 'ConnectionWarning', 'SafeAccount', 'BudgetSubject', 'ModelRef', 'ProviderRef', 'Subject']
+__all__ = ['ProviderId', 'ModelId', 'ModelVersion', 'ProfileId', 'CredentialRefId', 'EgressPolicyId', 'EgressDecisionId', 'EnvelopeId', 'UsageId', 'BudgetId', 'ReservationId', 'ReportId', 'AcknowledgementId', 'FileId', 'SourceId', 'MicroUnits', 'Counter', 'Currency', 'RegionCode', 'Sha256', 'ReasonCode', 'EgressMode', 'EgressLevel', 'DeploymentMode', 'Role', 'AccountMode', 'PrincipalLlmRole', 'ReservedPrincipalCredentialTenant', 'Modality', 'MeterUnit', 'Channel', 'SendCategory', 'BlockedCategory', 'RetentionMode', 'TrainingUse', 'Residency', 'BudgetStatus', 'ProviderErrorKind', 'ProfileLifecycle', 'CredentialKind', 'ConnectionWarning', 'SafeAccount', 'BudgetSubject', 'ModelRef', 'ProviderRef', 'Subject']
 
 
 ProviderId = Annotated[str, Field(pattern='^[a-z][a-z0-9_-]{0,31}$')]
@@ -82,6 +82,15 @@ DeploymentMode = Literal["local", "external", "hybrid"]
 
 
 Role = Literal["conversational_controller", "language_realization", "vision", "image_generation", "embedding", "stt", "tts"]
+
+
+AccountMode = Literal["tenant", "per_principal", "deployment_local"]
+
+
+PrincipalLlmRole = Literal["conversational_controller", "language_realization", "stt"]
+
+
+ReservedPrincipalCredentialTenant = Literal["alixai-principal-credential"]
 
 
 Modality = Literal["text", "image", "audio", "file"]

@@ -6,7 +6,7 @@
 
 What is generated
 -----------------
-* schemas/{common,actions,conversation,decision,providers,readiness}/*.schema.json -> src/alixai/gen/<area>/<file>.py
+* schemas/{common,actions,conversation,decision,providers,readiness,memory}/*.schema.json -> src/alixai/gen/<area>/<file>.py
 * the components of schemas/api/openapi.yaml and its sessions, actions and apps fragments
   and the providers and oauth fragments (the operations the SDK speaks) -> src/alixai/gen/api.py
 
@@ -45,7 +45,7 @@ GEN_DIR = SDK_ROOT / "src" / "alixai" / "gen"
 GEN_PACKAGE = "alixai.gen"
 
 # The JSON Schema areas the SDK needs: a type of one of them is what the API sends and receives.
-AREAS = ("common", "actions", "conversation", "decision", "providers", "readiness")
+AREAS = ("common", "actions", "conversation", "decision", "providers", "readiness", "memory")
 # The OpenAPI documents whose components are generated: the root and the areas the SDK implements.
 API_DOCUMENTS = ("openapi.yaml", "paths/sessions.yaml", "paths/actions.yaml", "paths/apps.yaml", "paths/providers.yaml", "paths/oauth.yaml")
 

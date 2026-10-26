@@ -13,7 +13,7 @@ Hosts that serve several companies (tenants) for the same signed-in person need 
 ### Catalog
 
 - **A. Tenant-configured profiles (1.1 operator surface).** Rejected: companies would configure LLMs; the owner wants the opposite.
-- **B. Operator-approved catalog with `credential_mode: per_principal`.** Profiles carry no secret; users may only pick catalog entries. Taken.
+- **B. Operator-approved catalog with `account_mode: per_principal`.** Profiles carry no secret; users may only pick catalog entries. Taken.
 - **C. Free-form provider/model strings from the client.** Rejected: no qualification, terms, prices or billing notice.
 
 ### Principal binding and resolution

@@ -4,7 +4,9 @@ import { isValidElement, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ComponentProps, ReactElement, ReactNode, RefObject } from "react";
 import { useAlixAISuggestions } from "@alixai/copilotkit-adapter/react";
+import { AlixMemoryProposal } from "./components/Memory.js";
 import { AlixDictationButton, insertIntoCopilotTextarea, type VoiceModeOption } from "./dictation/index.js";
+import { useAlixMemoryProposal } from "./hooks/useAlixMemoryProposal.js";
 import { AlixProvider, useAlixText } from "./i18n/context.js";
 import type { AlixProviderProps } from "./i18n/context.js";
 import { alixProviderProps, useAlixConfirmation } from "./register.js";
@@ -46,6 +48,13 @@ export interface AlixChatPanelProps extends Pick<AlixProviderProps, "locale" | "
   dictationButton?: ReactNode;
   /** Replaces the default talk control when `voice` is `conversation`. */
   voiceButton?: ReactNode;
+  /**
+   * When true, render `AlixMemoryProposal` for `alixai.memory_proposal` CUSTOM events.
+   * Default false (1.1 compatibility). The kit never calls AlixAI.
+   */
+  memory?: boolean;
+  onMemoryConfirm?: (id: string) => void | Promise<void>;
+  onMemoryReject?: (id: string) => void | Promise<void>;
   children?: ReactNode;
 }
 
@@ -223,10 +232,17 @@ const Chat = ({
   variant,
   defaultOpen,
   onContinueInApp,
-}: Pick<AlixChatPanelProps, "agentId" | "threadId" | "variant" | "defaultOpen" | "onContinueInApp">): ReactElement => {
+  memory = false,
+  onMemoryConfirm,
+  onMemoryReject,
+}: Pick<
+  AlixChatPanelProps,
+  "agentId" | "threadId" | "variant" | "defaultOpen" | "onContinueInApp" | "memory" | "onMemoryConfirm" | "onMemoryReject"
+>): ReactElement => {
   const text = useAlixText().chat;
   useAlixConfirmation(onContinueInApp === undefined ? {} : { onContinueInApp });
   useAlixAISuggestions();
+  const memoryState = useAlixMemoryProposal(memory);
   const labels = {
     chatInputPlaceholder: text.placeholder,
     modalHeaderTitle: text.title,
@@ -238,9 +254,43 @@ const Chat = ({
     assistantMessageToolbarCopyMessageLabel: text.copy,
   };
   const common = { agentId: agentId ?? "default", labels, messageView, ...(threadId !== undefined && { threadId }) };
-  if (variant === "sidebar") return <CopilotSidebar {...common} {...(defaultOpen !== undefined && { defaultOpen })} />;
-  if (variant === "popup") return <CopilotPopup {...common} {...(defaultOpen !== undefined && { defaultOpen })} />;
-  return <CopilotChat {...common} />;
+  const shell =
+    variant === "sidebar" ? (
+      <CopilotSidebar {...common} {...(defaultOpen !== undefined && { defaultOpen })} />
+    ) : variant === "popup" ? (
+      <CopilotPopup {...common} {...(defaultOpen !== undefined && { defaultOpen })} />
+    ) : (
+      <CopilotChat {...common} />
+    );
+
+  const answer = async (kind: "confirm" | "reject"): Promise<void> => {
+    if (memoryState.proposal === null) return;
+    const handler = kind === "confirm" ? onMemoryConfirm : onMemoryReject;
+    if (handler === undefined) return;
+    memoryState.setStatus("submitting");
+    try {
+      await handler(memoryState.proposal.id);
+      memoryState.setStatus(kind === "confirm" ? "remembered" : "forgotten");
+    } catch {
+      memoryState.setStatus("failed");
+    }
+  };
+
+  return (
+    <>
+      {shell}
+      {memory && memoryState.proposal !== null ? (
+        <div className="alix-pa-3">
+          <AlixMemoryProposal
+            proposal={memoryState.proposal}
+            status={memoryState.status}
+            onConfirm={() => void answer("confirm")}
+            onReject={() => void answer("reject")}
+          />
+        </div>
+      ) : null}
+    </>
+  );
 };
 
 export const AlixChatPanel = ({
@@ -270,6 +320,9 @@ export const AlixChatPanel = ({
   onVoiceCancel,
   dictationButton,
   voiceButton,
+  memory = false,
+  onMemoryConfirm,
+  onMemoryReject,
 }: AlixChatPanelProps): ReactElement => {
   const panelRef = useRef<HTMLDivElement>(null);
   // CopilotKit wants its renderer arrays stable: a new array on every render is an error and remounts every drawn activity.
@@ -300,9 +353,12 @@ export const AlixChatPanel = ({
           <Chat
             agentId={agentId}
             variant={variant}
+            memory={memory}
             {...(threadId !== undefined && { threadId })}
             {...(defaultOpen !== undefined && { defaultOpen })}
             {...(onContinueInApp !== undefined && { onContinueInApp })}
+            {...(onMemoryConfirm !== undefined && { onMemoryConfirm })}
+            {...(onMemoryReject !== undefined && { onMemoryReject })}
           />
           <ChatComposerVoice
             panelRef={panelRef}

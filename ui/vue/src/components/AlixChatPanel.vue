@@ -52,6 +52,15 @@ const props = withDefaults(
     voice?: VoiceModeOption;
     /** Required when `voice` is `dictation`: the SDK dictation client for this deployment. */
     dictationClient?: voice.DictationClient;
+    /**
+     * When true, render `AlixMemoryProposal` for `alixai.memory_proposal` CUSTOM events.
+     * Default false (1.1 compatibility). The kit never calls AlixAI: provide confirm/reject handlers.
+     */
+    memory?: boolean;
+    /** Host confirms a proposed memory id (calls POST /v1/memory/{id}/confirm). */
+    onMemoryConfirm?: (id: string) => void | Promise<void>;
+    /** Host rejects a proposed memory id (calls POST /v1/memory/{id}/reject). */
+    onMemoryReject?: (id: string) => void | Promise<void>;
   }>(),
   {
     client: undefined,
@@ -70,6 +79,9 @@ const props = withDefaults(
     links: true,
     voice: "off",
     dictationClient: undefined,
+    memory: false,
+    onMemoryConfirm: undefined,
+    onMemoryReject: undefined,
   },
 );
 
@@ -92,7 +104,7 @@ const online = useOnline();
 // The timeline's own slots (see AlixMessageStream), passed through to it. Only the ones the host fills are forwarded: an empty
 // pass-through would replace the stream's default rendering with nothing. The slots are typed for the host (each entry kind its
 // own `item`); the one dynamic pass-through in the template carries them all, so it casts its scope.
-const STREAM_SLOTS = ["empty", "message", "attachments", "block", "diagram", "citations", "receipt", "confirmation", "continue", "error"] as const;
+const STREAM_SLOTS = ["empty", "message", "attachments", "block", "diagram", "citations", "receipt", "confirmation", "continue", "memory-proposal", "error"] as const;
 type Entry<K extends ChatItem["kind"]> = Extract<ChatItem, { kind: K }>;
 const slots = defineSlots<{
   title?: () => unknown;
@@ -110,6 +122,7 @@ const slots = defineSlots<{
   receipt?: (props: { item: Entry<"receipt"> }) => unknown;
   confirmation?: (props: { item: Entry<"confirmation"> }) => unknown;
   continue?: (props: { item: Entry<"continue"> }) => unknown;
+  "memory-proposal"?: (props: { item: Entry<"memory_proposal"> }) => unknown;
   error?: (props: { item: Entry<"error"> }) => unknown;
 }>();
 const forwarded = computed(() => STREAM_SLOTS.filter((name) => slots[name] !== undefined));
@@ -121,6 +134,7 @@ const createController = (): AlixChat => {
     client: props.client,
     threadId: () => props.threadId ?? "",
     language: () => props.language,
+    memory: () => props.memory,
     ...(props.onUiAction !== undefined && { onUiAction: props.onUiAction }),
   });
 };
@@ -175,6 +189,26 @@ const send = async (text: string): Promise<void> => {
   const attachments = queue?.outgoing.value ?? [];
   queue?.clear();
   await chat.send(text, { attachments });
+};
+
+const answerMemory = async (itemId: string, kind: "confirm" | "reject"): Promise<void> => {
+  const memoryId = chat.memoryIdOf(itemId);
+  if (memoryId === undefined) return;
+  const handler = kind === "confirm" ? props.onMemoryConfirm : props.onMemoryReject;
+  if (handler === undefined) return;
+  chat.setMemoryStatus(itemId, "submitting");
+  try {
+    await handler(memoryId);
+    chat.setMemoryStatus(itemId, kind === "confirm" ? "remembered" : "forgotten");
+  } catch {
+    chat.setMemoryStatus(itemId, "failed");
+  }
+};
+const onConfirmMemory = (itemId: string): void => {
+  void answerMemory(itemId, "confirm");
+};
+const onRejectMemory = (itemId: string): void => {
+  void answerMemory(itemId, "reject");
 };
 
 const choose = (choiceId: string, itemId: string): void => {
@@ -290,6 +324,7 @@ defineExpose({ chat });
           @action="onAction"
           @approve="chat.approve($event)"
           @choose="choose"
+          @confirm-memory="onConfirmMemory"
           @continue-in-app="emit('continue-in-app', $event)"
           @decline="chat.decline($event)"
           @dismiss="chat.dismiss($event)"
@@ -297,6 +332,7 @@ defineExpose({ chat });
           @free-text="send"
           @open-citation="emit('open-citation', $event)"
           @open-file="emit('open-file', $event)"
+          @reject-memory="onRejectMemory"
           @retry="chat.retry()"
         >
           <template

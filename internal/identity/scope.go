@@ -47,8 +47,18 @@ func NewScope(deploymentID string, c ContextClaims) (contracts.Scope, error) {
 	if err := s.Validate(); err != nil {
 		return contracts.Scope{}, err
 	}
+	// The reserved principal-credential tenant is a storage bucket only (ADR 0041): never a
+	// request scope on a context token or peer-authenticated IPC session.
+	if c.TenantID == reservedPrincipalCredentialTenant {
+		return contracts.Scope{}, contracts.New(contracts.ErrScopeViolation,
+			"identity: the reserved principal-credential tenant is not a request scope").
+			WithDetails("reason", "reserved_tenant")
+	}
 	return s, nil
 }
+
+// reservedPrincipalCredentialTenant mirrors schemas/providers/shared reservedPrincipalCredentialTenant.
+const reservedPrincipalCredentialTenant = "alixai-principal-credential"
 
 func dedupe(in []string) []string {
 	if len(in) < 2 {

@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/buxee/alix-ai/pkg/contracts/gen/common"
+	"github.com/buxee/alix-ai/pkg/contracts/gen/memory"
 )
 
 // TaskProposal mirrors urn:alixai:schema:conversation:task-proposal:v1.
@@ -68,6 +69,13 @@ type TaskProposal struct {
 	//
 	// Authority: model.
 	UIAction *TaskProposalUIAction `json:"ui_action,omitzero" alixai:"model"`
+
+	// Optional. One long-term memory fact the assistant proposes to remember (ADR 0042).
+	// Confirm or reject only through POST /v1/memory/{id}/confirm or /reject; typed chat text
+	// never confirms. Null or absent means no proposal.
+	//
+	// Authority: model.
+	MemoryProposal *TaskProposalMemoryProposal `json:"memory_proposal,omitzero" alixai:"model"`
 
 	// Trace ID of the inference call that produced this proposal. Assigned by the core from
 	// the provider call; the model never writes it, so a proposal that arrives with a trace_id
@@ -172,6 +180,71 @@ func (v *TaskProposalIntent) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("TaskProposalIntent: %v is not a valid value", raw)
 	}
 	*v = TaskProposalIntent(raw)
+	return nil
+}
+
+// TaskProposalMemoryProposal mirrors
+// urn:alixai:schema:conversation:task-proposal:v1#/$defs/memoryProposal.
+//
+// A proposed long-term memory item (ADR 0042). Shape aligned with schemas/memory create body; text
+// uses the memory shared def.
+type TaskProposalMemoryProposal struct {
+	// Authority: model.
+	Text memory.MemoryText `json:"text" alixai:"model"`
+
+	// Authority: model.
+	Structured map[string]string `json:"structured,omitzero" alixai:"model"`
+
+	// Authority: model.
+	DataClass *TaskProposalMemoryProposalDataClass `json:"data_class,omitzero" alixai:"model"`
+}
+
+// TaskProposalMemoryProposalDataClass mirrors
+// urn:alixai:schema:conversation:task-proposal:v1#/$defs/memoryProposal/properties/data_class.
+//
+// Only the values listed in the schema are valid.
+type TaskProposalMemoryProposalDataClass string
+
+// The valid values of TaskProposalMemoryProposalDataClass.
+const (
+	TaskProposalMemoryProposalDataClassPublic       TaskProposalMemoryProposalDataClass = "public"
+	TaskProposalMemoryProposalDataClassInternal     TaskProposalMemoryProposalDataClass = "internal"
+	TaskProposalMemoryProposalDataClassConfidential TaskProposalMemoryProposalDataClass = "confidential"
+	TaskProposalMemoryProposalDataClassRestricted   TaskProposalMemoryProposalDataClass = "restricted"
+)
+
+// Valid reports whether v is one of the values the schema lists.
+func (v TaskProposalMemoryProposalDataClass) Valid() bool {
+	switch v {
+	case TaskProposalMemoryProposalDataClassPublic, TaskProposalMemoryProposalDataClassInternal, TaskProposalMemoryProposalDataClassConfidential, TaskProposalMemoryProposalDataClassRestricted:
+		return true
+	}
+	return false
+}
+
+// MarshalJSON refuses to encode a value outside the enum, so an unset or
+// corrupt value fails instead of producing a document the schema rejects.
+func (v TaskProposalMemoryProposalDataClass) MarshalJSON() ([]byte, error) {
+	if !v.Valid() {
+		return nil, fmt.Errorf("TaskProposalMemoryProposalDataClass: %v is not a valid value", string(v))
+	}
+	return json.Marshal(string(v))
+}
+
+// UnmarshalJSON accepts only the values the schema lists; null and anything
+// else is an error.
+func (v *TaskProposalMemoryProposalDataClass) UnmarshalJSON(data []byte) error {
+	if bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
+		return fmt.Errorf("TaskProposalMemoryProposalDataClass: null is not a valid value")
+	}
+	var raw string
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return fmt.Errorf("TaskProposalMemoryProposalDataClass: %w", err)
+	}
+	if !TaskProposalMemoryProposalDataClass(raw).Valid() {
+		return fmt.Errorf("TaskProposalMemoryProposalDataClass: %v is not a valid value", raw)
+	}
+	*v = TaskProposalMemoryProposalDataClass(raw)
 	return nil
 }
 

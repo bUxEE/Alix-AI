@@ -115,7 +115,7 @@ func eventSchemas(t *testing.T) *jsonschema.Compiler {
 		c := jsonschema.NewCompiler()
 		c.DefaultDraft(jsonschema.Draft2020)
 		c.AssertFormat()
-		for _, area := range []string{"common", "actions", "conversation"} {
+		for _, area := range []string{"common", "actions", "conversation", "memory"} {
 			files, err := filepath.Glob(filepath.Join("..", "..", "schemas", area, "*.schema.json"))
 			if err != nil || len(files) == 0 {
 				eventSchemaErr = errors.Join(err, errors.New("no schemas in "+area))

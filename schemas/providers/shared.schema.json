@@ -164,7 +164,7 @@
         "tts"
       ]
     },
-    "credentialMode": {
+    "accountMode": {
       "title": "Credential mode",
       "description": "How a catalog or registry profile obtains a credential (ADR 0041). tenant: the 1.1 operator/tenant binding. per_principal: the profile carries no credential; each principal binds their own. deployment_local: local models, no per-scope choice.",
       "type": "string",

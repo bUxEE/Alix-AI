@@ -25,11 +25,13 @@ const (
 	// and the fence of an attached file (the proposal prompt of a turn that carries attachments).
 	tagDirective  = "directive_data"
 	tagAttachment = "attachment_data"
+	// tagMemory wraps long-term memory items (ADR 0042): untrusted data, never instructions.
+	tagMemory = "memory_data"
 )
 
 // fenceTags is every fence tag of the dialogue prompts, the list the dialogue package keeps in
 // step with (FenceTags). A tag one of the two forgets is a fence the text it holds can close.
-var fenceTags = []string{tagUser, tagEarlier, tagReply, tagState, tagDirective, tagAttachment, tagClient}
+var fenceTags = []string{tagUser, tagEarlier, tagReply, tagState, tagDirective, tagAttachment, tagClient, tagMemory}
 
 // FenceTags returns the fence tags this package neutralises inside fenced text. The dialogue
 // package builds its own fence from the same names, and a test compares the two lists.

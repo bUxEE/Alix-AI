@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:memory:shared:v1",
+  "title": "Long-term memory building blocks",
+  "description": "Definitions for long-term memory (ADR 0042).",
+  "$defs": {
+    "memoryId": {
+      "title": "Memory item ID",
+      "description": "Minted by the core: prefix mem, underscore, 26-character ULID.",
+      "type": "string",
+      "pattern": "^mem_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "memoryOrigin": {
+      "type": "string",
+      "enum": ["user_explicit", "assistant_proposed"]
+    },
+    "memoryStatus": {
+      "type": "string",
+      "enum": ["proposed", "active", "rejected"]
+    },
+    "memoryText": {
+      "description": "Bounded memory text. Never instructions for the model; context assembly fences it as untrusted data.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    }
+  }
+}

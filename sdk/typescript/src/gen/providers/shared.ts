@@ -3,6 +3,20 @@
 import type { Identifier } from "../common/ids.js";
 
 /**
+ * AccountMode mirrors urn:alixai:schema:providers:shared:v1#/$defs/accountMode.
+ *
+ * How a catalog or registry profile obtains a credential (ADR 0041). tenant: the 1.1
+ * operator/tenant binding. per_principal: the profile carries no credential; each principal binds
+ * their own. deployment_local: local models, no per-scope choice.
+ *
+ * Only the values listed in the schema are valid.
+ */
+export type AccountMode =
+  | "tenant"
+  | "per_principal"
+  | "deployment_local";
+
+/**
  * AcknowledgementID mirrors urn:alixai:schema:providers:shared:v1#/$defs/acknowledgementId.
  *
  * ID of one billing notice acknowledgement. Minted by the AlixAI core: prefix ack, an underscore
@@ -181,20 +195,6 @@ export type CredentialKind =
   | "oauth"
   | "api_key"
   | "oauth_issued_key";
-
-/**
- * CredentialMode mirrors urn:alixai:schema:providers:shared:v1#/$defs/credentialMode.
- *
- * How a catalog or registry profile obtains a credential (ADR 0041). tenant: the 1.1
- * operator/tenant binding. per_principal: the profile carries no credential; each principal binds
- * their own. deployment_local: local models, no per-scope choice.
- *
- * Only the values listed in the schema are valid.
- */
-export type CredentialMode =
-  | "tenant"
-  | "per_principal"
-  | "deployment_local";
 
 /**
  * CredentialRefID mirrors urn:alixai:schema:providers:shared:v1#/$defs/credentialRefId.

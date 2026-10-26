@@ -3,6 +3,10 @@
 // keeps its own table (src/rag/operations.ts) and the transport reads both through `operationSpec`. test/openapi-contract reads the
 // OpenAPI document and fails when a row here and the document disagree.
 
+import { ME_OPERATIONS } from "./me/operations.js";
+import type { MeOperationId } from "./me/operations.js";
+import { MEMORY_OPERATIONS } from "./memory/operations.js";
+import type { MemoryOperationId } from "./memory/operations.js";
 import { RAG_OPERATIONS } from "./rag/operations.js";
 import type { RagOperationId } from "./rag/operations.js";
 
@@ -20,6 +24,14 @@ export interface OperationSpec {
    */
   readonly safe?: boolean;
 }
+
+/** Area tables (me, memory) carry `safe` but not `authenticated`; every route there needs a context token. */
+const areaOps = <T extends Record<string, { readonly method: HttpMethod; readonly path: string; readonly safe: boolean }>>(
+  table: T,
+): { [K in keyof T]: OperationSpec } =>
+  Object.fromEntries(
+    Object.entries(table).map(([id, op]) => [id, { method: op.method, path: op.path, authenticated: true, ...(op.safe ? { safe: true } : {}) }]),
+  ) as { [K in keyof T]: OperationSpec };
 
 export const OPERATIONS = {
   getLiveness: { method: "GET", path: "/healthz", authenticated: false },
@@ -59,6 +71,8 @@ export const OPERATIONS = {
   getSettingsCapabilities: { method: "GET", path: "/v1/settings/capabilities", authenticated: true },
   getSettingsIntegrationAudit: { method: "GET", path: "/v1/settings/integration-audit", authenticated: true },
   getSettingsProviderHealth: { method: "GET", path: "/v1/settings/providers", authenticated: true },
+  ...areaOps(ME_OPERATIONS),
+  ...areaOps(MEMORY_OPERATIONS),
 } as const satisfies Record<string, OperationSpec>;
 
 /** The operations the fake server implements: everything but the RAG area, which has its own table. */
@@ -70,6 +84,9 @@ export type OperationId = CoreOperationId | RagOperationId;
 /** The method, path and authentication of any operation the SDK sends, whichever table declares it. */
 export const operationSpec = (operation: OperationId): OperationSpec =>
   operation in OPERATIONS ? OPERATIONS[operation as CoreOperationId] : RAG_OPERATIONS[operation as RagOperationId];
+
+/** Re-export area ids so callers can narrow without importing the area modules. */
+export type { MeOperationId, MemoryOperationId };
 
 /** Whether sending the operation again is always safe: a read, or a POST that only reads. */
 export const isSafeToRepeat = (operation: OperationId): boolean => {

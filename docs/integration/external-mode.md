@@ -30,7 +30,24 @@ Guidance: leave sources at the default (`local_only`) unless a document set is s
 
 ## 3. What your host can read and show
 
-All provider routes are operator-only: the caller is an operator named in the deployment's configuration (`external_providers.deployment_operators` as `<application id>/<principal id>`, or `tenant_admins` as `<application id>/<tenant id>/<principal id>`), never an end user and never someone a token merely says is an admin, and never the same principal id signed by another application's issuer. They take the same verified context token as the rest of `/v1`; the scope is the token's, and a path or query cannot name another tenant. The routes are in `schemas/api/paths/providers.yaml` and `oauth.yaml`; when external mode is off or the build is `noexternal` every one answers `unavailable`.
+### Per-user LLM accounts (ADR 0041)
+
+Self-service routes under `/v1/me/…` and `GET /v1/providers/catalog` are for the verified token's principal (any authenticated user of an active application). They never return a secret. Keys arrive only through your host server. Operator routes below never expose a principal's key. When external mode is off or the build is `noexternal`, these routes answer `unavailable` with `details.reason` `llm_not_configured`.
+
+| You want | Route |
+| --- | --- |
+| Catalog of pickable profiles (terms, prices, billing notice version; no secrets) | `GET /v1/providers/catalog` |
+| Caller's bindings and credential status | `GET /v1/me/llm` |
+| Bind / clear a role (`conversational_controller`, `language_realization`, `stt`) | `PUT` / `DELETE /v1/me/llm/{role}` |
+| Submit / revoke the caller's own key (write-only) | `PUT` / `DELETE /v1/me/providers/{provider}/credential` |
+| Acknowledge the catalog billing notice | `POST /v1/me/providers/{provider}/billing-notice/ack` |
+| Start principal-bound OAuth | `POST /v1/me/oauth/{provider}/start` |
+
+A profile not in the catalog is `validation_failed` with `details.reason` `provider_not_in_catalog`. Resolution in External mode: principal binding → deployment default route → `llm_not_configured`. Tenant egress still gates company data.
+
+### Operator provider routes
+
+All other provider routes are operator-only: the caller is an operator named in the deployment's configuration (`external_providers.deployment_operators` as `<application id>/<principal id>`, or `tenant_admins` as `<application id>/<tenant id>/<principal id>`), never an end user and never someone a token merely says is an admin, and never the same principal id signed by another application's issuer. They take the same verified context token as the rest of `/v1`; the scope is the token's, and a path or query cannot name another tenant. The routes are in `schemas/api/paths/providers.yaml` and `oauth.yaml`; when external mode is off or the build is `noexternal` every one answers `unavailable`.
 
 | You want to show | Route | Object (schema in `schemas/providers/`) |
 | --- | --- | --- |

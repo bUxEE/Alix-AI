@@ -9,6 +9,7 @@ import BlocksSection from "./sections/BlocksSection.vue";
 import ChatSection from "./sections/ChatSection.vue";
 import ConversationsSection from "./sections/ConversationsSection.vue";
 import FilesSection from "./sections/FilesSection.vue";
+import MemorySection from "./sections/MemorySection.vue";
 import SettingsSection from "./sections/SettingsSection.vue";
 import VoiceSection from "./sections/VoiceSection.vue";
 import { SECTIONS, isSectionId, type SectionId } from "./sections";
@@ -22,6 +23,7 @@ const text = useDemoText();
 const VIEWS: Record<SectionId, Component> = {
   chat: ChatSection,
   conversations: ConversationsSection,
+  memory: MemorySection,
   voice: VoiceSection,
   files: FilesSection,
   settings: SettingsSection,

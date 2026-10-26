@@ -163,8 +163,8 @@ func (e *Engine) completeTaken(ctx context.Context, scope contracts.Scope, f *pe
 	if f.reauth == "" {
 		grant := credentials.OAuthGrant{ProviderID: p.ID, Label: label, Scopes: permitted,
 			Account: acct, Access: ts.access, Refresh: ts.refresh, ExpiresAt: &expires}
-		// SIWC ChatGPT plan usage is the signed-in person's alone: bind the credential to this principal.
-		if slices.Contains(permitted, "chatgpt.tokens.use.direct") {
+		// SIWC ChatGPT plan usage, and every principal-bucket OAuth start (ADR 0041), bind to this principal.
+		if credentials.IsPrincipalCredentialTenant(scope.TenantID) || slices.Contains(permitted, "chatgpt.tokens.use.direct") {
 			grant.OwnerPrincipal = scope.PrincipalID
 		}
 		ref, err = e.cr.AddOAuth(ctx, scope, grant)
@@ -237,9 +237,11 @@ func (e *Engine) completeIssuedKey(ctx context.Context, scope contracts.Scope, p
 	if len(scopes) == 0 {
 		scopes = []string{"api"}
 	}
-	ref, err := e.cr.AddOAuthIssuedKey(ctx, scope, credentials.OAuthIssuedKeyGrant{
-		ProviderID: p.ID, Label: label, Scopes: scopes, Key: key,
-	})
+	issued := credentials.OAuthIssuedKeyGrant{ProviderID: p.ID, Label: label, Scopes: scopes, Key: key}
+	if credentials.IsPrincipalCredentialTenant(scope.TenantID) {
+		issued.OwnerPrincipal = scope.PrincipalID
+	}
+	ref, err := e.cr.AddOAuthIssuedKey(ctx, scope, issued)
 	if err != nil {
 		e.log.Error("oauth issued key could not be stored", "provider", string(p.ID), "tenant", scope.TenantID, "reason", string(credentials.ReasonOf(err)))
 		return Connection{}, err

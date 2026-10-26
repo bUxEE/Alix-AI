@@ -8,7 +8,7 @@
 **Private, local language, voice, knowledge and safe application control — for any application —<br>without handing that application's authority to an LLM.**
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-![Status](https://img.shields.io/badge/status-1.1.0-brightgreen.svg)
+![Status](https://img.shields.io/badge/status-1.2.0-brightgreen.svg)
 ![Self-hosted](https://img.shields.io/badge/hosting-self--hosted-brightgreen.svg)
 ![Core](https://img.shields.io/badge/core-Go%20%2B%20SQLite-00ADD8.svg)
 ![Runtime](https://img.shields.io/badge/default%20runtime-LocalAI-8A2BE2.svg)
@@ -28,15 +28,11 @@
 ---
 
 > [!IMPORTANT]
-> **AlixAI 1.1.0 is released.** Additive on 1.0.0: light external setups with no local LLM, record-to-text dictation
-> (local or external STT), popup OAuth and a provider catalog for browser login, and chat providers OpenRouter / xAI /
-> Moonshot. The service, conversational engine, scoped RAG, MCP / OpenAPI / native adapters, SDKs (TypeScript, Go, Python),
-> CopilotKit adapter, voice, decision layer, External and Hybrid modes, the optional Vue and React kits and three
-> reference applications remain covered by tests. Still not done: certification on a real 8 GB x86-64 machine (ARM64 has
-> never been run), 24-hour and 7-day soaks (analysis only), live provider runs against real endpoints, voicebench for
-> Parakeet / Whisper large-v3-turbo / Whisper large-v3 (candidates until measured), and an independent external security
-> review. No model is certified for the Lite profile. Signing keys, licence and legal reviews, provider-terms review and
-> the maintainer security self-review are done by the maintainer (not independently reviewed). Details:
+> **AlixAI 1.2.0 is released.** Additive on 1.1.0: per-principal LLM accounts (operator catalog, `/v1/me/…`, reserved-tenant
+> credentials) and long-term memory (consent-gated proposals, `memory.enabled` default off). 1.1 features remain: light
+> external setups, dictation, popup OAuth, OpenRouter / xAI / Moonshot. Still not verified: live provider runs against real
+> endpoints, voicebench on real hardware, certification on a real 8 GB x86-64 machine (ARM64 has never been run), 24-hour
+> and 7-day soaks (analysis only), and an independent external security review. Details:
 > [Project status](#project-status) and [docs/verification/README.md](docs/verification/README.md).
 
 ## Contents
@@ -472,22 +468,11 @@ docs/                  architecture, ADRs, integration guides, operations, secur
 
 ## Project status
 
-**Unreleased (1.2.0).** Release archives: GoReleaser packs both binaries with `--parallelism 1` so member order stays stable and two clean runs produce identical `SHA256SUMS` (the v1.0.0/v1.1.0 release job failed when parallelism let `alixai` and `alixai-parser` swap order). `tools/release` skips operator-local model weights under `deploy/container/**/data` when copying the module tree for reproducible-check.
-
-**1.1.0 is released** (minor, additive on 1.0.0). What 1.1.0 adds: light external setup (per-layer local/external routing,
-including no local LLM when the controller is external); dictation (`GET /v1/dictations/capabilities`,
-`POST /v1/sessions/{id}/dictations`) with local STT packs (Parakeet, Whisper turbo / large-v3 as candidates) or external
-STT; popup OAuth and provider browser login (`alixai providers login`); OpenRouter, xAI and Moonshot chat providers; UI kit
-voice modes `off` | `dictation` | `conversation`; SDK clients for dictation and OAuth flow status; the
-[`valid-help-assistant`](examples/packages/valid-help-assistant) package and
-[light integration guide](docs/integration/guides/light-integration.md); and a core-version fix so source builds report
-`1.1.0-dev` and shipped packages declare `[1.0.0, 2.0.0)` (dev and release cores both accept them). Contract changes are
-additive and frozen into `schemas/_frozen/v1`. What was verified — statuses **Done**, **Done (maintainer, not independent)**,
-**Analysis only**, and **Not done** — is listed on [docs/verification/README.md](docs/verification/README.md). Summary:
+**1.2.0 is released** (minor, additive on 1.1.0). What 1.2.0 adds: per-principal LLM accounts ([ADR 0041](docs/decisions/0041-per-principal-llm-accounts.md)) — operator catalog (`alixai providers catalog-*`), `GET /v1/providers/catalog`, `/v1/me/llm…` and `/v1/me/providers/…`, reserved-tenant credentials, router resolution (principal binding → deployment default → local or `llm_not_configured`); long-term memory ([ADR 0042](docs/decisions/0042-long-term-memory.md)) — `memory.enabled` (default off), `/v1/memory`, consent-gated `memory_proposal` on task proposals and turn events, retention erase for memory and principal LLM accounts. Source builds report `1.2.0-dev`; packages declaring `[1.0.0, 2.0.0)` still validate. Contract changes are additive and frozen into `schemas/_frozen/v1`. Release archives stay reproducible (GoReleaser `--parallelism 1`; `tools/release` skips local model weights). Not verified in 1.2: live provider runs, voicebench on real hardware, real 8 GB certification, independent security review. Summary:
 
 | Status | Areas |
 | --- | --- |
-| Done | Unit/integration/security/degradation/gate tests; CI workflows; API and schema compatibility (including the 1.1.0 additive freeze); dependency vulnerability and licence checks; disaster-recovery drill; private security contact |
+| Done | Unit/integration/security/degradation/gate tests; CI workflows; API and schema compatibility (including the 1.2.0 additive freeze); dependency vulnerability and licence checks; disaster-recovery drill; private security contact |
 | Done (maintainer, not independent) | Reproducible build, SBOM and signed release manifest (`keys/alixai-release-2026.pub`); model, decision-layer and dependency licence reviews; External mode legal, residency and security review; provider terms; security self-review; internal penetration test; trademark policy |
 | Analysis only | Lite and Balanced profiles (measured under caps, not certified on a real 8 GB machine); 24-hour and 7-day soaks |
 | Not done | Real 8 GB x86-64 certification; ARM64 (never run); controller model qualification (no model certified for Lite); decision-layer hardware gates; live provider runs against real endpoints; voicebench for Parakeet / Whisper large-v3-turbo / Whisper large-v3; independent external security review |

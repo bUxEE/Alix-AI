@@ -221,9 +221,17 @@ func (x *run) route(ctx context.Context, res Resolved) Outcome {
 	}
 	rp, err := x.r.policy.RolePolicy(ctx, x.req.Scope, x.req.Role)
 	if err != nil {
+		if detailReason(err, "") == "llm_not_configured" {
+			return x.failed(&failure{kind: KindUnavailable, reason: "llm_not_configured"})
+		}
 		return x.local(ctx, "policy_unreadable", false)
 	}
 	if len(rp.Profiles) == 0 {
+		// No principal binding and no deployment default: keep 1.1 local service when a
+		// local model is configured; otherwise External answers llm_not_configured.
+		if res.Mode == ModeExternal && (x.ex.Local == nil || !x.r.local.Usable(x.req.Role)) {
+			return x.failed(&failure{kind: KindUnavailable, reason: "llm_not_configured"})
+		}
 		return x.local(ctx, "no_external_route", false)
 	}
 	if res.Mode == ModeHybrid && sensitiveClass(x.req.Requirement.DataClass) {

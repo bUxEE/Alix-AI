@@ -9,7 +9,7 @@ import (
 // ProviderCatalogEntry mirrors urn:alixai:schema:providers:provider-catalog-entry:v1.
 //
 // One operator-approved provider/model a principal may pick (ADR 0041). No credential and no
-// secret: credential_mode is per_principal. Terms, prices and the billing notice travel with the
+// secret: account_mode is per_principal. Terms, prices and the billing notice travel with the
 // entry so the host can show them before the principal binds.
 type ProviderCatalogEntry struct {
 	// The registry profile id the principal binds to.
@@ -35,7 +35,7 @@ type ProviderCatalogEntry struct {
 	// Always per_principal on catalog entries shown to users.
 	//
 	// Authority: alixai.
-	CredentialMode string `json:"credential_mode" alixai:"alixai"`
+	AccountMode string `json:"account_mode" alixai:"alixai"`
 
 	// Authority: alixai.
 	DisplayName string `json:"display_name" alixai:"alixai"`
@@ -75,7 +75,7 @@ func (v ProviderCatalogEntry) MarshalJSON() ([]byte, error) {
 	if a.Roles == nil {
 		a.Roles = []PrincipalLlmRole{}
 	}
-	a.CredentialMode = "per_principal"
+	a.AccountMode = "per_principal"
 	return json.Marshal(a)
 }
 

@@ -2,6 +2,7 @@ import type { ActionReceipt, Choice, Citation, Effect, ErrorCode, Fact, FileRef,
 import { ENERGY_MWH, OPEN_BY_SITE, OPEN_WORK_ORDERS, Q3_BY_SITE, Q3_SPEND, SITES, filterCitations, reportCitations, t } from "../data/northwind";
 import { SEEDED_FILES, type FileStore } from "../files/store";
 import { isoAt, newId } from "../ids";
+import type { MeMemoryHandler } from "../me-memory";
 import { demoPrompt, demoPrompts, type DemoLocale, type DemoScenarioId, type DemoText } from "../prompts";
 import type { Clarification, Pending, PreparedAction, Thread } from "./threads";
 import type { AguiEvent, TurnBuilder } from "./turn";
@@ -37,6 +38,7 @@ export interface ScenarioContext {
   readonly now: number;
   readonly files: FileStore;
   readonly userText: string;
+  readonly meMemory?: MeMemoryHandler;
 }
 
 const MINUTE = 60 * 1000;
@@ -1023,6 +1025,56 @@ export const reconnect = (ctx: ScenarioContext): ScenarioResult => {
   return { outcome: { type: "success", finishReason: "completed", suggestions: suggestionsFor(ctx.locale, ["help"]) }, pending: goal(ctx, "work_orders.list", ["status"]) };
 };
 
+/** An assistant-proposed long-term memory awaiting Remember / Don't remember (ADR 0042). */
+export const memoryProposal = (ctx: ScenarioContext): ScenarioResult => {
+  pipeline(ctx, "memory.propose", ["interpreting", "generating", "verifying"]);
+  directive(ctx, { capabilityId: "memory.propose", act: "present_result" });
+  const text = tr(ctx, {
+    en: "I can remember that you prefer concise answers. Confirm below if you want me to keep that.",
+    it: "Posso ricordare che preferisci risposte concise. Conferma qui sotto se vuoi che lo tenga.",
+  });
+  ctx.turn.text(msgId(ctx, 1), text);
+  const proposed =
+    ctx.meMemory?.propose(
+      tr(ctx, { en: "Prefer concise answers", it: "Preferisci risposte concise" }),
+      ctx.now + 10 * MINUTE,
+    ) ??
+    ({
+      id: newId("mem", ctx.now),
+      text: tr(ctx, { en: "Prefer concise answers", it: "Preferisci risposte concise" }),
+      origin: "assistant_proposed" as const,
+      status: "proposed" as const,
+      data_class: "internal" as const,
+      created_at: isoAt(ctx.now),
+      updated_at: isoAt(ctx.now),
+      expires_at: isoAt(ctx.now + 10 * MINUTE),
+    });
+  ctx.turn.add({
+    type: "CUSTOM",
+    name: "alixai.memory_proposal",
+    value: {
+      memory: {
+        id: proposed.id,
+        application_id: "app_demo",
+        tenant_id: "ten_demo",
+        workspace_id: "ws_demo",
+        principal_id: "usr_demo_alex",
+        text: proposed.text,
+        origin: proposed.origin,
+        status: proposed.status,
+        data_class: proposed.data_class,
+        created_at: proposed.created_at,
+        updated_at: proposed.updated_at,
+        ...(proposed.expires_at !== undefined && { expires_at: proposed.expires_at }),
+      },
+    },
+  });
+  return {
+    outcome: { type: "success", finishReason: "awaiting_input", suggestions: suggestionsFor(ctx.locale, ["help", "confirmation"]) },
+    pending: null,
+  };
+};
+
 export const SCENARIOS: Record<Exclude<DemoScenarioId, "help">, (ctx: ScenarioContext) => ScenarioResult> = {
   markdown,
   chart_bar: chartBar,
@@ -1039,4 +1091,5 @@ export const SCENARIOS: Record<Exclude<DemoScenarioId, "help">, (ctx: ScenarioCo
   refusal,
   long,
   reconnect,
+  memory_proposal: memoryProposal,
 };

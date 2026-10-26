@@ -323,14 +323,16 @@ func proposalIntents(hasGoal bool) []string {
 // It is a request, not a check: a runtime may apply only part of it, so every
 // output is validated against the full model-authority schema regardless.
 func compactSchema(caps []capSchemaInfo, hasGoal bool) json.RawMessage {
-	return compactSchemaUI(caps, hasGoal, nil)
+	return compactSchemaMemory(caps, hasGoal, nil, false)
 }
 
-// compactSchemaUI is compactSchema with the optional ui_action member when UI tools are offered: its name is one of
-// the offered names (bare, checked identifiers) and its arguments an object. The declared schema of the tool is NOT
-// part of the constraint: it is the client's, and it is enforced after decoding (checkUIAction). With no UI tool the
-// result is byte for byte the schema without the member.
+// compactSchemaUI is compactSchema with the optional ui_action member when UI tools are offered.
 func compactSchemaUI(caps []capSchemaInfo, hasGoal bool, uiNames []string) json.RawMessage {
+	return compactSchemaMemory(caps, hasGoal, uiNames, false)
+}
+
+// compactSchemaMemory is compactSchemaUI plus optional memory_proposal when long-term memory is enabled (ADR 0042).
+func compactSchemaMemory(caps []capSchemaInfo, hasGoal bool, uiNames []string, allowMemory bool) json.RawMessage {
 	ids := make([]any, 0, len(caps)+1)
 	for _, c := range caps {
 		ids = append(ids, c.ID)
@@ -422,6 +424,18 @@ func compactSchemaUI(caps []capSchemaInfo, hasGoal bool, uiNames []string) json.
 			"properties": map[string]any{
 				"name":      map[string]any{"enum": names},
 				"arguments": map[string]any{"type": "object"},
+			},
+		}
+	}
+	if allowMemory {
+		schema["properties"].(map[string]any)["memory_proposal"] = map[string]any{
+			"type":                 []any{"object", "null"},
+			"additionalProperties": false,
+			"required":             []any{"text"},
+			"properties": map[string]any{
+				"text":       map[string]any{"type": "string", "minLength": 1, "maxLength": 4000},
+				"structured": map[string]any{"type": "object", "maxProperties": 32, "additionalProperties": map[string]any{"type": "string", "maxLength": 512}},
+				"data_class": map[string]any{"enum": []any{"public", "internal", "confidential", "restricted"}},
 			},
 		}
 	}

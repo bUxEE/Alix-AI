@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:memory:memory-create:v1",
+  "title": "Memory create",
+  "description": "Body of POST /v1/memory: explicit host create on the user's request (ADR 0042). Origin is always user_explicit; status starts active.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["text"],
+  "properties": {
+    "text": {
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:memory:shared:v1#/$defs/memoryText"
+    },
+    "structured": {
+      "x-alixai-authority": "host",
+      "type": "object",
+      "maxProperties": 32,
+      "propertyNames": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$" },
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      }
+    },
+    "data_class": {
+      "x-alixai-authority": "host",
+      "type": "string",
+      "enum": ["public", "internal", "confidential", "restricted"]
+    },
+    "expires_at": {
+      "x-alixai-authority": "host",
+      "oneOf": [
+        { "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp" },
+        { "type": "null" }
+      ]
+    }
+  }
+}

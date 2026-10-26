@@ -18,6 +18,8 @@ The version this SDK is tested against is the core in the same repository commit
 | RAG: sources, search, grounded answers with citations | Complete. `rag` namespace |
 | Voice | Complete as a client of the voice WebSocket (M4-07). `voice` namespace. TypeScript only. **Full-duplex voice is not claimed**; this is push to talk plus an optional endpointer |
 | Providers, modes, budgets (External provider mode) | Complete for the providers and OAuth operations of the API (X-14). `providers` namespace. **Opt-in and off by default**; a deployment without it answers `unavailable` |
+| Per-principal LLM account (ADR 0041) | Complete (1.2.0): `client.me` (`catalog`, `llm.*`, `providers.*`). `me.providers.submitCredential` is **host-server only** — never call it from browser code |
+| Long-term memory (ADR 0042) | Complete (1.2.0): `client.memory` (`list` / `create` / `patch` / `delete` / `confirm` / `reject`) |
 | Decision status | Read-only (D-10). `decision` namespace. Advisory information, never an authorisation |
 | AG-UI and CopilotKit | Not in this package, on purpose: this SDK does not depend on CopilotKit. The optional integration is `@alixai/copilotkit-adapter` (`sdk/copilotkit-adapter`); see [the CopilotKit guide](../../docs/integration/guides/copilotkit.md) |
 | Operator-only decision configuration (`GET`/`PUT /v1/decision/config`) | Not in any SDK |

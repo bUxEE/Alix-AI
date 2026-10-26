@@ -6,6 +6,8 @@ import { DEMO_PATHS } from "./paths";
 
 export { demoPrompt, demoPrompts, detectLocale, matchScenario } from "./prompts";
 export type { DemoLocale, DemoPrompt, DemoScenarioId, DemoText, ScenarioMatch } from "./prompts";
+export { createMeMemoryHandler } from "./me-memory";
+export type { DemoMemoryItem, MeMemoryHandler } from "./me-memory";
 export { DEMO_PATHS, DEMO_THREAD_ID, dictationPath, voicePath } from "./paths";
 
 /** The context token the demo hands to the SDK's voice / dictation clients. The mock does not check tokens; a real host mints one per connection. */

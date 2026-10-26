@@ -1,0 +1,12 @@
+{
+  "profile_id": "pprf_01J0000000000000000000000A",
+  "provider_id": "openai",
+  "model_id": "gpt-4o-mini",
+  "roles": ["conversational_controller"],
+  "account_mode": "per_principal",
+  "display_name": "OpenAI GPT-4o mini",
+  "terms_summary": "Hosted model; principal pays the provider.",
+  "billing_notice_version": "2026-10",
+  "qualified": true,
+  "api_key": "sk-no"
+}

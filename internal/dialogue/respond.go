@@ -105,6 +105,7 @@ func (t *turn) complete(ctx context.Context, out outcome) (Result, error) {
 	res := Result{
 		TurnID: t.id, Language: t.lang, Directive: *d, Response: resp, Prepared: out.prepared,
 		Confirmation: out.token, Receipt: out.receipt, Code: out.code, Trace: t.trace, UIAction: out.ui,
+		MemoryProposals: t.memProps,
 	}
 	t.log("turn done", "act", string(d.Act), "code", string(out.code), "model_calls", len(t.trace.ModelCalls),
 		"response", string(t.trace.Response), "stages", strings.Join(t.trace.Stages, ">"))

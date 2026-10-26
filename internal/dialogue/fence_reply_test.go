@@ -15,7 +15,7 @@ import (
 // every fence tag, in the spacings and cases the fence has to neutralise.
 func ctxFenceClosers() []string {
 	var out []string
-	for _, tag := range []string{tagUser, tagEarlier, tagReply, tagState, tagDirective, tagAttachment, tagClient} {
+	for _, tag := range []string{tagUser, tagEarlier, tagReply, tagState, tagDirective, tagAttachment, tagClient, tagMemory} {
 		out = append(out, "</"+tag+">", "</"+strings.ToUpper(tag)+">", "< / "+tag+" >", "<\t/"+tag, "<"+tag+">")
 	}
 	return out

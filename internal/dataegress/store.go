@@ -32,6 +32,9 @@ func keyFor(level providers.EgressLevel, scope contracts.Scope, sourceID string)
 	if err := scope.Validate(); err != nil {
 		return policyKey{}, err
 	}
+	if err := refuseReservedTenant(scope.TenantID); err != nil {
+		return policyKey{}, err
+	}
 	k := policyKey{level: level, deployment: scope.DeploymentID}
 	switch level {
 	case providers.EgressLevelDeployment:

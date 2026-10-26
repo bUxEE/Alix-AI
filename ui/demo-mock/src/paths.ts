@@ -26,6 +26,12 @@ export const DEMO_PATHS = Object.freeze({
   copilotRuntime: "/demo/copilotkit",
   /** Dictation capabilities: `GET /v1/dictations/capabilities`. */
   dictationCapabilities: "/v1/dictations/capabilities",
+  /** Per-principal provider catalog (ADR 0041). */
+  providerCatalog: "/v1/providers/catalog",
+  /** Caller's LLM bindings. */
+  meLlm: "/v1/me/llm",
+  /** Long-term memory list/create. */
+  memory: "/v1/memory",
 } as const);
 
 /** The voice WebSocket of a session: `GET /v1/sessions/{session_id}/voice` with `Upgrade: websocket`. */

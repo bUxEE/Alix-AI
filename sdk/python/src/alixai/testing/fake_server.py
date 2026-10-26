@@ -1213,7 +1213,7 @@ class FakeAlixAIServer:
                             "profile_id": (body or {}).get("profile_id", "pprf_01J0000000000000000000000A"),
                             "provider_id": "openai",
                             "model_id": (body or {}).get("model_id") or "gpt-test",
-                            "credential_status": "missing",
+                            "account_status": "missing",
                             "billing_notice_acked": False,
                             "updated_at": "2026-10-26T00:00:00Z",
                         }

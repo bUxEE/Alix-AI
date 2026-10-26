@@ -1,7 +1,16 @@
 import { computed, getCurrentScope, onScopeDispose, reactive, ref, toValue, type ComputedRef, type MaybeRefOrGetter, type Ref } from "vue";
 import { AguiHttpError, type AguiClient } from "../agui/client";
 import { applyEvent, createChatState } from "../agui/reducer";
-import type { AguiContentPart, AguiMessage, AlixUiCall, ChatItem, ChatState, ConfirmationStatus, RunAgentInput } from "../agui/types";
+import type {
+  AguiContentPart,
+  AguiMessage,
+  AlixUiCall,
+  ChatItem,
+  ChatState,
+  ConfirmationStatus,
+  MemoryProposalStatus,
+  RunAgentInput,
+} from "../agui/types";
 import { useLoadState, type LoadState } from "./useLoadState";
 
 // The chat controller: it owns one thread's timeline and drives the runs that change it. It is the Vue counterpart of what
@@ -37,6 +46,8 @@ export interface AlixChatOptions {
   context?: MaybeRefOrGetter<readonly { description: string; value: string }[] | undefined>;
   /** Runs a UI action the model proposed (a tool the host registered). Its return value goes back as the tool result. */
   onUiAction?: (call: AlixUiCall) => unknown | Promise<unknown>;
+  /** When true, `alixai.memory_proposal` events become timeline items. Default false. */
+  memory?: MaybeRefOrGetter<boolean | undefined>;
   /** Ids for runs and messages. Defaults to `crypto.randomUUID`; replaceable for tests. */
   createId?: (prefix: string) => string;
 }
@@ -63,6 +74,10 @@ export interface AlixChat {
   /** Loads the thread's history and state (a connect run). */
   connect: () => Promise<boolean>;
   reset: () => void;
+  /** Marks a memory proposal submitting/remembered/forgotten/failed. The host performs the API call. */
+  setMemoryStatus: (itemId: string, status: MemoryProposalStatus) => void;
+  /** The memory id of a proposal timeline item, if any. */
+  memoryIdOf: (itemId: string) => string | undefined;
 }
 
 const defaultId = (prefix: string): string => {
@@ -77,7 +92,7 @@ const partsOf = (text: string, attachments: readonly OutgoingAttachment[]): stri
 
 export const useAlixChat = (options: AlixChatOptions): AlixChat => {
   const createId = options.createId ?? defaultId;
-  const state = reactive(createChatState()) as ChatState;
+  const state = reactive(createChatState({ memory: toValue(options.memory) === true })) as ChatState;
   const running = ref(false);
   const reconnecting = ref(false);
   const load = useLoadState();
@@ -115,6 +130,7 @@ export const useAlixChat = (options: AlixChatOptions): AlixChat => {
   /** Runs one request to its end. Returns true when the run finished without a transport or HTTP failure (false when it went stale). */
   const execute = async (input: RunAgentInput): Promise<boolean> => {
     if (running.value) return false;
+    state.memoryEnabled = toValue(options.memory) === true;
     running.value = true;
     const started = epoch;
     const live = (): boolean => started === epoch;
@@ -241,11 +257,21 @@ export const useAlixChat = (options: AlixChatOptions): AlixChat => {
     epoch += 1;
     controller?.abort();
     controller = undefined;
-    Object.assign(state, createChatState());
+    Object.assign(state, createChatState({ memory: toValue(options.memory) === true }));
     running.value = false;
     reconnecting.value = false;
     load.reset();
     lastSend = undefined;
+  };
+
+  const setMemoryStatus = (itemId: string, status: MemoryProposalStatus): void => {
+    const item = state.items.find((entry) => entry.id === itemId);
+    if (item?.kind === "memory_proposal") item.status = status;
+  };
+
+  const memoryIdOf = (itemId: string): string | undefined => {
+    const item = state.items.find((entry) => entry.id === itemId);
+    return item?.kind === "memory_proposal" ? item.proposal.id : undefined;
   };
 
   // The panel (or whatever owns the controller) went away: its run is aborted, and nothing it was about to do follows.
@@ -256,5 +282,22 @@ export const useAlixChat = (options: AlixChatOptions): AlixChat => {
     });
   }
 
-  return { state, items, running, reconnecting, load, send, choose, approve, decline, dismiss, stop, retry, connect, reset };
+  return {
+    state,
+    items,
+    running,
+    reconnecting,
+    load,
+    send,
+    choose,
+    approve,
+    decline,
+    dismiss,
+    stop,
+    retry,
+    connect,
+    reset,
+    setMemoryStatus,
+    memoryIdOf,
+  };
 };

@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:memory:memory-item:v1",
+  "title": "Memory item",
+  "description": "One long-term memory item scoped to principal × tenant × workspace (ADR 0042).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "application_id",
+    "tenant_id",
+    "workspace_id",
+    "principal_id",
+    "text",
+    "origin",
+    "status",
+    "data_class",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:memory:shared:v1#/$defs/memoryId"
+    },
+    "application_id": {
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+    },
+    "tenant_id": {
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+    },
+    "workspace_id": {
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+    },
+    "principal_id": {
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+    },
+    "text": {
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:memory:shared:v1#/$defs/memoryText"
+    },
+    "structured": {
+      "description": "Optional bounded key/value facts. Keys are lower snake_case; values are short strings.",
+      "x-alixai-authority": "alixai",
+      "type": "object",
+      "maxProperties": 32,
+      "propertyNames": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$" },
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      }
+    },
+    "origin": {
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:memory:shared:v1#/$defs/memoryOrigin"
+    },
+    "status": {
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:memory:shared:v1#/$defs/memoryStatus"
+    },
+    "data_class": {
+      "description": "Default internal. Used by the egress guard like other context. Same enum as providers data-classification.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "enum": ["public", "internal", "confidential", "restricted"]
+    },
+    "expires_at": {
+      "x-alixai-authority": "alixai",
+      "oneOf": [
+        { "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp" },
+        { "type": "null" }
+      ]
+    },
+    "created_at": {
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    },
+    "updated_at": {
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    }
+  }
+}

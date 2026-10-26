@@ -20,6 +20,7 @@ import (
 	"github.com/buxee/alix-ai/internal/verify"
 	"github.com/buxee/alix-ai/pkg/contracts"
 	"github.com/buxee/alix-ai/pkg/contracts/gen/conversation"
+	mem "github.com/buxee/alix-ai/pkg/contracts/gen/memory"
 )
 
 // Defaults of Config. The token budgets are not here: they are the context profile's
@@ -197,6 +198,8 @@ type Engine struct {
 	// every turn and set at composition time, so it is an atomic value and a turn takes no
 	// lock to read it.
 	knowledge atomic.Pointer[knowledgeSlot]
+	// memory is long-term memory (ADR 0042); nil when disabled. Set via SetMemory.
+	memory atomic.Pointer[MemoryStore]
 
 	locks keyedLocks
 }
@@ -468,6 +471,9 @@ type Result struct {
 	// of the directive, and the result the screen sends back is untrusted client data (WithClientContext). It is never
 	// set on a turn that asks for a confirmation, refuses or fails.
 	UIAction *UIAction
+	// MemoryProposals are assistant-proposed memory items stored this turn as status
+	// proposed (ADR 0042). Confirm only via POST /v1/memory/{id}/confirm.
+	MemoryProposals []mem.MemoryItem
 	// Code is the typed reason when the turn ended in a refusal or a failure; empty
 	// when the turn did what was asked (an answer, a clarification, a confirmation
 	// request, a committed receipt).

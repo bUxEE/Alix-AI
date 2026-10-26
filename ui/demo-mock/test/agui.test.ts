@@ -38,6 +38,8 @@ const EXPECTED: Record<Exclude<DemoScenarioId, "reconnect">, { kinds: string[]; 
   unavailable: { kinds: ["message", "error"], outcome: "error" },
   refusal: { kinds: ["message", "error"], outcome: "error" },
   long: { kinds: ["message", "block:table", "block:chart", "message", "block:chart", "block:chart", "citations", "message"], outcome: "success" },
+  // memory_proposal is opt-in on the chat panel (`memory: true`); the default reducer ignores the CUSTOM event.
+  memory_proposal: { kinds: ["message"], outcome: "success" },
 };
 
 /** Checks every AlixAI payload of a stream against the schemas and the kits' parsers. */

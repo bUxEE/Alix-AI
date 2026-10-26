@@ -6,7 +6,7 @@ import type { ModelID, PrincipalLlmRole, ProfileID, ProviderID } from "./shared.
  * ProviderCatalogEntry mirrors urn:alixai:schema:providers:provider-catalog-entry:v1.
  *
  * One operator-approved provider/model a principal may pick (ADR 0041). No credential and no
- * secret: credential_mode is per_principal. Terms, prices and the billing notice travel with the
+ * secret: account_mode is per_principal. Terms, prices and the billing notice travel with the
  * entry so the host can show them before the principal binds.
  */
 export interface ProviderCatalogEntry {
@@ -45,7 +45,7 @@ export interface ProviderCatalogEntry {
    *
    * @authority alixai
    */
-  credential_mode: "per_principal";
+  account_mode: "per_principal";
 
   /**
    * @authority alixai

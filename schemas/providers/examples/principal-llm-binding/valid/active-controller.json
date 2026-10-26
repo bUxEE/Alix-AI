@@ -1,0 +1,9 @@
+{
+  "role": "conversational_controller",
+  "profile_id": "pprf_01J0000000000000000000000A",
+  "provider_id": "openai",
+  "model_id": "gpt-4o-mini",
+  "account_status": "active",
+  "billing_notice_acked": true,
+  "updated_at": "2026-10-26T12:00:00.000Z"
+}

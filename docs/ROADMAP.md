@@ -19,13 +19,13 @@ and reviewed. See [Project status](../README.md#project-status) and
 - **OAuth for Anthropic / xAI / Kimi** if and when those vendors offer third-party OAuth for API access. Today:
   API key, or their models through OpenRouter's OAuth. Never impersonate another product's OAuth client.
 
-## Per-user accounts and memory (1.2 design; implementation next)
+## Shipped in 1.2.0
 
 - **Per-principal LLM accounts** ([ADR 0041](decisions/0041-per-principal-llm-accounts.md)): operator-approved catalog;
-  each user binds provider/model and their own credential; companies keep egress policy. Contract and stubs land in 1.2;
-  router Resolve and persistence follow.
+  each user binds provider/model and their own credential; companies keep egress policy (catalog CLI, `/v1/me/…`,
+  reserved-tenant credentials, router resolution).
 - **Long-term memory** ([ADR 0042](decisions/0042-long-term-memory.md)): per principal × tenant × workspace, consent-gated
-  proposals, fenced into context. Contract and stubs in 1.2; store and context assembly follow.
+  proposals, fenced into context (`memory.enabled`, default off); see [integration/memory.md](integration/memory.md).
 
 ## Verification still owed (from the 1.0 "not done" list)
 

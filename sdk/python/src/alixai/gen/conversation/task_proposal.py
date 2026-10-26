@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from typing import Annotated, Any, Literal, Optional, Union
 from alixai.gen.common.ids import CapabilityId, FieldName, Identifier, TraceId
+from alixai.gen.memory.shared import MemoryText
 from pydantic import BaseModel, ConfigDict, Field
 
-__all__ = ['Scalar', 'CandidateValue', 'UiAction', 'EntityRef', 'Uncertainty', 'TaskProposal']
+__all__ = ['Scalar', 'CandidateValue', 'UiAction', 'MemoryProposal', 'EntityRef', 'Uncertainty', 'TaskProposal']
 
 
 Scalar = Union[Annotated[str, Field(max_length=4096)], float, bool, None]
@@ -24,6 +25,17 @@ class UiAction(BaseModel):
     model_config = ConfigDict(extra="forbid", protected_namespaces=())
     name: Annotated[str, Field(pattern='^[A-Za-z][A-Za-z0-9_.:-]{0,63}$')]
     arguments: dict[str, Any]
+
+
+class MemoryProposal(BaseModel):
+    """
+    A proposed long-term memory item (ADR 0042). Shape aligned with schemas/memory create body;
+    text uses the memory shared def.
+    """
+    model_config = ConfigDict(extra="forbid", protected_namespaces=())
+    text: MemoryText
+    structured: Optional[dict[Annotated[str, Field(pattern='^[a-z][a-z0-9_]{0,63}$')], Annotated[str, Field(min_length=1, max_length=512)]]] = None
+    data_class: Optional[Literal["public", "internal", "confidential", "restricted"]] = None
 
 
 class EntityRef(BaseModel):
@@ -61,4 +73,5 @@ class TaskProposal(BaseModel):
     intent: Literal["task", "correction", "cancel", "help", "out_of_scope"]
     uncertainty: Uncertainty
     ui_action: Optional[UiAction] = None
+    memory_proposal: Optional[Optional[MemoryProposal]] = None
     trace_id: TraceId

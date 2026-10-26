@@ -682,7 +682,7 @@ func schemaCompiler(t testing.TB) *jsonschema.Compiler {
 		c := jsonschema.NewCompiler()
 		c.DefaultDraft(jsonschema.Draft2020)
 		c.AssertFormat()
-		for _, area := range []string{"common", "actions", "conversation"} {
+		for _, area := range []string{"common", "actions", "conversation", "memory"} {
 			files, err := filepath.Glob(filepath.Join(schemaRoot, area, "*.schema.json"))
 			if err != nil || len(files) == 0 {
 				schemaErr = err

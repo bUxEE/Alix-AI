@@ -24,15 +24,15 @@ describe("the SDK's operation table matches schemas/api/openapi.yaml", () => {
     }
   });
 
-  it("covers every operation of the areas this SDK version implements (sessions, actions, applications, files, history, settings, probes)", () => {
+  it("covers every operation of the areas this SDK version implements (sessions, actions, applications, files, history, settings, me, memory, probes)", () => {
     // The RAG area is spoken too (src/rag, its own table, checked by test/rag.test.ts); voice, providers, oauth, decision and ops have no operations yet.
-    const implemented = new Set(["root", "sessions", "actions", "apps", "files", "history", "settings"]);
+    const implemented = new Set(["root", "sessions", "actions", "apps", "files", "history", "settings", "me", "memory"]);
     const missing = spec.operations.filter((o) => implemented.has(o.area) && !(o.operationId in OPERATIONS)).map((o) => o.operationId);
     expect(missing, "operations in the document that the SDK does not speak").toEqual([]);
   });
 
   it("has a row for every operation of the document whose area is implemented, and for nothing the document lacks", () => {
-    const documented = spec.operations.filter((o) => ["root", "sessions", "actions", "apps", "files", "history", "settings"].includes(o.area));
+    const documented = spec.operations.filter((o) => ["root", "sessions", "actions", "apps", "files", "history", "settings", "me", "memory"].includes(o.area));
     expect(Object.keys(OPERATIONS).sort()).toEqual(documented.map((o) => o.operationId).sort());
   });
 });
@@ -240,6 +240,26 @@ describe("every answer of the fake server conforms to the OpenAPI document", () 
     await client.settings.getIntegrationAudit();
     await client.settings.getProviderHealth();
     await noHistory.settings.getUser().catch(() => undefined); // 403 permission_denied
+
+    // ---- me (ADR 0041) and memory (ADR 0042) ----
+    await client.me.catalog();
+    await client.me.llm.get();
+    await client.me.llm.putRole("conversational_controller", { profile_id: "pprf_01J0000000000000000000000A" });
+    await client.me.llm.deleteRole("conversational_controller");
+    await client.me.providers.submitCredential("openai", { key: "sk-test" });
+    await client.me.providers.deleteCredential("openai");
+    await client.me.providers.acknowledgeBillingNotice("openai", {
+      notice_version: "2026-01",
+      consumer_subscription_is_not_api_access: true,
+      separate_api_billing_understood: true,
+    });
+    await client.me.providers.oauthStart("openai", { capabilities: ["chat"], redirect_uri: "http://127.0.0.1:5555/cb" });
+    await client.memory.list();
+    const remembered = await client.memory.create({ text: "prefer dark mode" });
+    await client.memory.patch(remembered.id, { text: "prefer light mode" });
+    await client.memory.confirm(remembered.id);
+    await client.memory.reject(remembered.id);
+    await client.memory.delete(remembered.id);
 
     // failure paths: scope, validation, authentication, availability, quarantine, ended session
     const other = createClient({ baseUrl: fake.baseUrl, fetch: fake.fetch, getContextToken: () => fake.issueToken({ session_id: "ses-9" }) });

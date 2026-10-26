@@ -8,6 +8,7 @@ import type { VoiceModeOption } from "@alixai/react";
 import { DEMO_PATHS, demoDictationClient, demoPrompts } from "@alixai/demo-mock";
 import type { Citation } from "@alixai/sdk";
 import { agentFor, providerPropsFor, useAgentStatus } from "../lib/agent";
+import { requestJson } from "../lib/api";
 import { renderPreview } from "../lib/preview";
 import { useShell } from "../shell/context";
 import { Icon } from "../shell/Icon";
@@ -73,6 +74,12 @@ export const ChatSection = (): ReactElement => {
   const onVoiceStart = useCallback(() => notify("onVoiceStart", "start"), [notify]);
   const onVoiceStop = useCallback(() => notify("onVoiceStop", "stop"), [notify]);
   const onVoiceCancel = useCallback(() => notify("onVoiceCancel", "cancel"), [notify]);
+  const onMemoryConfirm = useCallback(async (id: string): Promise<void> => {
+    await requestJson(`${DEMO_PATHS.memory}/${encodeURIComponent(id)}/confirm`, { method: "POST" });
+  }, []);
+  const onMemoryReject = useCallback(async (id: string): Promise<void> => {
+    await requestJson(`${DEMO_PATHS.memory}/${encodeURIComponent(id)}/reject`, { method: "POST" });
+  }, []);
   const blocked = send === undefined || status.running || status.confirmationOpen;
 
   return (
@@ -125,6 +132,9 @@ export const ChatSection = (): ReactElement => {
             defaultOpen
             showProgress={progress}
             voice={voiceMode}
+            memory
+            onMemoryConfirm={onMemoryConfirm}
+            onMemoryReject={onMemoryReject}
             {...(voiceMode === "dictation" && { dictationClient, language: lang })}
             {...(voiceMode === "conversation" && { onVoiceStart, onVoiceStop, onVoiceCancel })}
             renderPreview={renderPreview}

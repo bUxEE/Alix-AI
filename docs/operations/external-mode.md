@@ -93,6 +93,18 @@ A profile is the record of one provider and model: endpoint, capabilities, terms
 
 End to end: `register` -> `PUT /v1/providers/{provider}/credential` (the key is bound to the profile when it has none; a profile binds exactly ONE credential reference and a reference belongs to one tenant, so another tenant needs its own profile; a second key never rebinds a profile that already has one) -> `ack-billing` -> `conformance` -> `qualify` -> put the id under `routing` and restart. Without a registered profile the credential route answers `no_profile`.
 
+### Per-principal catalog (ADR 0041)
+
+After a profile is qualified, mark it for end-user pickers (no credential on the catalog entry; each principal brings their own):
+
+```text
+alixai providers catalog-add -operator ID -application APP -profile pprf_… [-display-name N] [-terms-summary T] [-billing-notice-version V] [-oauth-available]
+alixai providers catalog-list -operator ID -application APP
+alixai providers catalog-remove -operator ID -application APP -profile pprf_…
+```
+
+Principals then use `/v1/me/…` (integrator guide). Keys are stored under the reserved tenant id `alixai-principal-credential` with `owner_principal_id`; that id is never a request or RAG scope. Erasing a principal (`alixai retention erase -principal`) revokes their reserved-bucket credentials and deletes their bindings.
+
 ## 3. Connecting a provider
 
 Routes are for operators only. A `GET /v1/providers` lists the application's registered profiles with their connection state (never a key, a fingerprint or a reference id).

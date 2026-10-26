@@ -41,7 +41,15 @@ const threadId = ref(DEMO_THREAD_ID);
 const voiceMode = ref<VoiceModeOption>("off");
 const dictationClient = demoDictationClient();
 const uploader = demoUploader();
-const chat = useAlixChat({ client, threadId: () => threadId.value, language: () => locale.value });
+const chat = useAlixChat({ client, threadId: () => threadId.value, language: () => locale.value, memory: true });
+
+const onMemoryConfirm = async (id: string): Promise<void> => {
+  await fetch(`${DEMO_PATHS.memory}/${encodeURIComponent(id)}/confirm`, { method: "POST" });
+};
+
+const onMemoryReject = async (id: string): Promise<void> => {
+  await fetch(`${DEMO_PATHS.memory}/${encodeURIComponent(id)}/reject`, { method: "POST" });
+};
 const voiceOptions = computed(() => [
   { value: "off" as const, label: text("chat.voice.off") },
   { value: "dictation" as const, label: text("chat.voice.dictation") },
@@ -164,6 +172,8 @@ const describe = (entry: HostEvent): string => {
           :chat="chat"
           :dictation-client="voiceMode === 'dictation' ? dictationClient : undefined"
           :language="locale"
+          :on-memory-confirm="onMemoryConfirm"
+          :on-memory-reject="onMemoryReject"
           :thread-id="threadId"
           :conversations="conversations.data.value"
           :conversations-loading="conversations.state.isLoading.value"
@@ -172,6 +182,7 @@ const describe = (entry: HostEvent): string => {
           :max-file-mb="8"
           :title="text('chat.panelTitle')"
           accept="image/png,image/jpeg,image/webp,application/pdf,text/csv,text/plain"
+          memory
           @action="onAction"
           @continue-in-app="onContinue"
           @download-file="onDownload"

@@ -3,6 +3,13 @@
 All notable changes to this package. Versions follow semantic versioning with the rules of
 [compatibility.md](../../docs/policies/compatibility.md).
 
+## 1.2.0 — 2026-10-26
+
+### Added
+
+- Scripted `/v1/providers/catalog`, `/v1/me/*` and `/v1/memory*` routes for per-principal LLM accounts and long-term memory.
+- AG-UI scenario `memory_proposal` (`alixai.memory_proposal` CUSTOM event) and capabilities `state.memory: true`.
+
 ## 1.1.0 â€” 2026-10-26
 
 ### Added

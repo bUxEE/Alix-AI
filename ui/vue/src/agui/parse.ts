@@ -1,5 +1,15 @@
 import type { ActionReceipt, Citation, RichBlock } from "@alixai/sdk";
-import type { AlixAttachment, AlixBlock, AlixBlockType, AlixConfirmation, AlixInterrupt, AlixPending, AlixProgress, AlixSuggestion } from "./types";
+import type {
+  AlixAttachment,
+  AlixBlock,
+  AlixBlockType,
+  AlixConfirmation,
+  AlixInterrupt,
+  AlixPending,
+  AlixProgress,
+  AlixSuggestion,
+  MemoryProposalView,
+} from "./types";
 
 // The names and shapes AlixAI puts into AG-UI activities, custom events and interrupts (docs/integration/agui.md sections 2, 6, 7).
 // Everything that arrives here is data from a stream: every parser checks the shape and returns undefined for anything else, so
@@ -16,6 +26,7 @@ export const ALIXAI_ACTIVITY = Object.freeze({
 export const ALIXAI_CUSTOM_EVENT = Object.freeze({
   directive: "alixai.directive",
   suggestions: "alixai.suggestions",
+  memoryProposal: "alixai.memory_proposal",
 } as const);
 
 export const CONFIRM_TOOL = "alixai_confirm_action";
@@ -150,6 +161,19 @@ export const parseSuggestions = (value: unknown): AlixSuggestion[] => {
     out.push({ title: item["title"], message: item["message"], ...(isString(item["capabilityId"]) && { capabilityId: item["capabilityId"] }) });
   }
   return out;
+};
+
+/** Reads `alixai.memory_proposal`. Confirm/reject only through host-provided structured calls. */
+export const parseMemoryProposal = (value: unknown): MemoryProposalView | undefined => {
+  if (!isRecord(value)) return undefined;
+  const memory = isRecord(value["memory"]) ? value["memory"] : value;
+  if (!isString(memory["id"]) || !isString(memory["text"])) return undefined;
+  return {
+    id: memory["id"],
+    text: memory["text"],
+    ...(isString(memory["expires_at"]) && { expiresAt: memory["expires_at"] }),
+    ...(isString(memory["expiresAt"]) && { expiresAt: memory["expiresAt"] }),
+  };
 };
 
 const PENDING_KINDS: readonly string[] = ["confirmation", "clarification", "goal"];

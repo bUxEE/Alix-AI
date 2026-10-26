@@ -199,6 +199,17 @@ func extSTTGoogleLocation(p pv.ProviderProfile) string {
 }
 
 func (s *extSTTSource) credentialRef(ctx context.Context, scope contracts.Scope, provider pv.ProviderID) (ref, project string, ok bool) {
+	// Prefer the principal's own credential when they bound STT (ADR 0041).
+	if principalLLMHolder != nil {
+		if b, found, err := principalLLMHolder.reg.PrincipalBindingFor(ctx, scope, pv.PrincipalLlmRoleSTT); err == nil && found && b.ProviderID == provider {
+			if cred, cok, cerr := s.admin.creds.ActivePrincipalRef(ctx, scope, provider); cerr == nil && cok {
+				if cred.Account.ProjectID != nil {
+					project = strings.TrimSpace(*cred.Account.ProjectID)
+				}
+				return string(cred.RefID), project, true
+			}
+		}
+	}
 	refs, err := s.admin.creds.List(ctx, scope, provider)
 	if err != nil {
 		return "", "", false

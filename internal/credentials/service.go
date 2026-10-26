@@ -296,6 +296,9 @@ type AddAPIKeyRequest struct {
 	// Scopes are the provider scopes the capability needs (the validation probe asks for no more); may be
 	// empty for a key that has no scope concept.
 	Scopes []string
+	// OwnerPrincipal, when set, binds the credential to that principal (ADR 0041). Empty keeps
+	// tenant scope. Required for keys stored under the reserved principal-credential tenant.
+	OwnerPrincipal string
 }
 
 // AddAPIKey validates a manual key with a minimally scoped provider request, stores it in the default
@@ -326,10 +329,14 @@ func (s *Service) AddAPIKey(ctx context.Context, scope contracts.Scope, req AddA
 		_ = s.lifecycle(ctx, loc, lifecycleAudit{Provider: string(req.ProviderID), Action: "rejected", Reason: string(ReasonOf(err))})
 		return providers.CredentialRef{}, err
 	}
+	owner, err := s.ownerForCreate(scope, req.OwnerPrincipal)
+	if err != nil {
+		return providers.CredentialRef{}, err
+	}
 	return s.create(ctx, scope, loc, newRef{
 		kind: providers.CredentialKindAPIKey, provider: req.ProviderID, label: label, scopes: scopes, expires: expires,
 		status: keyStatus(res), warnings: keyWarnings(res), account: sanitizeAccount(res.Account),
-		fingerprint: Fingerprint(req.Key), validated: true,
+		fingerprint: Fingerprint(req.Key), validated: true, ownerPrincipal: owner,
 	}, s.def, "", req.Key, "")
 }
 
@@ -452,12 +459,9 @@ func (s *Service) AddOAuth(ctx context.Context, scope contracts.Scope, g OAuthGr
 			return providers.CredentialRef{}, err
 		}
 	}
-	owner := ""
-	if g.OwnerPrincipal != "" {
-		if !accountRE.MatchString(g.OwnerPrincipal) {
-			return providers.CredentialRef{}, fail(contracts.ErrValidationFailed, ReasonBadRequest, "credentials: owner principal is not an identifier")
-		}
-		owner = g.OwnerPrincipal
+	owner, err := s.ownerForCreate(scope, g.OwnerPrincipal)
+	if err != nil {
+		return providers.CredentialRef{}, err
 	}
 	return s.create(ctx, scope, loc, newRef{
 		kind: providers.CredentialKindOauth, provider: g.ProviderID, label: label, scopes: scopes, expires: expires,
@@ -474,6 +478,9 @@ type OAuthIssuedKeyGrant struct {
 	Scopes     []string
 	Account    providers.SafeAccount
 	Key        Secret
+	// OwnerPrincipal, when set, binds the credential to that principal (ADR 0041). Empty keeps
+	// tenant scope. Required under the reserved principal-credential tenant.
+	OwnerPrincipal string
 }
 
 // AddOAuthIssuedKey stores a browser-login-issued API key. The key is validated like a manual key
@@ -508,11 +515,36 @@ func (s *Service) AddOAuthIssuedKey(ctx context.Context, scope contracts.Scope, 
 	if res.UnsupportedAccountPolicy {
 		warnings = append(warnings, providers.ConnectionWarningUnsupportedAccountPolicy)
 	}
+	owner, err := s.ownerForCreate(scope, g.OwnerPrincipal)
+	if err != nil {
+		return providers.CredentialRef{}, err
+	}
 	return s.create(ctx, scope, loc, newRef{
 		kind: providers.CredentialKindOauthIssuedKey, provider: g.ProviderID, label: label, scopes: scopes,
 		status: keyStatus(res), warnings: warnings, account: sanitizeAccount(g.Account),
-		fingerprint: Fingerprint(g.Key), validated: true,
+		fingerprint: Fingerprint(g.Key), validated: true, ownerPrincipal: owner,
 	}, s.def, "", g.Key, "")
+}
+
+// ownerForCreate validates OwnerPrincipal. The reserved principal-credential tenant always
+// requires an owner; other tenants accept an optional owner (SIWC).
+func (s *Service) ownerForCreate(scope contracts.Scope, owner string) (string, error) {
+	if IsPrincipalCredentialTenant(scope.TenantID) {
+		if owner == "" {
+			return "", fail(contracts.ErrValidationFailed, ReasonBadRequest, "credentials: a principal-owned credential needs an owner")
+		}
+		if !accountRE.MatchString(owner) {
+			return "", fail(contracts.ErrValidationFailed, ReasonBadRequest, "credentials: owner principal is not an identifier")
+		}
+		return owner, nil
+	}
+	if owner == "" {
+		return "", nil
+	}
+	if !accountRE.MatchString(owner) {
+		return "", fail(contracts.ErrValidationFailed, ReasonBadRequest, "credentials: owner principal is not an identifier")
+	}
+	return owner, nil
 }
 
 // newRef is the typed part of a reference being created.
@@ -635,11 +667,26 @@ func (s *Service) find(ctx context.Context, scope contracts.Scope, ref string) (
 	if err != nil {
 		return row{}, err
 	}
-	if !found {
-		// One answer for "does not exist" and "belongs to another tenant": existence does not leak.
-		return row{}, deny(ReasonNotBound, "credentials: no such reference in this application and tenant")
+	if found {
+		return r, nil
 	}
-	return r, nil
+	// Principal-owned credentials live under the reserved tenant. Resolve may use them from any
+	// company tenant of the same application when the owner matches (ADR 0041).
+	if !IsPrincipalCredentialTenant(scope.TenantID) {
+		r, found, err = loadRow(ctx, s.db, scope.ApplicationID, PrincipalCredentialTenant, ref)
+		if err != nil {
+			return row{}, err
+		}
+		if found {
+			if r.ownerPrincipal == "" || r.ownerPrincipal != scope.PrincipalID ||
+				string(r.ref.Binding.ApplicationID) != scope.ApplicationID {
+				return row{}, deny(ReasonPrincipalMismatch, "credentials: this credential is bound to another principal")
+			}
+			return r, nil
+		}
+	}
+	// One answer for "does not exist" and "belongs to another tenant": existence does not leak.
+	return row{}, deny(ReasonNotBound, "credentials: no such reference in this application and tenant")
 }
 
 // Get returns the reference of the scope's tenant: a status, a masked fingerprint and a safe account

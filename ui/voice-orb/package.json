@@ -1,6 +1,6 @@
 {
   "name": "@alixai/voice-orb",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "The audio-reactive voice orb shared by the AlixAI UI kits: a WebGL shader with a Canvas 2D fallback, no framework and no runtime dependencies.",
   "license": "Apache-2.0",
   "type": "module",

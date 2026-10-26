@@ -54,7 +54,7 @@ func (c *call) mePutRole() {
 			ProfileID:          body.ProfileID,
 			ProviderID:         "openai",
 			ModelID:            model,
-			CredentialStatus:   pv.PrincipalLlmBindingCredentialStatusMissing,
+			AccountStatus:      pv.PrincipalLlmBindingAccountStatusMissing,
 			BillingNoticeAcked: false,
 			UpdatedAt:          now,
 		}},

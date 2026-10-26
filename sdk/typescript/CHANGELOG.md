@@ -3,12 +3,19 @@
 All notable changes to this package. The format follows [Keep a Changelog](https://keepachangelog.com/); versions follow semantic versioning once 1.0.0
 ships, with the rules of [compatibility.md](../../docs/policies/compatibility.md).
 
-## Unreleased / 1.2.0
+## 1.2.0 � 2026-10-26
 
 ### Added
 
 - Operation tables `me.ME_OPERATIONS` and `memory.MEMORY_OPERATIONS` for per-principal LLM accounts (ADR 0041) and long-term memory (ADR 0042); TurnEvent type `memory_proposal` / `MemoryProposalEvent`.
+- Typed clients on `createClient`: `client.me` (`catalog`, `llm.get` / `putRole` / `deleteRole`, `providers.submitCredential` / `deleteCredential` / `acknowledgeBillingNotice` / `oauthStart`) and `client.memory` (`list` / `create` / `patch` / `delete` / `confirm` / `reject`). Fake-server routes for the same.
+- **Host only:** `me.providers.submitCredential` submits a write-only key. Call it from the host server, never from browser code.
 - Migration note: upgrade the SDK before a core that emits `memory_proposal` events (fail-closed decode).
+- Core (1.2): `/v1/me/…` and `GET /v1/providers/catalog` answer when external mode is enabled; otherwise `unavailable` / `llm_not_configured`.
+
+### Notes (core)
+
+- Dev cores report `1.2.0-dev`; packages for this line use `compatibility.alixai_core` `[1.0.0, 2.0.0)`.
 
 ## 1.1.0 — 2026-10-26
 

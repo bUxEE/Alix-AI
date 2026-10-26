@@ -63,7 +63,7 @@ func (f *meTestFake) PutRole(_ context.Context, scope contracts.Scope, role pv.P
 		ProfileID:          in.ProfileID,
 		ProviderID:         "openai",
 		ModelID:            model,
-		CredentialStatus:   pv.PrincipalLlmBindingCredentialStatusMissing,
+		AccountStatus:      pv.PrincipalLlmBindingAccountStatusMissing,
 		BillingNoticeAcked: false,
 		UpdatedAt:          common.Timestamp(time.Now().UTC().Format(time.RFC3339)),
 	}}

@@ -117,11 +117,19 @@ func (s *Service) Export(ctx context.Context, scope contracts.Scope, w io.Writer
 			res.Rows++
 		}
 		if len(page) < s.cfg.ExportPage {
+			if s.mem != nil {
+				if err := s.mem.AppendExport(ctx, scope, w); err != nil {
+					return res, err
+				}
+			}
 			return res, nil
 		}
 		after = last
 	}
 }
+
+// SetMemoryExport wires long-term memory into history export (ADR 0042). Nil clears it.
+func (s *Service) SetMemoryExport(m MemoryExporter) { s.mem = m }
 
 // exportFilter is the condition, after the scope, of the rows an export reads, with
 // its arguments. The first argument is the seq to read after, set per page.

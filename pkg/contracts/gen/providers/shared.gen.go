@@ -10,6 +10,57 @@ import (
 	"github.com/buxee/alix-ai/pkg/contracts/gen/common"
 )
 
+// AccountMode mirrors urn:alixai:schema:providers:shared:v1#/$defs/accountMode.
+//
+// How a catalog or registry profile obtains a credential (ADR 0041). tenant: the 1.1
+// operator/tenant binding. per_principal: the profile carries no credential; each principal binds
+// their own. deployment_local: local models, no per-scope choice.
+//
+// Only the values listed in the schema are valid.
+type AccountMode string
+
+// The valid values of AccountMode.
+const (
+	AccountModeTenant          AccountMode = "tenant"
+	AccountModePerPrincipal    AccountMode = "per_principal"
+	AccountModeDeploymentLocal AccountMode = "deployment_local"
+)
+
+// Valid reports whether v is one of the values the schema lists.
+func (v AccountMode) Valid() bool {
+	switch v {
+	case AccountModeTenant, AccountModePerPrincipal, AccountModeDeploymentLocal:
+		return true
+	}
+	return false
+}
+
+// MarshalJSON refuses to encode a value outside the enum, so an unset or
+// corrupt value fails instead of producing a document the schema rejects.
+func (v AccountMode) MarshalJSON() ([]byte, error) {
+	if !v.Valid() {
+		return nil, fmt.Errorf("AccountMode: %v is not a valid value", string(v))
+	}
+	return json.Marshal(string(v))
+}
+
+// UnmarshalJSON accepts only the values the schema lists; null and anything
+// else is an error.
+func (v *AccountMode) UnmarshalJSON(data []byte) error {
+	if bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
+		return fmt.Errorf("AccountMode: null is not a valid value")
+	}
+	var raw string
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return fmt.Errorf("AccountMode: %w", err)
+	}
+	if !AccountMode(raw).Valid() {
+		return fmt.Errorf("AccountMode: %v is not a valid value", raw)
+	}
+	*v = AccountMode(raw)
+	return nil
+}
+
 // AcknowledgementID mirrors urn:alixai:schema:providers:shared:v1#/$defs/acknowledgementId.
 //
 // ID of one billing notice acknowledgement. Minted by the AlixAI core: prefix ack, an underscore
@@ -389,57 +440,6 @@ func (v *CredentialKind) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("CredentialKind: %v is not a valid value", raw)
 	}
 	*v = CredentialKind(raw)
-	return nil
-}
-
-// CredentialMode mirrors urn:alixai:schema:providers:shared:v1#/$defs/credentialMode.
-//
-// How a catalog or registry profile obtains a credential (ADR 0041). tenant: the 1.1
-// operator/tenant binding. per_principal: the profile carries no credential; each principal binds
-// their own. deployment_local: local models, no per-scope choice.
-//
-// Only the values listed in the schema are valid.
-type CredentialMode string
-
-// The valid values of CredentialMode.
-const (
-	CredentialModeTenant          CredentialMode = "tenant"
-	CredentialModePerPrincipal    CredentialMode = "per_principal"
-	CredentialModeDeploymentLocal CredentialMode = "deployment_local"
-)
-
-// Valid reports whether v is one of the values the schema lists.
-func (v CredentialMode) Valid() bool {
-	switch v {
-	case CredentialModeTenant, CredentialModePerPrincipal, CredentialModeDeploymentLocal:
-		return true
-	}
-	return false
-}
-
-// MarshalJSON refuses to encode a value outside the enum, so an unset or
-// corrupt value fails instead of producing a document the schema rejects.
-func (v CredentialMode) MarshalJSON() ([]byte, error) {
-	if !v.Valid() {
-		return nil, fmt.Errorf("CredentialMode: %v is not a valid value", string(v))
-	}
-	return json.Marshal(string(v))
-}
-
-// UnmarshalJSON accepts only the values the schema lists; null and anything
-// else is an error.
-func (v *CredentialMode) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
-		return fmt.Errorf("CredentialMode: null is not a valid value")
-	}
-	var raw string
-	if err := json.Unmarshal(data, &raw); err != nil {
-		return fmt.Errorf("CredentialMode: %w", err)
-	}
-	if !CredentialMode(raw).Valid() {
-		return fmt.Errorf("CredentialMode: %v is not a valid value", raw)
-	}
-	*v = CredentialMode(raw)
 	return nil
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "@alixai/copilotkit-adapter",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Optional CopilotKit and AG-UI adapter for AlixAI: AlixAIAgent for CopilotRuntime, runtime helpers and React helpers for the confirmation card, citations, attachments and structured blocks.",
   "license": "Apache-2.0",
   "type": "module",

@@ -31,7 +31,7 @@ type PrincipalLlmBinding struct {
 	// client can resolve to a secret.
 	//
 	// Authority: alixai.
-	CredentialStatus PrincipalLlmBindingCredentialStatus `json:"credential_status" alixai:"alixai"`
+	AccountStatus PrincipalLlmBindingAccountStatus `json:"account_status" alixai:"alixai"`
 
 	// Authority: alixai.
 	BillingNoticeAcked bool `json:"billing_notice_acked" alixai:"alixai"`
@@ -40,31 +40,31 @@ type PrincipalLlmBinding struct {
 	UpdatedAt common.Timestamp `json:"updated_at" alixai:"alixai"`
 }
 
-// PrincipalLlmBindingCredentialStatus mirrors
-// urn:alixai:schema:providers:principal-llm-binding:v1#/properties/credential_status.
+// PrincipalLlmBindingAccountStatus mirrors
+// urn:alixai:schema:providers:principal-llm-binding:v1#/properties/account_status.
 //
 // Whether the principal has an usable credential for this provider. Never a ref id the client can
 // resolve to a secret.
 //
 // Only the values listed in the schema are valid.
-type PrincipalLlmBindingCredentialStatus string
+type PrincipalLlmBindingAccountStatus string
 
-// The valid values of PrincipalLlmBindingCredentialStatus.
+// The valid values of PrincipalLlmBindingAccountStatus.
 const (
-	PrincipalLlmBindingCredentialStatusMissing                 PrincipalLlmBindingCredentialStatus = "missing"
-	PrincipalLlmBindingCredentialStatusPending                 PrincipalLlmBindingCredentialStatus = "pending"
-	PrincipalLlmBindingCredentialStatusActive                  PrincipalLlmBindingCredentialStatus = "active"
-	PrincipalLlmBindingCredentialStatusExpired                 PrincipalLlmBindingCredentialStatus = "expired"
-	PrincipalLlmBindingCredentialStatusRevoked                 PrincipalLlmBindingCredentialStatus = "revoked"
-	PrincipalLlmBindingCredentialStatusInvalid                 PrincipalLlmBindingCredentialStatus = "invalid"
-	PrincipalLlmBindingCredentialStatusQuarantined             PrincipalLlmBindingCredentialStatus = "quarantined"
-	PrincipalLlmBindingCredentialStatusReauthorizationRequired PrincipalLlmBindingCredentialStatus = "reauthorization_required"
+	PrincipalLlmBindingAccountStatusMissing                 PrincipalLlmBindingAccountStatus = "missing"
+	PrincipalLlmBindingAccountStatusPending                 PrincipalLlmBindingAccountStatus = "pending"
+	PrincipalLlmBindingAccountStatusActive                  PrincipalLlmBindingAccountStatus = "active"
+	PrincipalLlmBindingAccountStatusExpired                 PrincipalLlmBindingAccountStatus = "expired"
+	PrincipalLlmBindingAccountStatusRevoked                 PrincipalLlmBindingAccountStatus = "revoked"
+	PrincipalLlmBindingAccountStatusInvalid                 PrincipalLlmBindingAccountStatus = "invalid"
+	PrincipalLlmBindingAccountStatusQuarantined             PrincipalLlmBindingAccountStatus = "quarantined"
+	PrincipalLlmBindingAccountStatusReauthorizationRequired PrincipalLlmBindingAccountStatus = "reauthorization_required"
 )
 
 // Valid reports whether v is one of the values the schema lists.
-func (v PrincipalLlmBindingCredentialStatus) Valid() bool {
+func (v PrincipalLlmBindingAccountStatus) Valid() bool {
 	switch v {
-	case PrincipalLlmBindingCredentialStatusMissing, PrincipalLlmBindingCredentialStatusPending, PrincipalLlmBindingCredentialStatusActive, PrincipalLlmBindingCredentialStatusExpired, PrincipalLlmBindingCredentialStatusRevoked, PrincipalLlmBindingCredentialStatusInvalid, PrincipalLlmBindingCredentialStatusQuarantined, PrincipalLlmBindingCredentialStatusReauthorizationRequired:
+	case PrincipalLlmBindingAccountStatusMissing, PrincipalLlmBindingAccountStatusPending, PrincipalLlmBindingAccountStatusActive, PrincipalLlmBindingAccountStatusExpired, PrincipalLlmBindingAccountStatusRevoked, PrincipalLlmBindingAccountStatusInvalid, PrincipalLlmBindingAccountStatusQuarantined, PrincipalLlmBindingAccountStatusReauthorizationRequired:
 		return true
 	}
 	return false
@@ -72,26 +72,26 @@ func (v PrincipalLlmBindingCredentialStatus) Valid() bool {
 
 // MarshalJSON refuses to encode a value outside the enum, so an unset or
 // corrupt value fails instead of producing a document the schema rejects.
-func (v PrincipalLlmBindingCredentialStatus) MarshalJSON() ([]byte, error) {
+func (v PrincipalLlmBindingAccountStatus) MarshalJSON() ([]byte, error) {
 	if !v.Valid() {
-		return nil, fmt.Errorf("PrincipalLlmBindingCredentialStatus: %v is not a valid value", string(v))
+		return nil, fmt.Errorf("PrincipalLlmBindingAccountStatus: %v is not a valid value", string(v))
 	}
 	return json.Marshal(string(v))
 }
 
 // UnmarshalJSON accepts only the values the schema lists; null and anything
 // else is an error.
-func (v *PrincipalLlmBindingCredentialStatus) UnmarshalJSON(data []byte) error {
+func (v *PrincipalLlmBindingAccountStatus) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
-		return fmt.Errorf("PrincipalLlmBindingCredentialStatus: null is not a valid value")
+		return fmt.Errorf("PrincipalLlmBindingAccountStatus: null is not a valid value")
 	}
 	var raw string
 	if err := json.Unmarshal(data, &raw); err != nil {
-		return fmt.Errorf("PrincipalLlmBindingCredentialStatus: %w", err)
+		return fmt.Errorf("PrincipalLlmBindingAccountStatus: %w", err)
 	}
-	if !PrincipalLlmBindingCredentialStatus(raw).Valid() {
-		return fmt.Errorf("PrincipalLlmBindingCredentialStatus: %v is not a valid value", raw)
+	if !PrincipalLlmBindingAccountStatus(raw).Valid() {
+		return fmt.Errorf("PrincipalLlmBindingAccountStatus: %v is not a valid value", raw)
 	}
-	*v = PrincipalLlmBindingCredentialStatus(raw)
+	*v = PrincipalLlmBindingAccountStatus(raw)
 	return nil
 }

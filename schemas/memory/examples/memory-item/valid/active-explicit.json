@@ -1,0 +1,13 @@
+{
+  "id": "mem_01J0000000000000000000000A",
+  "application_id": "app_help",
+  "tenant_id": "ten_acme",
+  "workspace_id": "wsp_main",
+  "principal_id": "usr_alice",
+  "text": "Prefers morning appointments",
+  "origin": "user_explicit",
+  "status": "active",
+  "data_class": "internal",
+  "created_at": "2026-10-26T12:00:00.000Z",
+  "updated_at": "2026-10-26T12:00:00.000Z"
+}

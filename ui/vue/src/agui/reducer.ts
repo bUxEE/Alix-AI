@@ -12,6 +12,7 @@ import {
   parseCitations,
   parseConfirmation,
   parseInterrupt,
+  parseMemoryProposal,
   parsePendingState,
   parseProgress,
   parseReceipt,
@@ -23,11 +24,12 @@ import type { AguiEvent, ChatItem, ChatState, RunOutcome } from "./types";
 // reactive), reads every member defensively and ignores what it does not know: an event type, an activity type, a block of the
 // wrong shape. Nothing it stores is markup. A run's events arrive in order and exactly once (the client guarantees both).
 
-export const createChatState = (): ChatState => ({
+export const createChatState = (options?: { memory?: boolean }): ChatState => ({
   items: [],
   threadId: undefined,
   runId: undefined,
   running: false,
+  memoryEnabled: options?.memory === true,
   step: undefined,
   progress: {},
   shared: undefined,
@@ -228,6 +230,18 @@ export const applyEvent = (state: ChatState, event: AguiEvent): void => {
     }
     case "CUSTOM": {
       if (event["name"] === ALIXAI_CUSTOM_EVENT.suggestions) state.suggestions = parseSuggestions(event["value"]);
+      if (state.memoryEnabled && event["name"] === ALIXAI_CUSTOM_EVENT.memoryProposal) {
+        const proposal = parseMemoryProposal(event["value"]);
+        if (proposal !== undefined) {
+          const expired = proposal.expiresAt !== undefined && Date.parse(proposal.expiresAt) <= Date.now();
+          upsert(state, {
+            kind: "memory_proposal",
+            id: `memprop_${proposal.id}`,
+            proposal,
+            status: expired ? "expired" : "pending",
+          });
+        }
+      }
       return;
     }
     case "TOOL_CALL_START": {

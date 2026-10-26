@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:alixai:schema:providers:provider-catalog-entry:v1",
   "title": "Provider catalog entry",
-  "description": "One operator-approved provider/model a principal may pick (ADR 0041). No credential and no secret: credential_mode is per_principal. Terms, prices and the billing notice travel with the entry so the host can show them before the principal binds.",
+  "description": "One operator-approved provider/model a principal may pick (ADR 0041). No credential and no secret: account_mode is per_principal. Terms, prices and the billing notice travel with the entry so the host can show them before the principal binds.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -10,7 +10,7 @@
     "provider_id",
     "model_id",
     "roles",
-    "credential_mode",
+    "account_mode",
     "display_name",
     "terms_summary",
     "billing_notice_version",
@@ -46,7 +46,7 @@
       "uniqueItems": true,
       "items": { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/principalLlmRole" }
     },
-    "credential_mode": {
+    "account_mode": {
       "description": "Always per_principal on catalog entries shown to users.",
       "x-alixai-authority": "alixai",
       "type": "string",

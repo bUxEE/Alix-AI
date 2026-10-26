@@ -3,12 +3,18 @@
 All notable changes to this package. The format follows [Keep a Changelog](https://keepachangelog.com/); versions follow semantic versioning once 1.0.0
 ships, with the rules of [compatibility.md](../../docs/policies/compatibility.md).
 
-## Unreleased / 1.2.0
+## 1.2.0 � 2026-10-26
 
 ### Added
 
-- `client.me` (catalog, LLM bindings, credential, billing ack, OAuth start) and `client.memory` (list/create/patch/delete/confirm/reject) for ADR 0041 / 0042; routes may answer `unavailable` until the core wires them.
+- `client.me` / async `me` (catalog, LLM bindings, credential, billing ack, OAuth start) and `client.memory` / async `memory` (list/create/patch/delete/confirm/reject) for ADR 0041 / 0042.
+- **Host only:** `submit_credential` submits a write-only key. Call it from the host server, never from browser code.
 - Migration note: upgrade the SDK before a core that emits `memory_proposal` turn events.
+- Core (1.2): `/v1/me/…` and `GET /v1/providers/catalog` answer when external mode is enabled; otherwise `unavailable` / `llm_not_configured`. Memory routes answer when `memory.enabled` is true.
+
+### Notes (core)
+
+- Dev cores report `1.2.0-dev`; packages for this line use `compatibility.alixai_core` `[1.0.0, 2.0.0)`.
 
 ## 1.1.0 — 2026-10-26
 

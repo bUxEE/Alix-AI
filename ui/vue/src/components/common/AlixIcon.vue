@@ -21,6 +21,7 @@ const ICONS: Record<string, string[]> = {
   shield: ["M12 3l8 3v6c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V6z"],
   clock: ["M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z", "M12 7v5l3 2"],
   trash: ["M4 7h16", "M9 7V4h6v3", "M6 7l1 13h10l1-13"],
+  edit: ["M4 16.5V20h3.5L18 9.5 14.5 6 4 16.5z", "M13 7.5l3.5 3.5"],
   plus: ["M12 5v14", "M5 12h14"],
   sliders: ["M4 7h10", "M18 7h2", "M4 17h2", "M10 17h10", "M14 4v6", "M6 14v6"],
   message: ["M4 5h16v11H9l-5 4z"],

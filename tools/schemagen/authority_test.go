@@ -74,10 +74,20 @@ func (c *authChecker) walk(f *File, ptr string, n *Node) {
 		}
 	}
 	if props := n.Get("properties"); props.isObject() {
+		// Nested fields of an alixai-owned object inherit that authority (the core assembles
+		// them); a separate marker on every leaf is not required and must not rewrite a frozen shape.
+		inheritAlixai := false
+		if a := n.Get("x-alixai-authority"); a != nil && a.Kind == nString && a.Str == "alixai" {
+			inheritAlixai = true
+		}
 		for _, k := range props.Keys {
 			pn := props.Vals[k]
 			pptr := joinPointer(ptr, "properties", k)
 			if !pn.isObject() {
+				continue
+			}
+			if inheritAlixai && pn.Get("x-alixai-authority") == nil {
+				c.walk(f, pptr, pn)
 				continue
 			}
 			auth, ok := c.annotation(f, pptr, pn)

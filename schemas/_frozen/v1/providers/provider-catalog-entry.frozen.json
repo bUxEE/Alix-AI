@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:providers:provider-catalog-entry:v1",
+  "title": "Provider catalog entry",
+  "description": "One operator-approved provider/model a principal may pick (ADR 0041). No credential and no secret: account_mode is per_principal. Terms, prices and the billing notice travel with the entry so the host can show them before the principal binds.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile_id",
+    "provider_id",
+    "model_id",
+    "roles",
+    "account_mode",
+    "display_name",
+    "terms_summary",
+    "billing_notice_version",
+    "qualified"
+  ],
+  "properties": {
+    "profile_id": {
+      "description": "The registry profile id the principal binds to.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/profileId"
+    },
+    "provider_id": {
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/providerId"
+    },
+    "model_id": {
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/modelId"
+    },
+    "model_ids": {
+      "description": "When the profile allows several models, the models the principal may choose. Absent or empty: only model_id.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "maxItems": 32,
+      "uniqueItems": true,
+      "items": { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/modelId" }
+    },
+    "roles": {
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/principalLlmRole" }
+    },
+    "account_mode": {
+      "description": "Always per_principal on catalog entries shown to users.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "const": "per_principal"
+    },
+    "display_name": {
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^[^\\x00-\\x1f\\x7f]+$"
+    },
+    "terms_summary": {
+      "description": "Short operator-supplied terms summary for the settings UI. Never a secret.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "billing_notice_version": {
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[^\\x00-\\x1f\\x7f]+$"
+    },
+    "price_hint": {
+      "description": "Optional upper-bound price hint in integer micro-units per meter unit for display. Absent when unpriced.",
+      "x-alixai-authority": "alixai",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["currency", "micro_units_per_toks_in", "micro_units_per_toks_out"],
+      "properties": {
+        "currency": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 3,
+          "pattern": "^[A-Z]{3}$"
+        },
+        "micro_units_per_toks_in": { "type": "integer", "minimum": 0 },
+        "micro_units_per_toks_out": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "qualified": {
+      "description": "True when the profile is production-qualified (conformance, terms, billing notice on the operator side).",
+      "x-alixai-authority": "alixai",
+      "type": "boolean"
+    },
+    "oauth_available": {
+      "description": "True when the provider officially offers third-party OAuth the principal may start under /v1/me/oauth.",
+      "x-alixai-authority": "alixai",
+      "type": "boolean"
+    }
+  }
+}

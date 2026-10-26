@@ -729,6 +729,9 @@ func buildTurnEvents(res dialogue.Result, turnErr error) turnEventsPlan {
 	for _, c := range dialogue.KnowledgeCitationEvents(res) {
 		add(turnEventsDraft(c))
 	}
+	for _, m := range dialogue.MemoryProposalEvents(res) {
+		add(turnEventsDraft(m))
+	}
 
 	if pa := res.Prepared; pa != nil {
 		add(func(seq conversation.Seq) conversation.TurnEventValue {

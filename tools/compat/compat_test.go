@@ -448,7 +448,7 @@ func TestRepositoryMatchesFrozenV1(t *testing.T) {
 			t.Errorf("schema area %q is not in the frozen v1 set", n)
 		}
 	}
-	for _, area := range []string{"decision", "providers", "bench"} {
+	for _, area := range []string{"decision", "providers", "bench", "memory"} {
 		if !areas[area] {
 			t.Errorf("the %s area must be frozen", area)
 		}

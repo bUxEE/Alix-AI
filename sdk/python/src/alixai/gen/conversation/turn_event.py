@@ -11,9 +11,10 @@ from alixai.gen.common.ids import CapabilityId
 from alixai.gen.conversation.citation import Citation
 from alixai.gen.conversation.dialogue_directive import DialogueDirective
 from alixai.gen.conversation.rich_block import ClarificationChoicesBlock, RichBlock
+from alixai.gen.memory.memory_item import MemoryItem
 from pydantic import BaseModel, ConfigDict, Field
 
-__all__ = ['Seq', 'TokenEvent', 'DirectiveEvent', 'ClarificationEvent', 'PreparedActionEvent', 'ReceiptEvent', 'CitationEvent', 'ProgressEvent', 'ErrorEvent', 'DoneEvent', 'BlockEvent', 'TurnEvent']
+__all__ = ['Seq', 'TokenEvent', 'DirectiveEvent', 'ClarificationEvent', 'PreparedActionEvent', 'ReceiptEvent', 'CitationEvent', 'ProgressEvent', 'ErrorEvent', 'DoneEvent', 'BlockEvent', 'MemoryProposalEvent', 'TurnEvent']
 
 
 Seq = Annotated[int, Field(ge=0, le=4294967295)]
@@ -143,4 +144,17 @@ class BlockEvent(BaseModel):
     block: RichBlock
 
 
-TurnEvent = Annotated[Union[TokenEvent, DirectiveEvent, ClarificationEvent, PreparedActionEvent, ReceiptEvent, CitationEvent, ProgressEvent, ErrorEvent, DoneEvent, BlockEvent], Field(discriminator='type')]
+class MemoryProposalEvent(BaseModel):
+    """
+    An assistant-proposed long-term memory item awaiting user consent (ADR 0042). Confirm or
+    reject only through POST /v1/memory/{id}/confirm or /reject; typed text never confirms.
+    Mapped to AG-UI CUSTOM event alixai.memory_proposal.
+    """
+    model_config = ConfigDict(extra="forbid", protected_namespaces=())
+    type: Literal["memory_proposal"]
+    turn_id: TurnId
+    seq: Seq
+    memory: MemoryItem
+
+
+TurnEvent = Annotated[Union[TokenEvent, DirectiveEvent, ClarificationEvent, PreparedActionEvent, ReceiptEvent, CitationEvent, ProgressEvent, ErrorEvent, DoneEvent, BlockEvent, MemoryProposalEvent], Field(discriminator='type')]

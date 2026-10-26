@@ -123,6 +123,23 @@ export interface AlixUiCall {
 
 export type ConfirmationStatus = "pending" | "submitting" | "approved" | "declined" | "dismissed" | "failed";
 
+/** Status of a memory proposal card while the host confirms or rejects. */
+export type MemoryProposalStatus = "pending" | "submitting" | "remembered" | "forgotten" | "expired" | "failed";
+
+/** What the memory proposal card shows (from `alixai.memory_proposal`). */
+export interface MemoryProposalView {
+  readonly id: string;
+  readonly text: string;
+  readonly expiresAt?: string;
+}
+
+/** One row of `AlixMemoryList` (host-owned data). */
+export interface MemoryListItem {
+  readonly id: string;
+  readonly text: string;
+  readonly status: "proposed" | "active" | "rejected";
+}
+
 /** One entry of the conversation timeline, in the order the stream produced it. */
 export type ChatItem =
   | { kind: "message"; id: string; role: "user" | "assistant"; text: string; streaming: boolean }
@@ -131,6 +148,7 @@ export type ChatItem =
   | { kind: "citations"; id: string; citations: Citation[] }
   | { kind: "receipt"; id: string; receipt: ActionReceipt }
   | { kind: "confirmation"; id: string; confirmation: AlixConfirmation; interruptId: string; status: ConfirmationStatus }
+  | { kind: "memory_proposal"; id: string; proposal: MemoryProposalView; status: MemoryProposalStatus }
   | { kind: "continue"; id: string; summary: string; preparationId?: string }
   | { kind: "error"; id: string; message: string; code?: string };
 
@@ -141,6 +159,8 @@ export interface ChatState {
   threadId: string | undefined;
   runId: string | undefined;
   running: boolean;
+  /** When true, `alixai.memory_proposal` CUSTOM events become timeline items (opt-in; default false). */
+  memoryEnabled: boolean;
   /** The pipeline stage that is running now (`STEP_STARTED` without its `STEP_FINISHED`). */
   step: string | undefined;
   progress: Record<string, AlixProgress>;

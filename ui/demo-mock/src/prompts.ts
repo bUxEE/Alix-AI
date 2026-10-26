@@ -25,7 +25,8 @@ export type DemoScenarioId =
   | "unavailable"
   | "refusal"
   | "long"
-  | "reconnect";
+  | "reconnect"
+  | "memory_proposal";
 
 export interface DemoPrompt {
   readonly id: DemoScenarioId;
@@ -158,12 +159,23 @@ export const demoPrompts: readonly DemoPrompt[] = [
     keywords: { en: ["dropped connection", "reconnect", "flaky"], it: ["connessione interrotta", "riconnetti", "instabile"] },
     kits: ["vue"],
   },
+  {
+    id: "memory_proposal",
+    title: { en: "Remember this?", it: "Vuoi ricordarlo?" },
+    prompt: { en: "Remember that I prefer concise answers", it: "Ricorda che preferisco risposte concise" },
+    shows: {
+      en: "A memory proposal card (Remember / Don't remember). Needs the chat panel `memory` prop.",
+      it: "Una card di proposta memoria (Ricorda / Non ricordare). Serve la prop `memory` del pannello chat.",
+    },
+    keywords: { en: ["remember that", "prefer concise", "memory proposal"], it: ["ricorda che", "preferisco risposte", "proposta memoria"] },
+  },
 ];
 
 // The order in which scenarios claim a message: the more specific first.
 const MATCH_ORDER: readonly DemoScenarioId[] = [
   "help",
   "reconnect",
+  "memory_proposal",
   "refusal",
   "unavailable",
   "step_up",

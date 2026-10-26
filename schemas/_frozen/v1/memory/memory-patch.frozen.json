@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:memory:memory-patch:v1",
+  "title": "Memory patch",
+  "description": "Body of PATCH /v1/memory/{id}: edit text, structured facts, class or expiry of an active item (ADR 0042).",
+  "type": "object",
+  "additionalProperties": false,
+  "minProperties": 1,
+  "properties": {
+    "text": {
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:memory:shared:v1#/$defs/memoryText"
+    },
+    "structured": {
+      "x-alixai-authority": "host",
+      "oneOf": [
+        {
+          "type": "object",
+          "maxProperties": 32,
+          "propertyNames": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$" },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        },
+        { "type": "null" }
+      ]
+    },
+    "data_class": {
+      "x-alixai-authority": "host",
+      "type": "string",
+      "enum": ["public", "internal", "confidential", "restricted"]
+    },
+    "expires_at": {
+      "x-alixai-authority": "host",
+      "oneOf": [
+        { "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp" },
+        { "type": "null" }
+      ]
+    }
+  }
+}

@@ -24,6 +24,7 @@ import type { FakeContext } from "./context.js";
 import { createFakeFiles } from "./fake-files.js";
 import type { FakeFilesOptions } from "./fake-files.js";
 import { createFakeHistory } from "./fake-history.js";
+import { createFakeMeMemory } from "./fake-me-memory.js";
 import { createFakeSettings } from "./fake-settings.js";
 import type { FakeSettingsOptions } from "./fake-settings.js";
 import { FAKE_UPGRADE_HEADER, FAKE_WEBSOCKET_HEADER, createFakeWebSocketFactory } from "./fake-ws.js";
@@ -339,6 +340,7 @@ export const createFakeServer = (options: FakeServerOptions = {}): FakeAlixAISer
   const filesArea = createFakeFiles(context, options.files);
   const historyArea = createFakeHistory(context);
   const settingsArea = createFakeSettings(context, () => capabilities, () => appStatus, options.settings);
+  const meMemoryArea = createFakeMeMemory(context);
 
   // ---- tokens ----
 
@@ -1005,6 +1007,23 @@ export const createFakeServer = (options: FakeServerOptions = {}): FakeAlixAISer
       case "getSettingsIntegrationAudit":
       case "getSettingsProviderHealth":
         return settingsArea.handle(operation, scope, body);
+      case "getProviderCatalog":
+      case "getPrincipalLlm":
+      case "putPrincipalLlmRole":
+      case "deletePrincipalLlmRole":
+      case "putPrincipalProviderCredential":
+      case "deletePrincipalProviderCredential":
+      case "ackPrincipalProviderBillingNotice":
+      case "startPrincipalOAuth":
+      case "listMemory":
+      case "createMemory":
+      case "patchMemory":
+      case "deleteMemory":
+      case "confirmMemory":
+      case "rejectMemory": {
+        const answered = meMemoryArea.handle(operation, scope, params, body);
+        return answered ?? problem("internal", "the fake server does not implement this operation");
+      }
       case "createSession": {
         if (body !== undefined && !(isRecord(body) && Object.keys(body).length === 0)) return problem("validation_failed", "the request body, when present, must be {}");
         const quarantined = quarantineRefusal();

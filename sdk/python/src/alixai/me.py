@@ -1,4 +1,8 @@
-"""Per-principal LLM account (ADR 0041, 1.2.0): catalog, bindings, credential, billing ack, OAuth start."""
+"""Per-principal LLM account (ADR 0041, 1.2.0): catalog, bindings, credential, billing ack, OAuth start.
+
+``submit_credential`` is host-server only — never call it from browser code. The key must never sit in
+the page, in storage, or in a postMessage payload.
+"""
 
 from __future__ import annotations
 
@@ -40,13 +44,16 @@ class MeApi:
     def delete_role(self, role: str, *, timeout_ms: Optional[int] = None) -> Any:
         return self._client._execute(Call("deletePrincipalLlmRole", lambda d: d, params={"role": path_id("role", role)}, timeout_ms=timeout_ms))
 
-    def submit_credential(self, provider: str, key: str, *, timeout_ms: Optional[int] = None) -> Any:
+    def submit_credential(self, provider: str, key: str, *, label: Optional[str] = None, timeout_ms: Optional[int] = None) -> Any:
+        payload: dict[str, Any] = {"key": key}
+        if label is not None:
+            payload["label"] = label
         return self._client._execute(
             Call(
                 "putPrincipalProviderCredential",
                 lambda d: d,
                 params={"provider": path_id("provider", provider)},
-                body=_json({"key": key}),
+                body=_json(payload),
                 content_type="application/json",
                 forbid=key,
                 timeout_ms=timeout_ms,
@@ -70,13 +77,33 @@ class MeApi:
             )
         )
 
-    def start_oauth(self, provider: str, *, capabilities: Sequence[str], redirect_uri: str, timeout_ms: Optional[int] = None) -> Any:
+    def start_oauth(
+        self,
+        provider: str,
+        *,
+        capabilities: Sequence[str],
+        redirect_uri: str,
+        presentation: Optional[str] = None,
+        callback: Optional[str] = None,
+        opener_origin: Optional[str] = None,
+        label: Optional[str] = None,
+        timeout_ms: Optional[int] = None,
+    ) -> Any:
+        payload: dict[str, Any] = {"capabilities": list(capabilities), "redirect_uri": redirect_uri}
+        if presentation is not None:
+            payload["presentation"] = presentation
+        if callback is not None:
+            payload["callback"] = callback
+        if opener_origin is not None:
+            payload["opener_origin"] = opener_origin
+        if label is not None:
+            payload["label"] = label
         return self._client._execute(
             Call(
                 "startPrincipalOAuth",
                 lambda d: d,
                 params={"provider": path_id("provider", provider)},
-                body=_json({"capabilities": list(capabilities), "redirect_uri": redirect_uri}),
+                body=_json(payload),
                 content_type="application/json",
                 timeout_ms=timeout_ms,
             )
@@ -89,3 +116,88 @@ class AsyncMeApi:
 
     async def catalog(self, *, timeout_ms: Optional[int] = None) -> Any:
         return await self._client._execute(Call("getProviderCatalog", lambda d: d, timeout_ms=timeout_ms))
+
+    async def llm(self, *, timeout_ms: Optional[int] = None) -> Any:
+        return await self._client._execute(Call("getPrincipalLlm", lambda d: d, timeout_ms=timeout_ms))
+
+    async def put_role(self, role: str, body: Mapping[str, Any], *, timeout_ms: Optional[int] = None) -> Any:
+        return await self._client._execute(
+            Call(
+                "putPrincipalLlmRole",
+                lambda d: d,
+                params={"role": path_id("role", role)},
+                body=_json(body),
+                content_type="application/json",
+                timeout_ms=timeout_ms,
+            )
+        )
+
+    async def delete_role(self, role: str, *, timeout_ms: Optional[int] = None) -> Any:
+        return await self._client._execute(
+            Call("deletePrincipalLlmRole", lambda d: d, params={"role": path_id("role", role)}, timeout_ms=timeout_ms)
+        )
+
+    async def submit_credential(self, provider: str, key: str, *, label: Optional[str] = None, timeout_ms: Optional[int] = None) -> Any:
+        payload: dict[str, Any] = {"key": key}
+        if label is not None:
+            payload["label"] = label
+        return await self._client._execute(
+            Call(
+                "putPrincipalProviderCredential",
+                lambda d: d,
+                params={"provider": path_id("provider", provider)},
+                body=_json(payload),
+                content_type="application/json",
+                forbid=key,
+                timeout_ms=timeout_ms,
+            )
+        )
+
+    async def delete_credential(self, provider: str, *, timeout_ms: Optional[int] = None) -> Any:
+        return await self._client._execute(
+            Call("deletePrincipalProviderCredential", lambda d: d, params={"provider": path_id("provider", provider)}, timeout_ms=timeout_ms)
+        )
+
+    async def acknowledge_billing_notice(self, provider: str, body: Mapping[str, Any], *, timeout_ms: Optional[int] = None) -> Any:
+        return await self._client._execute(
+            Call(
+                "ackPrincipalProviderBillingNotice",
+                lambda d: d,
+                params={"provider": path_id("provider", provider)},
+                body=_json(body),
+                content_type="application/json",
+                timeout_ms=timeout_ms,
+            )
+        )
+
+    async def start_oauth(
+        self,
+        provider: str,
+        *,
+        capabilities: Sequence[str],
+        redirect_uri: str,
+        presentation: Optional[str] = None,
+        callback: Optional[str] = None,
+        opener_origin: Optional[str] = None,
+        label: Optional[str] = None,
+        timeout_ms: Optional[int] = None,
+    ) -> Any:
+        payload: dict[str, Any] = {"capabilities": list(capabilities), "redirect_uri": redirect_uri}
+        if presentation is not None:
+            payload["presentation"] = presentation
+        if callback is not None:
+            payload["callback"] = callback
+        if opener_origin is not None:
+            payload["opener_origin"] = opener_origin
+        if label is not None:
+            payload["label"] = label
+        return await self._client._execute(
+            Call(
+                "startPrincipalOAuth",
+                lambda d: d,
+                params={"provider": path_id("provider", provider)},
+                body=_json(payload),
+                content_type="application/json",
+                timeout_ms=timeout_ms,
+            )
+        )

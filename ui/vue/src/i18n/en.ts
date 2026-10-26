@@ -242,6 +242,24 @@ export const en = {
   "dictation.error.generic": "Dictation did not work. Try again, or type instead.",
   "dictation.live.recording": "Recording",
   "dictation.live.done": "Text inserted into the message box",
+
+  "memory.proposal.title": "Remember this?",
+  "memory.proposal.remember": "Remember",
+  "memory.proposal.forget": "Don't remember",
+  "memory.proposal.submitting": "Saving",
+  "memory.proposal.remembered": "Saved to memory",
+  "memory.proposal.forgotten": "Not saved",
+  "memory.proposal.expired": "This proposal has expired. Ask again if you still want it remembered.",
+  "memory.proposal.failed": "Your answer could not be sent. Try again.",
+  "memory.proposal.expires": "Valid until {time}",
+  "memory.list.title": "Memories",
+  "memory.list.empty": "No memories yet.",
+  "memory.list.failed": "The memories could not be loaded.",
+  "memory.list.edit": "Edit memory",
+  "memory.list.delete": "Delete memory",
+  "memory.status.proposed": "Proposed",
+  "memory.status.active": "Active",
+  "memory.status.rejected": "Rejected",
 } as const satisfies Record<string, string>;
 
 export type MessageKey = keyof typeof en;

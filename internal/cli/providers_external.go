@@ -629,6 +629,9 @@ func externalServeProvider(_ context.Context, d serveDeps) error {
 	if err := gateway.Provide[gateway.ProvidersOAuthFlowService](d.Services, svc); err != nil {
 		return err
 	}
+	if err := principalLLMProvide(d.Services, svc); err != nil {
+		return err
+	}
 	if err := bindConfiguredCredentialRefs(context.Background(), svc, sec); err != nil {
 		return err
 	}
@@ -1459,9 +1462,13 @@ func extWireCompose(d extWireDeps) (*extWireStack, error) {
 	sender := &extWireSender{admin: a, sec: d.Section, reg: extFinalProviderRegistry(), log: d.Log, cache: map[string]ExternalProvider{}}
 	gs := extmode.GeneratorSender{For: sender.generatorFor}
 	st := &extWireStack{admin: a, policy: policy, sender: sender, text: extWireTextEgress{guard: a.egress}, deployment: a.deployment, log: d.Log}
+	// Always bind to this admin — never the package holder from another serve/test.
+	pll := newPrincipalLLM(a)
+	routePolicy := principalLLMPolicy(hybrid.ControllerLocalPolicy(policy, a.resolver), a.resolver, pll)
+	profiles := principalLLMProfiles(a.reg, pll)
 	rt, err := extmode.New(extmode.Config{
-		Local: d.Delegate.local, Modes: a.modes, KillSwitch: a.egress, Policy: hybrid.ControllerLocalPolicy(policy, a.resolver),
-		LocalProviders: d.Local, Profiles: a.reg, Egress: a.egress, Budgets: a.budget, Packages: d.Delegate.packages,
+		Local: d.Delegate.local, Modes: a.modes, KillSwitch: a.egress, Policy: routePolicy,
+		LocalProviders: d.Local, Profiles: profiles, Egress: a.egress, Budgets: a.budget, Packages: d.Delegate.packages,
 		Sender: gs, Budget: d.Delegate.budget, Clock: d.Clock,
 		OnOutcome: func(scope contracts.Scope, o modes.Outcome) { st.recordOutcome(scope, o) },
 	})
@@ -1472,7 +1479,7 @@ func extWireCompose(d extWireDeps) (*extWireStack, error) {
 	// than Hybrid's default of 512 tokens).
 	maxOut := min(512, d.Delegate.budget.MaxOutputTokens)
 	hy, err := hybrid.New(hybrid.Config{
-		Modes: a.modes, KillSwitch: a.egress, Policy: policy, LocalProviders: d.Local, Profiles: a.reg, Egress: a.egress,
+		Modes: a.modes, KillSwitch: a.egress, Policy: principalLLMPolicy(policy, a.resolver, pll), LocalProviders: d.Local, Profiles: profiles, Egress: a.egress,
 		Budgets: a.budget, Sender: gs, Budget: d.Delegate.budget, MaxOutputToks: maxOut,
 		Local: extGapLocalGen{sel: d.Delegate.local}, FactClass: pv.DataClassification(d.Section.HybridFactClass), Audit: d.Audit, Usage: a.budget, Clock: d.Clock,
 	})

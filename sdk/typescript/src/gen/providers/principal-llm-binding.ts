@@ -36,7 +36,7 @@ export interface PrincipalLlmBinding {
    *
    * @authority alixai
    */
-  credential_status: PrincipalLlmBindingCredentialStatus;
+  account_status: PrincipalLlmBindingAccountStatus;
 
   /**
    * @authority alixai
@@ -50,15 +50,15 @@ export interface PrincipalLlmBinding {
 }
 
 /**
- * PrincipalLlmBindingCredentialStatus mirrors
- * urn:alixai:schema:providers:principal-llm-binding:v1#/properties/credential_status.
+ * PrincipalLlmBindingAccountStatus mirrors
+ * urn:alixai:schema:providers:principal-llm-binding:v1#/properties/account_status.
  *
  * Whether the principal has an usable credential for this provider. Never a ref id the client can
  * resolve to a secret.
  *
  * Only the values listed in the schema are valid.
  */
-export type PrincipalLlmBindingCredentialStatus =
+export type PrincipalLlmBindingAccountStatus =
   | "missing"
   | "pending"
   | "active"

@@ -20,6 +20,8 @@ export { default as AlixCitationList } from "./components/AlixCitationList.vue";
 export { default as AlixActionCard } from "./components/AlixActionCard.vue";
 export { default as AlixReceiptCard } from "./components/AlixReceiptCard.vue";
 export { default as AlixConfirmationSheet } from "./components/AlixConfirmationSheet.vue";
+export { default as AlixMemoryProposal } from "./components/AlixMemoryProposal.vue";
+export { default as AlixMemoryList } from "./components/AlixMemoryList.vue";
 export { default as AlixSettingsPanel } from "./components/AlixSettingsPanel.vue";
 export { default as AlixSourceHealthPanel } from "./components/AlixSourceHealthPanel.vue";
 export { default as AlixIntegrationAuditPanel } from "./components/AlixIntegrationAuditPanel.vue";

@@ -20,7 +20,7 @@ func fenceForms(tag string) []string {
 // TestFenceTagsStayInStepWithTheContextBuilder).
 func TestFenceNeutralisesEveryTag(t *testing.T) {
 	tags := FenceTags()
-	for _, want := range []string{"user_message", "earlier_message", "earlier_reply", "session_state", "directive_data", "attachment_data", "client_context"} {
+	for _, want := range []string{"user_message", "earlier_message", "earlier_reply", "session_state", "directive_data", "attachment_data", "client_context", "memory_data"} {
 		if !slices.Contains(tags, want) {
 			t.Errorf("the fence does not know %q: %v", want, tags)
 		}

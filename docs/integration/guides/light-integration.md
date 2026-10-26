@@ -107,10 +107,22 @@ Rules that must stay:
 - One session per scope; mint a fresh context token per view (and per request).
 - AlixAI never mixes tenants in one turn; the shared view is still one tenant (the personal one).
 
-**Coming in 1.2:** per-user LLM accounts (each principal picks catalog provider/model and brings their own key;
-companies still gate egress) — [ADR 0041](../../decisions/0041-per-principal-llm-accounts.md). Long-term memory per
-principal × tenant × workspace with consent-gated proposals — [ADR 0042](../../decisions/0042-long-term-memory.md).
-Routes exist as stubs (`unavailable` until wired).
+**Per-user LLM accounts (1.2):** each principal picks a catalog provider/model and brings their own key;
+companies still gate egress — [ADR 0041](../../decisions/0041-per-principal-llm-accounts.md). Host flow:
+
+1. Operator qualifies a profile and marks it for the catalog (`alixai providers catalog-add`).
+2. Host reads `GET /v1/providers/catalog` (no secrets) and shows terms, prices and billing notice.
+3. Principal acknowledges billing (`POST /v1/me/providers/{provider}/billing-notice/ack`), then submits a key
+   through the **host server** only (`PUT /v1/me/providers/{provider}/credential`, write-only) or starts
+   `POST /v1/me/oauth/{provider}/start` where OAuth is configured.
+4. Principal binds a role (`PUT /v1/me/llm/{role}` with a catalog `profile_id`). TTS is not bindable.
+5. In External mode the router uses the principal binding, else the deployment default route, else
+   `unavailable` with `details.reason` `llm_not_configured`. Tenant egress still applies to that company's data.
+
+**Long-term memory (1.2):** set `memory.enabled: true`, put `memory.read` / `memory.write` / `memory.confirm` (and
+related) in the context token, then use `GET|POST /v1/memory` and confirm/reject on proposals. Assistant proposals
+arrive as TurnEvent `memory_proposal` / AG-UI `alixai.memory_proposal`; typed chat text never confirms. See
+[memory.md](../memory.md) and [ADR 0042](../../decisions/0042-long-term-memory.md).
 
 ## Spike order
 

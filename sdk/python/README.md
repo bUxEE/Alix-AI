@@ -23,6 +23,8 @@ status, the providers area and the AG-UI proxy. It does not have what the TypeSc
 | RAG client (sources, search, grounded answers) | **Not in this SDK** |
 | Voice | **Not in this SDK** (TypeScript only). **Full-duplex voice is not claimed** by any SDK |
 | Providers, modes, budgets (External provider mode) | Complete for the providers and OAuth operations (X-14): `client.providers`. **Opt-in and off by default**; a deployment without it answers `unavailable` |
+| Per-principal LLM account (ADR 0041) | Complete (1.2.0): `client.me` / async `me` (catalog, LLM bindings, credential, billing ack, OAuth start). `submit_credential` is **host-server only** |
+| Long-term memory (ADR 0042) | Complete (1.2.0): `client.memory` / async `memory` (list/create/patch/delete/confirm/reject) |
 | Readiness reports (M9-06) | Types only: `ReadinessReport`, `ReadinessFinding`, `ReadinessRequirement`, `ReadinessStatusView` (`alixai.gen.readiness`) read a stored report. **No client method**: readiness stays CLI-only and advisory, never an audit result |
 | Decision status | Read-only (D-10): `get_decision_status()`. Advisory information, never an authorisation |
 | AG-UI proxy for CopilotKit and AG-UI frontends | Complete (M3-27): `alixai.agui`. CopilotKit itself is not a dependency |

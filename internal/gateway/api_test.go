@@ -717,7 +717,7 @@ func apiSchemas(t testing.TB) *jsonschema.Compiler {
 		c := jsonschema.NewCompiler()
 		c.DefaultDraft(jsonschema.Draft2020)
 		c.AssertFormat()
-		for _, area := range []string{"common", "actions", "conversation"} {
+		for _, area := range []string{"common", "actions", "conversation", "memory"} {
 			files, err := filepath.Glob(filepath.Join(apiSchemaRoot, area, "*.schema.json"))
 			if err != nil || len(files) == 0 {
 				apiSchemaErr = errors.Join(err, errors.New("no schemas in "+area))
@@ -1610,7 +1610,7 @@ func validateSpec(t testing.TB, name string, raw []byte) {
 		c := jsonschema.NewCompiler()
 		c.DefaultDraft(jsonschema.Draft2020)
 		c.AssertFormat()
-		for _, area := range []string{"common", "actions", "conversation"} {
+		for _, area := range []string{"common", "actions", "conversation", "memory"} {
 			files, _ := filepath.Glob(filepath.Join(apiSchemaRoot, area, "*.schema.json"))
 			for _, f := range files {
 				b, err := os.ReadFile(f)

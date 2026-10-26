@@ -121,6 +121,25 @@ export interface AlixMessages {
     stepUpNote: string;
   };
   continueInApp: { title: string; body: string; cta: string };
+  memory: {
+    proposalTitle: string;
+    remember: string;
+    forget: string;
+    submitting: string;
+    remembered: string;
+    forgotten: string;
+    proposalExpired: string;
+    proposalFailed: string;
+    listTitle: string;
+    listEmpty: string;
+    listFailed: string;
+    edit: string;
+    delete: string;
+    save: string;
+    discard: string;
+    retry: string;
+    status: { proposed: string; active: string; rejected: string };
+  };
   sourceHealthStatus: { summary: string; failed: string };
   audit: {
     title: string;
@@ -300,6 +319,25 @@ export const en: AlixMessages = {
     body: "This action needs a stronger check than this chat can give. Continue in the application to complete it.",
     cta: "Continue in the application",
   },
+  memory: {
+    proposalTitle: "Remember this?",
+    remember: "Remember",
+    forget: "Don't remember",
+    submitting: "Saving",
+    remembered: "Saved to memory",
+    forgotten: "Not saved",
+    proposalExpired: "This proposal has expired. Ask again if you still want it remembered.",
+    proposalFailed: "Your answer could not be sent. Try again.",
+    listTitle: "Memories",
+    listEmpty: "No memories yet.",
+    listFailed: "The memories could not be loaded.",
+    edit: "Edit",
+    delete: "Delete",
+    save: "Save",
+    discard: "Discard",
+    retry: "Try again",
+    status: { proposed: "Proposed", active: "Active", rejected: "Rejected" },
+  },
   sourceHealthStatus: { summary: "{ready} of {total} ready", failed: "The source status could not be loaded." },
   audit: {
     title: "Integration audit",
@@ -478,6 +516,25 @@ export const it: AlixMessages = {
     title: "Continua nell'applicazione",
     body: "Questa azione richiede un controllo più forte di quello che questa chat può dare. Continua nell'applicazione per completarla.",
     cta: "Continua nell'applicazione",
+  },
+  memory: {
+    proposalTitle: "Vuoi ricordarlo?",
+    remember: "Ricorda",
+    forget: "Non ricordare",
+    submitting: "Salvataggio",
+    remembered: "Salvato in memoria",
+    forgotten: "Non salvato",
+    proposalExpired: "Questa proposta è scaduta. Chiedi di nuovo se vuoi ancora ricordarlo.",
+    proposalFailed: "La risposta non è stata inviata. Riprova.",
+    listTitle: "Memorie",
+    listEmpty: "Nessuna memoria ancora.",
+    listFailed: "Le memorie non sono state caricate.",
+    edit: "Modifica",
+    delete: "Elimina",
+    save: "Salva",
+    discard: "Scarta",
+    retry: "Riprova",
+    status: { proposed: "Proposta", active: "Attiva", rejected: "Rifiutata" },
   },
   sourceHealthStatus: { summary: "{ready} pronte su {total}", failed: "Non è stato possibile caricare lo stato delle fonti." },
   audit: {

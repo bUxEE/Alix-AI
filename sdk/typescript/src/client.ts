@@ -16,6 +16,10 @@ import { createFilesApi } from "./files.js";
 import type { FilesApi } from "./files.js";
 import { createHistoryApi } from "./history.js";
 import type { HistoryApi } from "./history.js";
+import { createMeApi } from "./me/client.js";
+import type { MeApi } from "./me/client.js";
+import { createMemoryApi } from "./memory/client.js";
+import type { MemoryApi } from "./memory/client.js";
 import { createSettingsApi } from "./settings.js";
 import type { SettingsApi } from "./settings.js";
 import { createConversation } from "./conversation.js";
@@ -169,13 +173,20 @@ export interface AlixAIClient {
   /** Installs a signed `.tar.gz` application package into quarantine. Needs the `applications.register` scope. */
   registerApplication: (archive: Uint8Array | ArrayBuffer | Blob, options?: CallOptions) => Promise<Registration>;
 
-  // ---- files, history, settings ----
+  // ---- files, history, settings, me, memory ----
   /** Scoped files: upload, inspect, download, preview, delete. */
   readonly files: FilesApi;
   /** Conversation history, search, export and clearing. */
   readonly history: HistoryApi;
   /** User, tenant and deployment settings, profiles and privacy preferences. */
   readonly settings: SettingsApi;
+  /**
+   * Per-principal LLM account and catalog (ADR 0041): `me.catalog`, `me.llm.*`, `me.providers.*`.
+   * `me.providers.submitCredential` is host-server only — never call it from browser code.
+   */
+  readonly me: MeApi;
+  /** Long-term memory (ADR 0042): list, create, patch, delete, confirm, reject. */
+  readonly memory: MemoryApi;
 
   // ---- conversations ----
   /**
@@ -552,6 +563,8 @@ const build = (caller: Caller, options: ClientOptions, turnTimeout: number): Ali
     files,
     history: createHistoryApi(caller),
     settings: createSettingsApi(caller),
+    me: createMeApi(caller),
+    memory: createMemoryApi(caller),
     forSession: (sessionId) => build(caller.bind(pathId("sessionId", sessionId)), options, turnTimeout),
     conversation: (sessionId, conversationOptions) => createConversation(build(caller.bind(pathId("sessionId", sessionId)), options, turnTimeout), pathId("sessionId", sessionId), conversationOptions),
 

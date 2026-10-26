@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"embed"
 	"errors"
+	"io"
 	"log/slog"
 	"time"
 
@@ -175,6 +176,11 @@ type Deps struct {
 	Logger       *slog.Logger
 }
 
+// MemoryExporter appends long-term memory rows onto a history export (ADR 0042).
+type MemoryExporter interface {
+	AppendExport(ctx context.Context, scope contracts.Scope, w io.Writer) error
+}
+
 // Service is the conversation-history API. It is safe for concurrent use.
 type Service struct {
 	db       *store.DB
@@ -189,6 +195,7 @@ type Service struct {
 	dep      string
 	cfg      Config
 	log      *slog.Logger
+	mem      MemoryExporter
 }
 
 // New validates the dependencies and, when a queue is given, registers the

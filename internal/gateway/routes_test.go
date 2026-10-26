@@ -18,6 +18,7 @@ import (
 var published = map[string]string{
 	"task-proposal.schema.json": filepath.Join("..", "..", "schemas", "conversation", "task-proposal.schema.json"),
 	"ids.schema.json":           filepath.Join("..", "..", "schemas", "common", "ids.schema.json"),
+	"memory-shared.schema.json": filepath.Join("..", "..", "schemas", "memory", "shared.schema.json"),
 }
 
 // TestEmbeddedSchemasMatchPublished keeps the copies of the schemas this

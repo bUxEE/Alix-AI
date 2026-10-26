@@ -17,6 +17,7 @@ import (
 	"github.com/buxee/alix-ai/internal/gateway"
 	"github.com/buxee/alix-ai/internal/identity"
 	"github.com/buxee/alix-ai/internal/jobs"
+	"github.com/buxee/alix-ai/internal/memory"
 	"github.com/buxee/alix-ai/internal/sessions"
 	"github.com/buxee/alix-ai/internal/store"
 	"github.com/buxee/alix-ai/internal/trust"
@@ -494,6 +495,12 @@ type retentionEraseReport struct {
 	SessionTurnsRemoved    int `json:"session_turns_removed"`
 	SessionsRemoved        int `json:"sessions_removed"`
 	SessionsEnded          int `json:"sessions_ended"`
+	// MemoryItemsRemoved is long-term memory erased with the principal/tenant (ADR 0042).
+	MemoryItemsRemoved int `json:"memory_items_removed"`
+	// PrincipalCredentialsRevoked / PrincipalBindingsRemoved are per-principal LLM account
+	// erasure (ADR 0041); only set when -principal is named.
+	PrincipalCredentialsRevoked int `json:"principal_credentials_revoked,omitempty"`
+	PrincipalBindingsRemoved    int `json:"principal_bindings_removed,omitempty"`
 	// More is set on a dry run that saw only the first batch of the receipts, and on a run that
 	// stopped at its batch limit with receipts or history left (it then fails: run it again).
 	More bool `json:"more,omitempty"`
@@ -623,7 +630,7 @@ func (e *retentionEngine) history(ctx context.Context, rep *retentionEraseReport
 		return out, prep, err
 	}
 	if e.dry {
-		return e.tx(ctx, func(tx *store.Tx) error {
+		if err := e.tx(ctx, func(tx *store.Tx) error {
 			n, err := sessions.CountHistory(ctx, tx, hs)
 			if err != nil {
 				return err
@@ -631,7 +638,10 @@ func (e *retentionEngine) history(ctx context.Context, rep *retentionEraseReport
 			rep.TranscriptTurnsRemoved, rep.SessionTurnsRemoved, rep.SessionsRemoved, rep.SessionsEnded = n.TranscriptTurns, n.SessionTurns, n.Sessions, n.Ended
 			_, _, err = batch(tx)
 			return err
-		})
+		}); err != nil {
+			return err
+		}
+		return e.memory(ctx, rep, spec)
 	}
 	for i := 0; i < retentionEraseMaxBatches; i++ {
 		var out sessions.EraseOutcome
@@ -649,11 +659,79 @@ func (e *retentionEngine) history(ctx context.Context, rep *retentionEraseReport
 		rep.SessionsRemoved += out.Sessions
 		rep.SessionsEnded += out.Ended
 		if !out.More {
-			return nil
+			return e.memory(ctx, rep, spec)
 		}
 	}
 	rep.More = true
 	return contracts.Newf(contracts.ErrPartialFailure, "the erasure stopped after %d batches of conversation history with more left; run it again to erase the rest", retentionEraseMaxBatches)
+}
+
+// memory erases long-term memory items of the tenant or principal (ADR 0042).
+func (e *retentionEngine) memory(ctx context.Context, rep *retentionEraseReport, spec actions.EraseSpec) error {
+	ms := memory.EraseSpec{ApplicationID: spec.ApplicationID, TenantID: spec.TenantID, PrincipalID: spec.PrincipalID}
+	loc, err := audit.ForIDs(spec.ApplicationID, spec.TenantID, audit.OperatorWorkspace, spec.Operator, "")
+	if err != nil {
+		return err
+	}
+	if e.dry {
+		if err := e.tx(ctx, func(tx *store.Tx) error {
+			n, err := memory.CountMemory(ctx, tx, ms)
+			if err != nil {
+				return err
+			}
+			rep.MemoryItemsRemoved = n.Items
+			out, err := memory.EraseMemory(ctx, tx, ms)
+			if err != nil {
+				return err
+			}
+			if out.Items == 0 {
+				return nil
+			}
+			_, err = e.log.AppendTx(ctx, tx, loc, audit.NewEvent{Type: memory.EventErased, Data: map[string]any{
+				"kind": spec.Kind, "reason": spec.Reason, "operator": spec.Operator, "items": out.Items,
+			}})
+			return err
+		}); err != nil {
+			return err
+		}
+		return e.principalLLM(ctx, rep)
+	}
+	for i := 0; i < retentionEraseMaxBatches; i++ {
+		var out memory.EraseOutcome
+		if err := e.tx(ctx, func(tx *store.Tx) (err error) {
+			out, err = memory.EraseMemory(ctx, tx, ms)
+			if err != nil || out.Items == 0 {
+				return err
+			}
+			_, err = e.log.AppendTx(ctx, tx, loc, audit.NewEvent{Type: memory.EventErased, Data: map[string]any{
+				"kind": spec.Kind, "reason": spec.Reason, "operator": spec.Operator, "items": out.Items,
+			}})
+			return err
+		}); err != nil {
+			return err
+		}
+		rep.MemoryItemsRemoved += out.Items
+		if !out.More {
+			return e.principalLLM(ctx, rep)
+		}
+	}
+	rep.More = true
+	return contracts.Newf(contracts.ErrPartialFailure, "the erasure stopped after %d batches of memory with more left; run it again to erase the rest", retentionEraseMaxBatches)
+}
+
+// principalLLM revokes principal-owned credentials and deletes LLM bindings (ADR 0041).
+// Skipped on dry-run: those stores sit outside the retention DB transaction.
+func (e *retentionEngine) principalLLM(ctx context.Context, rep *retentionEraseReport) error {
+	if rep.PrincipalID == "" || e.dry {
+		return nil
+	}
+	creds, bindings, err := retentionErasePrincipalLLM(ctx, e, rep.ApplicationID, rep.PrincipalID)
+	if err != nil {
+		return err
+	}
+	rep.PrincipalCredentialsRevoked = creds
+	rep.PrincipalBindingsRemoved = bindings
+	return nil
 }
 
 // ---- the job in `alixai serve` ---------------------------------------------------------

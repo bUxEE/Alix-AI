@@ -3,6 +3,7 @@ import type { Choice, FileRef } from "@alixai/sdk";
 import { type FileStore } from "../files/store";
 import { apiError, BodyTooLargeError, isRecord, readJson, sendError, sendJson, wait } from "../http";
 import { newId } from "../ids";
+import type { MeMemoryHandler } from "../me-memory";
 import { detectLocale, matchScenario, type DemoLocale } from "../prompts";
 import {
   SCENARIOS,
@@ -37,6 +38,7 @@ export interface AguiHandlerOptions {
   readonly pace: number;
   readonly threads: ThreadStore;
   readonly files: FileStore;
+  readonly meMemory?: MeMemoryHandler;
 }
 
 interface RunInput {
@@ -207,7 +209,16 @@ const buildRun = (input: RunInput, thread: Thread, options: AguiHandlerOptions):
   thread.locale = locale;
 
   turn.add({ type: "RUN_STARTED", threadId: input.threadId, runId: input.runId });
-  const ctx: ScenarioContext = { turn, locale, thread, turnId, now, files: options.files, userText: answer.kind === "message" ? answer.text : "" };
+  const ctx: ScenarioContext = {
+    turn,
+    locale,
+    thread,
+    turnId,
+    now,
+    files: options.files,
+    userText: answer.kind === "message" ? answer.text : "",
+    ...(options.meMemory !== undefined && { meMemory: options.meMemory }),
+  };
   if (attachments.length > 0) turn.add(attachmentsActivity(ctx, attachments));
   turn.add(stateFrame(before));
 
@@ -417,7 +428,7 @@ const capabilities = (): Record<string, unknown> => ({
         { name: "alixai_continue_in_app", description: "Hands the user to the application's own authenticated interface." },
       ],
     },
-    state: { snapshots: true, deltas: true, persistentState: true, memory: false },
+    state: { snapshots: true, deltas: true, persistentState: true, memory: true },
     output: { structuredOutput: true, supportedMimeTypes: ["text/plain", "text/markdown"] },
     multiAgent: { supported: false },
     reasoning: { supported: false, streaming: false, encrypted: false },

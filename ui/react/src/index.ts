@@ -40,6 +40,14 @@ export type { AlixLoadState, AlixLoadableProps } from "./components/Loadable.js"
 export type { AlixSettingsPanelProps, AlixSourceHealthPanelProps } from "./components/Panels.js";
 export { AlixConversationList } from "./components/ConversationList.js";
 export type { AlixConversationItem, AlixConversationListProps } from "./components/ConversationList.js";
+export { AlixMemoryList, AlixMemoryProposal } from "./components/Memory.js";
+export type {
+  AlixMemoryListProps,
+  AlixMemoryProposalProps,
+  MemoryListItem,
+  MemoryProposal,
+  MemoryProposalStatus,
+} from "./components/Memory.js";
 export { AlixProvider, formatBytes, formatDateTime, formatNumber, useAlixIntl, useAlixText } from "./i18n/context.js";
 export type { AlixIntl, AlixProviderProps } from "./i18n/context.js";
 export { BUILT_IN_MESSAGES, en, fill, it, resolveMessages } from "./i18n/messages.js";

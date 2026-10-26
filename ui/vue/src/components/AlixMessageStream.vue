@@ -17,6 +17,7 @@ import AlixActionCard from "./AlixActionCard.vue";
 import AlixCitationList from "./AlixCitationList.vue";
 import AlixConfirmationSheet from "./AlixConfirmationSheet.vue";
 import AlixFilePreview from "./AlixFilePreview.vue";
+import AlixMemoryProposal from "./AlixMemoryProposal.vue";
 import AlixReceiptCard from "./AlixReceiptCard.vue";
 import AlixChartBlock from "./blocks/AlixChartBlock.vue";
 import AlixClarificationChoices from "./blocks/AlixClarificationChoices.vue";
@@ -48,6 +49,8 @@ const emit = defineEmits<{
   approve: [itemId: string];
   decline: [itemId: string];
   dismiss: [itemId: string];
+  "confirm-memory": [itemId: string];
+  "reject-memory": [itemId: string];
   choose: [choiceId: string, itemId: string];
   "free-text": [text: string];
   "open-citation": [citation: Citation];
@@ -416,6 +419,22 @@ defineExpose({ toBottom: (): void => toBottom(true) });
                 />
               </button>
             </div>
+          </slot>
+        </div>
+        <div
+          v-else-if="item.kind === 'memory_proposal'"
+          class="alix-enter"
+        >
+          <slot
+            :item="item"
+            name="memory-proposal"
+          >
+            <AlixMemoryProposal
+              :proposal="item.proposal"
+              :status="item.status"
+              @confirm="emit('confirm-memory', item.id)"
+              @reject="emit('reject-memory', item.id)"
+            />
           </slot>
         </div>
         <div

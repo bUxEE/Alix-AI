@@ -1,7 +1,7 @@
 // The words of the demo shell (the kit's own words come from the kit). English and Italian, no em dash.
 
 export type DemoLang = "en" | "it";
-export type SectionId = "chat" | "conversations" | "voice" | "files" | "settings" | "sources" | "audit" | "blocks";
+export type SectionId = "chat" | "conversations" | "memory" | "voice" | "files" | "settings" | "sources" | "audit" | "blocks";
 
 interface SectionText {
   readonly nav: string;
@@ -33,6 +33,7 @@ export interface DemoText {
     readonly reconnectNote: string;
   };
   readonly conversations: { readonly open: string; readonly openLead: string; readonly failed: string; readonly delete: string; readonly current: string; readonly created: string };
+  readonly memory: { readonly proposal: string; readonly list: string; readonly confirmed: string; readonly rejected: string; readonly deleted: string; readonly saved: string };
   readonly voice: {
     readonly simulated: string;
     readonly simulatedHint: string;
@@ -79,6 +80,7 @@ const en: DemoText = {
   sections: {
     chat: { nav: "Chat", title: "Chat", lead: "CopilotKit's chat with the AlixAI parts registered into it. Every reply comes from the scripted mock on this machine." },
     conversations: { nav: "Conversations", title: "Conversations", lead: "Data in, events out: the list shows the threads the host has, the host decides what switching does." },
+    memory: { nav: "Memory", title: "Memory", lead: "AlixMemoryProposal and AlixMemoryList over /v1/memory. The kit never calls AlixAI; the host supplies data and handlers. No per-user LLM account UI." },
     voice: { nav: "Voice", title: "Voice", lead: "Voice Mode and its orb on the mock's voice socket, and the talk button and transcript editor on their own." },
     files: { nav: "Files", title: "Files and previews", lead: "Attach, upload and preview. The kit never builds a file URL: the host draws every preview." },
     settings: { nav: "Settings", title: "Settings", lead: "The user's own settings as an editor, or the effective settings read only, with the level that decided each value." },
@@ -111,6 +113,14 @@ const en: DemoText = {
     delete: "Delete",
     current: "Open in the chat",
     created: "New conversation created",
+  },
+  memory: {
+    proposal: "Standalone proposal card",
+    list: "Saved memories",
+    confirmed: "Confirmed memory {id}",
+    rejected: "Rejected memory {id}",
+    deleted: "Deleted memory {id}",
+    saved: "Saved memory {id}",
   },
   voice: {
     simulated: "Simulated microphone",
@@ -166,6 +176,7 @@ const it: DemoText = {
   sections: {
     chat: { nav: "Chat", title: "Chat", lead: "La chat di CopilotKit con le parti AlixAI registrate. Ogni risposta arriva dal mock su questa macchina." },
     conversations: { nav: "Conversazioni", title: "Conversazioni", lead: "Dati in ingresso, eventi in uscita: l'elenco mostra i thread dell'host, che decide cosa fa il cambio." },
+    memory: { nav: "Memoria", title: "Memoria", lead: "AlixMemoryProposal e AlixMemoryList su /v1/memory. Il kit non chiama mai AlixAI; l'host fornisce dati e handler. Nessuna UI per account LLM per utente." },
     voice: { nav: "Voce", title: "Voce", lead: "Voice Mode e la sua sfera sul socket vocale del mock, e il pulsante e l'editor della trascrizione da soli." },
     files: { nav: "File", title: "File e anteprime", lead: "Allega, carica e visualizza. Il kit non costruisce mai un URL: ogni anteprima la disegna l'host." },
     settings: { nav: "Impostazioni", title: "Impostazioni", lead: "Le impostazioni dell'utente come editor, oppure quelle effettive in sola lettura, con il livello che ha deciso ogni valore." },
@@ -198,6 +209,14 @@ const it: DemoText = {
     delete: "Elimina",
     current: "Aperta nella chat",
     created: "Nuova conversazione creata",
+  },
+  memory: {
+    proposal: "Card di proposta isolata",
+    list: "Memorie salvate",
+    confirmed: "Memoria confermata {id}",
+    rejected: "Memoria rifiutata {id}",
+    deleted: "Memoria eliminata {id}",
+    saved: "Memoria salvata {id}",
   },
   voice: {
     simulated: "Microfono simulato",

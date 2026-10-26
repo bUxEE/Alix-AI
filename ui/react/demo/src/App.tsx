@@ -16,6 +16,7 @@ import { BlocksSection } from "./sections/BlocksSection";
 import { ChatSection } from "./sections/ChatSection";
 import { ConversationsSection } from "./sections/ConversationsSection";
 import { FilesSection } from "./sections/FilesSection";
+import { MemorySection } from "./sections/MemorySection";
 import { SettingsSection } from "./sections/SettingsSection";
 import { SourcesSection } from "./sections/SourcesSection";
 import { VoiceSection } from "./sections/VoiceSection";
@@ -28,6 +29,7 @@ const NAV: readonly { group: "conversation" | "panels" | "reference"; items: rea
     items: [
       { id: "chat", icon: "chat" },
       { id: "conversations", icon: "conversations" },
+      { id: "memory", icon: "memory" },
       { id: "voice", icon: "voice" },
       { id: "files", icon: "files" },
     ],
@@ -73,6 +75,8 @@ const SectionView = ({ id }: { id: SectionId }): ReactElement => {
       return <ChatSection />;
     case "conversations":
       return <ConversationsSection />;
+    case "memory":
+      return <MemorySection />;
     case "voice":
       return <VoiceSection />;
     case "files":

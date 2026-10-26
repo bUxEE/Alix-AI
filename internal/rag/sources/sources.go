@@ -127,9 +127,15 @@ func (r Registration) Validate() error {
 		return bad("the package version is not plain text")
 	case (r.BoundTenantID != "" && !plain(r.BoundTenantID)) || (r.BoundWorkspaceID != "" && !plain(r.BoundWorkspaceID)):
 		return bad("a bound tenant or workspace is not plain text")
+	case r.BoundTenantID == reservedPrincipalCredentialTenant || r.Scope.TenantID == reservedPrincipalCredentialTenant:
+		return contracts.New(contracts.ErrScopeViolation, "ragsources: the reserved principal-credential tenant is not a request scope").
+			WithDetails("reason", "reserved_tenant")
 	}
 	return nil
 }
+
+// reservedPrincipalCredentialTenant is the ADR 0041 storage bucket; never a RAG source scope.
+const reservedPrincipalCredentialTenant = "alixai-principal-credential"
 
 // plain reports whether s is non-empty, short, valid UTF-8 and free of control
 // characters and of padding.

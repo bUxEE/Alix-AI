@@ -12,6 +12,7 @@ import (
 
 	"github.com/buxee/alix-ai/internal/actions"
 	"github.com/buxee/alix-ai/internal/capabilities"
+	dctxpkg "github.com/buxee/alix-ai/internal/dialogue/context"
 	"github.com/buxee/alix-ai/internal/policy"
 	"github.com/buxee/alix-ai/internal/providers"
 	"github.com/buxee/alix-ai/internal/sessions"
@@ -21,6 +22,7 @@ import (
 	ap "github.com/buxee/alix-ai/pkg/contracts/gen/applicationpackage"
 	"github.com/buxee/alix-ai/pkg/contracts/gen/common"
 	"github.com/buxee/alix-ai/pkg/contracts/gen/conversation"
+	mem "github.com/buxee/alix-ai/pkg/contracts/gen/memory"
 )
 
 // turn is the state of one turn while the pipeline runs. A turn is used by one
@@ -59,6 +61,8 @@ type turn struct {
 	// action of the validated proposal, if any: data for the client, never read by the pipeline.
 	ui    *uiState
 	uiAct *UIAction
+	// memProps are assistant memory proposals stored this turn (ADR 0042).
+	memProps []mem.MemoryItem
 }
 
 // Turn runs one turn of the pipeline of master plan 11.1:
@@ -482,6 +486,18 @@ func (t *turn) proposal(ctx context.Context, cands []capabilities.Candidate) (tp
 		App: t.scope.ApplicationID, Now: t.now, Lang: t.lang, Caps: caps, State: t.sess.State,
 		Visible: t.visibleFromPolicy(ctx), Turns: turns, Utterance: t.userText, Attachments: t.attachments,
 	}
+	if store := t.e.memoryStore(); store != nil {
+		in.AllowMemory = true
+		if got, err := store.RetrieveActive(ctx, t.scope, t.userText); err == nil {
+			for _, r := range got {
+				cls := dctxpkg.DataClass(r.Item.DataClass)
+				in.Memories = append(in.Memories, dctxpkg.MemoryFact{
+					ID: string(r.Item.ID), Text: string(r.Item.Text), Class: cls,
+					LocalOnly: cls == dctxpkg.ClassRestricted,
+				})
+			}
+		}
+	}
 	built, berr := t.buildWithClientData(ctx, in)
 	if berr != nil {
 		if isCanceled(berr) {
@@ -515,6 +531,9 @@ func (t *turn) proposal(ctx context.Context, cands []capabilities.Candidate) (tp
 	if perr != nil {
 		t.log("model output is not a task proposal", "code", string(contracts.CodeOf(perr)))
 		return tp, t.failure(contracts.ErrSchemaInvalid, ""), true, nil
+	}
+	if t.e.memoryStore() != nil {
+		t.acceptMemoryProposal(ctx, draftFromProposal(tp.MemoryProposal))
 	}
 	if tp.UIAction != nil {
 		// A UI action is checked before anything else of the proposal is used: a name the client did not declare, the

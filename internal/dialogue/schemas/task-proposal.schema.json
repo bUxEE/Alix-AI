@@ -52,6 +52,14 @@
       "x-alixai-authority": "model",
       "$ref": "#/$defs/uiAction"
     },
+    "memory_proposal": {
+      "description": "Optional. One long-term memory fact the assistant proposes to remember (ADR 0042). Confirm or reject only through POST /v1/memory/{id}/confirm or /reject; typed chat text never confirms. Null or absent means no proposal.",
+      "x-alixai-authority": "model",
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/memoryProposal" }
+      ]
+    },
     "trace_id": {
       "description": "Trace ID of the inference call that produced this proposal. Assigned by the core from the provider call; the model never writes it, so a proposal that arrives with a trace_id the core did not issue is rejected.",
       "x-alixai-authority": "alixai",
@@ -125,6 +133,34 @@
           "x-alixai-authority": "model",
           "type": "object",
           "maxProperties": 32
+        }
+      }
+    },
+    "memoryProposal": {
+      "description": "A proposed long-term memory item (ADR 0042). Shape aligned with schemas/memory create body; text uses the memory shared def.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text"],
+      "properties": {
+        "text": {
+          "x-alixai-authority": "model",
+          "$ref": "urn:alixai:schema:memory:shared:v1#/$defs/memoryText"
+        },
+        "structured": {
+          "x-alixai-authority": "model",
+          "type": "object",
+          "maxProperties": 32,
+          "propertyNames": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$" },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        },
+        "data_class": {
+          "x-alixai-authority": "model",
+          "type": "string",
+          "enum": ["public", "internal", "confidential", "restricted"]
         }
       }
     },

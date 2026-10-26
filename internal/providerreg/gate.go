@@ -211,6 +211,22 @@ func (r *Registry) Check(ctx context.Context, scope contracts.Scope, id provider
 	return r.checkProfile(ctx, scope, p, req)
 }
 
+// CheckWithCred is Check for a per-principal call (ADR 0041): the profile's own CredRef is
+// replaced with the principal's credential for this admission only. A missing or inactive
+// principal credential ends selection; no other profile is tried.
+func (r *Registry) CheckWithCred(ctx context.Context, scope contracts.Scope, id providers.ProfileID, req Requirement, cred providers.CredentialRefID) (Admission, error) {
+	p, err := r.Get(ctx, scope, id)
+	if err != nil {
+		return Admission{}, err
+	}
+	if !validCredRef(cred) {
+		return Admission{}, fail(contracts.ErrPermissionDenied, ReasonCredentialMissing, "the principal has no credential for this provider")
+	}
+	ref := cred
+	p.CredRef = &ref
+	return r.checkProfile(ctx, scope, p, req)
+}
+
 func (r *Registry) checkProfile(ctx context.Context, scope contracts.Scope, p providers.ProviderProfile, req Requirement) (Admission, error) {
 	p, err := r.usable(ctx, scope, p)
 	if err != nil {

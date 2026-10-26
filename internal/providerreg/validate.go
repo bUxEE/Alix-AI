@@ -60,6 +60,9 @@ func validateGrants(app string, grants []providers.ProviderProfileScopeGrant) er
 		if g.TenantID != nil && !validScopeValue(string(*g.TenantID)) {
 			return invalid("a permitted scope names an invalid tenant")
 		}
+		if err := refuseReservedScopeValue(g.TenantID); err != nil {
+			return err
+		}
 		if g.WorkspaceID != nil {
 			if g.TenantID == nil {
 				return invalid("a permitted workspace needs its tenant")

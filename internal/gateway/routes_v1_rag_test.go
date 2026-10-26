@@ -626,7 +626,7 @@ func ragAPICompiler(t testing.TB) *jsonschema.Compiler {
 		c := jsonschema.NewCompiler()
 		c.DefaultDraft(jsonschema.Draft2020)
 		c.AssertFormat()
-		for _, area := range []string{"common", "actions", "conversation", "rag"} {
+		for _, area := range []string{"common", "actions", "conversation", "memory", "rag"} {
 			err := filepath.WalkDir(filepath.Join(apiSchemaRoot, area), func(path string, d fs.DirEntry, err error) error {
 				if err != nil || d.IsDir() || !strings.HasSuffix(path, ".schema.json") {
 					return err

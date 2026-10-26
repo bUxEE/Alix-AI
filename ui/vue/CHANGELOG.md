@@ -3,6 +3,14 @@
 All notable changes to this package. Versions follow semantic versioning with the rules of
 [compatibility.md](../../docs/policies/compatibility.md).
 
+## 1.2.0 — 2026-10-26
+
+### Added
+
+- `AlixMemoryProposal` and `AlixMemoryList` for long-term memory (ADR 0042). The kit never calls AlixAI: the host provides confirm/reject and list data.
+- Chat panel opt-in prop `memory` (default `false` for 1.1 compatibility): when true, `alixai.memory_proposal` CUSTOM events render as proposal cards.
+- i18n keys for memory (en + it).
+
 ## 1.1.0 â€” 2026-10-26
 
 ### Added
