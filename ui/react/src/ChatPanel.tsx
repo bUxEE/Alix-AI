@@ -4,9 +4,13 @@ import { isValidElement, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ComponentProps, ReactElement, ReactNode, RefObject } from "react";
 import { useAlixAISuggestions } from "@alixai/copilotkit-adapter/react";
+import { ChatAnswerExports } from "./components/AnswerExports.js";
 import { AlixMemoryProposal } from "./components/Memory.js";
 import { AlixDictationButton, insertIntoCopilotTextarea, type VoiceModeOption } from "./dictation/index.js";
+import type { AlixDownload, AlixExporter } from "./export.js";
+import { AlixExportsProvider } from "./exports-context.js";
 import { useAlixMemoryProposal } from "./hooks/useAlixMemoryProposal.js";
+import { useFullscreen } from "./hooks/useFullscreen.js";
 import { AlixProvider, useAlixText } from "./i18n/context.js";
 import type { AlixProviderProps } from "./i18n/context.js";
 import { alixProviderProps, useAlixConfirmation } from "./register.js";
@@ -55,6 +59,23 @@ export interface AlixChatPanelProps extends Pick<AlixProviderProps, "locale" | "
   memory?: boolean;
   onMemoryConfirm?: (id: string) => void | Promise<void>;
   onMemoryReject?: (id: string) => void | Promise<void>;
+  /**
+   * Controlled fullscreen. Omit for uncontrolled (internal state). Pair with `onFullscreenChange`.
+   */
+  fullscreen?: boolean;
+  /** Uncontrolled initial fullscreen. Default false. */
+  defaultFullscreen?: boolean;
+  onFullscreenChange?: (value: boolean) => void;
+  /** Extra controls in the kit-owned fullscreen header row (beside the fullscreen toggle). */
+  headerActions?: ReactNode;
+  /**
+   * When true, show download menus on table/chart blocks and assistant answers.
+   * Default false (1.1 compatibility). Requires `exporter`.
+   */
+  exports?: boolean;
+  exporter?: AlixExporter;
+  download?: AlixDownload;
+  onDownload?: AlixDownload;
   children?: ReactNode;
 }
 
@@ -293,6 +314,26 @@ const Chat = ({
   );
 };
 
+const MaximizeIcon = ({ exit }: { exit: boolean }): ReactElement => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+    {exit ? (
+      <>
+        <path d="M8 3v5H3" />
+        <path d="M16 3v5h5" />
+        <path d="M8 21v-5H3" />
+        <path d="M16 21v-5h5" />
+      </>
+    ) : (
+      <>
+        <path d="M8 3H3v5" />
+        <path d="M16 3h5v5" />
+        <path d="M8 21H3v-5" />
+        <path d="M16 21h5v-5" />
+      </>
+    )}
+  </svg>
+);
+
 export const AlixChatPanel = ({
   runtimeUrl,
   agentId = "default",
@@ -323,8 +364,25 @@ export const AlixChatPanel = ({
   memory = false,
   onMemoryConfirm,
   onMemoryReject,
+  fullscreen,
+  defaultFullscreen = false,
+  onFullscreenChange,
+  headerActions,
+  exports: exportsEnabled = false,
+  exporter,
+  download,
+  onDownload,
 }: AlixChatPanelProps): ReactElement => {
   const panelRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const downloadHandler = download ?? onDownload;
+  const { isFullscreen, toggleFullscreen } = useFullscreen({
+    ...(fullscreen !== undefined && { fullscreen }),
+    defaultFullscreen,
+    ...(onFullscreenChange !== undefined && { onFullscreenChange }),
+    rootRef: panelRef,
+    toggleRef,
+  });
   // CopilotKit wants its renderer arrays stable: a new array on every render is an error and remounts every drawn activity.
   const provider = useMemo(
     () =>
@@ -338,43 +396,65 @@ export const AlixChatPanel = ({
           ...(showProgress !== undefined && { showProgress }),
           ...(showState !== undefined && { showState }),
           ...(components !== undefined && { components }),
+          ...(exportsEnabled && { exports: true }),
+          ...(exporter !== undefined && { exporter }),
+          ...(downloadHandler !== undefined && { download: downloadHandler }),
         },
       ) as unknown as Omit<ProviderProps, "children">,
-    [providerProps, runtimeUrl, agentId, onOpenCitation, onAction, renderPreview, showProgress, showState, components],
+    [providerProps, runtimeUrl, agentId, onOpenCitation, onAction, renderPreview, showProgress, showState, components, exportsEnabled, exporter, downloadHandler],
   );
+  const exportsValue = useMemo(
+    () => ({
+      enabled: exportsEnabled === true && exporter !== undefined,
+      sessionId: threadId ?? "",
+      ...(exporter !== undefined && { exporter }),
+      ...(downloadHandler !== undefined && { download: downloadHandler }),
+    }),
+    [exportsEnabled, exporter, downloadHandler, threadId],
+  );
+
+  // Fullscreen is pure styling (`data-fullscreen` / fixed inset). The panel node stays where React rendered it —
+  // never appendChild/insertBefore — so unmount and sibling inserts cannot throw NotFoundError.
   return (
     <AlixProvider {...(locale !== undefined && { locale })} {...(messages !== undefined && { messages })} {...(timeZone !== undefined && { timeZone })}>
-      <Panel
-        ref={panelRef}
-        theme={theme}
-        {...(locale !== undefined && { locale })}
-      >
-        <CopilotKitProvider {...provider}>
-          <Chat
-            agentId={agentId}
-            variant={variant}
-            memory={memory}
-            {...(threadId !== undefined && { threadId })}
-            {...(defaultOpen !== undefined && { defaultOpen })}
-            {...(onContinueInApp !== undefined && { onContinueInApp })}
-            {...(onMemoryConfirm !== undefined && { onMemoryConfirm })}
-            {...(onMemoryReject !== undefined && { onMemoryReject })}
-          />
-          <ChatComposerVoice
-            panelRef={panelRef}
-            voice={voice}
-            {...(threadId !== undefined && { threadId })}
-            {...(dictationClient !== undefined && { dictationClient })}
-            {...(language !== undefined && { language })}
-            {...(onVoiceStart !== undefined && { onVoiceStart })}
-            {...(onVoiceStop !== undefined && { onVoiceStop })}
-            {...(onVoiceCancel !== undefined && { onVoiceCancel })}
-            {...(dictationButton !== undefined && { dictationButton })}
-            {...(voiceButton !== undefined && { voiceButton })}
-          />
-          {children}
-        </CopilotKitProvider>
-      </Panel>
+      <AlixExportsProvider value={exportsValue}>
+        <Panel
+          ref={panelRef}
+          theme={theme}
+          fullscreen={isFullscreen}
+          headerActions={headerActions}
+          toggleRef={toggleRef}
+          onToggleFullscreen={toggleFullscreen}
+          {...(locale !== undefined && { locale })}
+        >
+          <CopilotKitProvider {...provider}>
+            <Chat
+              agentId={agentId}
+              variant={variant}
+              memory={memory}
+              {...(threadId !== undefined && { threadId })}
+              {...(defaultOpen !== undefined && { defaultOpen })}
+              {...(onContinueInApp !== undefined && { onContinueInApp })}
+              {...(onMemoryConfirm !== undefined && { onMemoryConfirm })}
+              {...(onMemoryReject !== undefined && { onMemoryReject })}
+            />
+            <ChatComposerVoice
+              panelRef={panelRef}
+              voice={voice}
+              {...(threadId !== undefined && { threadId })}
+              {...(dictationClient !== undefined && { dictationClient })}
+              {...(language !== undefined && { language })}
+              {...(onVoiceStart !== undefined && { onVoiceStart })}
+              {...(onVoiceStop !== undefined && { onVoiceStop })}
+              {...(onVoiceCancel !== undefined && { onVoiceCancel })}
+              {...(dictationButton !== undefined && { dictationButton })}
+              {...(voiceButton !== undefined && { voiceButton })}
+            />
+            <ChatAnswerExports panelRef={panelRef} />
+            {children}
+          </CopilotKitProvider>
+        </Panel>
+      </AlixExportsProvider>
     </AlixProvider>
   );
 };
@@ -400,24 +480,49 @@ const Panel = ({
   theme,
   locale,
   children,
+  fullscreen,
+  headerActions,
+  toggleRef,
+  onToggleFullscreen,
 }: {
   ref?: RefObject<HTMLDivElement | null>;
   theme: "auto" | "light" | "dark";
   locale?: string;
   children: ReactNode;
+  fullscreen: boolean;
+  headerActions?: ReactNode;
+  toggleRef: RefObject<HTMLButtonElement | null>;
+  onToggleFullscreen: () => void;
 }): ReactElement => {
   const text = useAlixText().chat;
   const systemDark = useSystemDark();
   const dark = theme === "dark" || (theme === "auto" && systemDark);
+  const className = [dark ? "alix-root alix-panel dark" : "alix-root alix-panel", fullscreen ? "alix-panel--fullscreen" : ""]
+    .filter(Boolean)
+    .join(" ");
   return (
     <div
       ref={ref}
-      className={dark ? "alix-root alix-panel dark" : "alix-root alix-panel"}
-      role="region"
+      className={className}
+      role={fullscreen ? "dialog" : "region"}
       aria-label={text.label}
+      {...(fullscreen ? { "aria-modal": true, tabIndex: -1, "data-fullscreen": "" } : {})}
       {...(theme !== "auto" && { "data-alixai-theme": theme })}
       {...(locale !== undefined && { lang: locale })}
     >
+      <div className="alix-panel__chrome">
+        {headerActions}
+        <button
+          ref={toggleRef}
+          type="button"
+          className="alix-panel__fullscreen"
+          aria-label={fullscreen ? text.fullscreenExit : text.fullscreen}
+          aria-pressed={fullscreen}
+          onClick={onToggleFullscreen}
+        >
+          <MaximizeIcon exit={fullscreen} />
+        </button>
+      </div>
       {children}
     </div>
   );

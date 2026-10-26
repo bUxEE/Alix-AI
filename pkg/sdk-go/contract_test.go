@@ -50,7 +50,7 @@ func TestOperationTableMatchesOpenAPI(t *testing.T) {
 
 func TestOperationsCoverTheImplementedAreas(t *testing.T) {
 	s := loadSpec(t)
-	implemented := map[string]bool{"root": true, "sessions": true, "actions": true, "apps": true, "rag": true, "providers": true, "oauth": true, "me": true, "memory": true}
+	implemented := map[string]bool{"root": true, "sessions": true, "actions": true, "apps": true, "rag": true, "providers": true, "oauth": true, "me": true, "memory": true, "exports": true}
 	// The decision area is spoken in part on purpose: the read-only status. The operator-only configuration
 	// (getDecisionConfig, putDecisionConfig) is not part of the SDK surface.
 	// Voice is spoken in part: dictation HTTP only (not the WebSocket openVoiceSession).
@@ -300,7 +300,7 @@ func TestFakeAnswersConformToOpenAPI(t *testing.T) {
 	fake.DeclareSource("clinic-policies", "Clinic cancellation policy", articleWords)
 
 	rec := &conformance{spec: spec, t: t, inner: http.DefaultTransport, statuses: map[string]map[int]bool{}}
-	claims := sdktest.Claims{CapabilityScopes: []string{"demo.lookup", scopeBook, "demo.close_account", "applications.register"}}
+	claims := sdktest.Claims{CapabilityScopes: []string{"demo.lookup", scopeBook, "demo.close_account", "applications.register", "exports.create"}}
 	client, err := fake.Client(claims, func(o *sdkgo.ClientOptions) { o.HTTPClient = &http.Client{Transport: rec} })
 	if err != nil {
 		t.Fatal(err)
@@ -599,6 +599,14 @@ func TestFakeAnswersConformToOpenAPI(t *testing.T) {
 	_, err = client.Memory().Reject(ctx, string(created.ID))
 	must("memory reject", err)
 	must("memory delete", client.Memory().Delete(ctx, string(created.ID)))
+	_, err = client.Exports().Create(ctx, "ses-1", conversation.ExportRequest{
+		TurnID: "trn_01ARZ3NDEKTSV4RRFFQ69G5FAV", Format: conversation.ExportRequestFormatHtml,
+	})
+	must("export create", err)
+	_, err = client.Exports().Create(ctx, "ses-1", conversation.ExportRequest{
+		TurnID: "trn_01ARZ3NDEKTSV4RRFFQ69G5FA0", Format: conversation.ExportRequestFormatCsv,
+	})
+	failsWith("export missing turn", err, contracts.ErrValidationFailed)
 
 	// failure paths: scope, authentication, availability, readiness, quarantine, ended session
 	_, err = client.GetSession(ctx, "ses-9")
@@ -756,6 +764,7 @@ var goTypes = map[string]func() any{
 	"deleteMemory":                      func() any { return nil }, // 204
 	"confirmMemory":                     func() any { return new(memgen.MemoryItem) },
 	"rejectMemory":                      func() any { return new(memgen.MemoryItem) },
+	"createExport":                      func() any { return new(conversation.FileRef) },
 }
 
 func (c *conformance) checkGoType(opID string, body []byte) {

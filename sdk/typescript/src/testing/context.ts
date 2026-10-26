@@ -45,6 +45,9 @@ export type { ErrorBody, ErrorCode };
 /** The capabilities a context token carries to use the history area (each operation needs its own; there is no wildcard). */
 export const FAKE_HISTORY_SCOPES: readonly string[] = ["history.read", "history.search", "history.clear", "history.export", "history.cleanup"];
 
+/** The capability a context token carries to create a downloadable export from verified turn blocks. */
+export const FAKE_EXPORTS_SCOPES: readonly string[] = ["exports.create"];
+
 /** The capabilities a context token carries to read and write the settings of every level. */
 export const FAKE_SETTINGS_SCOPES: readonly string[] = [
   "settings.user.read",

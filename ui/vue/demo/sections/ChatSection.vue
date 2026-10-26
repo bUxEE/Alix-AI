@@ -4,9 +4,11 @@ import {
   createAguiClient,
   useAlixChat,
   type AlixAttachment,
+  type AlixExporter,
   type Citation,
   type ConversationSummary,
   type DiagramBlock,
+  type ExportParams,
   type PermittedAction,
   type VoiceModeOption,
 } from "@alixai/vue";
@@ -109,6 +111,12 @@ const onVoiceStart = (): void => log.push({ kind: "voice", phase: "start" });
 const onVoiceStop = (): void => log.push({ kind: "voice", phase: "stop" });
 const onVoiceCancel = (): void => log.push({ kind: "voice", phase: "cancel" });
 
+// Demo-local exporter: returns a small Blob the kit saves (offline demo; no network).
+const demoExporter: AlixExporter = async (params: ExportParams) => {
+  const body = `demo export\nsession=${params.sessionId}\nturn=${params.turnId}\nformat=${params.format}\nblocks=${(params.blockIds ?? []).join(",")}\n`;
+  return new Blob([body], { type: "text/plain" });
+};
+
 const describe = (entry: HostEvent): string => {
   switch (entry.kind) {
     case "citation":
@@ -171,6 +179,7 @@ const describe = (entry: HostEvent): string => {
         <AlixChatPanel
           :chat="chat"
           :dictation-client="voiceMode === 'dictation' ? dictationClient : undefined"
+          :exporter="demoExporter"
           :language="locale"
           :on-memory-confirm="onMemoryConfirm"
           :on-memory-reject="onMemoryReject"
@@ -182,6 +191,7 @@ const describe = (entry: HostEvent): string => {
           :max-file-mb="8"
           :title="text('chat.panelTitle')"
           accept="image/png,image/jpeg,image/webp,application/pdf,text/csv,text/plain"
+          exports
           memory
           @action="onAction"
           @continue-in-app="onContinue"

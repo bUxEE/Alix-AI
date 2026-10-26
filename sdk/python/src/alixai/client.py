@@ -42,6 +42,7 @@ from alixai.validate import confirmation_token, context_token, normalize_base_ur
 
 if TYPE_CHECKING:
     from alixai.dictation import AsyncDictationsApi, DictationsApi
+    from alixai.exports import AsyncExportsApi, ExportsApi
     from alixai.me import AsyncMeApi, MeApi
     from alixai.memory_api import AsyncMemoryApi, MemoryApi
     from alixai.providers import AsyncProvidersApi, ProvidersApi
@@ -468,6 +469,13 @@ class AlixAIClient:
         return MemoryApi(self)
 
     @property
+    def exports(self) -> "ExportsApi":
+        """Downloadable files from a turn's verified blocks (1.2.0). Needs ``exports.create``."""
+        from alixai.exports import ExportsApi
+
+        return ExportsApi(self)
+
+    @property
     def providers(self) -> "ProvidersApi":
         """The operator-facing providers and OAuth area of External Provider Mode (off by default; see :class:`alixai.providers.ProvidersApi`)."""
         from alixai.providers import ProvidersApi
@@ -647,6 +655,13 @@ class AlixAIAsyncClient:
         from alixai.memory_api import AsyncMemoryApi
 
         return AsyncMemoryApi(self)
+
+    @property
+    def exports(self) -> "AsyncExportsApi":
+        """Downloadable files from a turn's verified blocks (1.2.0). Needs ``exports.create``."""
+        from alixai.exports import AsyncExportsApi
+
+        return AsyncExportsApi(self)
 
     @property
     def providers(self) -> "AsyncProvidersApi":

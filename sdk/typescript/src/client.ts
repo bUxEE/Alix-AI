@@ -12,6 +12,8 @@ import type {
   TurnInput,
   TurnResult,
 } from "./api-types.js";
+import { createExportsApi } from "./exports/client.js";
+import type { ExportsApi } from "./exports/client.js";
 import { createFilesApi } from "./files.js";
 import type { FilesApi } from "./files.js";
 import { createHistoryApi } from "./history.js";
@@ -173,7 +175,7 @@ export interface AlixAIClient {
   /** Installs a signed `.tar.gz` application package into quarantine. Needs the `applications.register` scope. */
   registerApplication: (archive: Uint8Array | ArrayBuffer | Blob, options?: CallOptions) => Promise<Registration>;
 
-  // ---- files, history, settings, me, memory ----
+  // ---- files, history, settings, me, memory, exports ----
   /** Scoped files: upload, inspect, download, preview, delete. */
   readonly files: FilesApi;
   /** Conversation history, search, export and clearing. */
@@ -187,6 +189,8 @@ export interface AlixAIClient {
   readonly me: MeApi;
   /** Long-term memory (ADR 0042): list, create, patch, delete, confirm, reject. */
   readonly memory: MemoryApi;
+  /** Downloadable files from a turn's verified blocks (1.2.0): `exports.create`. Needs `exports.create`. */
+  readonly exports: ExportsApi;
 
   // ---- conversations ----
   /**
@@ -565,6 +569,7 @@ const build = (caller: Caller, options: ClientOptions, turnTimeout: number): Ali
     settings: createSettingsApi(caller),
     me: createMeApi(caller),
     memory: createMemoryApi(caller),
+    exports: createExportsApi(caller),
     forSession: (sessionId) => build(caller.bind(pathId("sessionId", sessionId)), options, turnTimeout),
     conversation: (sessionId, conversationOptions) => createConversation(build(caller.bind(pathId("sessionId", sessionId)), options, turnTimeout), pathId("sessionId", sessionId), conversationOptions),
 

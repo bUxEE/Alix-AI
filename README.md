@@ -29,10 +29,11 @@
 
 > [!IMPORTANT]
 > **AlixAI 1.2.0 is released.** Additive on 1.1.0: per-principal LLM accounts (operator catalog, `/v1/me/…`, reserved-tenant
-> credentials) and long-term memory (consent-gated proposals, `memory.enabled` default off). 1.1 features remain: light
-> external setups, dictation, popup OAuth, OpenRouter / xAI / Moonshot. Still not verified: live provider runs against real
-> endpoints, voicebench on real hardware, certification on a real 8 GB x86-64 machine (ARM64 has never been run), 24-hour
-> and 7-day soaks (analysis only), and an independent external security review. Details:
+> credentials); long-term memory (consent-gated proposals, `memory.enabled` default off); downloadable exports from verified
+> turn blocks (`POST /v1/sessions/{session_id}/exports`); UI kit fullscreen overlay and opt-in answer downloads. 1.1 features
+> remain: light external setups, dictation, popup OAuth, OpenRouter / xAI / Moonshot. Still not verified: live provider runs
+> against real endpoints, voicebench on real hardware, certification on a real 8 GB x86-64 machine (ARM64 has never been run),
+> 24-hour and 7-day soaks (analysis only), and an independent external security review. Details:
 > [Project status](#project-status) and [docs/verification/README.md](docs/verification/README.md).
 
 ## Contents
@@ -468,7 +469,7 @@ docs/                  architecture, ADRs, integration guides, operations, secur
 
 ## Project status
 
-**1.2.0 is released** (minor, additive on 1.1.0). What 1.2.0 adds: per-principal LLM accounts ([ADR 0041](docs/decisions/0041-per-principal-llm-accounts.md)) — operator catalog (`alixai providers catalog-*`), `GET /v1/providers/catalog`, `/v1/me/llm…` and `/v1/me/providers/…`, reserved-tenant credentials, router resolution (principal binding → deployment default → local or `llm_not_configured`); long-term memory ([ADR 0042](docs/decisions/0042-long-term-memory.md)) — `memory.enabled` (default off), `/v1/memory`, consent-gated `memory_proposal` on task proposals and turn events, retention erase for memory and principal LLM accounts. Source builds report `1.2.0-dev`; packages declaring `[1.0.0, 2.0.0)` still validate. Contract changes are additive and frozen into `schemas/_frozen/v1`. Release archives stay reproducible (GoReleaser `--parallelism 1`; `tools/release` skips local model weights). Not verified in 1.2: live provider runs, voicebench on real hardware, real 8 GB certification, independent security review. Summary:
+**1.2.0 is released** (minor, additive on 1.1.0). What 1.2.0 adds: per-principal LLM accounts ([ADR 0041](docs/decisions/0041-per-principal-llm-accounts.md)) — operator catalog (`alixai providers catalog-*`), `GET /v1/providers/catalog`, `/v1/me/llm…` and `/v1/me/providers/…`, reserved-tenant credentials, router resolution (principal binding → deployment default → local or `llm_not_configured`); long-term memory ([ADR 0042](docs/decisions/0042-long-term-memory.md)) — `memory.enabled` (default off), `/v1/memory`, consent-gated `memory_proposal` on task proposals and turn events, retention erase for memory and principal LLM accounts; downloadable exports from a turn's verified rich blocks — `POST /v1/sessions/{session_id}/exports` (`csv` / `xlsx` / `html` / `md`, capability `exports.create`, durable turn-block store); UI kit fullscreen chat overlay and opt-in answer download actions (host-supplied exporter; kits never call AlixAI). Source builds report `1.2.0-dev`; packages declaring `[1.0.0, 2.0.0)` still validate. Contract changes are additive and frozen into `schemas/_frozen/v1`. Release archives stay reproducible (GoReleaser `--parallelism 1`; `tools/release` skips local model weights). Not verified in 1.2: live provider runs, voicebench on real hardware, real 8 GB certification, independent security review. Summary:
 
 | Status | Areas |
 | --- | --- |

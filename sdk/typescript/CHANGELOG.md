@@ -3,7 +3,7 @@
 All notable changes to this package. The format follows [Keep a Changelog](https://keepachangelog.com/); versions follow semantic versioning once 1.0.0
 ships, with the rules of [compatibility.md](../../docs/policies/compatibility.md).
 
-## 1.2.0 � 2026-10-26
+## 1.2.0 — 2026-10-26
 
 ### Added
 
@@ -12,6 +12,7 @@ ships, with the rules of [compatibility.md](../../docs/policies/compatibility.md
 - **Host only:** `me.providers.submitCredential` submits a write-only key. Call it from the host server, never from browser code.
 - Migration note: upgrade the SDK before a core that emits `memory_proposal` events (fail-closed decode).
 - Core (1.2): `/v1/me/…` and `GET /v1/providers/catalog` answer when external mode is enabled; otherwise `unavailable` / `llm_not_configured`.
+- `client.exports.create(sessionId, { turnId, format, blockIds? })` → `FileRef` (`origin: generated`) for downloadable files from a turn's verified blocks (`POST /v1/sessions/{session_id}/exports`, capability `exports.create`). Fake-server route and `FAKE_EXPORTS_SCOPES`.
 
 ### Notes (core)
 

@@ -1,6 +1,104 @@
 @use "mixins" as *;
 
 // Structured blocks: table, chart, diagram, action card, clarification choices, progress.
+
+.alix-block-with-export {
+  display: flex;
+  flex-direction: column;
+  gap: var(--alixai-space-2);
+}
+
+.alix-block-export {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.alix-export {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  &__toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 0;
+    border-radius: var(--alixai-radius-md);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+      background: var(--alixai-accent-soft);
+      outline: none;
+    }
+
+    &:disabled {
+      cursor: progress;
+      opacity: 0.7;
+    }
+  }
+
+  &__spinner {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid var(--alixai-border);
+    border-top-color: var(--alixai-accent);
+    border-radius: 999px;
+    animation: alix-export-spin 0.7s linear infinite;
+  }
+
+  &__menu {
+    position: absolute;
+    inset: calc(100% + 4px) 0 auto auto;
+    z-index: 5;
+    min-width: 11rem;
+    margin: 0;
+    padding: 4px;
+    list-style: none;
+    border: 1px solid var(--alixai-border);
+    border-radius: var(--alixai-radius-md);
+    background: var(--alixai-surface-raised, var(--alixai-surface));
+    box-shadow: var(--alixai-shadow);
+  }
+
+  &__item {
+    display: block;
+    width: 100%;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: var(--alixai-radius-sm, 8px);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+      background: var(--alixai-accent-soft);
+      outline: none;
+    }
+  }
+
+  &__error {
+    margin: 0;
+    color: var(--alixai-danger);
+    font-size: var(--alixai-text-sm);
+  }
+}
+
+@keyframes alix-export-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .alix-table,
 .alix-chart,
 .alix-diagram,

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactElement } from "react";
 import { AlixChatPanel } from "@alixai/react/copilotkit";
 import type { AlixKitOptions } from "@alixai/react/copilotkit";
-import type { VoiceModeOption } from "@alixai/react";
+import type { AlixExporter, VoiceModeOption } from "@alixai/react";
 import { DEMO_PATHS, demoDictationClient, demoPrompts } from "@alixai/demo-mock";
 import type { Citation } from "@alixai/sdk";
 import { agentFor, providerPropsFor, useAgentStatus } from "../lib/agent";
@@ -80,6 +80,11 @@ export const ChatSection = (): ReactElement => {
   const onMemoryReject = useCallback(async (id: string): Promise<void> => {
     await requestJson(`${DEMO_PATHS.memory}/${encodeURIComponent(id)}/reject`, { method: "POST" });
   }, []);
+  // Demo-local exporter: returns a small Blob the kit saves (offline demo; no network).
+  const demoExporter = useCallback<AlixExporter>(async (params) => {
+    const body = `demo export\nsession=${params.sessionId}\nturn=${params.turnId}\nformat=${params.format}\nblocks=${(params.blockIds ?? []).join(",")}\n`;
+    return new Blob([body], { type: "text/plain" });
+  }, []);
   const blocked = send === undefined || status.running || status.confirmationOpen;
 
   return (
@@ -133,6 +138,8 @@ export const ChatSection = (): ReactElement => {
             showProgress={progress}
             voice={voiceMode}
             memory
+            exports
+            exporter={demoExporter}
             onMemoryConfirm={onMemoryConfirm}
             onMemoryReject={onMemoryReject}
             {...(voiceMode === "dictation" && { dictationClient, language: lang })}

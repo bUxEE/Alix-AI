@@ -100,6 +100,9 @@ var (
 	opDeleteMemory  = Operation{"deleteMemory", http.MethodDelete, "/v1/memory/{id}", true, false}
 	opConfirmMemory = Operation{"confirmMemory", http.MethodPost, "/v1/memory/{id}/confirm", true, false}
 	opRejectMemory  = Operation{"rejectMemory", http.MethodPost, "/v1/memory/{id}/reject", true, false}
+
+	// Downloadable exports from verified turn blocks (1.2.0).
+	opCreateExport = Operation{"createExport", http.MethodPost, "/v1/sessions/{session_id}/exports", true, false}
 )
 
 // Operations lists every operation of the public API this SDK speaks: the root probes, sessions (including
@@ -122,5 +125,6 @@ func Operations() []Operation {
 		opGetProviderCatalog, opGetPrincipalLlm, opPutPrincipalLlmRole, opDeletePrincipalLlmRole,
 		opPutPrincipalProviderCredential, opDeletePrincipalProviderCredential, opAckPrincipalProviderBillingNotice, opStartPrincipalOAuth,
 		opListMemory, opCreateMemory, opPatchMemory, opDeleteMemory, opConfirmMemory, opRejectMemory,
+		opCreateExport,
 	}
 }

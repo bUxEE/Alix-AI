@@ -59,6 +59,10 @@ func (s *Service) ClearSession(ctx context.Context, scope contracts.Scope, sessi
 		return ClearResult{}, err
 	}
 	if n == 0 {
+		// Still drop durable turn blocks (exports archive) when the transcript is empty.
+		if err := s.clearSessionBlocks(ctx, target, sessionID); err != nil {
+			return ClearResult{}, err
+		}
 		return ClearResult{}, nil
 	}
 	if err := s.record(ctx, target, clearedAudit{Scope: "session", Reason: reasonUserRequest, Rows: n}); err != nil {
@@ -66,6 +70,9 @@ func (s *Service) ClearSession(ctx context.Context, scope contracts.Scope, sessi
 	}
 	rows, err := s.tr.ClearTranscript(ctx, target)
 	if err != nil {
+		return ClearResult{}, err
+	}
+	if err := s.clearSessionBlocks(ctx, target, sessionID); err != nil {
 		return ClearResult{}, err
 	}
 	s.log.Info("history cleared", "scope", "session", "rows", rows)
@@ -111,6 +118,9 @@ func (s *Service) prune(ctx context.Context, scope contracts.Scope, cutoff time.
 	}
 	rows, err := s.tr.PruneTranscript(ctx, scope, cutoff)
 	if err != nil {
+		return ClearResult{}, err
+	}
+	if err := s.pruneTurnBlocks(ctx, scope, toMS(cutoff)); err != nil {
 		return ClearResult{}, err
 	}
 	s.log.Info("history pruned", "reason", reason, "rows", rows)

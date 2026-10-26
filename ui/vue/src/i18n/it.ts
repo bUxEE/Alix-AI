@@ -43,6 +43,18 @@ export const it: Record<MessageKey, string> = {
   "chat.pending": "In attesa che tu finisca: {capability}",
   "chat.suggestions": "Prossimi passi suggeriti",
   "chat.runFailed": "Non ha funzionato.",
+  "chat.fullscreen": "Schermo intero",
+  "chat.fullscreenExit": "Esci da schermo intero",
+
+  "export.menu": "Scarica",
+  "export.answer": "Scarica questa risposta",
+  "export.block": "Scarica questi dati",
+  "export.csv": "Scarica CSV",
+  "export.xlsx": "Scarica XLSX",
+  "export.html": "Scarica report (HTML)",
+  "export.md": "Scarica Markdown",
+  "export.failed": "Il download non è riuscito. Riprova.",
+  "export.busy": "Preparazione del download",
 
   "composer.hint": "Invio per inviare, Maiusc+Invio per andare a capo",
   "composer.dropHere": "Rilascia i file per allegarli",

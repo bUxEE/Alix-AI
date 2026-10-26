@@ -30,6 +30,7 @@ export const ALIXAI_TOKENS = [
   "chart-4",
   "chart-5",
   "chart-6",
+  "scrim",
   "font",
   "font-mono",
   "text-xs",
@@ -52,6 +53,8 @@ export const ALIXAI_TOKENS = [
   "duration-press",
   "duration-fade",
   "duration-enter",
+  "z-fullscreen",
+  "shadow",
 ] as const;
 
 export type AlixToken = (typeof ALIXAI_TOKENS)[number];

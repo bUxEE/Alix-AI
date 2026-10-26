@@ -43,6 +43,16 @@ export interface AlixKitOptions {
   onContinueInApp?: (request: AlixContinueInAppRequest) => void;
   /** Your own component for an activity type (for example `alixai.block.table` or `alixai.receipt`); it wins over the kit's. */
   components?: AlixAIRendererOptions["components"];
+  /**
+   * When true with an `exporter`, show download menus on table/chart blocks (and answer menus when wired by the panel).
+   * Default false (1.1 compatibility).
+   */
+  exports?: boolean;
+  /** Host creates an export file. The kit never calls AlixAI. */
+  exporter?: import("./export.js").AlixExporter;
+  /** Host downloads a file id the exporter returned. Alias of `onDownload`. */
+  download?: import("./export.js").AlixDownload;
+  onDownload?: import("./export.js").AlixDownload;
 }
 
 type AgentLike = ActivityComponentProps<never>["agent"];
@@ -67,8 +77,25 @@ type Renderer<T> = ComponentType<ActivityComponentProps<T>>;
 
 /** The kit's component for each activity type of AlixAI (a map for the adapter's `components` option). */
 export const alixKitComponents = (options: AlixKitOptions = {}): Record<string, ComponentType<ActivityComponentProps<never>>> => {
-  const table: Renderer<AlixAIBlock<"table">> = ({ content }) => <AlixTableBlock block={content} />;
-  const chart: Renderer<AlixAIBlock<"chart">> = ({ content }) => <AlixChartBlock block={content} />;
+  const activityId = (agent: AgentLike | undefined, content: unknown): string => {
+    const messages = (agent as { messages?: readonly { id?: string; content?: unknown }[] } | undefined)?.messages;
+    if (messages !== undefined) {
+      for (let i = messages.length - 1; i >= 0; i -= 1) {
+        const message = messages[i];
+        if (message === undefined) continue;
+        if (message.content === content && typeof message.id === "string") return message.id;
+      }
+    }
+    return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `block_${Date.now()}`;
+  };
+  const table: Renderer<AlixAIBlock<"table">> = ({ content, agent }) => {
+    const id = activityId(agent, content);
+    return <AlixTableBlock block={content} blockId={id} turnId={id} />;
+  };
+  const chart: Renderer<AlixAIBlock<"chart">> = ({ content, agent }) => {
+    const id = activityId(agent, content);
+    return <AlixChartBlock block={content} blockId={id} turnId={id} />;
+  };
   const diagram: Renderer<AlixAIBlock<"diagram">> = ({ content }) => <AlixDiagramBlock block={content} />;
   const action: Renderer<AlixAIBlock<"action_card">> = ({ content }) => <AlixActionCard block={content} {...(options.onAction !== undefined && { onAction: options.onAction })} />;
   const choices: Renderer<AlixAIBlock<"clarification_choices">> = ({ content, agent }) => <ChoicesActivity block={content} agent={agent} />;

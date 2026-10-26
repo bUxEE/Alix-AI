@@ -10,7 +10,7 @@ export type {
   RecordedRequest,
   TurnHandler,
 } from "./fake-server.js";
-export { FAKE_HISTORY_SCOPES, FAKE_SETTINGS_SCOPES } from "./context.js";
+export { FAKE_EXPORTS_SCOPES, FAKE_HISTORY_SCOPES, FAKE_SETTINGS_SCOPES } from "./context.js";
 export type { FakeFilesOptions } from "./fake-files.js";
 export type { FakeSettingsOptions } from "./fake-settings.js";
 export { askChoice, failTurn, prepareAction, reply, rejectTurn } from "./plans.js";

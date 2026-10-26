@@ -42,6 +42,18 @@ export const en = {
   "chat.pending": "Waiting for you to finish: {capability}",
   "chat.suggestions": "Suggested next steps",
   "chat.runFailed": "That did not work.",
+  "chat.fullscreen": "Full screen",
+  "chat.fullscreenExit": "Exit full screen",
+
+  "export.menu": "Download",
+  "export.answer": "Download this answer",
+  "export.block": "Download this data",
+  "export.csv": "Download CSV",
+  "export.xlsx": "Download XLSX",
+  "export.html": "Download report (HTML)",
+  "export.md": "Download Markdown",
+  "export.failed": "The download could not be prepared. Try again.",
+  "export.busy": "Preparing download",
 
   "composer.hint": "Enter to send, Shift+Enter for a new line",
   "composer.dropHere": "Drop files to attach them",

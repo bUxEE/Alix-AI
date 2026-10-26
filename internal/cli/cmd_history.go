@@ -51,5 +51,8 @@ func historyProvide(_ context.Context, d serveDeps) error {
 	if historyRetentionOnCompose != nil {
 		historyRetentionOnCompose(svc)
 	}
-	return gateway.Provide(d.Services, svc)
+	if err := gateway.Provide(d.Services, svc); err != nil {
+		return err
+	}
+	return gateway.Provide[gateway.TurnBlocksArchive](d.Services, svc)
 }

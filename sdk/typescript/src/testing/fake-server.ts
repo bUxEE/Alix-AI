@@ -21,6 +21,7 @@ import type { HistoryExportRow } from "../api-types.js";
 import type { FileRef } from "../gen/conversation/index.js";
 import type { WebSocketFactory } from "../ws.js";
 import type { FakeContext } from "./context.js";
+import { createFakeExports } from "./fake-exports.js";
 import { createFakeFiles } from "./fake-files.js";
 import type { FakeFilesOptions } from "./fake-files.js";
 import { createFakeHistory } from "./fake-history.js";
@@ -341,6 +342,7 @@ export const createFakeServer = (options: FakeServerOptions = {}): FakeAlixAISer
   const historyArea = createFakeHistory(context);
   const settingsArea = createFakeSettings(context, () => capabilities, () => appStatus, options.settings);
   const meMemoryArea = createFakeMeMemory(context);
+  const exportsArea = createFakeExports(context);
 
   // ---- tokens ----
 
@@ -1022,6 +1024,10 @@ export const createFakeServer = (options: FakeServerOptions = {}): FakeAlixAISer
       case "confirmMemory":
       case "rejectMemory": {
         const answered = meMemoryArea.handle(operation, scope, params, body);
+        return answered ?? problem("internal", "the fake server does not implement this operation");
+      }
+      case "createExport": {
+        const answered = exportsArea.handle(operation, scope, params, body);
         return answered ?? problem("internal", "the fake server does not implement this operation");
       }
       case "createSession": {

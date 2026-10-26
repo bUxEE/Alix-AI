@@ -142,15 +142,15 @@ export interface MemoryListItem {
 
 /** One entry of the conversation timeline, in the order the stream produced it. */
 export type ChatItem =
-  | { kind: "message"; id: string; role: "user" | "assistant"; text: string; streaming: boolean }
-  | { kind: "attachments"; id: string; files: AlixAttachment[] }
-  | { kind: "block"; id: string; blockType: AlixBlockType; block: RichBlock; answered: boolean }
-  | { kind: "citations"; id: string; citations: Citation[] }
-  | { kind: "receipt"; id: string; receipt: ActionReceipt }
-  | { kind: "confirmation"; id: string; confirmation: AlixConfirmation; interruptId: string; status: ConfirmationStatus }
-  | { kind: "memory_proposal"; id: string; proposal: MemoryProposalView; status: MemoryProposalStatus }
-  | { kind: "continue"; id: string; summary: string; preparationId?: string }
-  | { kind: "error"; id: string; message: string; code?: string };
+  | { kind: "message"; id: string; role: "user" | "assistant"; text: string; streaming: boolean; turnId?: string }
+  | { kind: "attachments"; id: string; files: AlixAttachment[]; turnId?: string }
+  | { kind: "block"; id: string; blockType: AlixBlockType; block: RichBlock; answered: boolean; turnId?: string }
+  | { kind: "citations"; id: string; citations: Citation[]; turnId?: string }
+  | { kind: "receipt"; id: string; receipt: ActionReceipt; turnId?: string }
+  | { kind: "confirmation"; id: string; confirmation: AlixConfirmation; interruptId: string; status: ConfirmationStatus; turnId?: string }
+  | { kind: "memory_proposal"; id: string; proposal: MemoryProposalView; status: MemoryProposalStatus; turnId?: string }
+  | { kind: "continue"; id: string; summary: string; preparationId?: string; turnId?: string }
+  | { kind: "error"; id: string; message: string; code?: string; turnId?: string };
 
 export type RunOutcome = "success" | "interrupt" | "cancelled" | "error";
 

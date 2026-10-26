@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:conversation:export-request:v1",
+  "title": "Export request",
+  "description": "Body of POST /v1/sessions/{session_id}/exports (release 1.2.0): ask AlixAI to generate a downloadable file from a turn's verified rich blocks. The core never accepts model-written file bytes; it re-reads blocks it already validated and renders them deterministically. csv and xlsx need at least one table or chart block among the selection; html and md accept any verified blocks of the turn.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["turn_id", "format"],
+  "properties": {
+    "turn_id": {
+      "description": "The turn whose verified blocks to export. Must resolve in the caller's scope.",
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/turnId"
+    },
+    "block_ids": {
+      "description": "Optional subset of block ids from the turn (the AG-UI activity ids act_<turn>_bN, or the 1-based block index as a decimal string). Absent or empty means every verified block of the turn.",
+      "x-alixai-authority": "host",
+      "type": "array",
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128,
+        "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+      }
+    },
+    "format": {
+      "description": "The file format to produce.",
+      "x-alixai-authority": "host",
+      "type": "string",
+      "enum": ["csv", "xlsx", "html", "md"]
+    }
+  }
+}

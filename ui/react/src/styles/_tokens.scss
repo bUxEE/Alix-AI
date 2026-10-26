@@ -33,6 +33,7 @@
   --alixai-chart-4: oklch(0.55 0.11 145);
   --alixai-chart-5: oklch(0.52 0.13 20);
   --alixai-chart-6: oklch(0.62 0.06 240);
+  --alixai-scrim: oklch(0.992 0.004 190 / 0.7);
 }
 
 @mixin dark {
@@ -62,6 +63,7 @@
   --alixai-chart-4: oklch(0.78 0.12 145);
   --alixai-chart-5: oklch(0.74 0.12 20);
   --alixai-chart-6: oklch(0.74 0.06 240);
+  --alixai-scrim: oklch(0.2 0.01 200 / 0.7);
 }
 
 // Shape, rhythm and motion do not change with the theme. Spacing is a 4px scale.
@@ -88,6 +90,8 @@
   --alixai-duration-press: 120ms;
   --alixai-duration-fade: 160ms;
   --alixai-duration-enter: 220ms;
+  --alixai-z-fullscreen: 40;
+  --alixai-shadow: 0 1px 2px oklch(0.3 0.02 200 / 0.06), 0 8px 24px -12px oklch(0.3 0.02 200 / 0.14);
 }
 
 :where(:root, .alix-root) {

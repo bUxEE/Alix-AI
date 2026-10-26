@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { OPERATIONS, createClient, isAlixAIError } from "../src/index.js";
-import { FAKE_HISTORY_SCOPES, FAKE_SETTINGS_SCOPES, createFakeServer, prepareAction, reply } from "../src/testing/index.js";
+import { FAKE_EXPORTS_SCOPES, FAKE_HISTORY_SCOPES, FAKE_SETTINGS_SCOPES, createFakeServer, prepareAction, reply } from "../src/testing/index.js";
 import type { FakeAlixAIServer } from "../src/testing/index.js";
 import { describe as explain, loadSpec } from "./helpers/openapi.js";
 import type { Spec } from "./helpers/openapi.js";
@@ -24,15 +24,17 @@ describe("the SDK's operation table matches schemas/api/openapi.yaml", () => {
     }
   });
 
-  it("covers every operation of the areas this SDK version implements (sessions, actions, applications, files, history, settings, me, memory, probes)", () => {
+  it("covers every operation of the areas this SDK version implements (sessions, actions, applications, files, history, settings, me, memory, exports, probes)", () => {
     // The RAG area is spoken too (src/rag, its own table, checked by test/rag.test.ts); voice, providers, oauth, decision and ops have no operations yet.
-    const implemented = new Set(["root", "sessions", "actions", "apps", "files", "history", "settings", "me", "memory"]);
+    const implemented = new Set(["root", "sessions", "actions", "apps", "files", "history", "settings", "me", "memory", "exports"]);
     const missing = spec.operations.filter((o) => implemented.has(o.area) && !(o.operationId in OPERATIONS)).map((o) => o.operationId);
     expect(missing, "operations in the document that the SDK does not speak").toEqual([]);
   });
 
   it("has a row for every operation of the document whose area is implemented, and for nothing the document lacks", () => {
-    const documented = spec.operations.filter((o) => ["root", "sessions", "actions", "apps", "files", "history", "settings", "me", "memory"].includes(o.area));
+    const documented = spec.operations.filter((o) =>
+      ["root", "sessions", "actions", "apps", "files", "history", "settings", "me", "memory", "exports"].includes(o.area),
+    );
     expect(Object.keys(OPERATIONS).sort()).toEqual(documented.map((o) => o.operationId).sort());
   });
 });
@@ -101,7 +103,15 @@ ${init.body}`);
     }
     return response;
   };
-  const scopes = ["demo.lookup", "demo.book", "demo.close_account", "applications.register", ...FAKE_HISTORY_SCOPES, ...FAKE_SETTINGS_SCOPES];
+  const scopes = [
+    "demo.lookup",
+    "demo.book",
+    "demo.close_account",
+    "applications.register",
+    ...FAKE_HISTORY_SCOPES,
+    ...FAKE_SETTINGS_SCOPES,
+    ...FAKE_EXPORTS_SCOPES,
+  ];
   const client = createClient({ baseUrl: fake.baseUrl, fetch, getContextToken: () => fake.issueToken({ session_id: session, capability_scopes: scopes }) });
   return { client, violations, statuses, validated: () => validated };
 };
@@ -260,6 +270,11 @@ describe("every answer of the fake server conforms to the OpenAPI document", () 
     await client.memory.confirm(remembered.id);
     await client.memory.reject(remembered.id);
     await client.memory.delete(remembered.id);
+
+    // ---- exports (1.2.0): verified blocks → OriginGenerated FileRef ----
+    const fileExport = await client.exports.create("ses-1", { turn_id: "trn_01ARZ3NDEKTSV4RRFFQ69G5FAV", format: "html" });
+    expect(fileExport.origin).toBe("generated");
+    await client.exports.create("ses-1", { turnId: "trn_01ARZ3NDEKTSV4RRFFQ69G5FA0", format: "csv" }).catch(() => undefined); // 404
 
     // failure paths: scope, validation, authentication, availability, quarantine, ended session
     const other = createClient({ baseUrl: fake.baseUrl, fetch: fake.fetch, getContextToken: () => fake.issueToken({ session_id: "ses-9" }) });

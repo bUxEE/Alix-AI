@@ -81,15 +81,17 @@ func registerV1Voice(rt *Router, d *Deps) {
 		return
 	}
 	h := &voiceHandler{apps: apps, svc: voiceSvc, engine: engine, turner: turnerFor(n, engine), hub: hub}
+	h.archive, _ = Want[TurnBlocksArchive](n)
 	rt.V1().HandleFunc("GET /sessions/{session_id}/voice", h.serve)
 }
 
 type voiceHandler struct {
-	apps   ApplicationService
-	svc    VoiceService
-	engine *dialogue.Engine
-	turner ddec.Turner // the decision wrapper when provided, else the engine (turnerFor)
-	hub    *stream.Hub
+	apps    ApplicationService
+	svc     VoiceService
+	engine  *dialogue.Engine
+	turner  ddec.Turner // the decision wrapper when provided, else the engine (turnerFor)
+	hub     *stream.Hub
+	archive TurnBlocksArchive
 }
 
 func (h *voiceHandler) serve(w http.ResponseWriter, r *http.Request) {
@@ -123,7 +125,7 @@ func (h *voiceHandler) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	opts := vsession.Options{
-		Turns:    voiceTurns{turner: h.turner, hub: h.hub, log: loggerFrom(r.Context())},
+		Turns:    voiceTurns{turner: h.turner, hub: h.hub, archive: h.archive, log: loggerFrom(r.Context())},
 		Language: language,
 		NoSpeech: speak == "false",
 		Logger:   loggerFrom(r.Context()),
@@ -177,9 +179,10 @@ func (v voiceSocket) Write(ctx context.Context, binary bool, data []byte) error 
 // what the engine decided into the stream hub, the way the turns route does,
 // so that the turn is resumable and visible to AG-UI like any other.
 type voiceTurns struct {
-	turner ddec.Turner
-	hub    *stream.Hub
-	log    *slog.Logger
+	turner  ddec.Turner
+	hub     *stream.Hub
+	archive TurnBlocksArchive
+	log     *slog.Logger
 }
 
 func (v voiceTurns) RunTextTurn(ctx context.Context, scope contracts.Scope, text, language string) (dialogue.Result, error) {
@@ -201,7 +204,8 @@ func (v voiceTurns) RunTextTurn(ctx context.Context, scope contracts.Scope, text
 		res.Confirmation = actions.ConfirmationToken{}
 		return res, err
 	}
-	if perr := buildTurnEvents(res, terr).publish(turn); perr != nil {
+	plan := buildTurnEvents(res, terr)
+	if perr := plan.publish(turn); perr != nil {
 		// An event the hub refused is not skipped over: the turn is failed, the
 		// secret is withheld (the user would confirm what the stream did not
 		// show) and nothing of the response is spoken.
@@ -213,5 +217,6 @@ func (v voiceTurns) RunTextTurn(ctx context.Context, scope contracts.Scope, text
 		res.Confirmation = actions.ConfirmationToken{}
 		return res, perr
 	}
+	archiveTurnBlocks(ctx, v.archive, scope, res.TurnID, plan.export, v.log)
 	return res, terr
 }

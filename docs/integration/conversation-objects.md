@@ -445,6 +445,27 @@ code), not an empty citation.
 `open_ref` is a typed, opaque reference (`file`, `record` or `source`), never a URL or a path;
 resolving it re-checks scope and expiry every time.
 
+## 10a. Exports (downloadable files from verified blocks)
+
+A host can ask AlixAI to produce a downloadable file from a turn's **already verified** rich blocks
+(`POST /v1/sessions/{session_id}/exports`, release 1.2.0). The core never accepts model-written file
+bytes and never stores raw HTML/JS from the model: it re-reads blocks it validated for that turn and
+renders them deterministically into `csv`, `xlsx`, `html` or `md`.
+
+| Request | Authority | Required | Meaning |
+| --- | --- | --- | --- |
+| `turn_id` | `host` | yes | The turn whose verified blocks to export; must resolve in the caller's scope. |
+| `block_ids` | `host` | no | Optional subset of the turn's verified rich blocks. Ids are the AG-UI activity ids `act_<turn>_bN` (1-based N in BlockEvent order on the live stream / durable history archive — the same sequence HubSource and HistorySource return). A decimal string `"N"` or `"bN"` is also accepted. Absent means every verified block of the turn. |
+| `format` | `host` | yes | `csv` \| `xlsx` \| `html` \| `md`. |
+
+`csv` and `xlsx` need at least one table or chart-data block among the selection (`validation_failed`
+otherwise). `html` and `md` accept any verified blocks. The answer is a `FileRef` with
+`origin: generated`; download is `GET /v1/files/{file_id}/content` (permission re-checked). Needs
+`exports.create` in the context token. A turn or block outside the caller's scope is `not_found`
+(HTTP 404); oversize results are `resource_exhausted` (HTTP 507). Formula-injection protection
+prefixes spreadsheet cells that start with `=`, `+`, `-` or `@`. HTML exports are script-free,
+self-contained (inline SVG charts, CSP meta, `@media print`), with every model text escaped.
+
 ## 11. FileRef
 
 A scoped, opaque reference to an attachment or generated file. It has no path, no URL and no

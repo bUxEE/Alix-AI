@@ -1,0 +1,11 @@
+# Free slots on 14 October
+Start,Doctor,Free
+10:30,Dr. Rossi,true
+11:00,Dr. Rossi,false
+11:30,,3
+
+# Appointments per weekday
+Weekday,Booked
+Mon,12
+Tue,18
+Wed,9

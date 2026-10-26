@@ -46,10 +46,14 @@ const str = (value: unknown): string | undefined => (typeof value === "string" ?
 
 const itemIndex = (state: ChatState, id: string): number => state.items.findIndex((item) => item.id === id);
 
+const withTurn = <T extends ChatItem>(state: ChatState, item: T): T =>
+  state.runId === undefined || item.turnId !== undefined ? item : ({ ...item, turnId: state.runId } as T);
+
 const upsert = (state: ChatState, item: ChatItem): void => {
-  const at = itemIndex(state, item.id);
-  if (at === -1) state.items.push(item);
-  else state.items[at] = item;
+  const next = withTurn(state, item);
+  const at = itemIndex(state, next.id);
+  if (at === -1) state.items.push(next);
+  else state.items[at] = next;
 };
 
 const closeStreaming = (state: ChatState): void => {

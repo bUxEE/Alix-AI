@@ -19,11 +19,13 @@ import AlixConfirmationSheet from "./AlixConfirmationSheet.vue";
 import AlixFilePreview from "./AlixFilePreview.vue";
 import AlixMemoryProposal from "./AlixMemoryProposal.vue";
 import AlixReceiptCard from "./AlixReceiptCard.vue";
+import type { AlixDownload, AlixExporter } from "../export";
 import AlixChartBlock from "./blocks/AlixChartBlock.vue";
 import AlixClarificationChoices from "./blocks/AlixClarificationChoices.vue";
 import AlixDiagramBlock from "./blocks/AlixDiagramBlock.vue";
 import AlixMarkdown from "./blocks/AlixMarkdown.vue";
 import AlixTableBlock from "./blocks/AlixTableBlock.vue";
+import AlixExportMenu from "./AlixExportMenu.vue";
 import AlixIcon from "./common/AlixIcon.vue";
 import { RUN_IN_FLIGHT } from "./run-state";
 
@@ -41,8 +43,14 @@ const props = withDefaults(
     /** Shows link addresses in assistant text. Turn it off when the host owns routing. */
     links?: boolean;
     citationDisplay?: "inline" | "footnote" | "panel";
+    /** Session id for host export calls. */
+    sessionId?: string;
+    /** Show download menus when an exporter is also set. */
+    exports?: boolean;
+    exporter?: AlixExporter;
+    download?: AlixDownload;
   }>(),
-  { running: false, links: true, citationDisplay: "panel" },
+  { running: false, links: true, citationDisplay: "panel", sessionId: "", exports: false, exporter: undefined, download: undefined },
 );
 
 const emit = defineEmits<{
@@ -183,6 +191,53 @@ const panelView = (id: string, block: ConfirmationPanelBlock): PanelView => ({
   handOver: props.items.find((item): item is ContinueItem => item.kind === "continue" && item.preparationId === block.preparation_id),
 });
 
+const canExport = computed(() => props.exports === true && props.exporter !== undefined && props.sessionId !== "");
+
+/** Last timeline index and turn key for each assistant answer (for the answer-level download menu). */
+const answerEnds = computed(() => {
+  const ends = new Map<string, number>();
+  if (!canExport.value) return ends;
+  let turn: string | undefined;
+  props.items.forEach((item, index) => {
+    if (item.kind === "message" && item.role === "user") {
+      turn = undefined;
+      return;
+    }
+    if (item.kind === "message" && item.role === "assistant") turn = item.turnId ?? item.id;
+    else if (item.turnId !== undefined) turn = item.turnId;
+    if (turn === undefined) return;
+    ends.set(turn, index);
+  });
+  return ends;
+});
+
+const turnKeyAt = (index: number): string => {
+  for (const [key, end] of answerEnds.value) if (end === index) return key;
+  return props.items[index]?.id ?? "";
+};
+
+const blockIdsOfTurn = (turnId: string): string[] => {
+  const ids: string[] = [];
+  let active: string | undefined;
+  for (const item of props.items) {
+    if (item.kind === "message" && item.role === "user") {
+      active = undefined;
+      continue;
+    }
+    if (item.kind === "message" && item.role === "assistant") active = item.turnId ?? item.id;
+    else if (item.turnId !== undefined) active = item.turnId;
+    if (active !== turnId) continue;
+    if (item.kind === "block") ids.push(item.id);
+  }
+  return ids;
+};
+
+const showAnswerExport = (_item: ChatItem, index: number): boolean => {
+  if (!canExport.value) return false;
+  for (const end of answerEnds.value.values()) if (end === index) return true;
+  return false;
+};
+
 defineExpose({ toBottom: (): void => toBottom(true) });
 </script>
 
@@ -213,7 +268,7 @@ defineExpose({ toBottom: (): void => toBottom(true) });
         </div>
       </slot>
       <template
-        v-for="item in items"
+        v-for="(item, index) in items"
         :key="item.id"
       >
         <div
@@ -266,14 +321,35 @@ defineExpose({ toBottom: (): void => toBottom(true) });
             :item="item"
             name="block"
           >
-            <AlixTableBlock
-              v-if="item.blockType === 'table'"
-              :block="item.block as TableBlock"
-            />
-            <AlixChartBlock
-              v-else-if="item.blockType === 'chart'"
-              :block="item.block as ChartBlock"
-            />
+            <div
+              v-if="item.blockType === 'table' || item.blockType === 'chart'"
+              class="alix-d-flex alix-flex-column alix-ga-2"
+            >
+              <div
+                v-if="canExport"
+                class="alix-d-flex alix-justify-end"
+              >
+                <AlixExportMenu
+                  :download="download"
+                  :exporter="exporter!"
+                  :formats="['csv', 'xlsx']"
+                  :label="t('export.block')"
+                  :params="{
+                    sessionId: sessionId,
+                    turnId: item.turnId ?? item.id,
+                    blockIds: [item.id],
+                  }"
+                />
+              </div>
+              <AlixTableBlock
+                v-if="item.blockType === 'table'"
+                :block="item.block as TableBlock"
+              />
+              <AlixChartBlock
+                v-else
+                :block="item.block as ChartBlock"
+              />
+            </div>
             <AlixDiagramBlock
               v-else-if="item.blockType === 'diagram'"
               :block="item.block as DiagramBlock"
@@ -465,6 +541,22 @@ defineExpose({ toBottom: (): void => toBottom(true) });
               </button>
             </div>
           </slot>
+        </div>
+        <div
+          v-if="showAnswerExport(item, index)"
+          class="alix-d-flex alix-justify-end"
+        >
+          <AlixExportMenu
+            :download="download"
+            :exporter="exporter!"
+            :formats="['html', 'md']"
+            :label="t('export.answer')"
+            :params="{
+              sessionId: sessionId,
+              turnId: turnKeyAt(index),
+              blockIds: blockIdsOfTurn(turnKeyAt(index)),
+            }"
+          />
         </div>
       </template>
     </div>

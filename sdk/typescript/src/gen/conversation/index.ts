@@ -2,6 +2,7 @@
 
 export * from "./citation.js";
 export * from "./dialogue-directive.js";
+export * from "./export-request.js";
 export * from "./file-ref.js";
 export * from "./rich-block.js";
 export * from "./task-proposal.js";

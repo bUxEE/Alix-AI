@@ -133,6 +133,8 @@ x-alixai-areas:
     $ref: paths/me.yaml
   memory:
     $ref: paths/memory.yaml
+  exports:
+    $ref: paths/exports.yaml
 
 components:
   securitySchemes:

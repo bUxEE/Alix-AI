@@ -26,6 +26,9 @@ const ICONS: Record<string, string[]> = {
   sliders: ["M4 7h10", "M18 7h2", "M4 17h2", "M10 17h10", "M14 4v6", "M6 14v6"],
   message: ["M4 5h16v11H9l-5 4z"],
   menu: ["M4 7h16", "M4 12h16", "M4 17h16"],
+  download: ["M12 3v12", "M7 10l5 5 5-5", "M5 21h14"],
+  maximize: ["M8 3H3v5", "M16 3h5v5", "M8 21H3v-5", "M16 21h5v-5"],
+  minimize: ["M8 3v5H3", "M16 3v5h5", "M8 21v-5H3", "M16 21v-5h5"],
 };
 
 const props = withDefaults(

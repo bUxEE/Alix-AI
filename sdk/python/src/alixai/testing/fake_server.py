@@ -1293,6 +1293,44 @@ class FakeAlixAIServer:
             )
         if operation == "deleteMemory":
             return httpx.Response(204, headers={"X-Request-ID": "req_fake"})
+        if operation == "createExport":
+            if params.get("session_id") != scope.session_id:
+                return self._problem("scope_violation", "the session is not the token's", status=403)
+            if "exports.create" not in scope.capability_scopes:
+                return self._problem("permission_denied", "the context does not permit exports.create", status=403)
+            turn = (body or {}).get("turn_id", "")
+            fmt = (body or {}).get("format", "")
+            if not isinstance(turn, str) or not turn.startswith("trn_") or fmt not in ("csv", "xlsx", "html", "md"):
+                return self._problem("validation_failed", "turn_id and format are required")
+            if turn.endswith("FA0"):
+                return self._problem(
+                    "validation_failed",
+                    "the turn is not available for export",
+                    status=404,
+                    details={"reason": "not_found"},
+                )
+            mime = {
+                "csv": "text/csv",
+                "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "html": "text/html",
+                "md": "text/markdown",
+            }[fmt]
+            file_id = "fil_01J0000000000000000000000E"
+            return self._json(
+                201,
+                {
+                    "file_id": file_id,
+                    "name": f"export.{'md' if fmt == 'md' else fmt}",
+                    "mime_type": mime,
+                    "size_bytes": 32,
+                    "owner": scope.principal_id,
+                    "origin": "generated",
+                    "permissions": ["read", "download"],
+                    "previewable": fmt != "xlsx",
+                    "expires_at": "2026-10-26T19:00:00Z",
+                },
+                {"Location": f"/v1/files/{file_id}"},
+            )
         if operation == "getHealth":
             report = self._ready_report()
             health = {**report, "application": {"application_id": scope.application_id, "status": self._app_status}}

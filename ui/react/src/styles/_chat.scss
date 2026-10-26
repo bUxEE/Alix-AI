@@ -11,6 +11,64 @@
   color: var(--alixai-text);
   font-family: var(--alixai-font);
 
+  &__chrome {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.25rem;
+    flex-shrink: 0;
+    padding: 0.5rem 0.75rem 0;
+  }
+
+  &__fullscreen {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 0;
+    border-radius: var(--alixai-radius-md);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+      background: var(--alixai-accent-soft);
+      outline: none;
+    }
+
+    &:active {
+      transform: scale(0.97);
+    }
+  }
+
+  // Fullscreen is styling only: the node stays under its React parent (never moved with appendChild).
+  &--fullscreen,
+  &[data-fullscreen] {
+    position: fixed;
+    inset: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px)
+      env(safe-area-inset-left, 0px);
+    z-index: var(--alixai-z-fullscreen);
+    width: auto;
+    height: auto;
+    max-height: 100dvh;
+    border-radius: 0;
+    outline: none;
+    box-shadow: var(--alixai-shadow);
+    animation: alix-fullscreen-in var(--alixai-duration-enter) var(--alixai-ease-out) both;
+
+    &::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background: var(--alixai-scrim);
+      pointer-events: none;
+    }
+  }
+
   [data-copilotkit] {
     --background: var(--alixai-surface);
     --foreground: var(--alixai-text);
@@ -28,5 +86,23 @@
     --input: var(--alixai-border-strong);
     --ring: var(--alixai-focus);
     --radius: var(--alixai-radius-md);
+  }
+}
+
+@keyframes alix-fullscreen-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .alix-panel--fullscreen,
+  .alix-panel[data-fullscreen] {
+    animation: none;
+  }
+
+  .alix-export__spinner {
+    animation: none;
   }
 }

@@ -76,6 +76,8 @@ OPERATIONS: Mapping[str, Operation] = {
     "deleteMemory": Operation("DELETE", "/v1/memory/{id}", True),
     "confirmMemory": Operation("POST", "/v1/memory/{id}/confirm", True),
     "rejectMemory": Operation("POST", "/v1/memory/{id}/reject", True),
+    # Downloadable exports from verified turn blocks (1.2.0).
+    "createExport": Operation("POST", "/v1/sessions/{session_id}/exports", True),
 }
 
 _PLACEHOLDER = re.compile(r"\{([a-z_]+)\}")

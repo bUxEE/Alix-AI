@@ -419,6 +419,7 @@ func (f *Fake) routes() http.Handler {
 		"deleteMemory":                      (*call).memoryDelete,
 		"confirmMemory":                     (*call).memoryConfirm,
 		"rejectMemory":                      (*call).memoryReject,
+		"createExport":                      (*call).exportCreate,
 	}
 	for _, op := range sdkgo.Operations() {
 		handle := handlers[op.ID]

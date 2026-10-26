@@ -3,13 +3,16 @@
 All notable changes to this package. Versions follow semantic versioning with the rules of
 [compatibility.md](../../docs/policies/compatibility.md).
 
-## 1.2.0 � 2026-10-26
+## 1.2.0 — 2026-10-26
 
 ### Added
 
 - `AlixMemoryProposal` and `AlixMemoryList` for long-term memory (ADR 0042). The kit never calls AlixAI: the host provides confirm/reject and list data.
 - Chat panel opt-in prop `memory` (default `false` for 1.1 compatibility): when true, `alixai.memory_proposal` CUSTOM events render as proposal cards.
 - i18n keys for memory (en + it).
+- Chat panel fullscreen overlay: header toggle ("Full screen" / "Exit full screen"), `v-model:fullscreen` (default false), Teleport to `body` with the same panel instance (draft, scroll and running turn survive), Esc to exit, focus trap/restore, body scroll lock, and a short enter transition that respects `prefers-reduced-motion`. The `header-actions` slot stays available beside the toggle.
+- Opt-in answer downloads: prop `exports` (default `false` for 1.1 compatibility) with host `exporter` and `download`. Table and chart blocks get "Download CSV" / "Download XLSX"; an assistant answer gets "Download report (HTML)" / "Download Markdown". The kit never calls AlixAI; actions stay hidden without an exporter. Control-level loading and error states.
+- i18n keys for fullscreen and export (en + it).
 
 ## 1.1.0 — 2026-10-26
 

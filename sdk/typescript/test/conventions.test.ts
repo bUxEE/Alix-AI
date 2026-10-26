@@ -202,6 +202,7 @@ describe("the public surface", () => {
         "createClient",
         "decision",
         "doneEvent",
+        "exports",
         "isAlixAIError",
         "isErrorCode",
         "isRetryableCode",
@@ -218,7 +219,7 @@ describe("the public surface", () => {
 
   it("re-exports the namespace stubs of later milestones, so they fill only their own folder", () => {
     const index = readFileSync(join(SDK_ROOT, "src", "index.ts"), "utf8");
-    for (const area of ["rag", "voice", "providers", "decision", "me", "memory"]) {
+    for (const area of ["rag", "voice", "providers", "decision", "me", "memory", "exports"]) {
       expect(existsSync(join(SDK_ROOT, "src", area, "index.ts")), `src/${area}/index.ts`).toBe(true);
       expect(index).toContain(`export * as ${area} from "./${area}/index.js";`);
       expect(typeof (sdk as Record<string, unknown>)[area]).toBe("object");

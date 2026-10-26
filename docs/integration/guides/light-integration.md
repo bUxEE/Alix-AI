@@ -124,6 +124,19 @@ related) in the context token, then use `GET|POST /v1/memory` and confirm/reject
 arrive as TurnEvent `memory_proposal` / AG-UI `alixai.memory_proposal`; typed chat text never confirms. See
 [memory.md](../memory.md) and [ADR 0042](../../decisions/0042-long-term-memory.md).
 
+## Reports and downloads (1.2)
+
+When the host needs a file the user can download (a report or a data export), call
+`POST /v1/sessions/{session_id}/exports` with `{turn_id, block_ids?, format}` where `format` is
+`csv` \| `xlsx` \| `html` \| `md`. Put `exports.create` in the context token. The response is a
+`FileRef` (`origin: generated`); the host downloads bytes with `GET /v1/files/{file_id}/content`
+(same permission re-check as any other file). AlixAI builds the file only from blocks it has already
+verified for that turn — never from model-written file bytes. See
+[conversation-objects.md](../conversation-objects.md) §10a.
+
+SDKs: `client.exports.create(sessionId, { turnId, format, blockIds? })` (TypeScript),
+`client.exports.create(session_id, body)` (Python), `client.Exports().Create(...)` (Go).
+
 ## Spike order
 
 1. Run AlixAI on loopback; `config check` / `providers layers` green for your light setup ([light-external.md](../../operations/guides/light-external.md)).

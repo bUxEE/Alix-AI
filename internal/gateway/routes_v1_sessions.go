@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"sort"
 	"strings"
@@ -150,6 +151,7 @@ func registerV1Sessions(rt *Router, d *Deps) {
 		// Optional: without it a turn that names files is refused, and the rest is unchanged.
 		attach: attachWant(n),
 	}
+	h.archive, _ = Want[TurnBlocksArchive](n)
 	if !n.Ready() {
 		return
 	}
@@ -225,7 +227,9 @@ type sessionsHandler struct {
 	hub     *stream.Hub
 	// attach resolves the files a turn names; nil when no files service is provided.
 	attach AttachModelFiles
-	d      *Deps
+	// archive stores verified BlockEvents for durable export; nil when history is unwired.
+	archive TurnBlocksArchive
+	d       *Deps
 }
 
 // SessionBody is a session as the API reports it. It never carries the scope.
@@ -562,7 +566,8 @@ func (h *sessionsHandler) turn(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, r, err)
 		return
 	}
-	perr := buildTurnEvents(res, terr).publish(turn)
+	plan := buildTurnEvents(res, terr)
+	perr := plan.publish(turn)
 	if perr != nil {
 		// An event the hub refused is not sent and not skipped over: the turn
 		// is failed with an error event and a failed done, at the next numbers.
@@ -571,6 +576,8 @@ func (h *sessionsHandler) turn(w http.ResponseWriter, r *http.Request) {
 		if ferr := turn.Fail(perr); ferr != nil {
 			log.Error("the turn could not be failed cleanly", "turn_id", res.TurnID, "reason", string(stream.ReasonOf(ferr)))
 		}
+	} else {
+		archiveTurnBlocks(r.Context(), h.archive, scope, res.TurnID, plan.export, log)
 	}
 	frames, err := turnEventsFrames(r.Context(), turn)
 	if err != nil {
@@ -678,6 +685,8 @@ type turnEventsPlan struct {
 	leading []turnEventsDraft
 	text    string
 	done    turnEventsDraft
+	// export is the verified BlockEvent payloads, in stream order, for durable history.
+	export []conversation.RichBlock
 }
 
 // publish puts the plan into the turn, numbering each event from the turn's
@@ -738,11 +747,13 @@ func buildTurnEvents(res dialogue.Result, turnErr error) turnEventsPlan {
 			return conversation.PreparedActionEvent{TurnID: turnID, Seq: seq, PreparedAction: *pa}
 		})
 		if pa.Confirmation.Mode != act.ConfirmationRequirementModeNone && len(pa.Effects) > 0 {
+			blk := conversation.RichBlock{Value: conversation.ConfirmationPanelBlock{
+				PreparationID: pa.PreparationID, Summary: pa.Summary, Effects: pa.Effects, RiskLevel: pa.RiskLevel,
+				ExpiresAt: pa.ExpiresAt, Confirmation: pa.Confirmation,
+			}}
+			p.export = append(p.export, blk)
 			add(func(seq conversation.Seq) conversation.TurnEventValue {
-				return conversation.BlockEvent{TurnID: turnID, Seq: seq, Block: conversation.RichBlock{Value: conversation.ConfirmationPanelBlock{
-					PreparationID: pa.PreparationID, Summary: pa.Summary, Effects: pa.Effects, RiskLevel: pa.RiskLevel,
-					ExpiresAt: pa.ExpiresAt, Confirmation: pa.Confirmation,
-				}}}
+				return conversation.BlockEvent{TurnID: turnID, Seq: seq, Block: blk}
 			})
 		}
 	}
@@ -797,6 +808,17 @@ func buildTurnEvents(res dialogue.Result, turnErr error) turnEventsPlan {
 		return done
 	}
 	return p
+}
+
+// archiveTurnBlocks persists verified BlockEvent payloads for durable export.
+func archiveTurnBlocks(ctx context.Context, archive TurnBlocksArchive, scope contracts.Scope, turnID string, blocks []conversation.RichBlock, log *slog.Logger) {
+	if archive == nil || len(blocks) == 0 {
+		return
+	}
+	if err := archive.PutTurnBlocks(ctx, scope, scope.SessionID, turnID, blocks); err != nil && log != nil {
+		log.Error("verified turn blocks could not be archived for export", "turn_id", turnID,
+			"code", string(contracts.CodeOf(err)))
+	}
 }
 
 // finishReason says why the turn stopped. A failed turn is failed whatever else

@@ -31,6 +31,7 @@ export { default as AlixTableBlock } from "./components/blocks/AlixTableBlock.vu
 export { default as AlixDiagramBlock } from "./components/blocks/AlixDiagramBlock.vue";
 export { default as AlixClarificationChoices } from "./components/blocks/AlixClarificationChoices.vue";
 export { default as AlixMarkdown } from "./components/blocks/AlixMarkdown.vue";
+export { default as AlixExportMenu } from "./components/AlixExportMenu.vue";
 export { default as AlixLoadable } from "./components/common/AlixLoadable.vue";
 export { default as AlixSectionLoader } from "./components/common/AlixSectionLoader.vue";
 export { default as AlixSkeleton } from "./components/common/AlixSkeleton.vue";
@@ -65,6 +66,8 @@ export { BUILT_IN_MESSAGES, createAlixConfig, provideAlix, useAlix } from "./i18
 export type { AlixConfig, AlixConfigOptions, MessageKey, Messages } from "./i18n";
 export { isSafeHref, parseMarkdown } from "./markdown";
 export { buildChart } from "./chart";
+export { runExport, saveExportBlob } from "./export";
+export type { AlixDownload, AlixExporter, ExportFormat, ExportParams, ExportResult } from "./export";
 export { SETTINGS_SECTIONS } from "./settings-fields";
 export type * from "./sdk-types";
 export * from "./voice";

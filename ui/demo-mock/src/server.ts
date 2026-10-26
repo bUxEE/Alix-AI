@@ -6,6 +6,7 @@ import { createThreadStore } from "./agui/threads";
 import { effectiveSettings, initialUserSettings, integrationAudit, providerHealth, ragSources, readyReport, settingsCapabilities, settingsProfiles, USER_SETTINGS_SCHEMA } from "./data/panels";
 import { createFileStore } from "./files/store";
 import { BodyTooLargeError, isRecord, readJson, sendEmpty, sendError, sendJson } from "./http";
+import { createExportsHandler } from "./exports";
 import { createMeMemoryHandler } from "./me-memory";
 import { DEMO_PATHS, DEMO_THREAD_ID } from "./paths";
 import { createDictationHandler, type DictationMode } from "./voice/dictation";
@@ -45,6 +46,7 @@ export const createDemoMock = (options: DemoMockOptions = {}): DemoMock => {
   const files = createFileStore({ maxFileMb: options.maxFileMb ?? 8 });
   const threads = createThreadStore(DEMO_THREAD_ID);
   const meMemory = createMeMemoryHandler();
+  const exports = createExportsHandler();
   const agui = createAguiHandler({ pace, threads, files, meMemory });
   const voice = createVoiceServer({ pace, voice: options.voice ?? "system" });
   const dictation = createDictationHandler(options.dictation ?? "available");
@@ -84,6 +86,7 @@ export const createDemoMock = (options: DemoMockOptions = {}): DemoMock => {
     if (await agui.handle(req, res, path, query)) return true;
     if (await dictation.handle(req, res, path, query)) return true;
     if (await meMemory.handle(req, res, path, query)) return true;
+    if (await exports.handle(req, res, path)) return true;
     if (path.startsWith("/v1/files") && (await files.handle(req, res, path))) return true;
     const get = method === "GET";
     if (get && path === DEMO_PATHS.healthz) sendJson(res, 200, { status: "ok" });

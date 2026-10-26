@@ -101,6 +101,19 @@ export interface AlixMessages {
     close: string;
     attach: string;
     copy: string;
+    fullscreen: string;
+    fullscreenExit: string;
+  };
+  export: {
+    menu: string;
+    answer: string;
+    block: string;
+    csv: string;
+    xlsx: string;
+    html: string;
+    md: string;
+    failed: string;
+    busy: string;
   };
   common: { refresh: string; retry: string; loading: string; save: string; discard: string };
   receipt: {
@@ -296,6 +309,19 @@ export const en: AlixMessages = {
     close: "Close the assistant",
     attach: "Add",
     copy: "Copy",
+    fullscreen: "Full screen",
+    fullscreenExit: "Exit full screen",
+  },
+  export: {
+    menu: "Download",
+    answer: "Download this answer",
+    block: "Download this data",
+    csv: "Download CSV",
+    xlsx: "Download XLSX",
+    html: "Download report (HTML)",
+    md: "Download Markdown",
+    failed: "The download could not be prepared. Try again.",
+    busy: "Preparing download",
   },
   common: { refresh: "Refresh", retry: "Try again", loading: "Loading", save: "Save", discard: "Discard" },
   receipt: {
@@ -494,6 +520,19 @@ export const it: AlixMessages = {
     close: "Chiudi l'assistente",
     attach: "Aggiungi",
     copy: "Copia",
+    fullscreen: "Schermo intero",
+    fullscreenExit: "Esci da schermo intero",
+  },
+  export: {
+    menu: "Scarica",
+    answer: "Scarica questa risposta",
+    block: "Scarica questi dati",
+    csv: "Scarica CSV",
+    xlsx: "Scarica XLSX",
+    html: "Scarica report (HTML)",
+    md: "Scarica Markdown",
+    failed: "Il download non è riuscito. Riprova.",
+    busy: "Preparazione del download",
   },
   common: { refresh: "Aggiorna", retry: "Riprova", loading: "Caricamento", save: "Salva", discard: "Scarta" },
   receipt: {

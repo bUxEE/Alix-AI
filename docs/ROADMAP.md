@@ -26,6 +26,10 @@ and reviewed. See [Project status](../README.md#project-status) and
   reserved-tenant credentials, router resolution).
 - **Long-term memory** ([ADR 0042](decisions/0042-long-term-memory.md)): per principal × tenant × workspace, consent-gated
   proposals, fenced into context (`memory.enabled`, default off); see [integration/memory.md](integration/memory.md).
+- **Downloadable exports**: `POST /v1/sessions/{session_id}/exports` builds CSV, XLSX, HTML or Markdown from a turn's
+  already verified rich blocks (`exports.create`); durable turn-block store; SDK clients and demo-mock route.
+- **UI kit fullscreen and downloads**: Vue/React chat panel fullscreen overlay; opt-in export menu on tables, charts and
+  answers (host exporter; kits never call AlixAI).
 
 ## Verification still owed (from the 1.0 "not done" list)
 

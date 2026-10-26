@@ -27,9 +27,10 @@ export type { Conversation, ConversationOptions, RegenerateOptions, SentInput, T
 export { blocksOfType, citationLink, viewTurn } from "./view.js";
 export type { CitationLink, TurnView } from "./view.js";
 
-// ---- history and settings ----
+// ---- history, settings, exports ----
 export type { HistoryApi, HistoryExport, SegmentOptions } from "./history.js";
 export type { SettingsApi } from "./settings.js";
+export type { ExportCreateInput, ExportsApi } from "./exports/index.js";
 
 // ---- errors ----
 export { AlixAIError, ERROR_CODES, isAlixAIError, isErrorCode, isRetryableCode } from "./errors.js";
@@ -45,7 +46,7 @@ export type * from "./api-types.js";
 // ---- generated types (src/gen, from schemas/): the most used ones flat, all of them under `types` ----
 export type { ErrorCode } from "./gen/common/index.js";
 export type { Error as ErrorBody, Scope } from "./gen/common/index.js";
-export type { FileRef, TaskProposal } from "./gen/conversation/index.js";
+export type { ExportRequest, ExportRequestFormat, FileRef, TaskProposal } from "./gen/conversation/index.js";
 export type {
   ActionReceipt,
   PreparedAction,
@@ -81,4 +82,5 @@ export * as providers from "./providers/index.js";
 export * as decision from "./decision/index.js";
 export * as me from "./me/index.js";
 export * as memory from "./memory/index.js";
+export * as exports from "./exports/index.js";
 

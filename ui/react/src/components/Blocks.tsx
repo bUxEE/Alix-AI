@@ -2,21 +2,45 @@ import { useId, useState } from "react";
 import type { CSSProperties, ReactElement } from "react";
 import { formatCanonicalValue } from "@alixai/copilotkit-adapter";
 import type { AlixAIBlock, AlixAIProgress } from "@alixai/copilotkit-adapter";
+import { useAlixExports } from "../exports-context.js";
 import { formatNumber, useAlixIntl, useAlixText } from "../i18n/context.js";
+import { AlixExportMenu } from "./ExportMenu.js";
 
 // The validated blocks AlixAI sends, drawn with the kit's tokens. Every value is rendered as text, so nothing in a payload
 // can become markup; a diagram is shown as its source and a chart is data, never code. Each block is data in, events out.
+
+const BlockExport = ({ blockId, turnId }: { blockId: string; turnId: string }): ReactElement | null => {
+  const exports = useAlixExports();
+  const text = useAlixText().export;
+  if (!exports.enabled || exports.exporter === undefined || exports.sessionId === "") return null;
+  return (
+    <div className="alix-block-export">
+      <AlixExportMenu
+        exporter={exports.exporter}
+        {...(exports.download !== undefined && { download: exports.download })}
+        label={text.block}
+        formats={["csv", "xlsx"]}
+        params={{ sessionId: exports.sessionId, turnId, blockIds: [blockId] }}
+      />
+    </div>
+  );
+};
 
 // ---- table ----
 
 export interface AlixTableBlockProps {
   block: AlixAIBlock<"table">;
+  /** Activity / message id used as the block id for host exports. */
+  blockId?: string;
+  /** Turn id for host exports (defaults to blockId). */
+  turnId?: string;
 }
 
-export const AlixTableBlock = ({ block }: AlixTableBlockProps): ReactElement => {
+export const AlixTableBlock = ({ block, blockId, turnId }: AlixTableBlockProps): ReactElement => {
   const intl = useAlixIntl();
   const text = intl.messages.table;
   const captionId = useId();
+  const exportId = blockId ?? "table";
   const cell = (value: string | number | boolean | null, kind: string | undefined): string => {
     if (value === null) return "";
     if (typeof value === "boolean") return value ? text.yes : text.no;
@@ -24,50 +48,53 @@ export const AlixTableBlock = ({ block }: AlixTableBlockProps): ReactElement => 
     return String(value);
   };
   return (
-    <figure className="alix-table" data-alixai="table">
-      {block.caption !== undefined && (
-        <figcaption id={captionId} className="alix-table__caption">
-          {block.caption}
-        </figcaption>
-      )}
-      <div
-        className="alix-table__scroll"
-        role="region"
-        tabIndex={0}
-        {...(block.caption !== undefined ? { "aria-labelledby": captionId } : { "aria-label": block.columns.map((column) => column.label).join(", ") })}
-      >
-        <table>
-          <thead>
-            <tr>
-              {block.columns.map((column) => (
-                <th key={column.key} scope="col" {...(column.kind !== undefined && { "data-kind": column.kind })}>
-                  {column.label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {block.rows.length === 0 && (
+    <div className="alix-block-with-export">
+      <BlockExport blockId={exportId} turnId={turnId ?? exportId} />
+      <figure className="alix-table" data-alixai="table">
+        {block.caption !== undefined && (
+          <figcaption id={captionId} className="alix-table__caption">
+            {block.caption}
+          </figcaption>
+        )}
+        <div
+          className="alix-table__scroll"
+          role="region"
+          tabIndex={0}
+          {...(block.caption !== undefined ? { "aria-labelledby": captionId } : { "aria-label": block.columns.map((column) => column.label).join(", ") })}
+        >
+          <table>
+            <thead>
               <tr>
-                <td colSpan={Math.max(1, block.columns.length)}>{text.empty}</td>
+                {block.columns.map((column) => (
+                  <th key={column.key} scope="col" {...(column.kind !== undefined && { "data-kind": column.kind })}>
+                    {column.label}
+                  </th>
+                ))}
               </tr>
-            )}
-            {block.rows.map((row, rowIndex) => (
-              <tr key={rowIndex}>
-                {row.map((value, cellIndex) => {
-                  const kind = block.columns[cellIndex]?.kind;
-                  return (
-                    <td key={cellIndex} {...(kind !== undefined && { "data-kind": kind })}>
-                      {cell(value, kind)}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </figure>
+            </thead>
+            <tbody>
+              {block.rows.length === 0 && (
+                <tr>
+                  <td colSpan={Math.max(1, block.columns.length)}>{text.empty}</td>
+                </tr>
+              )}
+              {block.rows.map((row, rowIndex) => (
+                <tr key={rowIndex}>
+                  {row.map((value, cellIndex) => {
+                    const kind = block.columns[cellIndex]?.kind;
+                    return (
+                      <td key={cellIndex} {...(kind !== undefined && { "data-kind": kind })}>
+                        {cell(value, kind)}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </figure>
+    </div>
   );
 };
 
@@ -75,6 +102,8 @@ export const AlixTableBlock = ({ block }: AlixTableBlockProps): ReactElement => 
 
 export interface AlixChartBlockProps {
   block: AlixAIBlock<"chart">;
+  blockId?: string;
+  turnId?: string;
 }
 
 const W = 320;
@@ -99,11 +128,12 @@ const arcPath = (cx: number, cy: number, r: number, from: number, to: number): s
  * A chart block: bar, line, area, point or pie, drawn from the declarative data with the theme's chart colours. The
  * description is the accessible name of the drawing and the same data is always available as a table.
  */
-export const AlixChartBlock = ({ block }: AlixChartBlockProps): ReactElement => {
+export const AlixChartBlock = ({ block, blockId, turnId }: AlixChartBlockProps): ReactElement => {
   const intl = useAlixIntl();
   const text = intl.messages.chart;
   const [open, setOpen] = useState(false);
   const dataId = useId();
+  const exportId = blockId ?? "chart";
   const { x, y, color, theta } = block.encoding;
   const keys = Array.from(new Set(block.data.flatMap((record) => Object.keys(record))));
 
@@ -211,6 +241,8 @@ export const AlixChartBlock = ({ block }: AlixChartBlockProps): ReactElement => 
   }
 
   return (
+    <div className="alix-block-with-export">
+      <BlockExport blockId={exportId} turnId={turnId ?? exportId} />
     <figure className="alix-chart" data-alixai="chart" data-mark={block.mark} aria-label={block.title ?? block.description}>
       {block.title !== undefined && <figcaption className="alix-chart__title">{block.title}</figcaption>}
       <p className="alix-chart__description">{block.description}</p>
@@ -259,6 +291,7 @@ export const AlixChartBlock = ({ block }: AlixChartBlockProps): ReactElement => 
         </div>
       </div>
     </figure>
+    </div>
   );
 };
 

@@ -170,7 +170,7 @@ GZIP = gzip.compress(b"a package")
 def test_every_answer_of_the_fake_server_conforms_to_the_document_across_all_operations(spec: Spec) -> None:
     fake = FakeAlixAIServer()
     watch = Conformance(spec, fake)
-    scopes = ["demo.lookup", "demo.book", "demo.close_account", "applications.register", DECISION_STATUS_CAPABILITY]
+    scopes = ["demo.lookup", "demo.book", "demo.close_account", "applications.register", DECISION_STATUS_CAPABILITY, "exports.create"]
     client = AlixAIClient(fake.base_url, fake.token_provider("ses-1", capability_scopes=scopes), http_client=httpx.Client(transport=httpx.MockTransport(watch.handler)))
     other = AlixAIClient(fake.base_url, fake.token_provider("ses-9"), http_client=httpx.Client(transport=httpx.MockTransport(watch.handler)))
 
@@ -317,6 +317,9 @@ def test_every_answer_of_the_fake_server_conforms_to_the_document_across_all_ope
     client.memory.confirm(mid)
     client.memory.reject(mid)
     client.memory.delete(mid)
+    exported = client.exports.create("ses-1", {"turn_id": "trn_01ARZ3NDEKTSV4RRFFQ69G5FAV", "format": "html"})
+    assert exported.origin == "generated"
+    swallow(lambda: client.exports.create("ses-1", {"turn_id": "trn_01ARZ3NDEKTSV4RRFFQ69G5FA0", "format": "csv"}))  # 404
 
     # failure paths: scope, validation, authentication, availability, quarantine, ended session
     swallow(lambda: client.get_session("ses-9"))  # scope_violation

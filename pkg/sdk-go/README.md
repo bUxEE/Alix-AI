@@ -23,6 +23,7 @@ is the core in the same repository commit. The changelog is the last section of 
 | Dictation (record-to-text) | Complete (1.1.0): `client.Dictations().Capabilities` / `Create` |
 | Per-principal LLM account (ADR 0041) | Complete (1.2.0): `client.Me()` (Catalog, LLM, PutRole/DeleteRole, SubmitCredential, billing ack, OAuth start). SubmitCredential is **host-server only** |
 | Long-term memory (ADR 0042) | Complete (1.2.0): `client.Memory()` (List/Create/Patch/Delete/Confirm/Reject) |
+| Downloadable exports | Complete (1.2.0): `client.Exports().Create` (`POST /v1/sessions/{session_id}/exports`, capability `exports.create`) |
 | Providers, modes, budgets (External provider mode) | Complete for the providers and OAuth operations (X-14): `client.Providers()`. **Opt-in and off by default**; a deployment without it answers `unavailable` |
 | Decision status | Read-only (D-10): `client.Decision().Status`. Advisory information, never an authorisation |
 | AG-UI proxy for CopilotKit and AG-UI frontends | Complete (M3-27): package `agui`. CopilotKit is not a dependency |
@@ -190,7 +191,7 @@ suite; `contract_test.go` and `spec_test.go` hold it to the OpenAPI document.
 
 ### 1.2.0 — 2026-10-26
 
-**Added.** Per-principal LLM account (`client.Me()`) and long-term memory (`client.Memory()`) for ADR 0041 / 0042; fake-server routes in `sdktest`. `Me().SubmitCredential` is host-server only — never call it from browser code. Upgrade before a core that emits `memory_proposal` turn events. Dev cores report `1.2.0-dev`.
+**Added.** Per-principal LLM account (`client.Me()`) and long-term memory (`client.Memory()`) for ADR 0041 / 0042; downloadable exports (`client.Exports().Create`) from verified turn blocks; fake-server routes in `sdktest`. `Me().SubmitCredential` is host-server only — never call it from browser code. Upgrade before a core that emits `memory_proposal` turn events. Dev cores report `1.2.0-dev`.
 
 ### 1.1.0 — 2026-10-26
 

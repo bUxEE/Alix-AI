@@ -1,0 +1,91 @@
+# Downloadable files generated from a turn's verified rich blocks (release 1.2.0).
+# Implemented by internal/gateway/routes_v1_exports.go over internal/exports.
+#
+# The host asks for a format; AlixAI re-reads blocks it has already verified for that turn
+# (never model-written file bytes, never raw HTML/JS from the model) and stores the result
+# as an OriginGenerated FileRef. Download is GET /v1/files/{file_id}/content (permission
+# re-checked). Needs `exports.create` in the context token.
+paths:
+  /v1/sessions/{session_id}/exports:
+    parameters:
+      - $ref: '#/components/parameters/ExportSessionId'
+    post:
+      operationId: createExport
+      tags: [exports]
+      summary: Generate a downloadable file from a turn's verified blocks
+      description: |
+        Produces a file from the verified rich blocks of one turn of the caller's session and
+        returns its `FileRef` (`origin: generated`). The session id must be the token's.
+        The turn must resolve in the caller's scope (same principal, tenant and workspace);
+        another scope's turn, a missing turn and an expired stream window are all `not_found`
+        (never an oracle for turn ids).
+
+        `format` is `csv`, `xlsx`, `html` or `md`. `csv` and `xlsx` need at least one table or
+        chart-data block in the selection (`validation_failed` otherwise). `html` and `md`
+        take any verified blocks. Optional `block_ids` select a subset (AG-UI activity ids
+        `act_<turn>_bN` or the 1-based block index); absent means every verified block of the
+        turn. An unknown block id is `not_found`. A result over the configured size limits is
+        `resource_exhausted`.
+
+        Needs `exports.create` in the context token. The export is audited (ids, format and
+        size only — never block content).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportRequest'
+      responses:
+        '201':
+          description: The generated file's reference.
+          headers:
+            Location:
+              description: The path of the new reference (`/v1/files/{file_id}`).
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '../../conversation/file-ref.schema.json'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '404':
+          description: |
+            The turn or a named block is not in the caller's scope (`not_found`). Another
+            principal's or tenant's turn is the same answer.
+          content:
+            application/json:
+              schema:
+                $ref: ../openapi.yaml#/components/schemas/Error
+        '413':
+          $ref: ../openapi.yaml#/components/responses/PayloadTooLarge
+        '415':
+          $ref: ../openapi.yaml#/components/responses/UnsupportedMediaType
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+        '507':
+          description: |
+            The generated file would exceed configured export limits or the tenant's file
+            quota (`resource_exhausted`).
+          content:
+            application/json:
+              schema:
+                $ref: ../openapi.yaml#/components/schemas/Error
+
+components:
+  parameters:
+    ExportSessionId:
+      name: session_id
+      in: path
+      required: true
+      description: The session id the context token carries. Any other value is `scope_violation`.
+      schema:
+        type: string
+        pattern: '^[A-Za-z0-9_.-]{1,128}$'
+  schemas:
+    ExportRequest:
+      $ref: ../../conversation/export-request.schema.json

@@ -22,5 +22,6 @@ export default defineConfig({
     server: { deps: { inline: [/@copilotkit\/(?!license-verifier)/] } },
     testTimeout: 30000,
     hookTimeout: 30000,
+    maxWorkers: 2,
   },
 });

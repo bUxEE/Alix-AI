@@ -6,3 +6,6 @@
 *.pdf binary
 *.docx binary
 *.zip binary
+
+# Export golden fixtures: CSV is RFC 4180 (CRLF); all compared as exact bytes.
+internal/exports/testdata/** -text

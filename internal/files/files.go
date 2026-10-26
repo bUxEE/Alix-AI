@@ -225,6 +225,11 @@ func (s *Service) Put(ctx context.Context, scope contracts.Scope, in PutInput) (
 		return conversation.FileRef{}, invalid("mime_not_allowed", "this attachment policy does not accept that file type").
 			WithDetails("declared", declared)
 	}
+	// HTML is never an upload (or a host Put): only PutGenerated may store it.
+	if declared == "text/html" {
+		return conversation.FileRef{}, invalid("mime_not_allowed", "this attachment policy does not accept that file type").
+			WithDetails("declared", declared)
+	}
 	if treatment == TreatmentRAGSource && s.rag == nil {
 		return conversation.FileRef{}, contracts.New(contracts.ErrUnavailable, "no RAG ingestion is available to register a source").
 			WithDetails("reason", "rag_unavailable")

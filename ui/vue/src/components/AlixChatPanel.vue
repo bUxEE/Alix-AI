@@ -3,11 +3,14 @@ import { computed, nextTick, onMounted, ref, watch } from "vue";
 import type { voice } from "@alixai/sdk";
 import type { AguiClient } from "../agui/client";
 import type { AlixAttachment, AlixUiCall, ChatItem, ConversationSummary } from "../agui/types";
+import { useBodyScrollLock } from "../composables/useBodyScrollLock";
 import { useOnline } from "../composables/useBrowser";
+import { useFocusTrap } from "../composables/useFocusTrap";
 import { useAlixChat, type AlixChat } from "../composables/useAlixChat";
 import { useAttachmentQueue, type AttachmentQueue } from "../composables/useAttachmentQueue";
 import AlixDictationButton from "../dictation/AlixDictationButton.vue";
 import { insertAtCaret, type VoiceModeOption } from "../dictation";
+import type { AlixDownload, AlixExporter } from "../export";
 import { useAlix } from "../i18n";
 import type { Citation, DiagramBlock, PermittedAction } from "../sdk-types";
 import AlixVoiceButton from "../voice/AlixVoiceButton.vue";
@@ -61,6 +64,20 @@ const props = withDefaults(
     onMemoryConfirm?: (id: string) => void | Promise<void>;
     /** Host rejects a proposed memory id (calls POST /v1/memory/{id}/reject). */
     onMemoryReject?: (id: string) => void | Promise<void>;
+    /**
+     * Controlled fullscreen. Omit for uncontrolled (internal state). Use with `v-model:fullscreen`.
+     * Default behaviour when unbound: not fullscreen.
+     */
+    fullscreen?: boolean;
+    /**
+     * When true, show download menus on table/chart blocks and assistant answers.
+     * Default false (1.1 compatibility). Requires `exporter`.
+     */
+    exports?: boolean;
+    /** Host creates an export file (POST /v1/sessions/.../exports). The kit never calls AlixAI. */
+    exporter?: AlixExporter;
+    /** Host downloads a file id the exporter returned (GET /v1/files/{id}/content). */
+    download?: AlixDownload;
   }>(),
   {
     client: undefined,
@@ -82,6 +99,10 @@ const props = withDefaults(
     memory: false,
     onMemoryConfirm: undefined,
     onMemoryReject: undefined,
+    fullscreen: undefined,
+    exports: false,
+    exporter: undefined,
+    download: undefined,
   },
 );
 
@@ -96,6 +117,7 @@ const emit = defineEmits<{
   "voice-start": [];
   "voice-stop": [];
   "voice-cancel": [];
+  "update:fullscreen": [value: boolean];
 }>();
 
 const { t } = useAlix();
@@ -143,12 +165,38 @@ const queue: AttachmentQueue | undefined = props.uploader === undefined ? undefi
 
 const draft = ref("");
 const showList = ref(false);
+const localFullscreen = ref(false);
+const panelRoot = ref<HTMLElement | null>(null);
+const fullscreenToggle = ref<HTMLElement | null>(null);
 const composer = ref<{
   focus: () => void;
   selectionStart: () => number;
   selectionEnd: () => number;
   setSelection: (start: number, end?: number) => void;
 } | null>(null);
+
+const isFullscreen = computed(() => props.fullscreen ?? localFullscreen.value);
+const setFullscreen = (value: boolean): void => {
+  localFullscreen.value = value;
+  emit("update:fullscreen", value);
+};
+const toggleFullscreen = (): void => setFullscreen(!isFullscreen.value);
+useBodyScrollLock(isFullscreen);
+useFocusTrap(panelRoot, isFullscreen, fullscreenToggle);
+
+const canExport = computed(() => props.exports === true && props.exporter !== undefined);
+const sessionId = computed(() => props.threadId ?? chat.state.threadId ?? "");
+
+const onFullscreenKeydown = (event: KeyboardEvent): void => {
+  if (!isFullscreen.value || event.key !== "Escape" || event.defaultPrevented) return;
+  const target = event.target;
+  if (target instanceof Element) {
+    const dialog = target.closest('[role="dialog"][aria-modal="true"]');
+    if (dialog !== null && dialog !== panelRoot.value) return;
+  }
+  event.preventDefault();
+  setFullscreen(false);
+};
 
 const insertDictation = (text: string): void => {
   const start = composer.value?.selectionStart() ?? draft.value.length;
@@ -243,10 +291,20 @@ defineExpose({ chat });
 </script>
 
 <template>
-  <section
-    :aria-label="title ?? t('chat.title')"
-    class="alix-root alix-card alix-d-flex alix-flex-column alix-h-100 alix-min-h-0 alix-overflow-hidden"
+  <Teleport
+    :disabled="!isFullscreen"
+    to="body"
   >
+    <section
+      :aria-label="title ?? t('chat.title')"
+      :aria-modal="isFullscreen ? 'true' : undefined"
+      :class="{ 'alix-chat-fullscreen': isFullscreen }"
+      :role="isFullscreen ? 'dialog' : undefined"
+      :tabindex="isFullscreen ? -1 : undefined"
+      ref="panelRoot"
+      class="alix-root alix-card alix-d-flex alix-flex-column alix-h-100 alix-min-h-0 alix-overflow-hidden"
+      @keydown="onFullscreenKeydown"
+    >
     <header class="alix-d-flex alix-align-center alix-justify-between alix-ga-2 alix-px-4 alix-py-3">
       <div class="alix-d-flex alix-align-center alix-ga-2 alix-min-w-0">
         <button
@@ -265,7 +323,19 @@ defineExpose({ chat });
           </h2>
         </slot>
       </div>
-      <slot name="header-actions" />
+      <div class="alix-d-flex alix-align-center alix-ga-1 alix-flex-shrink-0">
+        <slot name="header-actions" />
+        <button
+          :aria-label="isFullscreen ? t('chat.fullscreenExit') : t('chat.fullscreen')"
+          :aria-pressed="isFullscreen"
+          ref="fullscreenToggle"
+          class="alix-btn alix-btn-quiet alix-btn-icon"
+          type="button"
+          @click="toggleFullscreen"
+        >
+          <AlixIcon :name="isFullscreen ? 'minimize' : 'maximize'" />
+        </button>
+      </div>
     </header>
     <p
       v-if="!online"
@@ -318,9 +388,13 @@ defineExpose({ chat });
         </template>
         <AlixMessageStream
           :citation-display="citationDisplay"
+          :download="download"
+          :exporter="exporter"
+          :exports="canExport"
           :items="chat.items.value"
           :links="links"
           :running="chat.running.value"
+          :session-id="sessionId"
           @action="onAction"
           @approve="chat.approve($event)"
           @choose="choose"
@@ -437,7 +511,8 @@ defineExpose({ chat });
         </template>
       </AlixAttachmentComposer>
     </div>
-  </section>
+    </section>
+  </Teleport>
 </template>
 
 <style scoped lang="scss">
@@ -445,6 +520,27 @@ defineExpose({ chat });
 .alix-conversations {
   width: 260px;
   border-inline-end: 1px solid var(--alix-border);
+}
+
+// Fullscreen: same panel instance, moved to body. Safe-area inset keeps controls clear of notches; reduced-motion
+// collapses the enter duration through the token.
+.alix-chat-fullscreen {
+  position: fixed;
+  inset: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  z-index: 40;
+  width: auto;
+  height: auto;
+  max-height: 100dvh;
+  border-radius: 0;
+  outline: none;
+  animation: alix-fullscreen-in var(--alix-dur-base) var(--alix-ease-out) both;
+}
+
+@keyframes alix-fullscreen-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
 }
 
 // The share done of the running stage: a thin track whose fill grows from the start edge. Only the transform moves.

@@ -3,6 +3,8 @@
 // keeps its own table (src/rag/operations.ts) and the transport reads both through `operationSpec`. test/openapi-contract reads the
 // OpenAPI document and fails when a row here and the document disagree.
 
+import { EXPORTS_OPERATIONS } from "./exports/operations.js";
+import type { ExportsOperationId } from "./exports/operations.js";
 import { ME_OPERATIONS } from "./me/operations.js";
 import type { MeOperationId } from "./me/operations.js";
 import { MEMORY_OPERATIONS } from "./memory/operations.js";
@@ -73,6 +75,7 @@ export const OPERATIONS = {
   getSettingsProviderHealth: { method: "GET", path: "/v1/settings/providers", authenticated: true },
   ...areaOps(ME_OPERATIONS),
   ...areaOps(MEMORY_OPERATIONS),
+  ...areaOps(EXPORTS_OPERATIONS),
 } as const satisfies Record<string, OperationSpec>;
 
 /** The operations the fake server implements: everything but the RAG area, which has its own table. */
@@ -86,7 +89,7 @@ export const operationSpec = (operation: OperationId): OperationSpec =>
   operation in OPERATIONS ? OPERATIONS[operation as CoreOperationId] : RAG_OPERATIONS[operation as RagOperationId];
 
 /** Re-export area ids so callers can narrow without importing the area modules. */
-export type { MeOperationId, MemoryOperationId };
+export type { ExportsOperationId, MeOperationId, MemoryOperationId };
 
 /** Whether sending the operation again is always safe: a read, or a POST that only reads. */
 export const isSafeToRepeat = (operation: OperationId): boolean => {

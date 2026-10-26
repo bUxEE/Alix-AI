@@ -130,6 +130,7 @@ func registerV1AGUI(rt *Router, d *Deps) {
 	h.uiTools, _ = Want[dialogue.UIToolRegistry](n)
 	h.files, _ = Want[FilesService](n)
 	h.history, _ = Want[*history.Service](n)
+	h.archive, _ = Want[TurnBlocksArchive](n)
 	if h.runs, _ = Want[*AGUIRuns](n); h.runs == nil {
 		h.runs = NewAGUIRuns(d.Clock)
 	}
@@ -157,6 +158,7 @@ type aguiHandler struct {
 	uiTools dialogue.UIToolRegistry
 	files   FilesService
 	history *history.Service
+	archive TurnBlocksArchive
 	runs    *AGUIRuns
 	d       *Deps
 }
@@ -488,13 +490,16 @@ func (h *aguiHandler) run(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, r, err)
 		return
 	}
-	perr := buildTurnEvents(res, terr).publish(turn)
+	plan := buildTurnEvents(res, terr)
+	perr := plan.publish(turn)
 	if perr != nil {
 		log.Error("a turn event of the run was refused; the turn was failed", "turn_id", res.TurnID,
 			"reason", string(stream.ReasonOf(perr)), "code", string(contracts.CodeOf(perr)))
 		if ferr := turn.Fail(perr); ferr != nil {
 			log.Error("the turn could not be failed cleanly", "turn_id", res.TurnID, "reason", string(stream.ReasonOf(ferr)))
 		}
+	} else {
+		archiveTurnBlocks(ctx, h.archive, scope, res.TurnID, plan.export, log)
 	}
 	frames, err := turnEventsFrames(ctx, turn)
 	if err != nil {

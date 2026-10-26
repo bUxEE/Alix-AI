@@ -3,7 +3,7 @@
 All notable changes to this package. The format follows [Keep a Changelog](https://keepachangelog.com/); versions follow semantic versioning once 1.0.0
 ships, with the rules of [compatibility.md](../../docs/policies/compatibility.md).
 
-## 1.2.0 � 2026-10-26
+## 1.2.0 — 2026-10-26
 
 ### Added
 
@@ -11,6 +11,7 @@ ships, with the rules of [compatibility.md](../../docs/policies/compatibility.md
 - **Host only:** `submit_credential` submits a write-only key. Call it from the host server, never from browser code.
 - Migration note: upgrade the SDK before a core that emits `memory_proposal` turn events.
 - Core (1.2): `/v1/me/…` and `GET /v1/providers/catalog` answer when external mode is enabled; otherwise `unavailable` / `llm_not_configured`. Memory routes answer when `memory.enabled` is true.
+- `client.exports.create(session_id, {turn_id, format, block_ids?})` → `FileRef` (`origin: generated`) for downloadable files from verified turn blocks (`exports.create`).
 
 ### Notes (core)
 
