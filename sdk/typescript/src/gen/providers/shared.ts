@@ -317,8 +317,9 @@ export type FileID = string;
  *
  * What usage, quotas and prices are counted in. toks_in and toks_out are the model input and
  * output counters (named toks, never tokens: the log redactor matches the substring token in key
- * names). toks_in_cached is the part of toks_in served from a provider cache. audio_seconds_* are
- * seconds of audio; file_bytes_in is bytes of file content; requests counts calls.
+ * names). toks_in_cached is the part of toks_in served from a provider cache. characters_in counts
+ * input characters for character-priced speech (ADR 0043). audio_seconds_* are seconds of audio;
+ * file_bytes_in is bytes of file content; requests counts calls.
  *
  * Only the values listed in the schema are valid.
  */
@@ -331,6 +332,7 @@ export type MeterUnit =
   | "audio_seconds_in"
   | "audio_seconds_out"
   | "file_bytes_in"
+  | "characters_in"
   | "requests";
 
 /**
@@ -405,15 +407,16 @@ export type ModelVersion = string;
 /**
  * PrincipalLlmRole mirrors urn:alixai:schema:providers:shared:v1#/$defs/principalLlmRole.
  *
- * Roles a principal may bind to a catalog profile (ADR 0041). TTS is reserved and not bindable
- * here.
+ * Roles a principal may bind to a catalog profile (ADR 0041, extended by ADR 0043 for tts). Each
+ * role resolves independently.
  *
  * Only the values listed in the schema are valid.
  */
 export type PrincipalLlmRole =
   | "conversational_controller"
   | "language_realization"
-  | "stt";
+  | "stt"
+  | "tts";
 
 /**
  * ProfileID mirrors urn:alixai:schema:providers:shared:v1#/$defs/profileId.
@@ -515,6 +518,16 @@ export interface ProviderRef {
    */
   model_version: ModelVersion;
 }
+
+/**
+ * ProviderVoiceID mirrors urn:alixai:schema:providers:shared:v1#/$defs/providerVoiceId.
+ *
+ * A provider's voice identifier for TTS (ADR 0043). Never a path, URL or secret.
+ *
+ * JSON Schema constraints (enforced by schema validation, not by this type): pattern
+ * `^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$`, minLength 1, maxLength 128.
+ */
+export type ProviderVoiceID = string;
 
 /**
  * ReasonCode mirrors urn:alixai:schema:providers:shared:v1#/$defs/reasonCode.
@@ -697,6 +710,16 @@ export type SendCategory =
  * `^src_[0-9A-HJKMNP-TV-Z]{26}$`.
  */
 export type SourceID = string;
+
+/**
+ * SpeechLanguage mirrors urn:alixai:schema:providers:shared:v1#/$defs/speechLanguage.
+ *
+ * A BCP 47 language tag for STT or TTS (ADR 0043), such as en, it or it-IT.
+ *
+ * JSON Schema constraints (enforced by schema validation, not by this type): pattern
+ * `^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$`, maxLength 35.
+ */
+export type SpeechLanguage = string;
 
 /**
  * Subject mirrors urn:alixai:schema:providers:shared:v1#/$defs/subject.

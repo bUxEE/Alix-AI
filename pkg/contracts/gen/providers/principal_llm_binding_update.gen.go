@@ -4,8 +4,8 @@ package providers
 
 // PrincipalLlmBindingUpdate mirrors urn:alixai:schema:providers:principal-llm-binding-update:v1.
 //
-// Body of PUT /v1/me/llm/{role}: choose a catalog profile and optional model (ADR 0041). The role
-// is the path.
+// Body of PUT /v1/me/llm/{role}: choose a catalog profile and optional model (ADR 0041). Optional
+// voice and language for speech roles (ADR 0043). The role is the path.
 type PrincipalLlmBindingUpdate struct {
 	// Authority: host.
 	ProfileID ProfileID `json:"profile_id" alixai:"host"`
@@ -15,4 +15,14 @@ type PrincipalLlmBindingUpdate struct {
 	//
 	// Authority: host.
 	ModelID *ModelID `json:"model_id,omitzero" alixai:"host"`
+
+	// Provider voice id for role tts. Ignored for other roles.
+	//
+	// Authority: host.
+	Voice *ProviderVoiceID `json:"voice,omitzero" alixai:"host"`
+
+	// BCP 47 language for role tts or stt. Ignored for other roles.
+	//
+	// Authority: host.
+	Language *SpeechLanguage `json:"language,omitzero" alixai:"host"`
 }

@@ -162,7 +162,7 @@
         }
       },
       "PrincipalLlmRole": {
-        "description": "conversational_controller, language_realization or stt.",
+        "description": "conversational_controller, language_realization, stt or tts.",
         "in": "path",
         "name": "role",
         "required": true,
@@ -170,7 +170,8 @@
           "enum": [
             "conversational_controller",
             "language_realization",
-            "stt"
+            "stt",
+            "tts"
           ],
           "type": "string"
         }

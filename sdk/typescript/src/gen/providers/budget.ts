@@ -207,6 +207,13 @@ export interface BudgetQuotas {
   file_bytes_in?: BudgetQuota;
 
   /**
+   * Quota of characters_in (ADR 0043).
+   *
+   * @authority host
+   */
+  characters_in?: BudgetQuota;
+
+  /**
    * Quota of requests.
    *
    * @authority host

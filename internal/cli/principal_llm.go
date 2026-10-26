@@ -84,7 +84,7 @@ func (s *principalLLM) Get(ctx context.Context, scope contracts.Scope) (pv.Princ
 
 func (s *principalLLM) PutRole(ctx context.Context, scope contracts.Scope, role pv.PrincipalLlmRole, in gateway.PrincipalLLMBindingInput) (pv.PrincipalLlm, error) {
 	if role == "" || !role.Valid() {
-		return pv.PrincipalLlm{}, contracts.New(contracts.ErrValidationFailed, "role must be conversational_controller, language_realization or stt")
+		return pv.PrincipalLlm{}, contracts.New(contracts.ErrValidationFailed, "role must be conversational_controller, language_realization, stt or tts")
 	}
 	entry, found, err := s.reg.CatalogEntry(ctx, scope, in.ProfileID)
 	if err != nil {
@@ -124,9 +124,16 @@ func (s *principalLLM) PutRole(ctx context.Context, scope contracts.Scope, role 
 	if !acked {
 		return pv.PrincipalLlm{}, contracts.New(contracts.ErrValidationFailed, "the billing notice must be acknowledged before binding")
 	}
-	if err := s.reg.PutPrincipalBinding(ctx, scope, providerreg.PrincipalBinding{
+	bind := providerreg.PrincipalBinding{
 		Role: role, ProfileID: entry.ProfileID, ProviderID: entry.ProviderID, ModelID: model,
-	}); err != nil {
+	}
+	if role == pv.PrincipalLlmRoleTTS && in.Voice != nil && *in.Voice != "" {
+		bind.Voice = in.Voice
+	}
+	if (role == pv.PrincipalLlmRoleTTS || role == pv.PrincipalLlmRoleSTT) && in.Language != nil && *in.Language != "" {
+		bind.Language = in.Language
+	}
+	if err := s.reg.PutPrincipalBinding(ctx, scope, bind); err != nil {
 		return pv.PrincipalLlm{}, err
 	}
 	s.auditBinding(ctx, scope, "bound", role, entry.ProfileID, entry.ProviderID)
@@ -135,7 +142,7 @@ func (s *principalLLM) PutRole(ctx context.Context, scope contracts.Scope, role 
 
 func (s *principalLLM) DeleteRole(ctx context.Context, scope contracts.Scope, role pv.PrincipalLlmRole) (pv.PrincipalLlm, error) {
 	if role == "" || !role.Valid() {
-		return pv.PrincipalLlm{}, contracts.New(contracts.ErrValidationFailed, "role must be conversational_controller, language_realization or stt")
+		return pv.PrincipalLlm{}, contracts.New(contracts.ErrValidationFailed, "role must be conversational_controller, language_realization, stt or tts")
 	}
 	if err := s.reg.DeletePrincipalBinding(ctx, scope, role); err != nil {
 		return pv.PrincipalLlm{}, err
@@ -262,11 +269,13 @@ func (s *principalLLM) account(ctx context.Context, scope contracts.Scope) (pv.P
 		if notice, ok := noticeByProvider[b.ProviderID]; ok {
 			acked, _, _ = s.reg.PrincipalBillingAcked(ctx, scope, b.ProviderID, notice)
 		}
-		out.Bindings = append(out.Bindings, pv.PrincipalLlmBinding{
+		bind := pv.PrincipalLlmBinding{
 			Role: b.Role, ProfileID: b.ProfileID, ProviderID: b.ProviderID, ModelID: b.ModelID,
+			Voice: b.Voice, Language: b.Language,
 			AccountStatus:      pv.PrincipalLlmBindingAccountStatus(st.Status),
 			BillingNoticeAcked: acked, UpdatedAt: common.Timestamp(b.UpdatedAt.Format("2006-01-02T15:04:05.000Z")),
-		})
+		}
+		out.Bindings = append(out.Bindings, bind)
 		if b.UpdatedAt.After(latest) {
 			latest = b.UpdatedAt
 		}

@@ -117,7 +117,7 @@ companies still gate egress — [ADR 0041](../../decisions/0041-per-principal-ll
 3. Principal acknowledges billing (`POST /v1/me/providers/{provider}/billing-notice/ack`), then submits a key
    through the **host server** only (`PUT /v1/me/providers/{provider}/credential`, write-only) or starts
    `POST /v1/me/oauth/{provider}/start` where OAuth is configured.
-4. Principal binds a role (`PUT /v1/me/llm/{role}` with a catalog `profile_id`). TTS is not bindable.
+4. Principal binds a role (`PUT /v1/me/llm/{role}` with a catalog `profile_id`). Roles are `conversational_controller`, `language_realization`, `stt` and `tts` (optional `voice` / `language` on speech roles). Each role may use a different provider.
 5. In External mode the router uses the principal binding, else the deployment default route, else
    `unavailable` with `details.reason` `llm_not_configured`. Tenant egress still applies to that company's data.
 

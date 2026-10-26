@@ -19,5 +19,5 @@ class PrincipalLLMAccount(BaseModel):
     model_config = ConfigDict(extra="forbid", protected_namespaces=())
     principal_id: Identifier
     application_id: Identifier
-    bindings: Annotated[list[PrincipalLLMBinding], Field(max_length=3)]
+    bindings: Annotated[list[PrincipalLLMBinding], Field(max_length=4)]
     updated_at: Timestamp

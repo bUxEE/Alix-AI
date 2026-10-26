@@ -8,7 +8,7 @@ A light deployment keeps every security and stability feature (policy gateway, p
 | --- | --- |
 | LLM (controller + realisation) | local (LocalAI + pinned `inference.models`) or external (OpenAI, Anthropic, Gemini, Meta, OpenRouter, xAI, Moonshot/Kimi) |
 | STT | local (active language pack that provides STT, over LocalAI) or external (when an STT adapter and route are configured) |
-| TTS | local (active pack that provides TTS); routing `tts` to an external profile is **refused** until an adapter registers (`external TTS is not available yet (roadmap)`) |
+| TTS | local (active pack that provides TTS) or external (OpenAI, ElevenLabs, Google Cloud TTS, Amazon Polly) when `routing.tts` names a profile and an adapter is registered |
 
 Required setups:
 
@@ -58,7 +58,7 @@ alixai providers layers -config alixai.yaml       # the same three lines alone
 
 `stt` / `tts` print `local (pack <id>)` only when `voice.active_pack` names an approved pack that provides that role. A LocalAI endpoint alone is `none`.
 
-`config check` accepts setups 2 and 3, refuses External enabled with no controller route and no `inference.models` (`no text model available`), and refuses `routing.tts` with the roadmap message unless an adapter has called `RegisterExternalTTSAdapter`.
+`config check` accepts setups 2 and 3, refuses External enabled with no controller route and no `inference.models` (`no text model available`), and refuses `routing.tts` unless an adapter has called `RegisterExternalTTSAdapter` (the composition root does this when TTS adapters are linked).
 
 ## Setup 1 — everything local (default)
 
@@ -134,8 +134,11 @@ external_providers:
       profiles: [pprf_...]
     stt:                              # openai | google-stt | deepgram | elevenlabs profile
       profiles: [pprf_...]            # role stt; set audio_seconds_in; enable egress audio
-    # tts: refused today (roadmap)
+    tts:                              # openai | elevenlabs | google-tts | polly — may differ from stt/controller
+      profiles: [pprf_...]            # role tts; characters_in (or legacy toks_in) price required; attested text only
 ```
+
+Each layer may use a **different** provider (or the same one with one shared credential). Example: controller OpenAI, STT Deepgram, TTS ElevenLabs — three profiles under `routing`, three credentials (or one OpenAI key if chat and TTS both use OpenAI).
 
 After register / qualify / credential / budget: enable egress `audio` at deployment, application, tenant and workspace via `PUT /v1/providers/egress-policy` with `audio: { "enabled": true, "max_class": "internal" }` (or higher if `dictation.audio_class` is `confidential`; section 4 of [External mode](../external-mode.md)), set mode External at every level, then `GET /v1/dictations/capabilities` should report `available: true` and `locality: external`.
 
@@ -156,7 +159,7 @@ The largest light-mode setup uses about **1.5 GB at peak**, so 4 vCPU / 8 GB is 
 
 ### Not light mode: local voice models
 
-Local dictation STT (Whisper tiny, ≈ 200 MiB) still fits the **4 vCPU / 8 GB** machine. Local TTS for spoken answers (Piper/Kokoro, +350–800 MiB) and the larger local STT models (Parakeet v3, Whisper large-v3-turbo) need more cores for low latency → **8 vCPU, 16 GB** recommended. External TTS is on the roadmap and would keep spoken answers within the light-mode machine.
+Local dictation STT (Whisper tiny, ≈ 200 MiB) still fits the **4 vCPU / 8 GB** machine. Local TTS for spoken answers (Piper/Kokoro, +350–800 MiB) and the larger local STT models (Parakeet v3, Whisper large-v3-turbo) need more cores for low latency → **8 vCPU, 16 GB** recommended. External TTS (ADR 0043) keeps spoken answers within the light-mode machine when `routing.tts` is set.
 
 Notes (light and not-light rows):
 

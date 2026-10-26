@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/buxee/alix-ai/internal/providerbudget"
 	"github.com/buxee/alix-ai/internal/providers"
@@ -102,9 +103,10 @@ type ttsGate struct {
 // admitted. The order is fixed: modality gate, then verified text, then the data-egress guard, then the
 // provider budget, then the provider. A refusal at any step means the provider is never called.
 //
-// The reservation is the text (toks_in) and the request, settled with them when the stream ends. The length of
-// the audio that comes back is not known before the call, so a profile that prices audio_seconds_out cannot be
-// reserved for and is refused (ReasonNotEstimable).
+// The reservation is characters_in of the spoken text (ADR 0043) when the profile prices that unit, else
+// toks_in when that unit is priced (legacy profiles), plus the request; settled when the stream ends. A
+// profile with neither price, or one that prices only audio_seconds_out (length unknown before the call),
+// is refused (ReasonNotEstimable) — same rule as STT without audio_seconds_in.
 func NewTTS(s *Service, t Target, inner voice.TTS) voice.TTS {
 	return &ttsGate{s: s, t: t, inner: inner}
 }
@@ -129,7 +131,11 @@ func (g *ttsGate) SynthesizeStream(ctx context.Context, scope contracts.Scope, r
 	if g.t.Profile.Pricing.Prices.AudioSecondsOut != nil {
 		return nil, notEstimable(ModTTS, "the audio a speech call returns has no bound before the call")
 	}
-	h, err := g.s.reserve(ctx, scope, g.t, ModTTS, decision, providerbudget.Units{ToksIn: pv.Counter(providers.EstimateTokens(req.Text)), Requests: 1})
+	units, ok := ttsReserveUnits(g.t.Profile.Pricing, req.Text)
+	if !ok {
+		return nil, notEstimable(ModTTS, "the speech has no price per character or input tok")
+	}
+	h, err := g.s.reserve(ctx, scope, g.t, ModTTS, decision, units)
 	if err != nil {
 		return nil, err
 	}
@@ -143,6 +149,22 @@ func (g *ttsGate) SynthesizeStream(ctx context.Context, scope contracts.Scope, r
 		Modality: ModTTS, Provider: adm.Disclosure.Provider, Model: adm.Disclosure.Model, Allowed: true, Route: "external",
 		BytesSent: int64(len(req.Text)),
 	}, start: start}, nil
+}
+
+// ttsReserveUnits prefers characters_in when the profile prices it (ADR 0043). Otherwise toks_in when
+// that unit is priced (legacy). Neither priced → not estimable (same fail-closed rule as STT).
+func ttsReserveUnits(pricing pv.PriceTable, text string) (providerbudget.Units, bool) {
+	units := providerbudget.Units{Requests: 1}
+	if pricing.Prices.CharactersIn != nil {
+		n := pv.Counter(utf8.RuneCountInString(text))
+		units.CharactersIn = &n
+		return units, true
+	}
+	if pricing.Prices.ToksIn != nil {
+		units.ToksIn = pv.Counter(providers.EstimateTokens(text))
+		return units, true
+	}
+	return units, false
 }
 
 type meteredAudio struct {

@@ -81,6 +81,8 @@ func principalLlmRoleFromReq(role pv.Role) (pv.PrincipalLlmRole, bool) {
 		return pv.PrincipalLlmRoleLanguageRealization, true
 	case pv.RoleSTT:
 		return pv.PrincipalLlmRoleSTT, true
+	case pv.RoleTTS:
+		return pv.PrincipalLlmRoleTTS, true
 	}
 	return "", false
 }

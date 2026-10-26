@@ -25,8 +25,12 @@ type unitAmount struct {
 	n    int64
 }
 
-// unitList returns the nine units of u in a fixed order.
+// unitList returns the metered units of u in a fixed order.
 func unitList(u Units) []unitAmount {
+	chars := int64(0)
+	if u.CharactersIn != nil {
+		chars = int64(*u.CharactersIn)
+	}
 	return []unitAmount{
 		{providers.MeterUnitToksIn, int64(u.ToksIn)},
 		{providers.MeterUnitToksOut, int64(u.ToksOut)},
@@ -36,6 +40,7 @@ func unitList(u Units) []unitAmount {
 		{providers.MeterUnitAudioSecondsIn, int64(u.AudioSecondsIn)},
 		{providers.MeterUnitAudioSecondsOut, int64(u.AudioSecondsOut)},
 		{providers.MeterUnitFileBytesIn, int64(u.FileBytesIn)},
+		{providers.MeterUnitCharactersIn, chars},
 		{providers.MeterUnitRequests, int64(u.Requests)},
 	}
 }
@@ -70,6 +75,8 @@ func price(t providers.PriceTable, u providers.MeterUnit) *providers.PriceTableP
 		return p.AudioSecondsOut
 	case providers.MeterUnitFileBytesIn:
 		return p.FileBytesIn
+	case providers.MeterUnitCharactersIn:
+		return p.CharactersIn
 	case providers.MeterUnitRequests:
 		return p.Requests
 	}
@@ -84,7 +91,8 @@ func validatePrices(t providers.PriceTable) error {
 	for _, u := range []providers.MeterUnit{
 		providers.MeterUnitToksIn, providers.MeterUnitToksOut, providers.MeterUnitToksInCached,
 		providers.MeterUnitImagesIn, providers.MeterUnitImagesOut, providers.MeterUnitAudioSecondsIn,
-		providers.MeterUnitAudioSecondsOut, providers.MeterUnitFileBytesIn, providers.MeterUnitRequests,
+		providers.MeterUnitAudioSecondsOut, providers.MeterUnitFileBytesIn, providers.MeterUnitCharactersIn,
+		providers.MeterUnitRequests,
 	} {
 		p := price(t, u)
 		if p == nil {

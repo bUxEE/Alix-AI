@@ -5,8 +5,8 @@ AlixAI public API (`schemas/api/openapi.yaml`). Documents that have a JSON Schem
 library and one small WebSocket library (`github.com/coder/websocket`). A fake AlixAI server for the tests of a host application is in `pkg/sdk-go/sdktest`, and an
 AG-UI proxy for CopilotKit and AG-UI frontends is in `pkg/sdk-go/agui`.
 
-**Status: 1.2.0.** The contracts this SDK speaks are frozen for v1 (`schemas/_frozen/v1`, checked by `tools/compat`).
-`Version` in this package is `"1.2.0"`. Compatibility and support rules are in
+**Status: 1.3.0.** The contracts this SDK speaks are frozen for v1 (`schemas/_frozen/v1`, checked by `tools/compat`).
+`Version` in this package is `"1.3.0"`. Compatibility and support rules are in
 [compatibility](../../docs/policies/compatibility.md) and [migration and support](../../docs/policies/migration-and-support.md). The version this SDK is tested against
 is the core in the same repository commit. The changelog is the last section of this file.
 
@@ -188,6 +188,10 @@ reaches no application; none of the controller models is activatable yet, so a l
 suite; `contract_test.go` and `spec_test.go` hold it to the OpenAPI document.
 
 ## Changelog
+
+### 1.3.0 — 2026-10-26
+
+**Added.** Principal LLM role `tts` and optional `voice` / `language` on `Me().PutRole` (ADR 0043); meter unit `characters_in`. Core: external TTS adapters and per-role provider choice; browser-URL hardening for CLI OAuth; light External hardware guide. Dev cores report `1.3.0-dev`.
 
 ### 1.2.0 — 2026-10-26
 

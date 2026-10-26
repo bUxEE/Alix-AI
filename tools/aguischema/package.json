@@ -1,6 +1,6 @@
 {
   "name": "aguischema",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "private": true,
   "description": "Vendors the JSON Schemas of the pinned AG-UI release (@ag-ui/core) into schemas/agui. Not part of the pnpm workspace; run with npm.",
   "license": "Apache-2.0",

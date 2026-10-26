@@ -154,6 +154,11 @@ type BudgetQuotas struct {
 	// Authority: host.
 	FileBytesIn *BudgetQuota `json:"file_bytes_in,omitzero" alixai:"host"`
 
+	// Quota of characters_in (ADR 0043).
+	//
+	// Authority: host.
+	CharactersIn *BudgetQuota `json:"characters_in,omitzero" alixai:"host"`
+
 	// Quota of requests.
 	//
 	// Authority: host.

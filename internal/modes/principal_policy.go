@@ -12,9 +12,9 @@ type PrincipalBindingSource interface {
 	PrincipalBindingFor(ctx context.Context, scope contracts.Scope, role pv.PrincipalLlmRole) (profile pv.ProfileID, ok bool, err error)
 }
 
-// PrincipalPolicy prefers the principal's binding for controller, realisation and STT when the
+// PrincipalPolicy prefers the principal's binding for controller, realisation, STT and TTS when the
 // effective mode is External, then the deployment default (inner), then typed llm_not_configured.
-// Local and Hybrid leave the inner policy unchanged. TTS is never principal-bound.
+// Local and Hybrid leave the inner policy unchanged. Each role resolves independently (ADR 0043).
 type PrincipalPolicy struct {
 	Inner    PolicySource
 	Bindings PrincipalBindingSource
@@ -76,6 +76,8 @@ func principalRoleOf(role Role) (pv.PrincipalLlmRole, bool) {
 		return pv.PrincipalLlmRoleLanguageRealization, true
 	case RoleSTT:
 		return pv.PrincipalLlmRoleSTT, true
+	case RoleTTS:
+		return pv.PrincipalLlmRoleTTS, true
 	}
 	return "", false
 }

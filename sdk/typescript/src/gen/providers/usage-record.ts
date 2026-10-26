@@ -223,6 +223,14 @@ export interface UsageRecordLatency {
  */
 export interface UsageRecordMetering {
   /**
+   * Units of characters_in consumed (optional additive meter, ADR 0043). Absent or 0 when
+   * unused.
+   *
+   * @authority alixai
+   */
+  characters_in?: Counter;
+
+  /**
    * Units of toks_in consumed.
    *
    * @authority alixai

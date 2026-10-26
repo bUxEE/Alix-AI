@@ -17,8 +17,9 @@ how to back out. Write it before or with the change, not after.
 
 Numbers 0021-0028 hold the external-provider-mode decisions below, 0029 the decision layer, 0030 and 0031 its
 deployment and default-enable policy (written provisional by D-01, finalised by D-08), 0032-0038 are taken,
-0039 amends voice VAD rules for dictation, 0040 is the Parakeet local-STT provisional, and 0041–0042 are
-per-principal LLM accounts and long-term memory (1.2.0). The next free number is 0043.
+0039 amends voice VAD rules for dictation, 0040 is the Parakeet local-STT provisional, 0041–0042 are
+per-principal LLM accounts and long-term memory (1.2.0), and 0043 is external TTS with per-role provider
+choice (1.3.0). The next free number is 0044.
 
 ## Index
 
@@ -87,5 +88,6 @@ changes Local mode. The architecture they sit in is [external-provider-mode.md](
 | [0038](0038-popup-oauth-and-provider-catalog.md) | Popup OAuth and the provider catalog (SIWC, Google, OpenRouter) | accepted | — | Popup + postMessage + flow poll; SIWC loopback-only; Google operator client; OpenRouter issued key; Anthropic/xAI/Kimi key-only | 1.1.0 |
 | [0041](0041-per-principal-llm-accounts.md) | Per-principal LLM accounts and the provider catalog | accepted | — | Operator catalog (`account_mode: per_principal`); bind per (application, principal); reserved tenant bucket for keys; resolve owner check for all kinds | 1.2.0 |
 | [0042](0042-long-term-memory.md) | Long-term memory (principal × tenant × workspace) | accepted | — | Consent-gated items; TurnEvent `memory_proposal` → AG-UI CUSTOM `alixai.memory_proposal`; no silent writes | 1.2.0 |
+| [0043](0043-external-tts-and-per-role-provider-choice.md) | External TTS and per-role provider choice | accepted | — | OpenAI / ElevenLabs / Google TTS / Polly; attested text only; `characters_in` metering; each role resolves independently | 1.3.0 |
 
 Related: [architecture overview](../architecture/overview.md), [external provider mode](../architecture/external-provider-mode.md) and [module map](../architecture/module-map.md).

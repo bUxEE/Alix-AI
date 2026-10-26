@@ -6,7 +6,7 @@ from typing import Annotated, Literal, Optional, Union
 from alixai.gen.common.ids import Identifier
 from pydantic import BaseModel, ConfigDict, Field
 
-__all__ = ['ProviderId', 'ModelId', 'ModelVersion', 'ProfileId', 'CredentialRefId', 'EgressPolicyId', 'EgressDecisionId', 'EnvelopeId', 'UsageId', 'BudgetId', 'ReservationId', 'ReportId', 'AcknowledgementId', 'FileId', 'SourceId', 'MicroUnits', 'Counter', 'Currency', 'RegionCode', 'Sha256', 'ReasonCode', 'EgressMode', 'EgressLevel', 'DeploymentMode', 'Role', 'AccountMode', 'PrincipalLlmRole', 'ReservedPrincipalCredentialTenant', 'Modality', 'MeterUnit', 'Channel', 'SendCategory', 'BlockedCategory', 'RetentionMode', 'TrainingUse', 'Residency', 'BudgetStatus', 'ProviderErrorKind', 'ProfileLifecycle', 'CredentialKind', 'ConnectionWarning', 'SafeAccount', 'BudgetSubject', 'ModelRef', 'ProviderRef', 'Subject']
+__all__ = ['ProviderId', 'ModelId', 'ModelVersion', 'ProfileId', 'CredentialRefId', 'EgressPolicyId', 'EgressDecisionId', 'EnvelopeId', 'UsageId', 'BudgetId', 'ReservationId', 'ReportId', 'AcknowledgementId', 'FileId', 'SourceId', 'MicroUnits', 'Counter', 'Currency', 'RegionCode', 'Sha256', 'ReasonCode', 'EgressMode', 'EgressLevel', 'DeploymentMode', 'Role', 'AccountMode', 'PrincipalLlmRole', 'ProviderVoiceId', 'SpeechLanguage', 'ReservedPrincipalCredentialTenant', 'Modality', 'MeterUnit', 'Channel', 'SendCategory', 'BlockedCategory', 'RetentionMode', 'TrainingUse', 'Residency', 'BudgetStatus', 'ProviderErrorKind', 'ProfileLifecycle', 'CredentialKind', 'ConnectionWarning', 'SafeAccount', 'BudgetSubject', 'ModelRef', 'ProviderRef', 'Subject']
 
 
 ProviderId = Annotated[str, Field(pattern='^[a-z][a-z0-9_-]{0,31}$')]
@@ -87,7 +87,13 @@ Role = Literal["conversational_controller", "language_realization", "vision", "i
 AccountMode = Literal["tenant", "per_principal", "deployment_local"]
 
 
-PrincipalLlmRole = Literal["conversational_controller", "language_realization", "stt"]
+PrincipalLlmRole = Literal["conversational_controller", "language_realization", "stt", "tts"]
+
+
+ProviderVoiceId = Annotated[str, Field(min_length=1, max_length=128, pattern='^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$')]
+
+
+SpeechLanguage = Annotated[str, Field(max_length=35, pattern='^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$')]
 
 
 ReservedPrincipalCredentialTenant = Literal["alixai-principal-credential"]
@@ -96,7 +102,7 @@ ReservedPrincipalCredentialTenant = Literal["alixai-principal-credential"]
 Modality = Literal["text", "image", "audio", "file"]
 
 
-MeterUnit = Literal["toks_in", "toks_out", "toks_in_cached", "images_in", "images_out", "audio_seconds_in", "audio_seconds_out", "file_bytes_in", "requests"]
+MeterUnit = Literal["toks_in", "toks_out", "toks_in_cached", "images_in", "images_out", "audio_seconds_in", "audio_seconds_out", "file_bytes_in", "characters_in", "requests"]
 
 
 Channel = Literal["interactive", "background"]

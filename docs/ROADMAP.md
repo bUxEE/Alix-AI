@@ -6,13 +6,17 @@ and reviewed. See [Project status](../README.md#project-status) and
 
 ## Local and external layers (LLM, STT, TTS)
 
-- **External TTS adapters** (Amazon Polly, OpenAI, Google Cloud TTS, ElevenLabs) behind the existing `tts`
-  routing role, so each of the three layers (LLM, STT, TTS) can be local or external under the same data-egress
-  and budget rules. Off by default; same posture as other external providers.
 - **Balanced/Performance local STT defaults** after voicebench on real LocalAI
   ([ADR 0040](decisions/0040-parakeet-local-stt.md)): candidates today are `parakeet-stt` and
   `whisper-turbo-stt` (Balanced), plus `whisper-large-v3-stt` (Performance). Lite keeps Whisper tiny (`en-stt`).
   All run on CPU; GPU is optional.
+
+## Shipped in 1.3.0
+
+- **External TTS and per-role provider choice** ([ADR 0043](decisions/0043-external-tts-and-per-role-provider-choice.md)):
+  OpenAI, ElevenLabs, Google Cloud TTS and Amazon Polly behind `routing.tts` / principal `tts` bindings;
+  attested verified text only; `characters_in` metering; each of controller, realisation, STT and TTS may use
+  the same provider or different ones with one credential per (principal or tenant, provider).
 
 ## Provider auth
 

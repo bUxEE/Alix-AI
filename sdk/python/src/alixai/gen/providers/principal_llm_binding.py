@@ -2,9 +2,9 @@
 # Regenerate with `python tools/gen_models.py`; tests/test_gen_drift.py fails when this file is out of date.
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, Optional
 from alixai.gen.common.timestamps import Timestamp
-from alixai.gen.providers.shared import ModelId, PrincipalLlmRole, ProfileId, ProviderId
+from alixai.gen.providers.shared import ModelId, PrincipalLlmRole, ProfileId, ProviderId, ProviderVoiceId, SpeechLanguage
 from pydantic import BaseModel, ConfigDict
 
 __all__ = ['PrincipalLLMBinding']
@@ -13,13 +13,16 @@ __all__ = ['PrincipalLLMBinding']
 class PrincipalLLMBinding(BaseModel):
     """
     One role binding of a principal's LLM account (ADR 0041): catalog profile, optional model
-    override, credential status. Never a secret.
+    override, credential status. Optional voice and language for speech roles (ADR 0043). Never
+    a secret.
     """
     model_config = ConfigDict(extra="forbid", protected_namespaces=())
     role: PrincipalLlmRole
     profile_id: ProfileId
     provider_id: ProviderId
     model_id: ModelId
+    voice: Optional[ProviderVoiceId] = None
+    language: Optional[SpeechLanguage] = None
     account_status: Literal["missing", "pending", "active", "expired", "revoked", "invalid", "quarantined", "reauthorization_required"]
     billing_notice_acked: bool
     updated_at: Timestamp

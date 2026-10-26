@@ -131,6 +131,13 @@ export interface PriceTablePrices {
   file_bytes_in?: PriceTablePrice;
 
   /**
+   * Price of characters_in (character-priced speech, ADR 0043).
+   *
+   * @authority host
+   */
+  characters_in?: PriceTablePrice;
+
+  /**
    * Price of requests.
    *
    * @authority host

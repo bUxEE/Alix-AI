@@ -31,7 +31,7 @@ class ProviderCatalogEntry(BaseModel):
     provider_id: ProviderId
     model_id: ModelId
     model_ids: Optional[Annotated[list[ModelId], Field(max_length=32)]] = None
-    roles: Annotated[list[PrincipalLlmRole], Field(min_length=1, max_length=3)]
+    roles: Annotated[list[PrincipalLlmRole], Field(min_length=1, max_length=4)]
     account_mode: Literal["per_principal"]
     display_name: Annotated[str, Field(min_length=1, max_length=80, pattern='^[^\\x00-\\x1f\\x7f]+$')]
     terms_summary: Annotated[str, Field(min_length=1, max_length=2000)]

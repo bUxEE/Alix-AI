@@ -143,21 +143,22 @@ func TestLightExternalConfigCheckAcceptsPresetsAndRefusesInconsistent(t *testing
 		}
 	})
 
-	t.Run("external TTS is roadmap", func(t *testing.T) {
+	t.Run("external TTS refused when no adapter is registered", func(t *testing.T) {
 		resetSections()
+		externalTTSReady.Store(false)
+		t.Cleanup(func() { RegisterExternalTTSAdapter() })
 		cfg := write("tts.yaml", base+ops+
 			"  routing:\n    controller:\n      profiles: ["+lightExtHintProfile+"]\n    tts:\n      profiles: ["+lightExtHintProfile+"]\n"+
 			"inference:\n  models_dir: "+yamlPath(t.TempDir())+"\n  models: []\n")
 		code, _, errOut := extWireEnvRun(t, "config", "check", "-config", cfg)
-		if code == ExitOK || !strings.Contains(errOut, "external TTS is not available yet (roadmap)") {
-			t.Fatalf("exit %d err=%q, want TTS roadmap refusal", code, errOut)
+		if code == ExitOK || !strings.Contains(errOut, "external TTS adapter is not registered") {
+			t.Fatalf("exit %d err=%q, want TTS adapter refusal", code, errOut)
 		}
 	})
 
 	t.Run("external TTS accepted when an adapter registers", func(t *testing.T) {
 		resetSections()
 		RegisterExternalTTSAdapter()
-		t.Cleanup(func() { externalTTSReady.Store(false) })
 		cfg := write("tts-ok.yaml", base+ops+
 			"  routing:\n    controller:\n      profiles: ["+lightExtHintProfile+"]\n    tts:\n      profiles: ["+lightExtHintProfile+"]\n"+
 			"inference:\n  models_dir: "+yamlPath(t.TempDir())+"\n  models: []\n")

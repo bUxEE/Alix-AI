@@ -1,6 +1,7 @@
-# Per-principal LLM account and catalog (ADR 0041, release 1.2.0). Self-service only: the verified
-# token's principal. Implemented by internal/gateway/routes_v1_me.go over PrincipalLLMService (Wanted;
-# unwired → unavailable). Never returns a secret. Keys arrive through the host server only.
+# Per-principal LLM account and catalog (ADR 0041, release 1.2.0; TTS role and voice/language in
+# 1.3.0 / ADR 0043). Self-service only: the verified token's principal. Implemented by
+# internal/gateway/routes_v1_me.go over PrincipalLLMService (Wanted; unwired → unavailable). Never
+# returns a secret. Keys arrive through the host server only.
 paths:
   /v1/providers/catalog:
     get:
@@ -231,10 +232,10 @@ components:
       name: role
       in: path
       required: true
-      description: conversational_controller, language_realization or stt.
+      description: conversational_controller, language_realization, stt or tts.
       schema:
         type: string
-        enum: [conversational_controller, language_realization, stt]
+        enum: [conversational_controller, language_realization, stt, tts]
     ProviderId:
       name: provider
       in: path

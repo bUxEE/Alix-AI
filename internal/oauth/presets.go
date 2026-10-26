@@ -90,6 +90,29 @@ func Preset(id providers.ProviderID) (ProviderConfig, bool) {
 			},
 			Account: AccountMapping{AccountID: "sub"},
 		}, true
+	case "google-tts":
+		// Cloud Text-to-Speech is a Cloud API; no narrower TTS OAuth scope is documented.
+		scopes := []string{"https://www.googleapis.com/auth/cloud-platform"}
+		return ProviderConfig{
+			ID: id, DisplayName: "Google Cloud Text-to-Speech", OAuthSupported: true,
+			AuthorizationEndpoint: "https://accounts.google.com/o/oauth2/v2/auth",
+			TokenEndpoint:         "https://oauth2.googleapis.com/token",
+			RevocationEndpoint:    "https://oauth2.googleapis.com/revoke",
+			OIDC:                  true, Issuer: "https://accounts.google.com",
+			ClientAuth: ClientAuthPost, RefreshScope: "",
+			ExtraAuthParams: map[string]string{"access_type": "offline"},
+			Loopback:        true, LoopbackPath: "/oauth/callback",
+			Capabilities: map[string][]string{"inference": scopes},
+			Scopes: []ScopeInfo{
+				{Name: "https://www.googleapis.com/auth/cloud-platform", Description: "Google Cloud platform access", DataAccess: "Full access to the Google Cloud project (no narrower Text-to-Speech OAuth scope is documented); use a dedicated project"},
+				{Name: "openid", Description: "OpenID identity", DataAccess: "account identity"},
+			},
+			DataAccess: []string{
+				"cloud-platform grants access to the whole Google Cloud project, not only Text-to-Speech; register a dedicated project for AlixAI.",
+				"Quota and billing follow that Cloud project.",
+			},
+			Account: AccountMapping{AccountID: "sub"},
+		}, true
 	case "openrouter":
 		return ProviderConfig{
 			ID: "openrouter", DisplayName: "OpenRouter", OAuthSupported: true,

@@ -103,6 +103,11 @@
         "requests"
       ],
       "properties": {
+        "characters_in": {
+          "description": "Units of characters_in consumed (optional additive meter, ADR 0043). Absent or 0 when unused.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/counter"
+        },
         "toks_in": {
           "description": "Units of toks_in consumed.",
           "x-alixai-authority": "alixai",

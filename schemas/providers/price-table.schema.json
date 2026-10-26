@@ -76,6 +76,11 @@
           "x-alixai-authority": "host",
           "$ref": "#/$defs/price"
         },
+        "characters_in": {
+          "description": "Price of characters_in (character-priced speech, ADR 0043).",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/price"
+        },
         "requests": {
           "description": "Price of requests.",
           "x-alixai-authority": "host",

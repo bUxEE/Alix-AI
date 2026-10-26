@@ -42,7 +42,7 @@
       "x-alixai-authority": "alixai",
       "type": "array",
       "minItems": 1,
-      "maxItems": 3,
+      "maxItems": 4,
       "uniqueItems": true,
       "items": { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/principalLlmRole" }
     },

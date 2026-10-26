@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:alixai:schema:providers:principal-llm-binding:v1",
   "title": "Principal LLM binding",
-  "description": "One role binding of a principal's LLM account (ADR 0041): catalog profile, optional model override, credential status. Never a secret.",
+  "description": "One role binding of a principal's LLM account (ADR 0041): catalog profile, optional model override, credential status. Optional voice and language for speech roles (ADR 0043). Never a secret.",
   "type": "object",
   "additionalProperties": false,
   "required": ["role", "profile_id", "provider_id", "model_id", "account_status", "billing_notice_acked", "updated_at"],
@@ -22,6 +22,16 @@
     "model_id": {
       "x-alixai-authority": "alixai",
       "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/modelId"
+    },
+    "voice": {
+      "description": "Provider voice id when the binding is for tts.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/providerVoiceId"
+    },
+    "language": {
+      "description": "BCP 47 language when the binding is for tts or stt.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/speechLanguage"
     },
     "account_status": {
       "description": "Whether the principal has an usable credential for this provider. Never a ref id the client can resolve to a secret.",

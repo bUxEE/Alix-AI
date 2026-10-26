@@ -116,6 +116,11 @@
           "x-alixai-authority": "host",
           "$ref": "#/$defs/quota"
         },
+        "characters_in": {
+          "description": "Quota of characters_in (ADR 0043).",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/quota"
+        },
         "requests": {
           "description": "Quota of requests.",
           "x-alixai-authority": "host",

@@ -472,7 +472,7 @@ func (c externalConfig) Validate() error {
 			return contracts.New(contracts.ErrValidationFailed, "external_providers.routing: this role is never routed to an external provider: "+role)
 		}
 		if role == string(modes.RoleTTS) && len(r.Profiles) > 0 && !externalTTSAdapterReady() {
-			return contracts.New(contracts.ErrValidationFailed, "external_providers.routing: external TTS is not available yet (roadmap)")
+			return contracts.New(contracts.ErrValidationFailed, "external_providers.routing: external TTS adapter is not registered")
 		}
 		for _, id := range r.Profiles {
 			if !externalIDRE.MatchString(id) {
@@ -521,12 +521,11 @@ func externalLightTextModelOK() error {
 }
 
 // externalTTSReady is set when an external TTS adapter registers itself so routing
-// tts to a profile is accepted. Empty today: external TTS is roadmap.
+// tts to a profile is accepted (ADR 0043). providers_external_tts.go sets it on init.
 var externalTTSReady atomic.Bool
 
 // RegisterExternalTTSAdapter marks that an external TTS adapter is available so
-// external_providers.routing may name profiles for tts. Future adapters call this
-// from their composition registration.
+// external_providers.routing may name profiles for tts.
 func RegisterExternalTTSAdapter() { externalTTSReady.Store(true) }
 
 func externalTTSAdapterReady() bool { return externalTTSReady.Load() }
@@ -2276,8 +2275,8 @@ func (g extFinalGemini) GenerateStream(ctx context.Context, scope contracts.Scop
 // for those it attests the outcome the engine will produce, computed with verify.Realise or verify.Degraded exactly
 // as the engine does, so unverified model text is never speakable. A response of another turn is not attested, so
 // external speech refuses it and the local voice speaks it (when the policy names the fallback). The external speech
-// clients themselves (extFinalVoiceSource) are not provided by any adapter yet, and the modality policy
-// (extmodal.PolicySource) is all off: external voice stays dormant until both are supplied, which is the safe default.
+// clients themselves come from extFinalVoiceSource (STT and TTS adapters); the modality policy
+// (extmodal.PolicySource) defaults off: external voice stays dormant until admitted, which is the safe default.
 
 // extFinalVoiceHolder is the external voice stack of the process, set when external mode is composed.
 var extFinalVoiceHolder atomic.Pointer[extFinalVoice]

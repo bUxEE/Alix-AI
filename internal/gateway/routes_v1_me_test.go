@@ -181,7 +181,8 @@ func TestMeCatalogAndLLMSelfOnly(t *testing.T) {
 	profile := pv.ProfileID("pprf_01J0000000000000000000000A")
 	put := e.call(http.MethodPut, "/v1/me/llm/conversational_controller", map[string]any{"profile_id": string(profile)})
 	wantStatus(t, put, http.StatusOK)
-	wantError(t, e.call(http.MethodPut, "/v1/me/llm/tts", map[string]any{"profile_id": string(profile)}), http.StatusBadRequest, contracts.ErrValidationFailed)
+	wantStatus(t, e.call(http.MethodPut, "/v1/me/llm/tts", map[string]any{"profile_id": string(profile), "voice": "alloy"}), http.StatusOK)
+	wantError(t, e.call(http.MethodPut, "/v1/me/llm/vision", map[string]any{"profile_id": string(profile)}), http.StatusBadRequest, contracts.ErrValidationFailed)
 	wantStatus(t, e.call(http.MethodDelete, "/v1/me/llm/conversational_controller", nil), http.StatusOK)
 }
 

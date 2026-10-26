@@ -50,7 +50,7 @@ func externalLayerSpeech(role string) string {
 	r := externalSection.Routing[role]
 	if externalSection.Enabled && len(r.Profiles) > 0 {
 		if role == "tts" && !externalTTSAdapterReady() {
-			return "none (external TTS roadmap; route refused)"
+			return "none (external TTS adapter not registered)"
 		}
 		return "external (" + externalLayerProfileHint(r.Profiles) + ")"
 	}

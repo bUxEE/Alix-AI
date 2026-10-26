@@ -8,7 +8,7 @@
 **Private, local language, voice, knowledge and safe application control — for any application —<br>without handing that application's authority to an LLM.**
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-![Status](https://img.shields.io/badge/status-1.2.0-brightgreen.svg)
+![Status](https://img.shields.io/badge/status-1.3.0-brightgreen.svg)
 ![Self-hosted](https://img.shields.io/badge/hosting-self--hosted-brightgreen.svg)
 ![Core](https://img.shields.io/badge/core-Go%20%2B%20SQLite-00ADD8.svg)
 ![Runtime](https://img.shields.io/badge/default%20runtime-LocalAI-8A2BE2.svg)
@@ -28,7 +28,7 @@
 ---
 
 > [!IMPORTANT]
-> **AlixAI 1.2.0 is released.** Additive on 1.1.0: per-principal LLM accounts (operator catalog, `/v1/me/…`, reserved-tenant
+> **AlixAI 1.3.0 (in tree).** Additive on 1.2.0: external TTS and per-role provider choice ([ADR 0043](docs/decisions/0043-external-tts-and-per-role-provider-choice.md)). Prior **1.2.0**: per-principal LLM accounts (operator catalog, `/v1/me/…`, reserved-tenant
 > credentials); long-term memory (consent-gated proposals, `memory.enabled` default off); downloadable exports from verified
 > turn blocks (`POST /v1/sessions/{session_id}/exports`); UI kit fullscreen overlay and opt-in answer downloads. 1.1 features
 > remain: light external setups, dictation, popup OAuth, OpenRouter / xAI / Moonshot. Still not verified: live provider runs
@@ -491,11 +491,11 @@ docs/                  architecture, ADRs, integration guides, operations, secur
 - Document minimum recommended hardware for light External mode (all models external; 4 vCPU / 8 GB ceiling).
 - Harden the CLI OAuth system-browser opener: only validated `https` or loopback `http` URLs; fixed OS program names, no shell.
 
-**1.2.0 is released** (minor, additive on 1.1.0). What 1.2.0 adds: per-principal LLM accounts ([ADR 0041](docs/decisions/0041-per-principal-llm-accounts.md)) — operator catalog (`alixai providers catalog-*`), `GET /v1/providers/catalog`, `/v1/me/llm…` and `/v1/me/providers/…`, reserved-tenant credentials, router resolution (principal binding → deployment default → local or `llm_not_configured`); long-term memory ([ADR 0042](docs/decisions/0042-long-term-memory.md)) — `memory.enabled` (default off), `/v1/memory`, consent-gated `memory_proposal` on task proposals and turn events, retention erase for memory and principal LLM accounts; downloadable exports from a turn's verified rich blocks — `POST /v1/sessions/{session_id}/exports` (`csv` / `xlsx` / `html` / `md`, capability `exports.create`, durable turn-block store); UI kit fullscreen chat overlay and opt-in answer download actions (host-supplied exporter; kits never call AlixAI). Source builds report `1.2.0-dev`; packages declaring `[1.0.0, 2.0.0)` still validate. Contract changes are additive and frozen into `schemas/_frozen/v1`. Release archives stay reproducible (GoReleaser `--parallelism 1`; `tools/release` skips local model weights). Not verified in 1.2: live provider runs, voicebench on real hardware, real 8 GB certification, independent security review. Summary:
+**1.3.0 is in tree** (minor, additive on 1.2.0). What 1.3.0 adds: external TTS and per-role provider choice ([ADR 0043](docs/decisions/0043-external-tts-and-per-role-provider-choice.md)) — OpenAI / ElevenLabs / Google Cloud TTS / Polly behind `routing.tts` and principal `tts` bindings (optional `voice` / `language`); attested verified text only; additive meter unit `characters_in`; each of controller, realisation, STT and TTS may use the same provider or different ones. **1.2.0** remains: per-principal LLM accounts ([ADR 0041](docs/decisions/0041-per-principal-llm-accounts.md)), long-term memory ([ADR 0042](docs/decisions/0042-long-term-memory.md)), downloadable exports, UI kit fullscreen and opt-in downloads. Source builds report `1.3.0-dev`; packages declaring `[1.0.0, 2.0.0)` still validate. Contract changes are additive and frozen into `schemas/_frozen/v1`. Not verified in 1.3: live provider runs, voicebench on real hardware, real 8 GB certification, independent security review. Summary:
 
 | Status | Areas |
 | --- | --- |
-| Done | Unit/integration/security/degradation/gate tests; CI workflows; API and schema compatibility (including the 1.2.0 additive freeze); dependency vulnerability and licence checks; disaster-recovery drill; private security contact |
+| Done | Unit/integration/security/degradation/gate tests; CI workflows; API and schema compatibility (including the 1.3.0 additive freeze); dependency vulnerability and licence checks; disaster-recovery drill; private security contact |
 | Done (maintainer, not independent) | Reproducible build, SBOM and signed release manifest (`keys/alixai-release-2026.pub`); model, decision-layer and dependency licence reviews; External mode legal, residency and security review; provider terms; security self-review; internal penetration test; trademark policy |
 | Analysis only | Lite and Balanced profiles (measured under caps, not certified on a real 8 GB machine); 24-hour and 7-day soaks |
 | Not done | Real 8 GB x86-64 certification; ARM64 (never run); controller model qualification (no model certified for Lite); decision-layer hardware gates; live provider runs against real endpoints; voicebench for Parakeet / Whisper large-v3-turbo / Whisper large-v3; independent external security review |

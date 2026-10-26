@@ -96,6 +96,11 @@ type PriceTablePrices struct {
 	// Authority: host.
 	FileBytesIn *PriceTablePrice `json:"file_bytes_in,omitzero" alixai:"host"`
 
+	// Price of characters_in (character-priced speech, ADR 0043).
+	//
+	// Authority: host.
+	CharactersIn *PriceTablePrice `json:"characters_in,omitzero" alixai:"host"`
+
 	// Price of requests.
 	//
 	// Authority: host.

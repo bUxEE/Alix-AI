@@ -62,16 +62,16 @@
 //     Sources: https://developers.openai.com/siwc/token-sharing-open-source ,
 //     https://developers.openai.com/siwc/token-sharing-open-source/sign-in ,
 //     https://developers.openai.com/cookbook/articles/sign-in-with-chatgpt (read 2026-10-26).
-//   - Google (Gemini API and Google Cloud Speech-to-Text / google-stt): OAuth officially supported.
-//     AlixAI ships no client id (sensitive scopes): the operator registers their own Google OAuth
-//     client (Desktop for loopback, Web for host https) and puts client_id (+ client_secret_ref for
-//     Web) in config. Gemini "inference" requests only
+//   - Google (Gemini API, Cloud Speech-to-Text / google-stt, Cloud Text-to-Speech / google-tts):
+//     OAuth officially supported. AlixAI ships no client id (sensitive scopes): the operator registers
+//     their own Google OAuth client (Desktop for loopback, Web for host https) and puts client_id
+//     (+ client_secret_ref for Web) in config. Gemini "inference" requests only
 //     https://www.googleapis.com/auth/generative-language.retriever — the scope the official page's
 //     programmatic InstalledAppFlow example uses alone with the Gemini client (the gcloud ADC sample
 //     also lists cloud-platform, which is broader; AlixAI does not request it for gemini).
-//     google-stt requests cloud-platform (Speech-to-Text v2 is a Cloud API; no narrower speech OAuth
-//     scope is named on that page); consent text says it grants the whole Cloud project — use a
-//     dedicated project. The same Google client config is shareable by gemini and google-stt.
+//     google-stt and google-tts request cloud-platform (Cloud APIs; no narrower speech OAuth scope is
+//     named); consent text says it grants the whole Cloud project — use a dedicated project. The same
+//     Google client config is shareable by gemini, google-stt and google-tts.
 //     Source: https://ai.google.dev/gemini-api/docs/oauth (read 2026-10-26).
 //   - OpenRouter: official OAuth PKCE. Authorize https://openrouter.ai/auth?callback_url=…&code_challenge=…
 //     &code_challenge_method=S256; exchange POST https://openrouter.ai/api/v1/auth/keys → {key}. The

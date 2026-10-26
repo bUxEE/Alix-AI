@@ -38,7 +38,7 @@ Self-service routes under `/v1/me/…` and `GET /v1/providers/catalog` are for t
 | --- | --- |
 | Catalog of pickable profiles (terms, prices, billing notice version; no secrets) | `GET /v1/providers/catalog` |
 | Caller's bindings and credential status | `GET /v1/me/llm` |
-| Bind / clear a role (`conversational_controller`, `language_realization`, `stt`) | `PUT` / `DELETE /v1/me/llm/{role}` |
+| Bind / clear a role (`conversational_controller`, `language_realization`, `stt`, `tts`) | `PUT` / `DELETE /v1/me/llm/{role}` (optional `voice` / `language` for speech) |
 | Submit / revoke the caller's own key (write-only) | `PUT` / `DELETE /v1/me/providers/{provider}/credential` |
 | Acknowledge the catalog billing notice | `POST /v1/me/providers/{provider}/billing-notice/ack` |
 | Start principal-bound OAuth | `POST /v1/me/oauth/{provider}/start` |

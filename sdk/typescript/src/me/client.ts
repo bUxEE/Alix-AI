@@ -11,7 +11,7 @@ import type { MeOperationId } from "./operations.js";
 // Manual keys are submitted only by the host server (`me.providers.submitCredential`). Do not call that method from
 // browser code: the key must never sit in the page, in storage, or in a postMessage payload.
 
-const ROLES = ["conversational_controller", "language_realization", "stt"] as const;
+const ROLES = ["conversational_controller", "language_realization", "stt", "tts"] as const;
 export type PrincipalLlmRole = (typeof ROLES)[number];
 
 const PROVIDER_ID = /^[a-z][a-z0-9_-]{0,31}$/;

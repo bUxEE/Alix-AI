@@ -214,6 +214,12 @@ type UsageRecordLatency struct {
 // What the call consumed, in the units of the price table. All members are present; an unused unit
 // is 0.
 type UsageRecordMetering struct {
+	// Units of characters_in consumed (optional additive meter, ADR 0043). Absent or 0 when
+	// unused.
+	//
+	// Authority: alixai.
+	CharactersIn *Counter `json:"characters_in,omitzero" alixai:"alixai"`
+
 	// Units of toks_in consumed.
 	//
 	// Authority: alixai.

@@ -12,12 +12,14 @@ import (
 	"github.com/buxee/alix-ai/pkg/contracts/gen/providers"
 )
 
-// PrincipalBinding is one persisted role binding for a principal (ADR 0041).
+// PrincipalBinding is one persisted role binding for a principal (ADR 0041 / 0043).
 type PrincipalBinding struct {
 	Role       providers.PrincipalLlmRole
 	ProfileID  providers.ProfileID
 	ProviderID providers.ProviderID
 	ModelID    providers.ModelID
+	Voice      *providers.ProviderVoiceID
+	Language   *providers.SpeechLanguage
 	UpdatedAt  time.Time
 }
 
@@ -30,21 +32,30 @@ func (r *Registry) PutPrincipalBinding(ctx context.Context, scope contracts.Scop
 		return contracts.New(contracts.ErrScopeMissing, "providerreg: a principal is required")
 	}
 	if !b.Role.Valid() {
-		return invalid("role must be conversational_controller, language_realization or stt")
+		return invalid("role must be conversational_controller, language_realization, stt or tts")
+	}
+	var voice, language any
+	if b.Voice != nil && *b.Voice != "" {
+		voice = string(*b.Voice)
+	}
+	if b.Language != nil && *b.Language != "" {
+		language = string(*b.Language)
 	}
 	now := r.clk.Now().UnixMilli()
 	return wrapStore(r.db.Tx(ctx, func(tx *store.Tx) error {
 		_, err := tx.ExecContext(ctx, `
 			INSERT INTO providerreg_principal_bindings
-			  (application_id, tenant_id, workspace_id, principal_id, role, profile_id, provider_id, model_id, updated_at)
-			VALUES (?, '', '', ?, ?, ?, ?, ?, ?)
+			  (application_id, tenant_id, workspace_id, principal_id, role, profile_id, provider_id, model_id, voice, language, updated_at)
+			VALUES (?, '', '', ?, ?, ?, ?, ?, ?, ?, ?)
 			ON CONFLICT (application_id, tenant_id, workspace_id, principal_id, role) DO UPDATE SET
 			  profile_id = excluded.profile_id,
 			  provider_id = excluded.provider_id,
 			  model_id = excluded.model_id,
+			  voice = excluded.voice,
+			  language = excluded.language,
 			  updated_at = excluded.updated_at`,
 			scope.ApplicationID, scope.PrincipalID, string(b.Role), string(b.ProfileID),
-			string(b.ProviderID), string(b.ModelID), now)
+			string(b.ProviderID), string(b.ModelID), voice, language, now)
 		return err
 	}), "principal binding could not be stored")
 }
@@ -67,7 +78,7 @@ func (r *Registry) ListPrincipalBindings(ctx context.Context, scope contracts.Sc
 		return nil, err
 	}
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT role, profile_id, provider_id, model_id, updated_at
+		SELECT role, profile_id, provider_id, model_id, voice, language, updated_at
 		  FROM providerreg_principal_bindings
 		 WHERE `+appWhere+` AND principal_id = ?
 		 ORDER BY role`, scope.ApplicationID, scope.PrincipalID)
@@ -78,17 +89,27 @@ func (r *Registry) ListPrincipalBindings(ctx context.Context, scope contracts.Sc
 	var out []PrincipalBinding
 	for rows.Next() {
 		var role, profile, provider, model string
+		var voice, language sql.NullString
 		var updated int64
-		if err := rows.Scan(&role, &profile, &provider, &model, &updated); err != nil {
+		if err := rows.Scan(&role, &profile, &provider, &model, &voice, &language, &updated); err != nil {
 			return nil, wrapStore(err, "principal bindings could not be listed")
 		}
-		out = append(out, PrincipalBinding{
+		b := PrincipalBinding{
 			Role:       providers.PrincipalLlmRole(role),
 			ProfileID:  providers.ProfileID(profile),
 			ProviderID: providers.ProviderID(provider),
 			ModelID:    providers.ModelID(model),
 			UpdatedAt:  time.UnixMilli(updated).UTC(),
-		})
+		}
+		if voice.Valid && voice.String != "" {
+			v := providers.ProviderVoiceID(voice.String)
+			b.Voice = &v
+		}
+		if language.Valid && language.String != "" {
+			l := providers.SpeechLanguage(language.String)
+			b.Language = &l
+		}
+		out = append(out, b)
 	}
 	return out, wrapStore(rows.Err(), "principal bindings could not be listed")
 }

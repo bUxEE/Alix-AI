@@ -30,13 +30,13 @@ func TestCompareSemverPrereleaseOrdering(t *testing.T) {
 			t.Errorf("compareSemver(%s, %s) = %d, want %d", tc.a, tc.b, got, tc.want)
 		}
 	}
-	if DevCoreVersion != "1.2.0-dev" {
-		t.Fatalf("DevCoreVersion = %q, want 1.2.0-dev (derived from version.ReleaseLine)", DevCoreVersion)
+	if DevCoreVersion != "1.3.0-dev" {
+		t.Fatalf("DevCoreVersion = %q, want 1.3.0-dev (derived from version.ReleaseLine)", DevCoreVersion)
 	}
 	if CoreVersionOrDev("dev") != DevCoreVersion {
 		t.Fatalf("CoreVersionOrDev(dev) = %q, want %q", CoreVersionOrDev("dev"), DevCoreVersion)
 	}
-	if CoreVersionOrDev("1.2.0") != "1.2.0" {
-		t.Fatalf("CoreVersionOrDev(1.2.0) = %q", CoreVersionOrDev("1.2.0"))
+	if CoreVersionOrDev("1.3.0") != "1.3.0" {
+		t.Fatalf("CoreVersionOrDev(1.3.0) = %q", CoreVersionOrDev("1.3.0"))
 	}
 }

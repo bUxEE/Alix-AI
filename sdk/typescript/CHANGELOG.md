@@ -3,6 +3,19 @@
 All notable changes to this package. The format follows [Keep a Changelog](https://keepachangelog.com/); versions follow semantic versioning once 1.0.0
 ships, with the rules of [compatibility.md](../../docs/policies/compatibility.md).
 
+## 1.3.0 — 2026-10-26
+
+### Added
+
+- Principal LLM role `tts` and optional `voice` / `language` on `me.llm.putRole` / binding types (ADR 0043). Meter unit `characters_in` in generated provider types.
+
+### Notes (core)
+
+- External TTS adapters (OpenAI, ElevenLabs, Google Cloud TTS, Amazon Polly) behind `routing.tts` / principal `tts` bindings; attested verified text only; per-role provider choice (ADR 0043).
+- CLI OAuth system-browser opener only follows validated `https` or loopback `http` URLs.
+- Light External mode: documented minimum recommended hardware (all models external; 4 vCPU / 8 GB ceiling).
+- Dev cores report `1.3.0-dev`; packages for this line use `compatibility.alixai_core` `[1.0.0, 2.0.0)`.
+
 ## 1.2.0 — 2026-10-26
 
 ### Added

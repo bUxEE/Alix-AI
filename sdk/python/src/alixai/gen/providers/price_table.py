@@ -34,6 +34,7 @@ class ProviderPriceTablePrices(BaseModel):
     audio_seconds_in: Optional[Price] = None
     audio_seconds_out: Optional[Price] = None
     file_bytes_in: Optional[Price] = None
+    characters_in: Optional[Price] = None
     requests: Optional[Price] = None
 
 

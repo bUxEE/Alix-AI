@@ -16,6 +16,7 @@ class UsageRecordMetering(BaseModel):
     unit is 0.
     """
     model_config = ConfigDict(extra="forbid", protected_namespaces=())
+    characters_in: Optional[Counter] = None
     toks_in: Counter
     toks_out: Counter
     toks_in_cached: Counter

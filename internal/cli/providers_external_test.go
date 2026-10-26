@@ -2002,7 +2002,11 @@ func extFinalNewVoiceRig(t *testing.T, mode modes.Mode, fallback ...modes.Condit
 	}
 	prof := pv.ProviderProfile{
 		ProfileID: pv.ProfileID("pprf_" + strings.Repeat("0", 25) + "V"), ProviderID: "acme", ModelID: "acme-omni",
-		Roles:      []pv.Role{pv.RoleSTT, pv.RoleTTS},
+		Roles: []pv.Role{pv.RoleSTT, pv.RoleTTS},
+		Pricing: pv.PriceTable{Currency: "USD", Prices: pv.PriceTablePrices{
+			CharactersIn: &pv.PriceTablePrice{PerUnits: 1, MicroUnits: 10},
+			ToksIn:       &pv.PriceTablePrice{PerUnits: 1000, MicroUnits: 1000},
+		}},
 		Modalities: pv.ProviderProfileModalities{Input: []pv.Modality{pv.ModalityText, pv.ModalityAudio}, Output: []pv.Modality{pv.ModalityText, pv.ModalityAudio}},
 		Media: &pv.ProviderProfileMedia{
 			Audio: &pv.ProviderProfileMediaHandling{MaxBytes: 1 << 20, MimeTypes: []string{"audio/wav"}, Retention: pv.RetentionModeTransient},

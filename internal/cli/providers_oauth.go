@@ -395,7 +395,7 @@ func providersLoginRun(ctx context.Context, env *Env, args []string) error {
 	}
 	provider := pv.ProviderID(fs.Arg(0))
 	switch provider {
-	case "openai", "gemini", "google-stt", "openrouter":
+	case "openai", "gemini", "google-stt", "google-tts", "openrouter":
 	default:
 		fmt.Fprintln(env.withDefaults().Stderr, "this provider has no browser login; use `alixai providers credential add-ref` or the settings API")
 		return Usagef("this provider has no browser login")

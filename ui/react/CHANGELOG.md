@@ -3,6 +3,12 @@
 All notable changes to this package. Versions follow semantic versioning with the rules of
 [compatibility.md](../../docs/policies/compatibility.md).
 
+## 1.3.0 — 2026-10-26
+
+### Notes (core)
+
+- No kit API change. Core 1.3.0 adds external TTS and per-role provider choice (ADR 0043), `characters_in` metering, browser-URL hardening for CLI OAuth, and light External hardware guidance.
+
 ## 1.2.0 — 2026-10-26
 
 ### Added

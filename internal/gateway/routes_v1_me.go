@@ -10,7 +10,7 @@ import (
 	pv "github.com/buxee/alix-ai/pkg/contracts/gen/providers"
 )
 
-// Per-principal LLM account (ADR 0041, release 1.2.0). Contract: schemas/api/paths/me.yaml.
+// Per-principal LLM account (ADR 0041 / 0043). Contract: schemas/api/paths/me.yaml.
 //
 //	GET    /v1/providers/catalog
 //	GET    /v1/me/llm
@@ -32,6 +32,7 @@ var (
 		"conversational_controller": true,
 		"language_realization":      true,
 		"stt":                       true,
+		"tts":                       true,
 	}
 )
 
@@ -49,8 +50,10 @@ type PrincipalLLMService interface {
 
 // PrincipalLLMBindingInput is the body of PUT /v1/me/llm/{role}.
 type PrincipalLLMBindingInput struct {
-	ProfileID pv.ProfileID `json:"profile_id"`
-	ModelID   pv.ModelID   `json:"model_id,omitzero"`
+	ProfileID pv.ProfileID        `json:"profile_id"`
+	ModelID   pv.ModelID          `json:"model_id,omitzero"`
+	Voice     *pv.ProviderVoiceID `json:"voice,omitzero"`
+	Language  *pv.SpeechLanguage  `json:"language,omitzero"`
 }
 
 // PrincipalCredentialInput is the write-only credential body.

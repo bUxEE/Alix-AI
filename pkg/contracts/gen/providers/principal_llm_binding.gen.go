@@ -13,7 +13,8 @@ import (
 // PrincipalLlmBinding mirrors urn:alixai:schema:providers:principal-llm-binding:v1.
 //
 // One role binding of a principal's LLM account (ADR 0041): catalog profile, optional model
-// override, credential status. Never a secret.
+// override, credential status. Optional voice and language for speech roles (ADR 0043). Never a
+// secret.
 type PrincipalLlmBinding struct {
 	// Authority: alixai.
 	Role PrincipalLlmRole `json:"role" alixai:"alixai"`
@@ -26,6 +27,16 @@ type PrincipalLlmBinding struct {
 
 	// Authority: alixai.
 	ModelID ModelID `json:"model_id" alixai:"alixai"`
+
+	// Provider voice id when the binding is for tts.
+	//
+	// Authority: alixai.
+	Voice *ProviderVoiceID `json:"voice,omitzero" alixai:"alixai"`
+
+	// BCP 47 language when the binding is for tts or stt.
+	//
+	// Authority: alixai.
+	Language *SpeechLanguage `json:"language,omitzero" alixai:"alixai"`
 
 	// Whether the principal has an usable credential for this provider. Never a ref id the
 	// client can resolve to a secret.
