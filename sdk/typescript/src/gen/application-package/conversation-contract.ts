@@ -89,6 +89,15 @@ export interface ConversationContract {
    * the capability's next_actions. May be empty when the capability has none.
    */
   next_actions: ConversationContractNextActionLabel[];
+
+  /**
+   * Optional, additive presentation hint for present_result replies built from host records.
+   * When a capability result has records (rows) or a typed series, AlixAI may emit a
+   * validated table of those rows; with presentation.chart set it also emits a chart whose
+   * every number is an authoritative fact. Absent means text (and a table of records when
+   * rows exist) only.
+   */
+  presentation?: ConversationContractPresentation;
 }
 
 /**
@@ -102,6 +111,42 @@ export interface ConversationContractCancellations {
    */
   acknowledgement: Template;
 }
+
+/**
+ * ConversationContractChartHint mirrors
+ * urn:alixai:schema:application-package:conversation-contract:v1#/$defs/chartHint.
+ */
+export interface ConversationContractChartHint {
+  /**
+   * The chart mark type.
+   */
+  type: ConversationContractChartHintType;
+
+  /**
+   * The result field used for the x (or category) channel.
+   */
+  x: FieldName;
+
+  /**
+   * The result field used for the y (or value) channel; must be a number the host stated.
+   */
+  y: FieldName;
+}
+
+/**
+ * ConversationContractChartHintType mirrors
+ * urn:alixai:schema:application-package:conversation-contract:v1#/$defs/chartHint/properties/type.
+ *
+ * The chart mark type.
+ *
+ * Only the values listed in the schema are valid.
+ */
+export type ConversationContractChartHintType =
+  | "bar"
+  | "line"
+  | "area"
+  | "point"
+  | "pie";
 
 /**
  * ConversationContractClarification mirrors
@@ -237,6 +282,18 @@ export interface ConversationContractNextActionLabel {
    * The text of the suggestion shown to the user.
    */
   label: Label;
+}
+
+/**
+ * ConversationContractPresentation mirrors
+ * urn:alixai:schema:application-package:conversation-contract:v1#/$defs/presentation.
+ */
+export interface ConversationContractPresentation {
+  /**
+   * When set, the deterministic template (and a verified external realisation) may include a
+   * chart of the named fields from the result rows.
+   */
+  chart?: ConversationContractChartHint;
 }
 
 /**

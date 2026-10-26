@@ -138,16 +138,16 @@ func retentionEraseHistoryRun(t *testing.T, cfg string, args ...string) retentio
 	return rep
 }
 
-// A principal's erasure takes their conversation history in the tenant: the transcript (and so every
-// search hit), the recent windows and the sessions, the ended one and the active one (ended first).
-// Bob's history in the same tenant, under the same session id in another workspace, and Alice's in
-// another tenant stay. A dry run reports the same counts and changes nothing; the removal is recorded
-// without naming her, and the chain still verifies.
+// A tenant-scoped principal erasure takes their conversation history in that tenant only: the
+// transcript (and so every search hit), the recent windows and the sessions, the ended one and the
+// active one (ended first). Bob's history in the same tenant, under the same session id in another
+// workspace, and Alice's in another tenant stay. A dry run reports the same counts and changes
+// nothing; the removal is recorded without naming her, and the chain still verifies.
 func TestRetentionEraseOfAPrincipalTakesTheirHistory(t *testing.T) {
 	cfg, dataDir := retentionHistoryWorld(t)
 	before := retentionHistorySnapshot(t, dataDir)
 
-	dry := retentionEraseHistoryRun(t, cfg, "-tenant", "tenant-a", "-principal", "usr_alice", "-dry-run")
+	dry := retentionEraseHistoryRun(t, cfg, "-tenant", "tenant-a", "-principal", "usr_alice", "-tenant-scoped", "-dry-run")
 	if !dry.DryRun || dry.TranscriptTurnsRemoved != 4 || dry.SessionTurnsRemoved != 4 || dry.SessionsRemoved != 2 || dry.SessionsEnded != 1 {
 		t.Errorf("dry run = %+v", dry)
 	}
@@ -155,7 +155,7 @@ func TestRetentionEraseOfAPrincipalTakesTheirHistory(t *testing.T) {
 		t.Fatalf("a dry run changed the history:\nbefore:\n%s\nafter:\n%s", before, got)
 	}
 
-	rep := retentionEraseHistoryRun(t, cfg, "-tenant", "tenant-a", "-principal", "usr_alice")
+	rep := retentionEraseHistoryRun(t, cfg, "-tenant", "tenant-a", "-principal", "usr_alice", "-tenant-scoped")
 	if rep.DryRun || rep.TranscriptTurnsRemoved != dry.TranscriptTurnsRemoved || rep.SessionTurnsRemoved != dry.SessionTurnsRemoved ||
 		rep.SessionsRemoved != dry.SessionsRemoved || rep.SessionsEnded != dry.SessionsEnded || rep.PreparationsRemoved != 1 {
 		t.Errorf("report = %+v, want the dry run's counts %+v", rep, dry)

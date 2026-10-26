@@ -138,7 +138,32 @@ Verify the release files: download them into one directory, then
 `go run ./tools/release verify -manifest release-manifest.json -pubkey alixai-release-2026=keys/alixai-release-2026.pub -dir .`. Every listed file must be there with the
 listed hash, and no other file may be in the directory.
 
-## 4. What this does not do yet
+## 4. npm packages (`@alixai/*`)
+
+The TypeScript packages (`@alixai/sdk`, `@alixai/vue`, `@alixai/react`, `@alixai/copilotkit-adapter`,
+`@alixai/voice-orb`) are prepared for the public npm registry (version aligned with the release, Apache-2.0,
+`publishConfig.access: public` and `provenance: true`). They are **not** published by the Go release
+workflow above.
+
+`.github/workflows/npm-publish.yml` runs on a `v*` tag. If the repository secret `NPM_TOKEN` is missing,
+the job prints a notice and skips publish (exit 0). When the secret is set, it builds in dependency order
+and runs `pnpm publish --access public --provenance` for each package. Do not run `npm login` or
+`npm publish` from a workstation for the official release path.
+
+**Owner setup (once):**
+
+1. Claim and own the `@alixai` scope on [npmjs.com](https://www.npmjs.com/) (organisation or user).
+2. Create a granular access token with publish rights for that scope; store it as the repository secret
+   `NPM_TOKEN` (Settings → Secrets and variables → Actions). Never commit the token.
+3. Push a `vX.Y.Z` tag after the Go release draft path (or together with it). Confirm the npm-publish
+   workflow run; if `NPM_TOKEN` was empty you only get the skip notice.
+4. Optionally verify each tarball locally first: `pnpm --filter <pkg> pack --dry-run` (or
+   `npm pack --dry-run` in the package directory) and confirm it contains no tests, fixtures or secrets.
+
+`workspace:*` dependencies are rewritten to registry versions by pnpm on publish. Publish order in the
+workflow is voice-orb → sdk → copilotkit-adapter → react → vue.
+
+## 5. What this does not do yet
 
 - **Update metadata (TUF-style).** Not built. The manifest is a signed statement about one release, with no timestamp, snapshot or
   threshold role, no freeze or rollback protection and no key-compromise recovery. Follow-up: layer TUF-style metadata over it when staged
@@ -149,8 +174,9 @@ listed hash, and no other file may be in the directory.
 - **No vulnerability scan of the SBOM** and no SLSA provenance attestation. The CI `supply-chain` job runs `govulncheck` and the licence allow-list on the source.
 - **Licence sign-off is human** (M5-H02, gate 10): the manifest carries the licence record of every model, it does not judge it.
 - The binary `reproducible-check` builds has not been compared with the GoReleaser one (build settings such as `-ldflags` are recorded in the binary, so they need not match); the `binaries` job compares GoReleaser to itself.
+- **npm publish has not run against the real registry** from this repository; the workflow is syntax-checked like `release.yml`.
 
-## 5. Tests
+## 6. Tests
 
 `tools/release`: `TestReproducibleBuild`, `TestSBOMValidCycloneDX`, `TestReleaseManifestSignedAndVerifiable` (SEC-064, SEC-090), `TestManifestIncludesModelLicences`
 (SEC-091), and the edge cases beside them (a tampered manifest, an unregistered, revoked or expired key, key rotation, the TEST-ONLY key refused, unpinned

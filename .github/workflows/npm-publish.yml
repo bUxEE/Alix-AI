@@ -1,0 +1,85 @@
+# Publish the @alixai/* npm packages on a version tag (v*). Docs: docs/operations/release.md.
+#
+# Runs only when the repository secret NPM_TOKEN is set. Without it the job prints a notice and
+# exits successfully (no publish). Does not run npm login interactively. Provenance is enabled
+# via publishConfig.provenance and id-token: write.
+#
+# Rules (same as ci.yml / release.yml): every action pinned by full commit SHA with its version
+# in a trailing comment; contents: read by default; wider permissions only where needed.
+name: npm publish
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: publish @alixai packages
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Require NPM_TOKEN or skip
+        id: gate
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${NPM_TOKEN:-}" ]; then
+            echo "::notice::NPM_TOKEN is not set; skipping npm publish for ${GITHUB_REF_NAME}"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Set up pnpm
+        if: steps.gate.outputs.skip != 'true'
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Set up Node.js
+        if: steps.gate.outputs.skip != 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+
+      - name: Install
+        if: steps.gate.outputs.skip != 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Build publishable packages
+        if: steps.gate.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+          pnpm --filter @alixai/voice-orb run build
+          pnpm --filter @alixai/sdk run build
+          pnpm --filter @alixai/copilotkit-adapter run build
+          pnpm --filter @alixai/react run build
+          pnpm --filter @alixai/vue run typecheck
+
+      - name: Publish
+        if: steps.gate.outputs.skip != 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Order: leaf packages first so workspace:* rewrites resolve on the registry.
+          for pkg in ui/voice-orb sdk/typescript sdk/copilotkit-adapter ui/react ui/vue; do
+            echo "publishing $pkg"
+            (cd "$pkg" && pnpm publish --access public --no-git-checks --provenance)
+          done

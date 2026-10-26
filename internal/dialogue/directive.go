@@ -34,6 +34,10 @@ type outcome struct {
 	capID string
 	// ui is the validated UI action the turn carries to the client (Result.UIAction).
 	ui *UIAction
+	// resultIDs and resultValues are the host records of a present_result read, kept so the
+	// deterministic template can emit a validated table (and optional chart) of those rows.
+	resultIDs    []act.RecordRef
+	resultValues []act.Fact
 }
 
 // newDirective returns an empty directive for an act, with every required array

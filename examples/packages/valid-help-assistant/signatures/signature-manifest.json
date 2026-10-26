@@ -8,8 +8,8 @@
     "files": [
       {
         "path": "alixai.yaml",
-        "sha256": "d4f29377a5e18609cae42bfa5151b115b323d968edca1178e324a5ae33906dac",
-        "size": 2248
+        "sha256": "eeedbd8494bc70c423b26e4cb31d1bf45ad9cb15d6bb75e13ae5c8174dc6dc81",
+        "size": 2282
       },
       {
         "path": "capabilities/help-overview.yaml",
@@ -63,13 +63,13 @@
       },
       {
         "path": "rag-sources/product-faq.yaml",
-        "sha256": "efa7c04952a3c231726514471b4359dadab01e742acd752eb01920eb7b7792dc",
-        "size": 1088
+        "sha256": "44adc631cd468e80827b91e776a4b17ea02a4d3758011074818b8d31d40d10a0",
+        "size": 1097
       },
       {
         "path": "schemas/adapters/help-api.yaml",
-        "sha256": "45bbd1de00b1e74c7bd07116a9527bb8892acfb2371fe921f54004b2d7ea83ef",
-        "size": 304
+        "sha256": "f4d3ad103e2676f6a193ddd4819323d6751ed2c15b9aaa6b7efd0c4dae1b73d5",
+        "size": 351
       },
       {
         "path": "schemas/help-api.openapi.yaml",
@@ -107,7 +107,7 @@
     {
       "key_id": "alixai-test-only-publisher",
       "algorithm": "ed25519",
-      "signature": "CGXDykXNrPHziv1kYhVx3z6+PEWVRM0tVo1e03WwHVUHjqs6MnSyNHyYOD4KklljGin5tk/J9NxY6FEMcJTyAw==",
+      "signature": "DqRrKLqSK1mahV3wX3+l8qJvuFeoxSd5ZyN6l+ajxX7HvKIMDFSYJ2B8FFPgCm742uio9auH/9Qz9NXrw+djCw==",
       "signed_at": "2026-10-01T00:00:00Z",
       "expires_at": "2036-10-01T00:00:00Z"
     }

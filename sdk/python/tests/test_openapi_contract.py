@@ -310,6 +310,13 @@ def test_every_answer_of_the_fake_server_conforms_to_the_document_across_all_ope
         },
     )
     client.me.start_oauth("openai", capabilities=["chat"], redirect_uri="http://127.0.0.1:5555/cb")
+    client.me.oauth_callback(redirect_uri="https://host.example/cb", query="code=c&state=s")
+    client.me.oauth_flow_status("oaf_01J0000000000000000000000A")
+    client.me.oauth_cancel("oaf_01J0000000000000000000000A")
+    client.ops.start_erasure({"level": "principal", "principal_id": "usr_alice", "reason": "gdpr"})
+    client.ops.erasure_status("erj_01J0000000000000000000000A")
+    client.me.usage()
+    client.me.budget()
     client.memory.list()
     created = client.memory.create({"text": "prefer dark mode"})
     mid = created["id"]

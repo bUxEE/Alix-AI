@@ -99,18 +99,6 @@ func (c externalCredRefConfig) Validate() error {
 	return nil
 }
 
-func looksLikeLiteralKey(s string) bool {
-	if len(s) < 12 {
-		return false
-	}
-	for _, p := range []string{"sk-", "sk-or-", "sk-ant-", "xai-", "AIza"} {
-		if strings.HasPrefix(s, p) {
-			return true
-		}
-	}
-	return false
-}
-
 func buildOAuthProviders(sec externalConfig) ([]oauth.ProviderConfig, error) {
 	var out []oauth.ProviderConfig
 	for id, entry := range sec.OAuth.Providers {

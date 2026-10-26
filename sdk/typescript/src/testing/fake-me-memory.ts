@@ -89,8 +89,45 @@ export const createFakeMeMemory = (ctx: FakeContext) => {
           authorization_url: "https://example.test/oauth",
           redirect_uri: body["redirect_uri"],
           expires_at: ctx.iso(ctx.nowMs() + 60_000),
+          flow_id: "oaf_01J0000000000000000000000A",
+          poll_interval_ms: 1500,
         });
       }
+      case "completePrincipalOAuth": {
+        if (!isRecord(body) || typeof body["redirect_uri"] !== "string" || typeof body["query"] !== "string") {
+          return ctx.problem("validation_failed", "redirect_uri and query are required");
+        }
+        return ctx.json(200, { provider_id: "openai", status: "active" });
+      }
+      case "getPrincipalOAuthFlow":
+        return ctx.json(200, {
+          flow_id: params["flow_id"] ?? "oaf_01J0000000000000000000000A",
+          provider: "openai",
+          status: "pending",
+          updated_at: ctx.iso(ctx.nowMs()),
+        });
+      case "cancelPrincipalOAuthFlow":
+        return new Response(null, { status: 204, headers: { "Cache-Control": "no-store", "X-Request-ID": "req_fake" } });
+      case "startErasure": {
+        if (!isRecord(body) || typeof body["level"] !== "string") {
+          return ctx.problem("validation_failed", "level is required");
+        }
+        return ctx.json(202, { job_id: "erj_01J0000000000000000000000A", status: "queued" });
+      }
+      case "getErasureJob":
+        return ctx.json(200, {
+          job_id: params["job_id"] ?? "erj_01J0000000000000000000000A",
+          status: "completed",
+          level: "principal",
+          tenant_id: scope.tenant_id,
+          principal_id: "usr_alice",
+          counts: { audit_events_erased: 1, sessions_removed: 1 },
+          finished_at: ctx.iso(ctx.nowMs()),
+        });
+      case "getMeUsage":
+        return ctx.json(200, { groups: [], next_cursor: null });
+      case "getMeBudget":
+        return ctx.json(200, { budgets: [], states: [] });
       case "listMemory":
         return ctx.json(200, { items: [] });
       case "createMemory": {

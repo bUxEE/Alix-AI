@@ -189,9 +189,9 @@ suite; `contract_test.go` and `spec_test.go` hold it to the OpenAPI document.
 
 ## Changelog
 
-### 1.3.0 — 2026-10-26
+### 1.3.0 — 2026-10-27
 
-**Added.** Principal LLM role `tts` and optional `voice` / `language` on `Me().PutRole` (ADR 0043); meter unit `characters_in`. Core: external TTS adapters and per-role provider choice; browser-URL hardening for CLI OAuth; light External hardware guide. Dev cores report `1.3.0-dev`.
+**Added.** Principal LLM role `tts` and optional `voice` / `language` on `Me().PutRole` (ADR 0043); meter unit `characters_in`; `Me().Usage()` / `Me().Budget()`; optional `PrincipalID` on usage export; me OAuth callback/flows; ops erasure (tenant vs application scope). Core: external TTS (OpenAI, ElevenLabs, Google, Polly, Mistral) and per-role provider choice; per-user usage and application-wide principal budgets; browser-URL hardening for CLI OAuth; light External hardware guide; opt-in `external_providers.directive_class` with verified table/chart blocks and conversation-contract `presentation.chart` (ADR 0044); outbound `credential_ref` for OpenAPI, MCP and RAG api (`application_credentials`, optional RAG `principal_id`); Mistral chat/STT/TTS; kit fullscreen z-index; npm publish readiness. Dev cores report `1.3.0-dev`.
 
 ### 1.2.0 — 2026-10-26
 

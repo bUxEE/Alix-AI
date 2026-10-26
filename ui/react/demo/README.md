@@ -29,6 +29,8 @@ nothing has to be built first. `@vitejs/plugin-react` compiles the TSX and hot-s
 
 Fullscreen is a CSS state on the panel node (`position: fixed` with safe-area insets). The kit does **not** move the node in the DOM, so draft, scroll and the running turn survive by construction. A `transform` or `filter` on an ancestor creates a containing block for `position: fixed`: render the panel outside such ancestors, or wrap it in a portal of your own if the host layout needs that.
 
+**Z-index.** Default is `2400` so the overlay sits above common UI-framework layers (Vuetify/MUI overlays start around 2000). This kit’s token prefix is `--alixai-*`, so the primary variable is **`--alixai-z-fullscreen`** (aliased as `--alix-fullscreen-z` for hosts that copy Vue docs). The Vue kit’s native name is **`--alix-fullscreen-z`**. Override with prop `fullscreenZIndex` or by setting the CSS variable on an ancestor. Menus and dialogs that stay in the panel’s DOM stack inside its stacking context; body-teleported overlays (typical framework dialogs) must use a z-index **higher** than the fullscreen value (raise the framework’s overlay base, or pass a lower `fullscreenZIndex`).
+
 ## Voice mode on the chat panel
 
 Pass one prop: `voice: "off" | "dictation" | "conversation"` (default `off`, unchanged for 1.0 hosts). For dictation, also pass `dictationClient` from `voice.createDictationClient` (the demo uses `demoDictationClient()`). Recognised text is inserted at the composer caret (replacing any selection) and never sent. Import the control alone from `@alixai/react/dictation` when you want record-to-text without the conversation orb or session driver.

@@ -32,7 +32,16 @@ func externalLayerStatusLines() []string {
 		"  llm: " + externalLayerLLM(),
 		"  stt: " + externalLayerSpeech("stt"),
 		"  tts: " + externalLayerSpeech("tts"),
+		"  directive_class: " + externalLayerDirectiveClass(),
 	}
+}
+
+func externalLayerDirectiveClass() string {
+	c := strings.TrimSpace(externalSection.DirectiveClass)
+	if c == "" {
+		return "local (empty; response directive stays on-machine)"
+	}
+	return c + " (egress must allow dialogue_directive and deterministic_fact)"
 }
 
 func externalLayerLLM() string {

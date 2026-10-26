@@ -27,6 +27,8 @@ type clinicApp struct {
 	baseURL string
 	mcpURL  string
 	port    int
+	// bearer is CLINIC_MCP_BEARER; every request to the app except /healthz must present it.
+	bearer string
 
 	cmd    *exec.Cmd
 	done   chan struct{}
@@ -41,7 +43,7 @@ var clinicHTTP = &http.Client{Timeout: 30 * time.Second}
 // returns once it has said where it listens. It fails, with what to do about it, when node or the
 // application's dependencies are missing: a drill that cannot run the application proves nothing,
 // so it does not skip.
-func startClinic(moduleRoot string) (*clinicApp, error) {
+func startClinic(moduleRoot, mcpBearer string) (*clinicApp, error) {
 	node, err := exec.LookPath("node")
 	if err != nil {
 		return nil, errors.New("node is not installed: the drill runs the clinic reference application as a subprocess (node 22.18 or newer)")
@@ -57,12 +59,12 @@ func startClinic(moduleRoot string) (*clinicApp, error) {
 			cmd.Env = append(cmd.Env, kv)
 		}
 	}
-	cmd.Env = append(cmd.Env, "CLINIC_PORT=0", "CLINIC_TEST_SUPPORT=1")
+	cmd.Env = append(cmd.Env, "CLINIC_PORT=0", "CLINIC_TEST_SUPPORT=1", "CLINIC_MCP_BEARER="+mcpBearer)
 	out, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, err
 	}
-	c := &clinicApp{cmd: cmd, done: make(chan struct{})}
+	c := &clinicApp{cmd: cmd, done: make(chan struct{}), bearer: mcpBearer}
 	cmd.Stderr = &lockedWriter{mu: &c.mu, b: &c.stderr}
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("start the clinic application: %w", err)
@@ -159,6 +161,9 @@ func (c *clinicApp) httpJSON(method, path string, body any, out any) error {
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
+	if c.bearer != "" {
+		req.Header.Set("Authorization", "Bearer "+c.bearer)
+	}
 	resp, err := clinicHTTP.Do(req)
 	if err != nil {
 		return err
@@ -215,6 +220,9 @@ func (c *clinicApp) callTool(ctx context.Context, tool string, args map[string]a
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json, text/event-stream")
+	if c.bearer != "" {
+		req.Header.Set("Authorization", "Bearer "+c.bearer)
+	}
 	resp, err := clinicHTTP.Do(req)
 	if err != nil {
 		return nil, err

@@ -361,16 +361,16 @@
     },
     "budgetSubject": {
       "title": "Budget subject",
-      "description": "What a budget applies to: one provider, or a tenant, workspace or principal (additive plan section 11.2), each optionally narrowed to one provider. The ids a kind needs are required and no id wider or narrower than the kind is allowed, so a tenant budget cannot name a workspace.",
+      "description": "What a budget applies to: one provider, or a tenant, workspace or principal (additive plan section 11.2, ADR 0041), each optionally narrowed to one provider. The ids a kind needs are required and no id wider or narrower than the kind is allowed, so a tenant budget cannot name a workspace. Kind principal_application (1.3) is application-wide for one principal across every tenant: it names application_id and principal_id only (the service refuses tenant_id and workspace_id on that kind).",
       "type": "object",
       "additionalProperties": false,
       "required": ["kind"],
       "properties": {
         "kind": {
-          "description": "provider, tenant, workspace or principal.",
+          "description": "provider, tenant, workspace, principal, or principal_application (across tenants).",
           "x-alixai-authority": "host",
           "type": "string",
-          "enum": ["provider", "tenant", "workspace", "principal"]
+          "enum": ["provider", "tenant", "workspace", "principal", "principal_application"]
         },
         "provider_id": {
           "description": "The provider. Required for a provider budget; narrows the others when present.",

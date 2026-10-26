@@ -431,6 +431,14 @@ paths:
           schema:
             type: string
             enum: [tenant, application]
+        - name: principal_id
+          in: query
+          required: false
+          description: Narrow the export to one principal (operators only).
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
         - name: format
           in: query
           required: false

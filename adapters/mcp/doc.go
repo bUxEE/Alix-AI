@@ -185,8 +185,10 @@
 // # Limits of this package
 //
 // With several endpoints, Describe reports the contract versions all of them speak and
-// Inspect the first endpoint that has an inspect tool. credential_ref has no resolver
-// in the adapter: a host gives the endpoint an Authorization function, and the
-// composition root has none yet. The SDK is github.com/modelcontextprotocol/go-sdk
-// v1.8.0 (Apache-2.0 for new contributions, MIT for older ones).
+// Inspect the first endpoint that has an inspect tool. A package credential_ref is
+// resolved by the composition root into Endpoint.Authorization (header and scheme from
+// the adapter configuration, defaults Authorization / Bearer, mirroring OpenAPI) and
+// sent only on streamable HTTP / SSE to the endpoint's own origin; stdio transports
+// ignore it. The SDK is github.com/modelcontextprotocol/go-sdk v1.8.0 (Apache-2.0 for
+// new contributions, MIT for older ones).
 package mcp

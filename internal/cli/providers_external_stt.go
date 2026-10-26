@@ -11,6 +11,7 @@ import (
 	sttdeepgram "github.com/buxee/alix-ai/adapters/external/stt/deepgram"
 	stteleven "github.com/buxee/alix-ai/adapters/external/stt/elevenlabs"
 	sttgoogle "github.com/buxee/alix-ai/adapters/external/stt/googlestt"
+	sttmistral "github.com/buxee/alix-ai/adapters/external/stt/mistral"
 	sttopenai "github.com/buxee/alix-ai/adapters/external/stt/openai"
 	"github.com/buxee/alix-ai/internal/credentials"
 	"github.com/buxee/alix-ai/internal/egress"
@@ -42,6 +43,7 @@ func extSTTDialerRegistry() *egress.ProviderRegistry {
 			sttopenai.ProviderName:   sttopenai.DefaultBaseURL,
 			sttdeepgram.ProviderName: sttdeepgram.DefaultBaseURL,
 			stteleven.ProviderName:   stteleven.DefaultBaseURL,
+			sttmistral.ProviderName:  sttmistral.DefaultBaseURL,
 		} {
 			_ = extWireAllowOrigin(extSTTEgress, id, base)
 		}
@@ -143,6 +145,12 @@ func (s *extSTTSource) clientFor(ctx context.Context, scope contracts.Scope, p p
 			cfg.BaseURL = p.Endpoint
 		}
 		stt, err = sttopenai.New(cfg, s.eg.Dialer(id), keys)
+	case sttmistral.ProviderName:
+		cfg := sttmistral.Config{CredentialRef: ref, Model: model}
+		if p.Endpoint != "" {
+			cfg.BaseURL = p.Endpoint
+		}
+		stt, err = sttmistral.New(cfg, s.eg.Dialer(id), keys)
 	case sttdeepgram.ProviderName:
 		cfg := sttdeepgram.Config{CredentialRef: ref, Model: model}
 		if p.Endpoint != "" {

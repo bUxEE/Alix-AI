@@ -2,10 +2,12 @@ package dialogue
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"time"
 
 	"github.com/buxee/alix-ai/internal/audit"
+	"github.com/buxee/alix-ai/internal/providers"
 	"github.com/buxee/alix-ai/internal/sessions"
 	"github.com/buxee/alix-ai/internal/verify"
 	"github.com/buxee/alix-ai/pkg/contracts"
@@ -51,6 +53,10 @@ const persistTimeout = 15 * time.Second
 func (t *turn) complete(ctx context.Context, out outcome) (Result, error) {
 	d := out.dir
 	opts := verify.Options{Language: t.lang, FieldLabels: t.labelsFor(out.capID)}
+	if d.Act == conversation.DialogueDirectiveActPresentResult {
+		opts.Presentation = t.presentationFor(out.capID)
+		opts.Table = verify.BuildRecordTable(out.resultIDs, out.resultValues, opts.FieldLabels)
+	}
 
 	resp, rerr := t.respond(ctx, out, opts)
 	t.stage(StageVerify)
@@ -147,7 +153,7 @@ func (t *turn) respond(ctx context.Context, out outcome, opts verify.Options) (v
 	if err != nil {
 		return verify.Degraded(d, out.receipt, opts)
 	}
-	return verify.Realise(res.Text, d, out.receipt, opts)
+	return verify.RealiseRich(res.Text, decodeProposedBlocks(res), d, out.receipt, opts)
 }
 
 // realiseExternally hands the directive to the engine's ResponseRealiser, when it has one that takes the
@@ -175,7 +181,7 @@ func (t *turn) realiseExternally(ctx context.Context, out outcome, opts verify.O
 		return o, true, derr
 	}
 	if got.Source == verify.SourceModel {
-		o, verr := verify.Realise(got.Text, d, out.receipt, opts)
+		o, verr := verify.RealiseRich(got.Text, got.Blocks, d, out.receipt, opts)
 		return o, true, verr
 	}
 	o, derr := verify.Degraded(d, out.receipt, opts)
@@ -183,6 +189,43 @@ func (t *turn) realiseExternally(ctx context.Context, out outcome, opts verify.O
 		o.Reason, o.Violations = got.Reason, got.Violations
 	}
 	return o, true, derr
+}
+
+// presentationFor reads the optional presentation hint of the capability's conversation contract.
+func (t *turn) presentationFor(capID string) *verify.Presentation {
+	if t.pkg == nil || capID == "" {
+		return nil
+	}
+	ct, ok := t.pkg.ContractFor(capID, string(t.lang))
+	if !ok || ct.Presentation == nil || ct.Presentation.Chart == nil {
+		return nil
+	}
+	ch := ct.Presentation.Chart
+	return &verify.Presentation{Chart: &verify.ChartHint{
+		Type: string(ch.Type), X: string(ch.X), Y: string(ch.Y),
+	}}
+}
+
+// decodeProposedBlocks reads rich blocks a provider left on ChatResult.JSON (extmode packs
+// candidate JSON objects there for a response turn). Malformed payloads are ignored;
+// RealiseRich validates every block against the directive's facts.
+func decodeProposedBlocks(res providers.ChatResult) []conversation.RichBlock {
+	if len(res.JSON) == 0 {
+		return nil
+	}
+	var raw []json.RawMessage
+	if err := json.Unmarshal(res.JSON, &raw); err != nil || len(raw) == 0 {
+		return nil
+	}
+	var out []conversation.RichBlock
+	for _, r := range raw {
+		var b conversation.RichBlock
+		if err := json.Unmarshal(r, &b); err != nil || b.Value == nil {
+			continue
+		}
+		out = append(out, b)
+	}
+	return out
 }
 
 func (t *turn) templateOnly(a conversation.DialogueDirectiveAct) bool {

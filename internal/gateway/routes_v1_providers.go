@@ -348,6 +348,8 @@ type ProvidersUsageQuery struct {
 	From, To   time.Time
 	ProviderID pv.ProviderID
 	Channel    pv.Channel
+	// PrincipalID narrows the export to one principal (operators only).
+	PrincipalID string
 	// Wide asks for the whole application instead of the caller's tenant (a deployment operator only).
 	Wide bool
 	// CSV selects the CSV rendering.
@@ -863,7 +865,7 @@ func (h *providersHandler) putBudget(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *providersHandler) usageExport(w http.ResponseWriter, r *http.Request) {
-	scope, ok := h.begin(w, r, ProvidersOperatorTenant, "from", "to", "provider", "channel", "scope", "format")
+	scope, ok := h.begin(w, r, ProvidersOperatorTenant, "from", "to", "provider", "channel", "scope", "format", "principal_id")
 	if !ok {
 		return
 	}
@@ -892,6 +894,13 @@ func (h *providersHandler) usageExport(w http.ResponseWriter, r *http.Request) {
 			WriteError(w, r, contracts.New(contracts.ErrValidationFailed, "channel is not a known channel"))
 			return
 		}
+	}
+	if v := q.Get("principal_id"); v != "" {
+		if len(v) > contracts.MaxScopeValueLen {
+			WriteError(w, r, contracts.New(contracts.ErrValidationFailed, "principal_id is too long"))
+			return
+		}
+		in.PrincipalID = v
 	}
 	switch q.Get("format") {
 	case "", "json":

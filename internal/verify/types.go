@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/buxee/alix-ai/pkg/contracts"
+	"github.com/buxee/alix-ai/pkg/contracts/gen/conversation"
 )
 
 // Language is a response language the verifier and the templates support.
@@ -62,6 +63,32 @@ type Options struct {
 	// shown as its name with underscores turned into spaces. The labels are the application's own
 	// text, so numbers in them are allowed in a response.
 	FieldLabels map[string]string
+	// Presentation is the optional conversation-contract presentation hint (chart type and axes).
+	// Used only when building deterministic table/chart blocks for present_result.
+	Presentation *Presentation
+	// Table, when set, is the record table a present_result template (or external path) may emit:
+	// columns from the capability result shape, rows from the host identifiers/values. Nil means
+	// text only.
+	Table *RecordTable
+}
+
+// Presentation is the optional conversation-contract presentation hint.
+type Presentation struct {
+	Chart *ChartHint
+}
+
+// ChartHint names a chart the deterministic template may emit from record rows.
+type ChartHint struct {
+	// Type is bar, line, area, point or pie.
+	Type string
+	X    string
+	Y    string
+}
+
+// RecordTable is the validated shape of host records for a present_result table/chart.
+type RecordTable struct {
+	Columns []conversation.TableColumn
+	Rows    [][]any
 }
 
 // ViolationKind classifies one reason a response was rejected.

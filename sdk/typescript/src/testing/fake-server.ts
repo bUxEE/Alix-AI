@@ -1017,6 +1017,13 @@ export const createFakeServer = (options: FakeServerOptions = {}): FakeAlixAISer
       case "deletePrincipalProviderCredential":
       case "ackPrincipalProviderBillingNotice":
       case "startPrincipalOAuth":
+      case "completePrincipalOAuth":
+      case "getPrincipalOAuthFlow":
+      case "cancelPrincipalOAuthFlow":
+      case "startErasure":
+      case "getErasureJob":
+      case "getMeUsage":
+      case "getMeBudget":
       case "listMemory":
       case "createMemory":
       case "patchMemory":

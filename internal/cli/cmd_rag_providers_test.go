@@ -54,9 +54,9 @@ type ragServeAPI struct {
 }
 
 type ragServeAPIRequest struct {
-	method, path string
-	query        url.Values
-	authorised   bool
+	method, path, authorization string
+	query                       url.Values
+	authorised                  bool
 }
 
 const ragServeAPIRoot = "/documents"
@@ -105,8 +105,9 @@ func (a *ragServeAPI) requests() []ragServeAPIRequest {
 
 func (a *ragServeAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	a.mu.Lock()
-	authorised := a.token == "" || r.Header.Get("Authorization") == "Bearer "+a.token
-	a.reqs = append(a.reqs, ragServeAPIRequest{method: r.Method, path: r.URL.Path, query: r.URL.Query(), authorised: authorised})
+	authz := r.Header.Get("Authorization")
+	authorised := a.token == "" || authz == "Bearer "+a.token
+	a.reqs = append(a.reqs, ragServeAPIRequest{method: r.Method, path: r.URL.Path, authorization: authz, query: r.URL.Query(), authorised: authorised})
 	items := make(map[string]string, len(a.items))
 	for k, v := range a.items {
 		items[k] = v

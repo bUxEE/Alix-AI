@@ -54,5 +54,12 @@
       "id": "reserve_found_title",
       "label": "Reserve one of these titles"
     }
-  ]
+  ],
+  "presentation": {
+    "chart": {
+      "type": "bar",
+      "x": "title",
+      "y": "copies"
+    }
+  }
 }

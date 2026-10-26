@@ -3,11 +3,11 @@
 All notable changes to this package. Versions follow semantic versioning with the rules of
 [compatibility.md](../../docs/policies/compatibility.md).
 
-## 1.3.0 — 2026-10-26
+## 1.3.0 — 2026-10-27
 
 ### Notes (core)
 
-- No demo-mock API change required for 1.3.0. Core adds external TTS / per-role provider choice (ADR 0043); catalog and `/v1/me/llm/tts` already cover the additive role.
+- No demo-mock API change required for 1.3.0. Core adds external TTS (OpenAI, ElevenLabs, Google, Polly, Mistral) / per-role provider choice (ADR 0043); directive_class + verified tables/charts (ADR 0044); me OAuth/erasure/usage/budget; credential_ref; kit fullscreen z-index and npm readiness. Catalog and `/v1/me/llm/tts` already cover the additive role.
 
 ## 1.2.0 — 2026-10-26
 

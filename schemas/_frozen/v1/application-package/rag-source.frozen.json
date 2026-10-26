@@ -85,6 +85,10 @@
       "description": "Optional, only for api roots: the permitted query scope. Without it only the root path and include patterns restrict an API source.",
       "$ref": "#/$defs/queryScope"
     },
+    "scope_params": {
+      "description": "Optional, only for api roots: extra scope parameters on list/fetch. Default (absent or all false) is today's behaviour: application_id, and tenant_id/workspace_id when those levels are not shared. The RAG index stays per tenant/workspace; when include_principal_id is true the host filters per user on every call. Do not mix principals' documents in one index without per-principal ACL at query time.",
+      "$ref": "#/$defs/scopeParams"
+    },
     "credential_ref": {
       "description": "The credential reference held outside model context: an opaque cred: ID resolved from the OS secret store or an approved secret provider, or null when the source needs no credential. Never the secret itself.",
       "oneOf": [
@@ -286,6 +290,24 @@
           }
         }
       ]
+    },
+    "scopeParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "include_principal_id": {
+          "description": "When true, every list and fetch request also carries the requesting principal id (parameter name principal_id, or principal_param when set) so the host can filter per user inside a tenant. Default false. The index remains per tenant/workspace; per-principal filtering then happens on the host for every call.",
+          "type": "boolean",
+          "default": false
+        },
+        "principal_param": {
+          "description": "Optional rename of the principal id query parameter. Default principal_id. Only used when include_principal_id is true.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,63}$"
+        }
+      }
     },
     "queryScope": {
       "type": "object",

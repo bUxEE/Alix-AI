@@ -88,6 +88,15 @@ export interface RAGSource {
   query_scope?: RAGSourceQueryScope;
 
   /**
+   * Optional, only for api roots: extra scope parameters on list/fetch. Default (absent or
+   * all false) is today's behaviour: application_id, and tenant_id/workspace_id when those
+   * levels are not shared. The RAG index stays per tenant/workspace; when
+   * include_principal_id is true the host filters per user on every call. Do not mix
+   * principals' documents in one index without per-principal ACL at query time.
+   */
+  scope_params?: RAGSourceScopeParams;
+
+  /**
    * The credential reference held outside model context: an opaque cred: ID resolved from
    * the OS secret store or an approved secret provider, or null when the source needs no
    * credential. Never the secret itself.
@@ -549,6 +558,26 @@ export type RAGSourceScopeBindingMode =
   | "request"
   | "fixed"
   | "shared";
+
+/**
+ * RAGSourceScopeParams mirrors
+ * urn:alixai:schema:application-package:rag-source:v1#/$defs/scopeParams.
+ */
+export interface RAGSourceScopeParams {
+  /**
+   * When true, every list and fetch request also carries the requesting principal id
+   * (parameter name principal_id, or principal_param when set) so the host can filter per
+   * user inside a tenant. Default false. The index remains per tenant/workspace;
+   * per-principal filtering then happens on the host for every call.
+   */
+  include_principal_id?: boolean;
+
+  /**
+   * Optional rename of the principal id query parameter. Default principal_id. Only used
+   * when include_principal_id is true.
+   */
+  principal_param?: string;
+}
 
 /**
  * RAGSourceSync mirrors urn:alixai:schema:application-package:rag-source:v1#/$defs/sync.

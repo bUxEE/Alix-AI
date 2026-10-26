@@ -46,10 +46,10 @@ import (
 //     destination reaches nothing at all (the allowlist is withdrawn, with a warning).
 //   - The credential reference. A source may declare a credential_ref: an opaque "cred:" id the
 //     provider resolves for every request and puts in one header for the origin of the source's
-//     root. The credential service of this build is the one the OpenAPI transport uses
-//     (RegisterOpenAPISecretProvider); ragServeSecrets adapts it to httpapi.SecretProvider, whose
-//     Secret type is deliberately its own (adapters/openapi's and this provider's are not
-//     interchangeable). With no credential provider a source that names a credential sends nothing.
+//     root. Serve registers application_credentials (RegisterOpenAPISecretProvider); ragServeSecrets
+//     adapts it to httpapi.SecretProvider, whose Secret type is deliberately its own
+//     (adapters/openapi's and this provider's are not interchangeable). With no credential
+//     provider a source that names a credential sends nothing.
 //   - The endpoint resolver. A source whose root names a manifest endpoint (root.endpoint)
 //     instead of a url is resolved to that endpoint's base_url, from the active package's own
 //     manifest; an endpoint of another kind, or one the package does not declare, resolves to

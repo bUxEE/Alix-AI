@@ -26,6 +26,7 @@ type clinicApp struct {
 	baseURL string
 	mcpURL  string
 	port    int
+	bearer  string
 
 	cmd  *exec.Cmd
 	done chan struct{}
@@ -57,7 +58,8 @@ func startClinic(t tb) *clinicApp {
 			cmd.Env = append(cmd.Env, kv)
 		}
 	}
-	cmd.Env = append(cmd.Env, "CLINIC_PORT=0", "CLINIC_TEST_SUPPORT=1")
+	secret := ensureClinicMCPSecret()
+	cmd.Env = append(cmd.Env, "CLINIC_PORT=0", "CLINIC_TEST_SUPPORT=1", "CLINIC_MCP_BEARER="+secret)
 	out, err := cmd.StdoutPipe()
 	if err != nil {
 		t.Fatal(err)
@@ -67,7 +69,7 @@ func startClinic(t tb) *clinicApp {
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("start the clinic application: %v", err)
 	}
-	c := &clinicApp{t: t, cmd: cmd, done: make(chan struct{})}
+	c := &clinicApp{t: t, cmd: cmd, done: make(chan struct{}), bearer: secret}
 	go func() {
 		err := cmd.Wait()
 		c.mu.Lock()
@@ -145,6 +147,9 @@ func (c *clinicApp) httpJSON(method, path string, body any, out any) (int, error
 	}
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
+	}
+	if c.bearer != "" {
+		req.Header.Set("Authorization", "Bearer "+c.bearer)
 	}
 	resp, err := clinicHTTP.Do(req)
 	if err != nil {
@@ -243,6 +248,9 @@ func (c *clinicApp) callTool(ctx context.Context, tool string, args map[string]a
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json, text/event-stream")
+	if c.bearer != "" {
+		req.Header.Set("Authorization", "Bearer "+c.bearer)
+	}
 	resp, err := clinicHTTP.Do(req)
 	if err != nil {
 		return nil, err

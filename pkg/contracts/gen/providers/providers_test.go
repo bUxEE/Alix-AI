@@ -59,6 +59,8 @@ var roots = map[string]rootType{
 	"oauth-flow-status":            root[OauthFlowStatus](),
 	"oauth-popup-result":           root[OauthPopupResult](),
 	"price-table":                  root[PriceTable](),
+	"me-budget":                    root[MeBudget](),
+	"me-usage":                     root[MeUsage](),
 	"principal-llm":                root[PrincipalLlm](),
 	"principal-llm-binding":        root[PrincipalLlmBinding](),
 	"principal-llm-binding-update": root[PrincipalLlmBindingUpdate](),

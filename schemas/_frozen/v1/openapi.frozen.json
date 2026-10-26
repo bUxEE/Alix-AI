@@ -292,6 +292,16 @@
         },
         "description": "The thing is not in a state that allows this (`conflict`, `stale`, `replayed`)."
       },
+      "ErasureJobNotFound": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "description": "The job id is unknown or out of the caller's tenant (`not_found`)."
+      },
       "Forbidden": {
         "content": {
           "application/json": {
@@ -341,6 +351,16 @@
           }
         },
         "description": "The body exceeds gateway.max_body_bytes."
+      },
+      "PrincipalOAuthFlowNotFound": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "description": "The flow id is unknown or belongs to another principal (`not_found`)."
       },
       "RagNotFound": {
         "content": {
@@ -1245,6 +1265,184 @@
         ],
         "type": "object"
       },
+      "ErasureCounts": {
+        "additionalProperties": false,
+        "properties": {
+          "audit_events_erased": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "files_removed": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "memory_items_removed": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "more": {
+            "type": "boolean"
+          },
+          "preparations_removed": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "principal_bindings_removed": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "principal_credentials_revoked": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "receipts_removed": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "session_turns_removed": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "sessions_ended": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "sessions_removed": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "transcript_turns_removed": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "ErasureJobAccepted": {
+        "additionalProperties": false,
+        "properties": {
+          "job_id": {
+            "pattern": "^erj_[0-9A-HJKMNP-TV-Z]{26}$",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "completed",
+              "failed"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "status"
+        ],
+        "type": "object"
+      },
+      "ErasureJobStatus": {
+        "additionalProperties": false,
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/ErasureCounts"
+          },
+          "error": {
+            "type": "string"
+          },
+          "finished_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "job_id": {
+            "type": "string"
+          },
+          "level": {
+            "enum": [
+              "principal",
+              "tenant",
+              "workspace"
+            ],
+            "type": "string"
+          },
+          "principal_id": {
+            "type": "string"
+          },
+          "scope": {
+            "description": "Present when level is principal (`tenant` or `application`).",
+            "enum": [
+              "tenant",
+              "application"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "completed",
+              "failed"
+            ],
+            "type": "string"
+          },
+          "tenant_id": {
+            "description": "Empty when scope is application (every tenant of the application).",
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "status",
+          "level",
+          "tenant_id"
+        ],
+        "type": "object"
+      },
+      "ErasureRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "level": {
+            "enum": [
+              "principal",
+              "tenant",
+              "workspace"
+            ],
+            "type": "string"
+          },
+          "principal_id": {
+            "description": "Required when level is principal.",
+            "type": "string"
+          },
+          "reason": {
+            "description": "Short reason signed into tombstones; no personal data.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "scope": {
+            "description": "Only when level is principal. `tenant` (default when omitted) is tenant-local;\n`application` is GDPR application-wide (deployment operator only).\n",
+            "enum": [
+              "tenant",
+              "application"
+            ],
+            "type": "string"
+          },
+          "tenant_id": {
+            "description": "Defaults to the token's tenant. A tenant admin may only name their own. Ignored when\nscope is application (every tenant of the application is erased).\n",
+            "type": "string"
+          },
+          "workspace_id": {
+            "description": "Required when level is workspace (defaults to the token's workspace).",
+            "type": "string"
+          }
+        },
+        "required": [
+          "level"
+        ],
+        "type": "object"
+      },
       "Error": {
         "$ref": "schemas/common/error.schema.json"
       },
@@ -1652,6 +1850,12 @@
           "created_at"
         ],
         "type": "object"
+      },
+      "MeBudget": {
+        "$ref": "schemas/providers/me-budget.schema.json"
+      },
+      "MeUsage": {
+        "$ref": "schemas/providers/me-usage.schema.json"
       },
       "MemoryCreate": {
         "$ref": "schemas/memory/memory-create.schema.json"
@@ -2110,6 +2314,63 @@
       },
       "PrincipalLlmBindingUpdate": {
         "$ref": "schemas/providers/principal-llm-binding-update.schema.json"
+      },
+      "PrincipalOAuthCallback": {
+        "additionalProperties": false,
+        "properties": {
+          "query": {
+            "description": "The query string of the redirect (`code`, `state`, `error`, `iss`).",
+            "maxLength": 4096,
+            "type": "string"
+          },
+          "redirect_uri": {
+            "description": "The redirect URI the browser arrived on, without the query.",
+            "maxLength": 512,
+            "type": "string"
+          }
+        },
+        "required": [
+          "redirect_uri",
+          "query"
+        ],
+        "type": "object"
+      },
+      "PrincipalOAuthFlowStatus": {
+        "additionalProperties": false,
+        "properties": {
+          "flow_id": {
+            "pattern": "^oaf_[0-9A-HJKMNP-TV-Z]{26}$",
+            "type": "string"
+          },
+          "provider": {
+            "pattern": "^[a-z][a-z0-9_-]{0,31}$",
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "completed",
+              "failed",
+              "expired",
+              "cancelled"
+            ],
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "flow_id",
+          "provider",
+          "status",
+          "updated_at"
+        ],
+        "type": "object"
       },
       "PrincipalOAuthStart": {
         "additionalProperties": false,
@@ -5104,6 +5365,37 @@
         }
       ]
     },
+    "/v1/me/budget": {
+      "get": {
+        "description": "Workspace-bound and application-wide principal budgets of the token's principal, with their\nstates. Never another principal's. Operators set budgets with `PUT /v1/providers/budgets`.\nAnswers `unavailable` until the principal usage service is wired.\n",
+        "operationId": "getMeBudget",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeBudget"
+                }
+              }
+            },
+            "description": "The caller's budgets and states."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "The caller's own principal budgets and states",
+        "tags": [
+          "me"
+        ]
+      }
+    },
     "/v1/me/llm": {
       "get": {
         "description": "Bindings of the token's principal for the token's application. Never another principal. No secrets.\n",
@@ -5226,9 +5518,133 @@
         ]
       }
     },
+    "/v1/me/oauth/callback": {
+      "post": {
+        "description": "The host relays the provider redirect for a flow the token's principal started\n(`POST /v1/me/oauth/{provider}/start`). Same application, reserved principal-credential\ntenant, workspace and principal; any other caller, and an unknown or spent state, is refused.\nBinds the resulting credential to the principal (ADR 0041). Self only — not the operator\n`/v1/oauth/callback`.\n",
+        "operationId": "completePrincipalOAuth",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrincipalOAuthCallback"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrincipalCredentialStatus"
+                }
+              }
+            },
+            "description": "Safe credential status after completion."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Complete the caller's own OAuth authorization (host callback)",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/v1/me/oauth/flows/{flow_id}": {
+      "delete": {
+        "description": "Idempotent. Only the principal that started the flow may cancel it; any other caller answers\n`not_found`. Self only.\n",
+        "operationId": "cancelPrincipalOAuthFlow",
+        "responses": {
+          "204": {
+            "description": "The flow is cancelled, or was already terminal."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/PrincipalOAuthFlowNotFound"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Cancel the caller's own pending popup OAuth flow",
+        "tags": [
+          "me"
+        ]
+      },
+      "get": {
+        "description": "Only the principal that started the flow may read it; any other caller, and an unknown id,\nanswers `not_found`. Self only.\n",
+        "operationId": "getPrincipalOAuthFlow",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrincipalOAuthFlowStatus"
+                }
+              }
+            },
+            "description": "The current flow status."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/PrincipalOAuthFlowNotFound"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Read the status of the caller's own popup OAuth flow",
+        "tags": [
+          "me"
+        ]
+      },
+      "parameters": [
+        {
+          "description": "The opaque flow id returned by start when presentation is popup.",
+          "in": "path",
+          "name": "flow_id",
+          "required": true,
+          "schema": {
+            "pattern": "^oaf_[0-9A-HJKMNP-TV-Z]{26}$",
+            "type": "string"
+          }
+        }
+      ]
+    },
     "/v1/me/oauth/{provider}/start": {
       "post": {
-        "description": "Reuses the 1.1 OAuth engine; the resulting credential is owner-bound to the token's principal\n(ADR 0041). Self only. Providers without official third-party OAuth answer `validation_failed`\nwith `details.reason` `manual_fallback`.\n",
+        "description": "Reuses the 1.1 OAuth engine; the resulting credential is owner-bound to the token's principal\n(ADR 0041). Self only. Providers without official third-party OAuth answer `validation_failed`\nwith `details.reason` `manual_fallback`. OpenAI Sign in with ChatGPT is loopback-only: a remote\nhost callback (`callback: host`) also answers `manual_fallback` (use a manual API key). Google\n(`gemini`, `google-stt`, `google-tts`) and OpenRouter work with a registered https host callback\nand `external_providers.oauth.popup_origins`. Complete the host-callback path with\n`POST /v1/me/oauth/callback` (not the operator `/v1/oauth/callback`).\n",
         "operationId": "startPrincipalOAuth",
         "parameters": [
           {
@@ -5412,6 +5828,92 @@
           }
         },
         "summary": "Submit the caller's own provider credential (write-only)",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/v1/me/usage": {
+      "get": {
+        "description": "Usage of the token's principal across every tenant of the application (or one tenant when\n`tenant_id` is set), grouped by provider, role and UTC day with meter units and charged cost\nestimates. Never another principal's rows. Paginated. Answers `unavailable` until the\nprincipal usage service is wired.\n",
+        "operationId": "getMeUsage",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Narrow to one tenant of the application; omit for every tenant.",
+            "in": "query",
+            "name": "tenant_id",
+            "required": false,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "description": "The `next_cursor` of the previous page.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "pattern": "^[0-9]{1,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Groups per page (25 when not given, at most 100).",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeUsage"
+                }
+              }
+            },
+            "description": "A page of the caller's usage groups."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "The caller's own usage across tenants",
         "tags": [
           "me"
         ]
@@ -5937,6 +6439,94 @@
           }
         },
         "summary": "Export the caller's own audit events",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/v1/ops/erasure": {
+      "post": {
+        "description": "Starts the same erasure as `alixai retention erase` (sessions, history, durable turn\nblocks, memory, files including generated exports; audit payloads become signed tombstones —\nthe chain survives). For `level: principal`, `scope` chooses the breadth:\n\n- omitted or `tenant` (default): erase the principal **inside that tenant only**. A tenant\n  administrator of that tenant may start it. Never revokes principal-owned LLM credentials\n  or bindings (ADR 0041: those belong to the person across every tenant).\n- `application`: erase the principal in **every tenant** of the application and revoke their\n  principal-owned credentials/bindings. **Deployment operator only** — the GDPR \"erase this\n  person\" path (`alixai retention erase -principal` without `-tenant-scoped`).\n\nAnswers `202` with a job. Idempotent: a second request for the same target while one runs\nreturns the running job. RAG source registrations use their own deletion path and are not\nremoved here.\n",
+        "operationId": "startErasure",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErasureRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErasureJobAccepted"
+                }
+              }
+            },
+            "description": "The erasure job was accepted (or the running job for the same target)."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Start a GDPR erasure job (ADR 0036)",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/v1/ops/erasure/{job_id}": {
+      "get": {
+        "operationId": "getErasureJob",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "pattern": "^erj_[0-9A-HJKMNP-TV-Z]{26}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErasureJobStatus"
+                }
+              }
+            },
+            "description": "The job status and counts."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErasureJobNotFound"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Read the status of an erasure job",
         "tags": [
           "operations"
         ]
@@ -6482,6 +7072,17 @@
                 "tenant",
                 "application"
               ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Narrow the export to one principal (operators only).",
+            "in": "query",
+            "name": "principal_id",
+            "required": false,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
               "type": "string"
             }
           },

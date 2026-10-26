@@ -101,6 +101,8 @@ type stack struct {
 	// server tells a server running on this data directory about an activation
 	// or a quarantine; the runner calls it.
 	server *transportsServer
+	// clearSecrets unregisters application_credentials when the stack closes.
+	clearSecrets func()
 }
 
 // openStack loads the configuration at configPath and opens the deployment's
@@ -129,10 +131,20 @@ func openStack(ctx context.Context, env *Env, configPath string, allowTestKeys b
 		_ = db.Close()
 		return nil, err
 	}
+	if err := stackWireApplicationCredentials(ctx, s); err != nil {
+		s.close()
+		return nil, err
+	}
 	return s, nil
 }
 
-func (s *stack) close() { _ = s.db.Close() }
+func (s *stack) close() {
+	if s.clearSecrets != nil {
+		s.clearSecrets()
+		s.clearSecrets = nil
+	}
+	_ = s.db.Close()
+}
 
 func (s *stack) installer(coreVersion string) (*apppkg.Installer, error) {
 	return apppkg.NewInstaller(apppkg.InstallerOptions{

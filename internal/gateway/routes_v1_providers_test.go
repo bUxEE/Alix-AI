@@ -43,6 +43,7 @@ type providersTestFake struct {
 	kill      ProvidersKillSwitch
 	killBy    []string
 	acks      []string
+	lastUsage ProvidersUsageQuery
 }
 
 type providersTestAudit struct {
@@ -287,10 +288,15 @@ func (f *providersTestFake) Usage(_ context.Context, sc contracts.Scope, q Provi
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.enter("Usage", sc)
+	f.lastUsage = q
 	if q.CSV {
 		return ProvidersUsageResult{ContentType: "text/csv; charset=utf-8", Body: []byte("usage_id,provider\n")}, nil
 	}
-	return ProvidersUsageResult{ContentType: "application/json", Body: []byte(`{"rows":[],"totals":[]}`)}, nil
+	body := `{"rows":[],"totals":[]}`
+	if q.PrincipalID != "" {
+		body = `{"rows":[{"principal_id":"` + q.PrincipalID + `"}],"totals":[]}`
+	}
+	return ProvidersUsageResult{ContentType: "application/json", Body: []byte(body)}, nil
 }
 
 func (f *providersTestFake) KillSwitch(_ context.Context, sc contracts.Scope) (ProvidersKillSwitch, error) {
@@ -860,6 +866,11 @@ func TestProviderOperatorRoutesEdgeCases(t *testing.T) {
 		t.Errorf("csv Content-Type = %q", ct)
 	}
 	wantStatus(t, e.call(http.MethodGet, "/v1/providers/usage/export", nil), http.StatusOK)
+	pid := e.call(http.MethodGet, "/v1/providers/usage/export?principal_id=usr_alice", nil)
+	wantStatus(t, pid, http.StatusOK)
+	if f.lastUsage.PrincipalID != "usr_alice" {
+		t.Fatalf("principal_id filter not forwarded: %+v", f.lastUsage)
+	}
 	for _, q := range []string{"format=xml", "scope=world", "from=yesterday", "channel=weird", "tenant_id=" + apiOther} {
 		wantError(t, e.call(http.MethodGet, "/v1/providers/usage/export?"+q, nil), http.StatusBadRequest, contracts.ErrValidationFailed)
 	}

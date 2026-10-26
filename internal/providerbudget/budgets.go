@@ -63,6 +63,8 @@ func subjectColumns(s providers.BudgetSubject) (tenant, workspace, principal, pr
 		return ident(s.TenantID), ident(s.WorkspaceID), "", provider
 	case providers.BudgetSubjectKindPrincipal:
 		return ident(s.TenantID), ident(s.WorkspaceID), ident(s.PrincipalID), provider
+	case providers.BudgetSubjectKindPrincipalApplication:
+		return "", "", ident(s.PrincipalID), provider
 	}
 	return "", "", "", provider
 }
@@ -105,6 +107,8 @@ func validateBudget(scope contracts.Scope, b providers.Budget) error {
 		want = []string{"application", "tenant", "workspace"}
 	case providers.BudgetSubjectKindPrincipal:
 		want = []string{"application", "tenant", "workspace", "principal"}
+	case providers.BudgetSubjectKindPrincipalApplication:
+		want = []string{"application", "principal"}
 	}
 	allowed := map[string]bool{}
 	for _, w := range want {
@@ -339,9 +343,10 @@ func (s *Service) ListBudgets(ctx context.Context, scope contracts.Scope) ([]pro
 
 // applicableSQL reads the budgets that apply to a call, oldest first (applicableArgs): one branch per
 // kind of subject, each naming every column of providerbudget_budgets_subject, so each is a seek of
-// that index. The branches are disjoint (by kind), so UNION ALL returns each budget once. The empty
-// principal_id the provider, tenant and workspace branches ask for is what the table's CHECKs already
-// require of those kinds; it is spelled out for the index.
+// that index. The branches are disjoint (by kind, or by empty vs non-empty tenant for principal), so
+// UNION ALL returns each budget once. The empty principal_id the provider, tenant and workspace
+// branches ask for is what the table's CHECKs already require of those kinds; it is spelled out for
+// the index. Application-wide principal budgets (empty tenant and workspace) apply in every tenant.
 const applicableSQL = `SELECT ` + budgetCols + ` FROM (
 		  SELECT seq, ` + budgetCols + ` FROM providerbudget_budgets
 		   WHERE application_id = ? AND tenant_id = '' AND workspace_id = '' AND kind = 'provider'
@@ -357,6 +362,10 @@ const applicableSQL = `SELECT ` + budgetCols + ` FROM (
 		  UNION ALL
 		  SELECT seq, ` + budgetCols + ` FROM providerbudget_budgets
 		   WHERE application_id = ? AND tenant_id = ? AND workspace_id = ? AND kind = 'principal'
+		     AND principal_id = ? AND provider_id IN ('', ?) AND channel = ?
+		  UNION ALL
+		  SELECT seq, ` + budgetCols + ` FROM providerbudget_budgets
+		   WHERE application_id = ? AND tenant_id = '' AND workspace_id = '' AND kind = 'principal_application'
 		     AND principal_id = ? AND provider_id IN ('', ?) AND channel = ?)
 		 ORDER BY seq`
 
@@ -368,12 +377,14 @@ func applicableArgs(scope contracts.Scope, provider providers.ProviderID, channe
 		scope.ApplicationID, scope.TenantID, p, ch,
 		scope.ApplicationID, scope.TenantID, scope.WorkspaceID, p, ch,
 		scope.ApplicationID, scope.TenantID, scope.WorkspaceID, scope.PrincipalID, p, ch,
+		scope.ApplicationID, scope.PrincipalID, p, ch,
 	}
 }
 
 // applicable returns the budgets that apply to a call of scope to provider on channel: the
-// provider's, and the scope's tenant, workspace and principal budgets (each unnarrowed or narrowed
-// to this provider). A budget of another application, tenant, workspace or principal never matches.
+// provider's, and the scope's tenant, workspace and principal budgets (workspace-bound and
+// application-wide; each unnarrowed or narrowed to this provider). A budget of another application,
+// tenant, workspace or principal never matches.
 func applicable(ctx context.Context, q store.Reader, scope contracts.Scope, provider providers.ProviderID, channel providers.Channel) ([]budgetRow, error) {
 	rows, err := q.QueryContext(ctx, applicableSQL, applicableArgs(scope, provider, channel)...)
 	if err != nil {

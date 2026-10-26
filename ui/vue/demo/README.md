@@ -24,6 +24,12 @@ exactly as it would to a host's gateway. The demo is not published (`files` list
 | Memory | `AlixMemoryProposal` (standalone) and `AlixMemoryList` on `/v1/memory`: edit, delete, refresh. The kit never calls AlixAI; the host supplies data and handlers. No per-user LLM account UI (that stays on the host server). |
 | Voice | `AlixVoiceMode` on the mock voice socket (`/v1/sessions/{id}/voice`) with a simulated microphone unless you turn the real one on, speech through Web Audio, plus `AlixVoiceButton` in each state and `AlixTranscriptEditor` on its own. |
 
+## Fullscreen on the chat panel
+
+Fullscreen Teleports the same panel instance to `document.body` (`position: fixed` with safe-area insets). Draft, scroll and the running turn survive. Prop `v-model:fullscreen` (default false); Esc exits.
+
+**Z-index.** Default is `2400` so the overlay sits above common UI-framework layers (Vuetify overlays start around 2000). This kit’s token prefix is `--alix-*`, so the variable is **`--alix-fullscreen-z`**. The React kit uses **`--alixai-z-fullscreen`** (same default); both names are listed so hosts reading either README can map them. Override with prop `fullscreenZIndex` or by setting the CSS variable on an ancestor. Body-teleported dialogs/menus opened from the panel must use a z-index **higher** than the fullscreen value (configure Vuetify’s overlay z-index, or pass a lower `fullscreenZIndex`).
+
 ## Voice mode on the chat panel
 
 Pass one prop: `voice: "off" | "dictation" | "conversation"` (default `off`, unchanged for 1.0 hosts). For dictation, also pass `dictationClient` from `voice.createDictationClient` (the demo uses `demoDictationClient()`). The default `AlixDictationButton` emits `transcript` with the recognised text (listen with `@transcript`); it never sends a turn. Import the control alone from `@alixai/vue/dictation` when you want record-to-text without the conversation orb or session driver.

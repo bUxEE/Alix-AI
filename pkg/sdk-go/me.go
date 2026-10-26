@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"time"
 
 	pv "github.com/buxee/alix-ai/pkg/contracts/gen/providers"
@@ -128,6 +129,105 @@ func (m *MeClient) StartOAuth(ctx context.Context, provider string, body Princip
 	}
 	req := request{op: opStartPrincipalOAuth, params: map[string]string{"provider": provider}, accept: "application/json", contentType: "application/json", body: raw}
 	return doJSON(ctx, m.c.t, req, applyOptions(options).deadline(m.c.timeout), func(*PrincipalOAuthStarted) error { return nil })
+}
+
+// PrincipalOAuthCallback is the body of POST /v1/me/oauth/callback.
+type PrincipalOAuthCallback struct {
+	RedirectURI string `json:"redirect_uri"`
+	Query       string `json:"query"`
+}
+
+// PrincipalOAuthFlowStatus is the body of GET /v1/me/oauth/flows/{flow_id}.
+type PrincipalOAuthFlowStatus struct {
+	FlowID    string    `json:"flow_id"`
+	Provider  string    `json:"provider"`
+	Status    string    `json:"status"`
+	Reason    string    `json:"reason,omitempty"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// CompleteOAuth relays the host callback for a flow the caller started (1.3.0).
+func (m *MeClient) CompleteOAuth(ctx context.Context, body PrincipalOAuthCallback, options ...CallOption) (*PrincipalCredentialStatus, error) {
+	if body.RedirectURI == "" || len(body.RedirectURI) > 512 {
+		return nil, invalidArgument("RedirectURI", "it is required, at most 512 characters")
+	}
+	if body.Query == "" || len(body.Query) > 4096 {
+		return nil, invalidArgument("Query", "it is required, at most 4096 characters")
+	}
+	raw, err := json.Marshal(map[string]string{"redirect_uri": body.RedirectURI, "query": body.Query})
+	if err != nil {
+		return nil, err
+	}
+	req := request{op: opCompletePrincipalOAuth, accept: "application/json", contentType: "application/json", body: raw}
+	return doJSON(ctx, m.c.t, req, applyOptions(options).deadline(m.c.timeout), checkPrincipalCredentialStatus)
+}
+
+// OAuthFlowStatus reads the caller's own popup OAuth flow (1.3.0).
+func (m *MeClient) OAuthFlowStatus(ctx context.Context, flowID string, options ...CallOption) (*PrincipalOAuthFlowStatus, error) {
+	if flowID == "" {
+		return nil, invalidArgument("flowID", "it is required")
+	}
+	req := request{op: opGetPrincipalOAuthFlow, params: map[string]string{"flow_id": flowID}, accept: "application/json"}
+	return doJSON(ctx, m.c.t, req, applyOptions(options).deadline(m.c.timeout), func(*PrincipalOAuthFlowStatus) error { return nil })
+}
+
+// CancelOAuthFlow cancels the caller's own pending popup OAuth flow (1.3.0).
+func (m *MeClient) CancelOAuthFlow(ctx context.Context, flowID string, options ...CallOption) error {
+	if flowID == "" {
+		return invalidArgument("flowID", "it is required")
+	}
+	req := request{op: opCancelPrincipalOAuthFlow, params: map[string]string{"flow_id": flowID}}
+	return doEmpty(ctx, m.c.t, req, applyOptions(options).deadline(m.c.timeout))
+}
+
+// MeUsageQuery selects the caller's usage page.
+type MeUsageQuery struct {
+	From, To time.Time
+	TenantID string
+	Limit    int
+	Cursor   string
+}
+
+// Usage returns the caller's own usage across tenants (GET /v1/me/usage).
+func (m *MeClient) Usage(ctx context.Context, query MeUsageQuery, options ...CallOption) (*pv.MeUsage, error) {
+	q := url.Values{}
+	if !query.From.IsZero() {
+		q.Set("from", query.From.UTC().Format(time.RFC3339))
+	}
+	if !query.To.IsZero() {
+		q.Set("to", query.To.UTC().Format(time.RFC3339))
+	}
+	if query.TenantID != "" {
+		q.Set("tenant_id", query.TenantID)
+	}
+	if query.Cursor != "" {
+		q.Set("cursor", query.Cursor)
+	}
+	if query.Limit != 0 {
+		q.Set("limit", fmt.Sprintf("%d", query.Limit))
+	}
+	req := request{op: opGetMeUsage, accept: "application/json", query: q}
+	return doJSON(ctx, m.c.t, req, applyOptions(options).deadline(m.c.timeout), checkMeUsage)
+}
+
+// Budget returns the caller's own principal budgets and states (GET /v1/me/budget).
+func (m *MeClient) Budget(ctx context.Context, options ...CallOption) (*pv.MeBudget, error) {
+	req := request{op: opGetMeBudget, accept: "application/json"}
+	return doJSON(ctx, m.c.t, req, applyOptions(options).deadline(m.c.timeout), checkMeBudget)
+}
+
+func checkMeUsage(u *pv.MeUsage) error {
+	if u.Groups == nil {
+		return fmt.Errorf("me usage: groups must be present")
+	}
+	return nil
+}
+
+func checkMeBudget(b *pv.MeBudget) error {
+	if b.Budgets == nil || b.States == nil {
+		return fmt.Errorf("me budget: budgets and states must be present")
+	}
+	return nil
 }
 
 func checkProviderCatalog(c *pv.ProviderCatalog) error {

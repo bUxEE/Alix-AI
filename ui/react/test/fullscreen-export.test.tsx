@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useRef, useState } from "react";
-import type { ReactElement } from "react";
+import type { CSSProperties, ReactElement } from "react";
 
 import { AlixExportMenu, AlixProvider, AlixTableBlock } from "../src/index.js";
 import { AlixExportsProvider } from "../src/exports-context.js";
@@ -14,9 +14,11 @@ afterEach(() => cleanup());
 const FullscreenProbe = ({
   controlled,
   messages = ["hello"],
+  fullscreenZIndex,
 }: {
   controlled?: boolean;
   messages?: readonly string[];
+  fullscreenZIndex?: number;
 }): ReactElement => {
   const rootRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
@@ -26,6 +28,10 @@ const FullscreenProbe = ({
     toggleRef,
     ...(controlled === true && { fullscreen: value, onFullscreenChange: setValue }),
   });
+  const style: CSSProperties | undefined =
+    fullscreenZIndex === undefined
+      ? undefined
+      : ({ ["--alixai-z-fullscreen"]: String(fullscreenZIndex), ["--alix-fullscreen-z"]: String(fullscreenZIndex) } as CSSProperties);
   return (
     <div data-testid="host">
       <button ref={toggleRef} type="button" aria-label={isFullscreen ? "Exit full screen" : "Full screen"} onClick={toggleFullscreen}>
@@ -35,6 +41,7 @@ const FullscreenProbe = ({
         ref={rootRef}
         role={isFullscreen ? "dialog" : "region"}
         className={isFullscreen ? "alix-panel alix-panel--fullscreen" : "alix-panel"}
+        {...(style !== undefined && { style })}
         {...(isFullscreen ? { "data-fullscreen": "" } : {})}
         tabIndex={-1}
       >
@@ -51,6 +58,18 @@ const FullscreenProbe = ({
 };
 
 describe("fullscreen", () => {
+  it("applies fullscreenZIndex to CSS custom properties", () => {
+    render(
+      <AlixProvider>
+        <FullscreenProbe controlled fullscreenZIndex={3100} />
+      </AlixProvider>,
+    );
+    fireEvent.click(screen.getByLabelText("Full screen"));
+    const panel = screen.getByRole("dialog");
+    expect(panel.style.getPropertyValue("--alixai-z-fullscreen")).toBe("3100");
+    expect(panel.style.getPropertyValue("--alix-fullscreen-z")).toBe("3100");
+  });
+
   it("toggles without clearing the draft, keeps the message list, and exits on Escape", async () => {
     render(
       <AlixProvider>

@@ -16,6 +16,8 @@ import (
 	"testing"
 	"time"
 
+	openapitransport "github.com/buxee/alix-ai/adapters/openapi"
+	"github.com/buxee/alix-ai/internal/cli"
 	"github.com/buxee/alix-ai/internal/fsperm"
 	"github.com/buxee/alix-ai/tools/devkeys"
 )
@@ -33,6 +35,11 @@ const (
 	clinicPkgRel  = "examples/reference-apps/clinic-booking/package"
 	signedAtOfPkg = "2026-10-01T00:00:00Z"
 	signExpires   = "2036-10-01T00:00:00Z"
+	// clinicMCPCredRef matches the package's credential_ref; clinicMCPCredEnv is the
+	// application_credentials env backend AlixAI and the clinic subprocess share.
+	clinicMCPCredRef = "cred:clinic-booking-mcp"
+	clinicMCPCredEnv = "ALIXAI_SECRET_CLINIC_BOOKING_MCP"
+	clinicMCPTenant  = "clinic-dr"
 )
 
 // env is everything the scenarios share, built once per test binary: the built programs, the
@@ -52,6 +59,8 @@ type env struct {
 	// releaseManifest is a release manifest signed with the published TEST-ONLY key, for
 	// `alixai upgrade apply -allow-dev-key`.
 	releaseManifest string
+	// mcpSecret is the shared bearer for clinic-mcp (CLINIC_MCP_BEARER and application_credentials).
+	mcpSecret string
 
 	buildDur  time.Duration
 	goldenDur time.Duration
@@ -128,7 +137,16 @@ func newEnv() (e *env, err error) {
 	}
 	e.buildDur = time.Since(begin)
 
-	if e.clinic, err = startClinic(e.moduleRoot); err != nil {
+	// The package declares credential_ref; provision the same secret AlixAI and the
+	// clinic MCP server share (fail closed without it). In-process openCore builds
+	// adapters through BuildPackageAdapter and needs the same provider serve registers.
+	e.mcpSecret = fmt.Sprintf("dr-clinic-mcp-%d", time.Now().UnixNano())
+	if err = os.Setenv(clinicMCPCredEnv, e.mcpSecret); err != nil {
+		return e, err
+	}
+	cli.RegisterOpenAPISecretProvider(openapitransport.StaticSecrets{clinicMCPCredRef: e.mcpSecret})
+
+	if e.clinic, err = startClinic(e.moduleRoot, e.mcpSecret); err != nil {
 		return e, err
 	}
 	if e.proxy, err = startProxy(e.clinic.mcpURL); err != nil {
@@ -218,11 +236,13 @@ type result struct {
 }
 
 // cleanEnv is the environment of every subprocess: the machine's, without anything AlixAI reads, so
-// a developer's own settings cannot change a drill.
+// a developer's own settings cannot change a drill. The clinic MCP credential env is kept: the
+// package declares credential_ref and application_credentials points at that variable.
 func cleanEnv() []string {
 	var out []string
 	for _, kv := range os.Environ() {
-		if strings.HasPrefix(strings.ToUpper(kv), "ALIXAI_") {
+		upper := strings.ToUpper(kv)
+		if strings.HasPrefix(upper, "ALIXAI_") && !strings.HasPrefix(upper, clinicMCPCredEnv+"=") {
 			continue
 		}
 		out = append(out, kv)
@@ -364,7 +384,14 @@ integration_audit:
   signing_key_id: %s
   signing_key_file: %q
   accept_operators: [%s]
-%s`, filepath.ToSlash(dataDir), listen, deploymentID, audience, auditSignerID, filepath.ToSlash(e.signerKey), drillOperator, extra)
+application_credentials:
+  credentials:
+    - ref: %s
+      application: %s
+      tenant: %s
+      env: %s
+%s`, filepath.ToSlash(dataDir), listen, deploymentID, audience, auditSignerID, filepath.ToSlash(e.signerKey), drillOperator,
+		clinicMCPCredRef, clinicApplication, clinicMCPTenant, clinicMCPCredEnv, extra)
 	return os.WriteFile(path, []byte(cfg), 0o600)
 }
 

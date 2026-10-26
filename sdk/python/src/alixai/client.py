@@ -45,6 +45,7 @@ if TYPE_CHECKING:
     from alixai.exports import AsyncExportsApi, ExportsApi
     from alixai.me import AsyncMeApi, MeApi
     from alixai.memory_api import AsyncMemoryApi, MemoryApi
+    from alixai.ops import AsyncOpsApi, OpsApi
     from alixai.providers import AsyncProvidersApi, ProvidersApi
 
 T = TypeVar("T")
@@ -476,6 +477,13 @@ class AlixAIClient:
         return ExportsApi(self)
 
     @property
+    def ops(self) -> "OpsApi":
+        """Operator erasure over HTTP (1.3.0, ADR 0036). Server-side only."""
+        from alixai.ops import OpsApi
+
+        return OpsApi(self)
+
+    @property
     def providers(self) -> "ProvidersApi":
         """The operator-facing providers and OAuth area of External Provider Mode (off by default; see :class:`alixai.providers.ProvidersApi`)."""
         from alixai.providers import ProvidersApi
@@ -662,6 +670,13 @@ class AlixAIAsyncClient:
         from alixai.exports import AsyncExportsApi
 
         return AsyncExportsApi(self)
+
+    @property
+    def ops(self) -> "AsyncOpsApi":
+        """Operator erasure over HTTP (1.3.0, ADR 0036). Server-side only."""
+        from alixai.ops import AsyncOpsApi
+
+        return AsyncOpsApi(self)
 
     @property
     def providers(self) -> "AsyncProvidersApi":

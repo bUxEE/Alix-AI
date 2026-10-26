@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:providers:budget:v1",
+  "title": "Provider budget",
+  "description": "The spending and usage limits of one budget (additive plan section 11.2, ADR-0025, ADR 0041): per provider, tenant, workspace or principal (and principal_application across tenants), per channel (interactive or background, so queued RAG work cannot consume the interactive budget), with a daily and a monthly hard stop in integer micro-units of the operator currency, a spend warning percentage, optional quotas per metered unit (requests, toks_in, toks_out, images, audio seconds, file bytes, characters_in) and optional rate and concurrency limits. Windows are UTC calendar days and months. A budget always has both limits: there is no unlimited budget (a limit of 0 allows no spend), and when a window reaches its limit external calls stop with a typed resource_exhausted error and no alternate provider is chosen. The operator supplies the limits (host); the core mints the ID and revision and records who changed it (alixai). Money is never a float. Every applicable budget admits a call; the strictest stop wins.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "budget_id",
+    "revision",
+    "subject",
+    "channel",
+    "currency",
+    "limits",
+    "warn_at_percent",
+    "updated_at",
+    "updated_by"
+  ],
+  "properties": {
+    "budget_id": {
+      "description": "Budget ID.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/budgetId"
+    },
+    "revision": {
+      "description": "Starts at 1 and increases with every change.",
+      "x-alixai-authority": "alixai",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "subject": {
+      "description": "What the budget applies to.",
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/budgetSubject"
+    },
+    "channel": {
+      "description": "interactive or background. A background budget is separate from the interactive one.",
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/channel"
+    },
+    "currency": {
+      "description": "The operator currency of every amount in the budget.",
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/currency"
+    },
+    "limits": {
+      "description": "The hard stops. External calls stop when spend plus reserved amounts reach a limit.",
+      "x-alixai-authority": "host",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["daily_micro_units", "monthly_micro_units"],
+      "properties": {
+        "daily_micro_units": {
+          "description": "The daily limit in micro-units; 0 allows no spend.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/microUnits"
+        },
+        "monthly_micro_units": {
+          "description": "The monthly limit in micro-units; 0 allows no spend.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/microUnits"
+        }
+      }
+    },
+    "warn_at_percent": {
+      "description": "The percentage of a limit at which the state becomes warning, 1 to 99. The hard stop at 100 percent is not configurable.",
+      "x-alixai-authority": "host",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 99
+    },
+    "quotas": {
+      "description": "Optional quotas per metered unit; a unit with no entry has no quota beyond the cost limits.",
+      "x-alixai-authority": "host",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "toks_in": {
+          "description": "Quota of toks_in.",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/quota"
+        },
+        "toks_out": {
+          "description": "Quota of toks_out.",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/quota"
+        },
+        "toks_in_cached": {
+          "description": "Quota of toks_in_cached.",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/quota"
+        },
+        "images_in": {
+          "description": "Quota of images_in.",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/quota"
+        },
+        "images_out": {
+          "description": "Quota of images_out.",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/quota"
+        },
+        "audio_seconds_in": {
+          "description": "Quota of audio_seconds_in.",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/quota"
+        },
+        "audio_seconds_out": {
+          "description": "Quota of audio_seconds_out.",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/quota"
+        },
+        "file_bytes_in": {
+          "description": "Quota of file_bytes_in.",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/quota"
+        },
+        "characters_in": {
+          "description": "Quota of characters_in (ADR 0043).",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/quota"
+        },
+        "requests": {
+          "description": "Quota of requests.",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/quota"
+        }
+      }
+    },
+    "rate_limits": {
+      "description": "Optional request rate and concurrency limits for this subject.",
+      "x-alixai-authority": "host",
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "requests_per_min": {
+          "description": "Requests per minute.",
+          "x-alixai-authority": "host",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "concurrent_requests": {
+          "description": "Concurrent requests.",
+          "x-alixai-authority": "host",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "updated_at": {
+      "description": "When the budget last changed.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    },
+    "updated_by": {
+      "description": "The operator principal who last changed it, from the verified Scope.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+    }
+  },
+  "$defs": {
+    "quota": {
+      "description": "A daily and monthly quota of one unit. At least one is present.",
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "daily": {
+          "description": "Units per UTC day.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/counter"
+        },
+        "monthly": {
+          "description": "Units per UTC month.",
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/counter"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "groups": [
+    {
+      "day": "2026-10-26",
+      "provider_id": "openai",
+      "role": "conversational_controller",
+      "toks_in": 100,
+      "toks_out": 50,
+      "audio_seconds_in": 0,
+      "characters_in": 0,
+      "requests": 1,
+      "currency": "USD",
+      "charged_micro_units": 200
+    }
+  ],
+  "next_cursor": null
+}

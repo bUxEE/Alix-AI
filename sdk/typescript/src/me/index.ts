@@ -1,6 +1,7 @@
 export { createMeApi } from "./client.js";
 export type {
   MeApi,
+  MeUsageQuery,
   PrincipalBillingAckInput,
   PrincipalBillingAckResult,
   PrincipalCredentialInput,

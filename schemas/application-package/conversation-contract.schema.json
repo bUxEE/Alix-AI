@@ -81,9 +81,43 @@
       "type": "array",
       "maxItems": 16,
       "items": { "$ref": "#/$defs/nextActionLabel" }
+    },
+    "presentation": {
+      "description": "Optional, additive presentation hint for present_result replies built from host records. When a capability result has records (rows) or a typed series, AlixAI may emit a validated table of those rows; with presentation.chart set it also emits a chart whose every number is an authoritative fact. Absent means text (and a table of records when rows exist) only.",
+      "$ref": "#/$defs/presentation"
     }
   },
   "$defs": {
+    "presentation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "chart": {
+          "description": "When set, the deterministic template (and a verified external realisation) may include a chart of the named fields from the result rows.",
+          "$ref": "#/$defs/chartHint"
+        }
+      }
+    },
+    "chartHint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "x", "y"],
+      "properties": {
+        "type": {
+          "description": "The chart mark type.",
+          "type": "string",
+          "enum": ["bar", "line", "area", "point", "pie"]
+        },
+        "x": {
+          "description": "The result field used for the x (or category) channel.",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+        },
+        "y": {
+          "description": "The result field used for the y (or value) channel; must be a number the host stated.",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+        }
+      }
+    },
     "fieldPrompt": {
       "type": "object",
       "additionalProperties": false,

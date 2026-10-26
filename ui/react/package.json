@@ -8,6 +8,19 @@
   "engines": {
     "node": ">=22"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bUxEE/Alix-AI.git",
+    "directory": "ui/react"
+  },
+  "homepage": "https://github.com/bUxEE/Alix-AI/tree/main/ui/react#readme",
+  "bugs": {
+    "url": "https://github.com/bUxEE/Alix-AI/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "sideEffects": false,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -38,7 +51,8 @@
     "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
     "styles": "sass --no-source-map src/styles/index.scss dist/alixai.css",
     "dev": "vite --config demo/vite.config.ts",
-    "demo:build": "vite build --config demo/vite.config.ts"
+    "demo:build": "vite build --config demo/vite.config.ts",
+    "prepublishOnly": "pnpm run typecheck && pnpm run build"
   },
   "dependencies": {
     "@alixai/copilotkit-adapter": "workspace:*",

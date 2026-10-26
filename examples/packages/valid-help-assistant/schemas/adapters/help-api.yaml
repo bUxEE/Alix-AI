@@ -1,5 +1,8 @@
 # Adapter configuration of the OpenAPI endpoint help-api.
 server: help-api
+auth:
+  header: Authorization
+  scheme: Bearer
 identity:
   header: X-AlixAI-Identity
 idempotency:

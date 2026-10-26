@@ -554,6 +554,25 @@ func rigMCPConfig(pkg *apppkg.Package, dir string, log *slog.Logger) (mcptranspo
 			return cfg, err
 		}
 		ep.Allow = ac.Tools.Allow
+		if v.CredentialRef != nil {
+			header, scheme := mcptransport.DefaultAuthHeader, mcptransport.DefaultAuthScheme
+			if ac.Auth != nil {
+				if ac.Auth.Header != "" {
+					header = ac.Auth.Header
+				}
+				if ac.Auth.Scheme != nil {
+					scheme = *ac.Auth.Scheme
+				}
+			}
+			secret := ensureClinicMCPSecret()
+			ep.AuthHeader, ep.AuthScheme = header, scheme
+			ep.Authorization = func(context.Context) (string, error) {
+				if scheme == "" {
+					return secret, nil
+				}
+				return scheme + " " + secret, nil
+			}
+		}
 		cfg.Endpoints = append(cfg.Endpoints, ep)
 
 		host, port, err := hostPortOf(string(v.URL))

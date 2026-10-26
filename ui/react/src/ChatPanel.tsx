@@ -2,7 +2,7 @@ import { CopilotChat, CopilotKitProvider, CopilotPopup, CopilotSidebar } from "@
 import type { voice } from "@alixai/sdk";
 import { isValidElement, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import type { ComponentProps, ReactElement, ReactNode, RefObject } from "react";
+import type { ComponentProps, CSSProperties, ReactElement, ReactNode, RefObject } from "react";
 import { useAlixAISuggestions } from "@alixai/copilotkit-adapter/react";
 import { ChatAnswerExports } from "./components/AnswerExports.js";
 import { AlixMemoryProposal } from "./components/Memory.js";
@@ -66,6 +66,11 @@ export interface AlixChatPanelProps extends Pick<AlixProviderProps, "locale" | "
   /** Uncontrolled initial fullscreen. Default false. */
   defaultFullscreen?: boolean;
   onFullscreenChange?: (value: boolean) => void;
+  /**
+   * Overrides `--alixai-z-fullscreen` / `--alix-fullscreen-z` (default 2400).
+   * Body-teleported dialogs/menus from inside the panel must use a higher z-index.
+   */
+  fullscreenZIndex?: number;
   /** Extra controls in the kit-owned fullscreen header row (beside the fullscreen toggle). */
   headerActions?: ReactNode;
   /**
@@ -367,6 +372,7 @@ export const AlixChatPanel = ({
   fullscreen,
   defaultFullscreen = false,
   onFullscreenChange,
+  fullscreenZIndex,
   headerActions,
   exports: exportsEnabled = false,
   exporter,
@@ -422,6 +428,7 @@ export const AlixChatPanel = ({
           ref={panelRef}
           theme={theme}
           fullscreen={isFullscreen}
+          {...(fullscreenZIndex !== undefined && { fullscreenZIndex })}
           headerActions={headerActions}
           toggleRef={toggleRef}
           onToggleFullscreen={toggleFullscreen}
@@ -481,6 +488,7 @@ const Panel = ({
   locale,
   children,
   fullscreen,
+  fullscreenZIndex,
   headerActions,
   toggleRef,
   onToggleFullscreen,
@@ -490,6 +498,7 @@ const Panel = ({
   locale?: string;
   children: ReactNode;
   fullscreen: boolean;
+  fullscreenZIndex?: number;
   headerActions?: ReactNode;
   toggleRef: RefObject<HTMLButtonElement | null>;
   onToggleFullscreen: () => void;
@@ -500,12 +509,17 @@ const Panel = ({
   const className = [dark ? "alix-root alix-panel dark" : "alix-root alix-panel", fullscreen ? "alix-panel--fullscreen" : ""]
     .filter(Boolean)
     .join(" ");
+  const style: CSSProperties | undefined =
+    fullscreenZIndex === undefined
+      ? undefined
+      : ({ ["--alixai-z-fullscreen"]: String(fullscreenZIndex), ["--alix-fullscreen-z"]: String(fullscreenZIndex) } as CSSProperties);
   return (
     <div
       ref={ref}
       className={className}
       role={fullscreen ? "dialog" : "region"}
       aria-label={text.label}
+      {...(style !== undefined && { style })}
       {...(fullscreen ? { "aria-modal": true, tabIndex: -1, "data-fullscreen": "" } : {})}
       {...(theme !== "auto" && { "data-alixai-theme": theme })}
       {...(locale !== undefined && { lang: locale })}

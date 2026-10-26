@@ -49,16 +49,18 @@ class ProviderBudgetRateLimits(BaseModel):
 
 class ProviderBudget(BaseModel):
     """
-    The spending and usage limits of one budget (additive plan section 11.2, ADR-0025): per
-    provider, tenant, workspace or principal, per channel (interactive or background, so queued
-    RAG work cannot consume the interactive budget), with a daily and a monthly hard stop in
-    integer micro-units of the operator currency, a spend warning percentage, optional quotas
-    per metered unit (requests, toks_in, toks_out, images, audio seconds, file bytes) and
-    optional rate and concurrency limits. Windows are UTC calendar days and months. A budget
-    always has both limits: there is no unlimited budget (a limit of 0 allows no spend), and
-    when a window reaches its limit external calls stop with a typed resource_exhausted error
-    and no alternate provider is chosen. The operator supplies the limits (host); the core mints
-    the ID and revision and records who changed it (alixai). Money is never a float.
+    The spending and usage limits of one budget (additive plan section 11.2, ADR-0025, ADR
+    0041): per provider, tenant, workspace or principal (and principal_application across
+    tenants), per channel (interactive or background, so queued RAG work cannot consume the
+    interactive budget), with a daily and a monthly hard stop in integer micro-units of the
+    operator currency, a spend warning percentage, optional quotas per metered unit (requests,
+    toks_in, toks_out, images, audio seconds, file bytes, characters_in) and optional rate and
+    concurrency limits. Windows are UTC calendar days and months. A budget always has both
+    limits: there is no unlimited budget (a limit of 0 allows no spend), and when a window
+    reaches its limit external calls stop with a typed resource_exhausted error and no alternate
+    provider is chosen. The operator supplies the limits (host); the core mints the ID and
+    revision and records who changed it (alixai). Money is never a float. Every applicable
+    budget admits a call; the strictest stop wins.
     """
     model_config = ConfigDict(extra="forbid", protected_namespaces=())
     budget_id: BudgetId

@@ -18,6 +18,7 @@ import (
 	"github.com/buxee/alix-ai/internal/identity"
 	"github.com/buxee/alix-ai/internal/jobs"
 	"github.com/buxee/alix-ai/internal/memory"
+	"github.com/buxee/alix-ai/internal/retention"
 	"github.com/buxee/alix-ai/internal/sessions"
 	"github.com/buxee/alix-ai/internal/store"
 	"github.com/buxee/alix-ai/internal/trust"
@@ -87,7 +88,7 @@ const (
 	retentionMaxBatches = 20
 
 	retentionRunUsage   = "alixai retention run [-config FILE] [-application ID] [-dry-run]"
-	retentionEraseUsage = "alixai retention erase -application ID -tenant ID -reason TEXT -operator ID [-principal ID] [-dry-run] [-config FILE]"
+	retentionEraseUsage = "alixai retention erase -application ID -tenant ID -reason TEXT -operator ID [-principal ID] [-tenant-scoped] [-dry-run] [-config FILE]"
 )
 
 // Test seams, replaced only by tests.
@@ -112,7 +113,7 @@ func init() {
 	})
 	Register(Command{
 		Name:    "retention erase",
-		Summary: "erase the receipts, audit payloads and conversation history of a tenant (or of one principal in it); the audit chain keeps its hashes and still verifies",
+		Summary: "erase the receipts, audit payloads and conversation history of a tenant, or of one principal (application-wide GDPR with -principal; add -tenant-scoped for that tenant only)",
 		Run:     retentionRunErase,
 	})
 }
@@ -498,9 +499,11 @@ type retentionEraseReport struct {
 	// MemoryItemsRemoved is long-term memory erased with the principal/tenant (ADR 0042).
 	MemoryItemsRemoved int `json:"memory_items_removed"`
 	// PrincipalCredentialsRevoked / PrincipalBindingsRemoved are per-principal LLM account
-	// erasure (ADR 0041); only set when -principal is named.
+	// erasure (ADR 0041); only set for application-wide principal erasure (`-principal` without `-tenant-scoped`).
 	PrincipalCredentialsRevoked int `json:"principal_credentials_revoked,omitempty"`
 	PrincipalBindingsRemoved    int `json:"principal_bindings_removed,omitempty"`
+	// Scope is "application" or "tenant" when a principal was named.
+	Scope string `json:"scope,omitempty"`
 	// More is set on a dry run that saw only the first batch of the receipts, and on a run that
 	// stopped at its batch limit with receipts or history left (it then fails: run it again).
 	More bool `json:"more,omitempty"`
@@ -514,8 +517,9 @@ func retentionRunErase(ctx context.Context, env *Env, args []string) error {
 	fs := env.FlagSet("retention erase")
 	cfgPath := env.ConfigFlag(fs)
 	app := fs.String("application", "", "the application (required)")
-	tenant := fs.String("tenant", "", "the tenant whose receipts, audit payloads and conversation history are erased (required)")
-	principal := fs.String("principal", "", "erase only what names this principal in the tenant")
+	tenant := fs.String("tenant", "", "the tenant whose data is erased (required); with -principal without -tenant-scoped, every tenant of the application is erased and this names the report")
+	principal := fs.String("principal", "", "GDPR erase this principal across every tenant of the application (and revoke their LLM credentials); add -tenant-scoped to limit to -tenant only")
+	tenantScoped := fs.Bool("tenant-scoped", false, "with -principal: erase only that principal's data inside -tenant; never revoke application-wide credentials or bindings")
 	reason := fs.String("reason", "", "why, in a few words and with no personal data; it is signed into every tombstone (required)")
 	operator := fs.String("operator", "", "who is erasing: your operator id; it is signed into every tombstone (required)")
 	dry := fs.Bool("dry-run", false, "check the request and count what it would erase; write nothing")
@@ -525,6 +529,9 @@ func retentionRunErase(ctx context.Context, env *Env, args []string) error {
 	if fs.NArg() != 0 || *app == "" || *tenant == "" || strings.TrimSpace(*reason) == "" || *operator == "" {
 		return Usagef("-application, -tenant, -reason and -operator are required (usage: %s)", retentionEraseUsage)
 	}
+	if *tenantScoped && *principal == "" {
+		return Usagef("-tenant-scoped requires -principal (usage: %s)", retentionEraseUsage)
+	}
 	eng, closeDB, err := retentionOpen(ctx, env, *cfgPath)
 	if err != nil {
 		return err
@@ -533,23 +540,47 @@ func retentionRunErase(ctx context.Context, env *Env, args []string) error {
 	if !eng.log.CanSign() {
 		return errors.New("retention erase: no platform signing key is provisioned (run `alixai keys init`): a payload is never erased without its signed tombstone, so nothing was erased")
 	}
-	rep := retentionEraseReport{ApplicationID: *app, TenantID: *tenant, PrincipalID: *principal, DryRun: *dry}
-	run := func(rollback bool) error {
-		eng.dry = rollback
-		rep = retentionEraseReport{ApplicationID: *app, TenantID: *tenant, PrincipalID: *principal, DryRun: *dry}
-		return eng.erase(ctx, &rep, *reason, *operator)
+	level := retention.LevelTenant
+	var pScope retention.PrincipalScope
+	if *principal != "" {
+		level = retention.LevelPrincipal
+		if *tenantScoped {
+			pScope = retention.PrincipalScopeTenant
+		} else {
+			pScope = retention.PrincipalScopeApplication
+		}
 	}
-	if err := run(true); err != nil {
-		return fmt.Errorf("retention erase refused, nothing was erased: %w", err)
+	shared := &retention.Engine{
+		DB: eng.db, Log: eng.log, Clock: eng.clk, Logg: eng.lg, MaxBatches: retentionEraseMaxBatches,
+		PrincipalLLM: func(ctx context.Context, application, principal string) (int, int, error) {
+			return retentionErasePrincipalLLM(ctx, eng, application, principal)
+		},
 	}
-	if !*dry {
-		if err := run(false); err != nil {
-			if rep.More {
-				// What was erased is committed: the report says how much, and that it is not all.
-				_ = backupEmit(env.Stdout, rep)
-			}
+	req := retention.Request{
+		ApplicationID: *app, TenantID: *tenant, PrincipalID: *principal,
+		Level: level, Scope: pScope, Reason: *reason, Operator: *operator, DryRun: *dry,
+	}
+	counts, err := shared.Erase(ctx, req)
+	rep := retentionEraseReport{
+		ApplicationID: *app, TenantID: *tenant, PrincipalID: *principal, DryRun: *dry,
+		Scope:             string(req.EffectiveScope()),
+		AuditEventsErased: counts.AuditEventsErased, PreparationsRemoved: counts.PreparationsRemoved,
+		ReceiptsRemoved: counts.ReceiptsRemoved, TranscriptTurnsRemoved: counts.TranscriptTurnsRemoved,
+		SessionTurnsRemoved: counts.SessionTurnsRemoved, SessionsRemoved: counts.SessionsRemoved,
+		SessionsEnded: counts.SessionsEnded, MemoryItemsRemoved: counts.MemoryItemsRemoved,
+		PrincipalCredentialsRevoked: counts.PrincipalCredentialsRevoked,
+		PrincipalBindingsRemoved:    counts.PrincipalBindingsRemoved, More: counts.More,
+	}
+	if err != nil {
+		if rep.More && !*dry {
+			_ = backupEmit(env.Stdout, rep)
 			return fmt.Errorf("retention erase: %w", err)
 		}
+		wrote := counts.AuditEventsErased+counts.PreparationsRemoved+counts.SessionsRemoved+counts.MemoryItemsRemoved > 0
+		if !*dry && wrote {
+			return fmt.Errorf("retention erase: %w", err)
+		}
+		return fmt.Errorf("retention erase refused, nothing was erased: %w", err)
 	}
 	return backupEmit(env.Stdout, rep)
 }

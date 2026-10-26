@@ -539,6 +539,12 @@ export const createProvidersClient = (options: ProvidersClientOptions): Provider
         if (query.scope !== "tenant" && query.scope !== "application") throw invalid("scope", "it must be tenant or application");
         params.set("scope", query.scope);
       }
+      if (query.principal_id !== undefined) {
+        if (typeof query.principal_id !== "string" || query.principal_id.length === 0 || query.principal_id.length > 128) {
+          throw invalid("principal_id", "it must be 1 to 128 characters");
+        }
+        params.set("principal_id", query.principal_id);
+      }
       params.set("format", "json");
       return get("exportProviderUsage", isUsageExport, callOptions, params);
     },

@@ -42,8 +42,12 @@ Self-service routes under `/v1/me/…` and `GET /v1/providers/catalog` are for t
 | Submit / revoke the caller's own key (write-only) | `PUT` / `DELETE /v1/me/providers/{provider}/credential` |
 | Acknowledge the catalog billing notice | `POST /v1/me/providers/{provider}/billing-notice/ack` |
 | Start principal-bound OAuth | `POST /v1/me/oauth/{provider}/start` |
+| Complete principal OAuth (host callback, 1.3) | `POST /v1/me/oauth/callback` |
+| Principal popup flow status / cancel (1.3) | `GET` / `DELETE /v1/me/oauth/flows/{flow_id}` |
 
 A profile not in the catalog is `validation_failed` with `details.reason` `provider_not_in_catalog`. Resolution in External mode: principal binding → deployment default route → `llm_not_configured`. Tenant egress still gates company data.
+
+**Remote per-user login (1.3).** OpenAI Sign in with ChatGPT stays loopback-only: a remote `callback: host` start answers `manual_fallback` (use a manual API key). Google (`gemini`, `google-stt`, `google-tts`) and OpenRouter accept a registered https host callback; list the host page origin in `external_providers.oauth.popup_origins`. The host must relay the provider redirect to `POST /v1/me/oauth/callback` (self only), not the operator `/v1/oauth/callback`.
 
 ### Operator provider routes
 

@@ -16,6 +16,11 @@ export const ME_OPERATIONS = {
   deletePrincipalProviderCredential: { method: "DELETE", path: "/v1/me/providers/{provider}/credential", safe: false },
   ackPrincipalProviderBillingNotice: { method: "POST", path: "/v1/me/providers/{provider}/billing-notice/ack", safe: false },
   startPrincipalOAuth: { method: "POST", path: "/v1/me/oauth/{provider}/start", safe: false },
+  completePrincipalOAuth: { method: "POST", path: "/v1/me/oauth/callback", safe: false },
+  getPrincipalOAuthFlow: { method: "GET", path: "/v1/me/oauth/flows/{flow_id}", safe: true },
+  cancelPrincipalOAuthFlow: { method: "DELETE", path: "/v1/me/oauth/flows/{flow_id}", safe: false },
+  getMeUsage: { method: "GET", path: "/v1/me/usage", safe: true },
+  getMeBudget: { method: "GET", path: "/v1/me/budget", safe: true },
 } as const satisfies Record<string, MeOperationSpec>;
 
 export type MeOperationId = keyof typeof ME_OPERATIONS;

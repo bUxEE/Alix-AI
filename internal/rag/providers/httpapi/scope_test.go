@@ -171,6 +171,28 @@ func TestScopeParamsAlwaysSent(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("include_principal_id is opt-in and off by default", func(t *testing.T) {
+		h := newHarness(t, "/api/docs")
+		h.api.put("a.md", "a\n")
+		h.discover(h.def(), nil)
+		for _, r := range h.api.requests() {
+			if _, ok := r.query[DefaultParamPrincipal]; ok {
+				t.Errorf("%s %s: principal_id sent without scope_params.include_principal_id", r.method, r.path)
+			}
+		}
+		h2 := newHarness(t, "/api/docs")
+		h2.api.put("a.md", "a\n")
+		on := true
+		def := h2.def(func(d *ap.RAGSource) {
+			d.ScopeParams = &ap.RAGSourceScopeParams{IncludePrincipalID: &on}
+			withQueryScope(append(scopeAllowed, DefaultParamPrincipal), nil)(d)
+		})
+		h2.discover(def, nil)
+		for _, r := range h2.api.requests() {
+			onlyOne(t, r, DefaultParamPrincipal, scope().PrincipalID)
+		}
+	})
 }
 
 func contains(list []string, s string) bool {

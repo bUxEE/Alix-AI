@@ -90,7 +90,10 @@
   --alixai-duration-press: 120ms;
   --alixai-duration-fade: 160ms;
   --alixai-duration-enter: 220ms;
-  --alixai-z-fullscreen: 40;
+  // Above typical framework overlays (Vuetify/MUI ~2000+). Body-teleported
+  // dialogs from inside the panel need a higher z-index than this value.
+  --alixai-z-fullscreen: 2400;
+  --alix-fullscreen-z: var(--alixai-z-fullscreen);
   --alixai-shadow: 0 1px 2px oklch(0.3 0.02 200 / 0.06), 0 8px 24px -12px oklch(0.3 0.02 200 / 0.14);
 }
 

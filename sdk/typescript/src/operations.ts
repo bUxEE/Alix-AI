@@ -9,6 +9,8 @@ import { ME_OPERATIONS } from "./me/operations.js";
 import type { MeOperationId } from "./me/operations.js";
 import { MEMORY_OPERATIONS } from "./memory/operations.js";
 import type { MemoryOperationId } from "./memory/operations.js";
+import { OPS_OPERATIONS } from "./ops/operations.js";
+import type { OpsOperationId } from "./ops/operations.js";
 import { RAG_OPERATIONS } from "./rag/operations.js";
 import type { RagOperationId } from "./rag/operations.js";
 
@@ -76,6 +78,7 @@ export const OPERATIONS = {
   ...areaOps(ME_OPERATIONS),
   ...areaOps(MEMORY_OPERATIONS),
   ...areaOps(EXPORTS_OPERATIONS),
+  ...areaOps(OPS_OPERATIONS),
 } as const satisfies Record<string, OperationSpec>;
 
 /** The operations the fake server implements: everything but the RAG area, which has its own table. */
@@ -89,7 +92,7 @@ export const operationSpec = (operation: OperationId): OperationSpec =>
   operation in OPERATIONS ? OPERATIONS[operation as CoreOperationId] : RAG_OPERATIONS[operation as RagOperationId];
 
 /** Re-export area ids so callers can narrow without importing the area modules. */
-export type { ExportsOperationId, MeOperationId, MemoryOperationId };
+export type { ExportsOperationId, MeOperationId, MemoryOperationId, OpsOperationId };
 
 /** Whether sending the operation again is always safe: a read, or a POST that only reads. */
 export const isSafeToRepeat = (operation: OperationId): boolean => {

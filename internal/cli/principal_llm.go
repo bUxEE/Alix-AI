@@ -221,8 +221,7 @@ func (s *principalLLM) OAuthStart(ctx context.Context, scope contracts.Scope, re
 		return gateway.PrincipalOAuthStarted{}, contracts.New(contracts.ErrValidationFailed, "this provider is connected with a manual credential, not OAuth").
 			WithDetails("reason", "manual_fallback")
 	}
-	store := scope
-	store.TenantID = credentials.PrincipalCredentialTenant
+	store := principalOAuthStoreScope(scope)
 	started, err := s.admin.oauthStartWithOptions(ctx, store, gateway.ProvidersOAuthStart{
 		Provider: req.Provider, Capabilities: req.Capabilities, RedirectURI: req.RedirectURI,
 		Presentation: req.Presentation, Callback: req.Callback, OpenerOrigin: req.OpenerOrigin, Label: req.Label,
@@ -241,6 +240,55 @@ func (s *principalLLM) OAuthStart(ctx context.Context, scope contracts.Scope, re
 		}
 	}
 	return out, nil
+}
+
+// principalOAuthStoreScope remaps the caller's tenant to the reserved principal-credential
+// bucket so start/callback/flow status share the same owner (ADR 0041).
+func principalOAuthStoreScope(scope contracts.Scope) contracts.Scope {
+	out := scope
+	out.TenantID = credentials.PrincipalCredentialTenant
+	return out
+}
+
+func (s *principalLLM) OAuthCallback(ctx context.Context, scope contracts.Scope, cb gateway.PrincipalOAuthCallback) (gateway.PrincipalCredentialStatus, error) {
+	if s.oauth == nil {
+		return gateway.PrincipalCredentialStatus{}, contracts.New(contracts.ErrUnavailable, "principal LLM accounts are not available on this server").
+			WithDetails("reason", "llm_not_configured")
+	}
+	store := principalOAuthStoreScope(scope)
+	conn, err := s.oauth.Complete(ctx, store, oauth.CallbackFromQuery(cb.RedirectURI, cb.Query))
+	if err != nil {
+		return gateway.PrincipalCredentialStatus{}, externalOAuthError(err)
+	}
+	provider := conn.Ref.Binding.ProviderID
+	s.auditCred(ctx, scope, "oauth_complete", provider, string(conn.Ref.Status))
+	return s.credStatus(ctx, scope, provider), nil
+}
+
+func (s *principalLLM) OAuthFlowStatus(ctx context.Context, scope contracts.Scope, flowID string) (gateway.PrincipalOAuthFlowStatus, error) {
+	if s.oauth == nil {
+		return gateway.PrincipalOAuthFlowStatus{}, contracts.New(contracts.ErrUnavailable, "principal LLM accounts are not available on this server").
+			WithDetails("reason", "llm_not_configured")
+	}
+	v, err := s.oauth.FlowGet(ctx, principalOAuthStoreScope(scope), flowID)
+	if err != nil {
+		return gateway.PrincipalOAuthFlowStatus{}, err
+	}
+	out := gateway.PrincipalOAuthFlowStatus{
+		FlowID: v.FlowID, Provider: string(v.Provider), Status: string(v.Status), UpdatedAt: v.UpdatedAt,
+	}
+	if v.Reason != "" {
+		out.Reason = string(v.Reason)
+	}
+	return out, nil
+}
+
+func (s *principalLLM) OAuthFlowCancel(ctx context.Context, scope contracts.Scope, flowID string) error {
+	if s.oauth == nil {
+		return contracts.New(contracts.ErrUnavailable, "principal LLM accounts are not available on this server").
+			WithDetails("reason", "llm_not_configured")
+	}
+	return s.oauth.FlowCancel(ctx, principalOAuthStoreScope(scope), flowID)
 }
 
 func (s *principalLLM) account(ctx context.Context, scope contracts.Scope) (pv.PrincipalLlm, error) {

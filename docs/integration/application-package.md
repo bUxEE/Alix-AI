@@ -403,14 +403,17 @@ address needs no entry; the same deny-list covers it. RAG sources refer to egres
 | `url` | http(s) URL | yes | Absolute http(s) URL of the MCP server. Its host and port must have an entry in network.egress, loopback included. |
 | `adapter_config` | schema path | yes | Package-relative path (below schemas/) of the adapter configuration file for this endpoint. Its format is owned by the MCP adapter. It is signed with the package like every other file. |
 | `contract_sha256` | sha-256 hex | no | Optional SHA-256 of the approved tool list (names and input schemas) that the capabilities map to. It is the lower-case hex SHA-256 of the canonical JSON array of `{name, input_schema}` of the mapped tools of the endpoint, sorted by name (`mcp.ContractSHA256` computes it). When present, a discovered tool list that hashes differently is an audit finding, not a silent update. |
-| `credential_ref` | credential ref | no | Optional credential reference AlixAI uses to authenticate to the server. |
+| `credential_ref` | credential ref | no | Optional credential reference AlixAI uses to authenticate to the server over streamable HTTP / SSE. Resolved by the composition root (`application_credentials`); see [Authenticating AlixAI's calls into your application](guides/light-integration.md#authenticating-alixais-calls-into-your-application). |
 
 ##### The adapter configuration of an MCP endpoint
 
-The file `adapter_config` names is YAML with two members and nothing else (an unknown member, or a second document, is an error):
+The file `adapter_config` names is YAML. Unknown members are refused. Version 1:
 
 ```yaml
 server: clinic-mcp        # optional; when present it must be this endpoint's id
+auth:                     # optional; only with credential_ref (defaults Authorization / Bearer)
+  header: Authorization
+  scheme: Bearer          # "" sends the credential as it is
 tools:
   allow: [availability_list, appointment_prepare, appointment_commit]
 ```
@@ -418,6 +421,7 @@ tools:
 | Member | Meaning |
 | --- | --- |
 | `server` | Optional. The endpoint the file configures; when present it must be the endpoint's ID in the manifest, so a file cannot be pointed at another server. |
+| `auth` | Optional. How `credential_ref` is sent on HTTP/SSE (`header` default `Authorization`, `scheme` default `Bearer`). Ignored for stdio (packages cannot declare stdio). |
 | `tools.allow` | The tools of the server the package approves, as exact tool names (`A-Z a-z 0-9 _ . -`, at most 128 characters, none twice). An absent or empty list approves nothing. |
 
 `tools.allow` must list every tool the capabilities map on this endpoint; a mapped tool it does not list is an error when the adapter
@@ -889,6 +893,21 @@ rejected by the response verifier.
 | `success` | array of object (see `success[]`) (min 1, max 32) | yes | The success responses, one per user-visible outcome. At least one. Outcome IDs are unique within the list and must match the user_visible_outcome entries of the documentation index. Every response_obligation of the capability that applies on success must appear as a placeholder in at least one of them. |
 | `failures` | array of object (see `failures[]`) (min 1, max 64) | yes | The failure responses, one per failure state of the capability. At least one. A failure state without a response here fails the capability: AlixAI never falls back to a generic success-looking message. |
 | `next_actions` | array of object (see `next_actions[]`) (max 16) | yes | The labels of the capability's permitted next actions in this language: one per entry of the capability's next_actions. May be empty when the capability has none. |
+| `presentation` | object (see `presentation`) | no | Optional, additive (1.3.0). Hint for `present_result` rich blocks built from host records. Absent: text, and a table when the result has rows. |
+
+#### `presentation`
+
+| Property | Type | Required | Meaning |
+| --- | --- | --- | --- |
+| `chart` | object (see `chart`) | no | When set, the deterministic template (and a verified external realisation) may include a chart of the named fields from the result rows. |
+
+#### `presentation.chart`
+
+| Property | Type | Required | Meaning |
+| --- | --- | --- | --- |
+| `type` | enum: `bar`, `line`, `area`, `point`, `pie` | yes | The chart mark type. |
+| `x` | field name | yes | Result field for the x / category channel. |
+| `y` | field name | yes | Result field for the y / value channel (a number the host stated). |
 
 #### `field_prompts[]`
 
@@ -1179,7 +1198,8 @@ applied before any text reaches a model.
 | `include` | array of glob (min 1, max 64) | yes | The permitted path scope: globs relative to the root (for an API, request path patterns below the base). Only matching items are candidates. At least one: a source with no include rule matches nothing, which is not a declaration. |
 | `exclude` | array of glob (max 64) | yes | Globs that remove items from the included set. Exclusion wins over inclusion. May be empty. |
 | `query_scope` | object (see `query_scope`) | no | Optional, only for api roots: the permitted query scope. Without it only the root path and include patterns restrict an API source. |
-| `credential_ref` | credential ref or null | yes | The credential reference held outside model context: an opaque cred: ID resolved from the OS secret store or an approved secret provider, or null when the source needs no credential. Never the secret itself. |
+| `credential_ref` | credential ref or null | yes | The credential reference held outside model context: an opaque cred: ID resolved from the OS secret store or an approved secret provider (`application_credentials` for api sources), or null when the source needs no credential. Never the secret itself. |
+| `scope_params` | object | no | Optional, api roots only. `include_principal_id` (default false) adds the requesting principal id on every list/fetch so the host can filter per user inside a tenant. Optional `principal_param` renames that query parameter (default `principal_id`). The RAG index remains per tenant/workspace; per-principal filtering then happens on the host for every call. Do not mix principals' documents in one index without per-principal ACL at query time. |
 | `formats` | array of MIME type (min 1, max 64, unique) | yes | The accepted formats as concrete MIME types. The type is sniffed from content, not trusted from the file name. Anything else is skipped and counted. At least one. |
 | `limits` | object (see `limits`) | yes | Size limits. All three are required: an unbounded source is not accepted. |
 | `sync` | object (see `sync`) | yes | The synchronisation method and interval. |

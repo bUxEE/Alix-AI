@@ -46,6 +46,7 @@ func (a *Adapter) httpClient(ep *endpointConn) *http.Client {
 			next:   base.Transport,
 			origin: originOf(u),
 			auth:   ep.cfg.Authorization,
+			header: ep.cfg.AuthHeader,
 			limit:  transportCap(a.cfg.MaxResponseBytes),
 			trips:  &ep.trips,
 		},
@@ -85,6 +86,7 @@ type endpointTripper struct {
 	next   http.RoundTripper
 	origin origin
 	auth   func(context.Context) (string, error)
+	header string
 	limit  int64
 	trips  *atomic.Int64
 }
@@ -100,7 +102,11 @@ func (t *endpointTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		}
 		if v != "" {
 			req = req.Clone(req.Context())
-			req.Header.Set("Authorization", v)
+			h := t.header
+			if h == "" {
+				h = DefaultAuthHeader
+			}
+			req.Header.Set(h, v)
 		}
 	}
 	resp, err := t.next.RoundTrip(req)

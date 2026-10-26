@@ -70,6 +70,11 @@ const props = withDefaults(
      */
     fullscreen?: boolean;
     /**
+     * Overrides `--alix-fullscreen-z` (default 2400) for the fullscreen overlay.
+     * Body-teleported dialogs/menus from inside the panel must use a higher z-index.
+     */
+    fullscreenZIndex?: number;
+    /**
      * When true, show download menus on table/chart blocks and assistant answers.
      * Default false (1.1 compatibility). Requires `exporter`.
      */
@@ -100,6 +105,7 @@ const props = withDefaults(
     onMemoryConfirm: undefined,
     onMemoryReject: undefined,
     fullscreen: undefined,
+    fullscreenZIndex: undefined,
     exports: false,
     exporter: undefined,
     download: undefined,
@@ -176,6 +182,9 @@ const composer = ref<{
 } | null>(null);
 
 const isFullscreen = computed(() => props.fullscreen ?? localFullscreen.value);
+const fullscreenStyle = computed(() =>
+  props.fullscreenZIndex === undefined ? undefined : { "--alix-fullscreen-z": String(props.fullscreenZIndex) },
+);
 const setFullscreen = (value: boolean): void => {
   localFullscreen.value = value;
   emit("update:fullscreen", value);
@@ -300,6 +309,7 @@ defineExpose({ chat });
       :aria-modal="isFullscreen ? 'true' : undefined"
       :class="{ 'alix-chat-fullscreen': isFullscreen }"
       :role="isFullscreen ? 'dialog' : undefined"
+      :style="fullscreenStyle"
       :tabindex="isFullscreen ? -1 : undefined"
       ref="panelRoot"
       class="alix-root alix-card alix-d-flex alix-flex-column alix-h-100 alix-min-h-0 alix-overflow-hidden"
@@ -527,7 +537,7 @@ defineExpose({ chat });
 .alix-chat-fullscreen {
   position: fixed;
   inset: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
-  z-index: 40;
+  z-index: var(--alix-fullscreen-z, 2400);
   width: auto;
   height: auto;
   max-height: 100dvh;

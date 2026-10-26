@@ -128,6 +128,7 @@ func registerServeSections(reg *config.Registry) {
 	reg.Register(keysSectionName, &keysSection)
 	reg.Register(auditSectionName, &auditSection)
 	reg.Register(identity.SectionName, identity.ConfigSection())
+	reg.Register(appCredSectionName, &appCredSection)
 	gateway.RegisterSections(reg)
 	ragSourcesRegisterSections(reg)
 	resourcesRegisterSections(reg)

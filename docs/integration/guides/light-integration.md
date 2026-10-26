@@ -58,6 +58,17 @@ For each tenant that should chat:
 
 Miss any one of these and the turn fails closed with a typed error; there is no silent fallback to another provider.
 
+## Answers from live data: templates or external wording
+
+Read capabilities return deterministic facts. How the user sees them:
+
+| Setting | What leaves | Who writes the reply |
+| --- | --- | --- |
+| `directive_class` empty (default) | Not the directive | Deterministic template (text; plus a validated table of host records when the result has rows, and a chart when the conversation contract sets `presentation.chart`) |
+| `directive_class: public\|internal\|confidential` **and** egress allows `dialogue_directive` / `deterministic_fact` at that class | The verified directive | External model wording, re-checked: every number in text, table cells and chart data must be a directive fact; otherwise the template |
+
+`alixai config check` / `providers layers` print `directive_class`. See [external-mode.md](../../operations/external-mode.md) §2 and [ADR 0044](../../decisions/0044-external-directive-class-and-result-blocks.md).
+
 ## Reply text arrives whole in External mode
 
 The turn **event stream** still works in External mode (`Accept: text/event-stream`, AG-UI / TurnEvents): progress and step events arrive live as they happen. What differs from Local is the **assistant text**: the dialogue engine calls `Chat` (not provider `ChatStream`), so the reply is verified first and then emitted as one piece (one `TEXT_MESSAGE_CONTENT` / token event), not fragment by fragment. A JSON turn or the event stream are both fine.
@@ -120,6 +131,28 @@ companies still gate egress — [ADR 0041](../../decisions/0041-per-principal-ll
 4. Principal binds a role (`PUT /v1/me/llm/{role}` with a catalog `profile_id`). Roles are `conversational_controller`, `language_realization`, `stt` and `tts` (optional `voice` / `language` on speech roles). Each role may use a different provider.
 5. In External mode the router uses the principal binding, else the deployment default route, else
    `unavailable` with `details.reason` `llm_not_configured`. Tenant egress still applies to that company's data.
+6. **Usage and budget (1.3):** the principal reads their own spend with `GET /v1/me/usage` (all tenants of the
+   application, or `tenant_id=…`) and their principal budgets with `GET /v1/me/budget`. An operator sets an
+   application-wide principal budget with `PUT /v1/providers/budgets` (subject `kind: principal_application`,
+   application and principal only); that limit applies in every company the user acts in, together with any
+   provider/tenant/workspace/principal budgets (strictest wins). SDKs: `client.me.usage()` / `client.me.budget()`.
+
+**Per-user browser login (1.3):** complete principal OAuth on the host callback path, not the operator routes.
+
+| Provider | Remote host callback (`callback: host`) | What the operator registers |
+| --- | --- | --- |
+| OpenAI Sign in with ChatGPT | No — start answers `manual_fallback`; use a manual API key (SIWC is loopback-only) | n/a for remote |
+| Google (`gemini`, `google-stt`, `google-tts`) | Yes | https redirect URI + `external_providers.oauth.popup_origins` |
+| OpenRouter | Yes | https redirect URI + `external_providers.oauth.popup_origins` |
+
+Host flow for a remote user: `POST /v1/me/oauth/{provider}/start` with `callback: "host"` and your https `redirect_uri` → open `authorization_url` → on the provider redirect, relay to `POST /v1/me/oauth/callback` with a fresh token of the **same** principal. For popup, poll `GET /v1/me/oauth/flows/{flow_id}` (cancel with `DELETE`). Do not use `/v1/oauth/callback` — that route is operator-only.
+
+**Erasing a user (1.3):** two principal erasures — pick by who asks.
+
+- **Left one company (tenant-scoped):** a tenant admin (or deployment operator) calls `POST /v1/ops/erasure` with `{ "level": "principal", "principal_id": "…", "reason": "…" }` (optional `"scope": "tenant"`). Erases that principal's data **inside that tenant only**. Never revokes their personal LLM credentials or bindings (those serve every tenant — ADR 0041).
+- **GDPR erase this person (application-wide):** a **deployment operator** calls with `{ "level": "principal", "scope": "application", "principal_id": "…", "reason": "…" }`. Erases the principal in every tenant of the application and revokes credentials/bindings. Same as `alixai retention erase -principal` (add `-tenant-scoped` on the CLI for the tenant-local path).
+
+Both answer `202` + `job_id`; poll `GET /v1/ops/erasure/{job_id}`. Levels `tenant` and `workspace` are also accepted. SDKs: `client.ops.erasure.start` / `status` (TypeScript), `client.ops.start_erasure` / `erasure_status` (Python), `client.Ops().StartErasure` / `ErasureStatus` (Go). See [retention-erasure.md](../../operations/retention-erasure.md).
 
 **Long-term memory (1.2):** set `memory.enabled: true`, put `memory.read` / `memory.write` / `memory.confirm` (and
 related) in the context token, then use `GET|POST /v1/memory` and confirm/reject on proposals. Assistant proposals
@@ -139,10 +172,44 @@ verified for that turn — never from model-written file bytes. See
 SDKs: `client.exports.create(sessionId, { turnId, format, blockIds? })` (TypeScript),
 `client.exports.create(session_id, body)` (Python), `client.Exports().Create(...)` (Go).
 
+## Authenticating AlixAI's calls into your application
+
+When the package declares `credential_ref` on an OpenAPI or MCP endpoint (or on a RAG `api` source), AlixAI authenticates its outbound calls into the host. The secret never lives in the package.
+
+1. **Declare.** In the manifest (or RAG source), set `credential_ref: cred:help-api` (grammar `cred:` + lower-case slug). The adapter configuration may set `auth.header` / `auth.scheme` (defaults `Authorization` / `Bearer`, same for OpenAPI and MCP HTTP/SSE). Stdio MCP ignores credentials (packages cannot declare stdio).
+2. **Provision.** In the AlixAI config, under `application_credentials.credentials`, bind that ref to an env or file backend (prefix `ALIXAI_SECRET_`, or a plain file name in the secrets directory). Example:
+
+   ```yaml
+   application_credentials:
+     credentials:
+       - ref: cred:help-api
+         application: help-assistant
+         tenant: acme
+         env: ALIXAI_SECRET_HELP_API
+   ```
+
+   This uses the same credential service as `external_providers` (encrypted file / env / file backends) and works with External mode off (default build). A binary built with `-tags noexternal` has no credential service: do not set `application_credentials.credentials` there. Every use is audited; the value is re-read on every call (rotate by changing the env or file, no restart).
+3. **Header.** The host sees `Authorization: Bearer <secret>` by default. Verify with a constant-time compare (`crypto/subtle.ConstantTimeCompare` or equivalent); never log the secret.
+4. **Network isolation.** Keep AlixAI→host on loopback or a private network allowlisted in `network.egress`. Mutual TLS (client certificates) for these adapter calls is **not** supported: authenticate with `credential_ref` (and TLS server certs for https destinations) only.
+5. **Missing / wrong secret.** A declared ref with no provider or an unreadable value fails closed (adapter build or call refused; audited reason, no secret in logs or errors).
+
+See [application-package.md](../application-package.md) (`credential_ref` on endpoints and RAG sources). The `valid-help-assistant` example declares `cred:help-api` on its OpenAPI endpoint. The serve-level proof that each transport sends `Authorization: Bearer <its own secret>` (rotation, missing-secret isolation, no secret in logs or audit export) is `TestServeSendsCredentialRefToHostOnEveryTransport` in `internal/cli`.
+
+## UI kit fullscreen z-index
+
+Optional Vue / React chat panels support a fullscreen overlay (default z-index **2400**, above typical framework overlays at ~2000). Each kit keeps its own CSS token prefix:
+
+| Kit | CSS custom property | Prop override |
+| --- | --- | --- |
+| `@alixai/vue` | `--alix-fullscreen-z` | `fullscreenZIndex` |
+| `@alixai/react` | `--alixai-z-fullscreen` (also sets `--alix-fullscreen-z`) | `fullscreenZIndex` |
+
+Body-teleported dialogs/menus opened from the panel must use a higher z-index than that value. See `ui/vue/demo/README.md` and `ui/react/demo/README.md`.
+
 ## Spike order
 
 1. Run AlixAI on loopback; `config check` / `providers layers` green for your light setup ([light-external.md](../../operations/guides/light-external.md)).
-2. Copy `examples/packages/valid-help-assistant`, retarget the OpenAPI endpoint, sign with your publisher key, `package validate`, install, audit, activate.
+2. Copy `examples/packages/valid-help-assistant`, retarget the OpenAPI endpoint, sign with your publisher key, `package validate`, install, audit, activate. Provision `cred:help-api` if the host requires auth (section above).
 3. Mint a context token from a tiny host handler; complete one turn (JSON or event stream) in Local or with a scripted fake first.
 4. Enable External: credentials → qualify profile → egress (`user_message` / `internal`) → budget → mode External at all three levels.
 5. Confirm the first real turn; if denied, use the error table above.
@@ -151,7 +218,7 @@ SDKs: `client.exports.create(sessionId, { turnId, format, blockIds? })` (TypeScr
 ## Related
 
 - [Getting started](getting-started.md) (clinic path; heavier than help-assistant)
-- [Application package format](../application-package.md)
+- [Application package format](../application-package.md) (including `credential_ref` and outbound auth)
 - [External mode for integrators](../external-mode.md)
 - [Light External deployments](../../operations/guides/light-external.md)
 - [Troubleshooting](../../operations/guides/troubleshooting.md)

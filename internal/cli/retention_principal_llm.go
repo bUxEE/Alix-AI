@@ -12,8 +12,14 @@ import (
 	pv "github.com/buxee/alix-ai/pkg/contracts/gen/providers"
 )
 
+// retentionErasePrincipalLLMHook is replaced by tests to observe application-wide credential erasure.
+var retentionErasePrincipalLLMHook func(ctx context.Context, e *retentionEngine, application, principal string) (creds, bindings int, err error)
+
 // retentionErasePrincipalLLM revokes principal credentials and deletes bindings (ADR 0041).
 func retentionErasePrincipalLLM(ctx context.Context, e *retentionEngine, application, principal string) (creds, bindings int, err error) {
+	if retentionErasePrincipalLLMHook != nil {
+		return retentionErasePrincipalLLMHook(ctx, e, application, principal)
+	}
 	dep := identity.CurrentConfig().DeploymentID
 	if dep == "" {
 		dep = "dep_retention"

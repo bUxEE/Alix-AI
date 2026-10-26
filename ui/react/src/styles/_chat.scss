@@ -50,7 +50,7 @@
     position: fixed;
     inset: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px)
       env(safe-area-inset-left, 0px);
-    z-index: var(--alixai-z-fullscreen);
+    z-index: var(--alixai-z-fullscreen, var(--alix-fullscreen-z, 2400));
     width: auto;
     height: auto;
     max-height: 100dvh;

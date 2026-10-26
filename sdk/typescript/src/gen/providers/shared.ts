@@ -74,15 +74,18 @@ export type BudgetStatus =
  * BudgetSubject mirrors urn:alixai:schema:providers:shared:v1#/$defs/budgetSubject.
  *
  * What a budget applies to: one provider, or a tenant, workspace or principal (additive plan
- * section 11.2), each optionally narrowed to one provider. The ids a kind needs are required and
- * no id wider or narrower than the kind is allowed, so a tenant budget cannot name a workspace.
+ * section 11.2, ADR 0041), each optionally narrowed to one provider. The ids a kind needs are
+ * required and no id wider or narrower than the kind is allowed, so a tenant budget cannot name a
+ * workspace. Kind principal_application (1.3) is application-wide for one principal across every
+ * tenant: it names application_id and principal_id only (the service refuses tenant_id and
+ * workspace_id on that kind).
  *
  * The schema also states cross-field rules (if/then/else, required alternatives and similar) that
  * this type does not express: validate payloads against the schema.
  */
 export interface BudgetSubject {
   /**
-   * provider, tenant, workspace or principal.
+   * provider, tenant, workspace, principal, or principal_application (across tenants).
    *
    * @authority host
    */
@@ -128,7 +131,7 @@ export interface BudgetSubject {
  * BudgetSubjectKind mirrors
  * urn:alixai:schema:providers:shared:v1#/$defs/budgetSubject/properties/kind.
  *
- * provider, tenant, workspace or principal.
+ * provider, tenant, workspace, principal, or principal_application (across tenants).
  *
  * Only the values listed in the schema are valid.
  */
@@ -136,7 +139,8 @@ export type BudgetSubjectKind =
   | "provider"
   | "tenant"
   | "workspace"
-  | "principal";
+  | "principal"
+  | "principal_application";
 
 /**
  * Channel mirrors urn:alixai:schema:providers:shared:v1#/$defs/channel.

@@ -28,7 +28,7 @@ func (c *call) meGetLLM() {
 func (c *call) mePutRole() {
 	role := c.param("role")
 	switch role {
-	case "conversational_controller", "language_realization", "stt":
+	case "conversational_controller", "language_realization", "stt", "tts":
 	default:
 		c.fail(http.StatusBadRequest, contracts.ErrValidationFailed, "role is not a principal LLM role")
 		return
@@ -114,7 +114,60 @@ func (c *call) meOAuthStart() {
 		AuthorizationURL: "https://example.test/oauth",
 		RedirectURI:      body.RedirectURI,
 		ExpiresAt:        time.Now().UTC().Add(time.Minute),
+		FlowID:           "oaf_01J0000000000000000000000A",
+		PollIntervalMS:   1500,
 	})
+}
+
+func (c *call) meOAuthCallback() {
+	var body sdkgo.PrincipalOAuthCallback
+	if !c.providersDecode(&body) {
+		return
+	}
+	if body.RedirectURI == "" || body.Query == "" {
+		c.fail(http.StatusBadRequest, contracts.ErrValidationFailed, "redirect_uri and query are required")
+		return
+	}
+	c.json(http.StatusOK, sdkgo.PrincipalCredentialStatus{ProviderID: "openai", Status: "active"})
+}
+
+func (c *call) meOAuthFlowStatus() {
+	c.json(http.StatusOK, sdkgo.PrincipalOAuthFlowStatus{
+		FlowID: c.param("flow_id"), Provider: "openai", Status: "pending", UpdatedAt: time.Now().UTC(),
+	})
+}
+
+func (c *call) meOAuthFlowCancel() {
+	c.w.WriteHeader(http.StatusNoContent)
+}
+
+func (c *call) opsStartErasure() {
+	var body sdkgo.ErasureRequest
+	if !c.providersDecode(&body) {
+		return
+	}
+	if body.Level == "" {
+		c.fail(http.StatusBadRequest, contracts.ErrValidationFailed, "level is required")
+		return
+	}
+	c.json(http.StatusAccepted, sdkgo.ErasureJobAccepted{JobID: "erj_01J0000000000000000000000A", Status: "queued"})
+}
+
+func (c *call) opsGetErasure() {
+	now := time.Now().UTC()
+	c.json(http.StatusOK, sdkgo.ErasureJobStatus{
+		JobID: c.param("job_id"), Status: "completed", Level: "principal",
+		TenantID: c.claims.TenantID, PrincipalID: "usr_alice",
+		Counts: map[string]any{"audit_events_erased": 1, "sessions_removed": 1}, FinishedAt: &now,
+	})
+}
+
+func (c *call) meUsage() {
+	c.json(http.StatusOK, pv.MeUsage{Groups: []pv.MeUsageGroup{}})
+}
+
+func (c *call) meBudget() {
+	c.json(http.StatusOK, pv.MeBudget{Budgets: []pv.Budget{}, States: []pv.BudgetState{}})
 }
 
 func (c *call) memoryList() {

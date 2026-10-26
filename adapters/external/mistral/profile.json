@@ -1,0 +1,120 @@
+{
+  "profile_id": "pprf_01J0000000000000000000FXMI",
+  "provider_id": "mistral",
+  "endpoint": "https://api.mistral.ai/v1",
+  "model_id": "mistral-small-latest",
+  "model_version": "unpinned",
+  "roles": [
+    "conversational_controller",
+    "language_realization"
+  ],
+  "cred_ref": null,
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "streaming": true,
+  "structured_output": "schema_best_effort",
+  "tool_calling": {
+    "supported": true,
+    "strict_arguments": false,
+    "parallel_calls": true,
+    "max_tools": 128
+  },
+  "remote_mcp": {
+    "supported": false
+  },
+  "native_features": {
+    "available": []
+  },
+  "limits": {
+    "max_context_toks": 128000,
+    "max_output_toks": 32768,
+    "max_request_bytes": 8388608
+  },
+  "image_generation": {
+    "supported": false,
+    "max_images_per_request": null,
+    "output_retention": "unknown"
+  },
+  "voice": {
+    "stt": true,
+    "tts": false,
+    "realtime": false,
+    "audio_retention": "unknown"
+  },
+  "terms": {
+    "retention": "limited",
+    "retention_days": 30,
+    "training_use": "by_default",
+    "terms_url": "https://legal.mistral.ai/terms/privacy-policy/?lang=en",
+    "terms_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "recorded_on": "2026-10-26"
+  },
+  "region": {
+    "residency": "pinned",
+    "processing_regions": [
+      "eu"
+    ],
+    "compliance": [
+      "gdpr_dpa"
+    ]
+  },
+  "rate_limits": {
+    "requests_per_min": 60,
+    "toks_per_min": 500000,
+    "concurrent_requests": null,
+    "retry": {
+      "max_attempts": 2,
+      "initial_backoff_ms": 500,
+      "max_backoff_ms": 8000,
+      "honors_retry_after": true
+    }
+  },
+  "pricing": {
+    "currency": "USD",
+    "effective_on": "2026-10-26",
+    "source_url": "https://mistral.ai/pricing",
+    "prices": {
+      "toks_in": {
+        "per_units": 1000000,
+        "micro_units": 100000
+      },
+      "toks_out": {
+        "per_units": 1000000,
+        "micro_units": 300000
+      }
+    }
+  },
+  "usage_metering": "per_response",
+  "permitted_scopes": [
+    {
+      "application_id": "app_conf"
+    }
+  ],
+  "allowed_data_classes": [
+    "public",
+    "internal"
+  ],
+  "fallback": {
+    "profile_id": null,
+    "on": []
+  },
+  "last_policy_review": "2026-10-26",
+  "review_interval_days": 30,
+  "billing_notice": {
+    "version": "2026-10-26.1",
+    "text": "Mistral AI Studio / API access is a separate developer product from any consumer chat product. You create an API key in AI Studio; usage is billed on that API account. A consumer subscription does not include API access. By default Mistral hosts organisation data in the EU; check their privacy policy, ZDR offer and Admin training opt-out before enabling External mode.",
+    "url": "https://docs.mistral.ai",
+    "subscription_grants_api_access": false
+  },
+  "billing_notice_ack": null,
+  "last_conformance": null,
+  "lifecycle": "candidate",
+  "created_at": "2026-10-26T08:00:00Z",
+  "updated_at": "2026-10-26T08:00:00Z"
+}

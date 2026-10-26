@@ -38,7 +38,9 @@ const mcpTransportClinicApp = "clinic-booking"
 
 // mcpTransportLoadClinic loads the clinic package (its signature is not checked
 // here: the loader's own tests do that) and returns it with its absolute
-// directory.
+// directory. credential_ref is cleared so transport unit tests that do not
+// provision application_credentials can build the adapter; credential tests
+// re-set the ref and register a provider.
 func mcpTransportLoadClinic(t testing.TB) (*apppkg.Package, string) {
 	t.Helper()
 	dir, err := filepath.Abs(mcpTransportClinicDir)
@@ -51,6 +53,14 @@ func mcpTransportLoadClinic(t testing.TB) (*apppkg.Package, string) {
 	}
 	if !res.OK() {
 		t.Fatalf("the clinic package does not load: %+v", res.Findings)
+	}
+	for id, ep := range res.Package.Manifest.Endpoints {
+		v, ok := ep.Value.(ap.ManifestMCPEndpoint)
+		if !ok || v.CredentialRef == nil {
+			continue
+		}
+		v.CredentialRef = nil
+		res.Package.Manifest.Endpoints[id] = ap.ManifestEndpoint{Value: v}
 	}
 	return res.Package, dir
 }

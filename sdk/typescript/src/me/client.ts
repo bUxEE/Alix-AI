@@ -1,5 +1,7 @@
 import type { Caller } from "../call.js";
 import { sdkError } from "../errors.js";
+import type { MeBudget } from "../gen/providers/me-budget.js";
+import type { MeUsage } from "../gen/providers/me-usage.js";
 import type { PrincipalLlm } from "../gen/providers/principal-llm.js";
 import type { PrincipalLlmBindingUpdate } from "../gen/providers/principal-llm-binding-update.js";
 import type { ProviderCatalog } from "../gen/providers/provider-catalog.js";
@@ -58,6 +60,28 @@ export interface PrincipalOAuthStarted {
   consent?: Record<string, unknown>;
 }
 
+export interface PrincipalOAuthCallbackInput {
+  redirect_uri: string;
+  query: string;
+}
+
+export interface PrincipalOAuthFlowStatus {
+  flow_id: string;
+  provider: string;
+  status: string;
+  reason?: string;
+  updated_at: string;
+}
+
+/** Query for `GET /v1/me/usage`. */
+export interface MeUsageQuery {
+  from?: string;
+  to?: string;
+  tenant_id?: string;
+  cursor?: string;
+  limit?: number;
+}
+
 /** The per-principal LLM surface: `client.me`. */
 export interface MeApi {
   /**
@@ -65,6 +89,10 @@ export interface MeApi {
    * Same as the brief's `providers.catalog()`.
    */
   catalog: (options?: CallOptions) => Promise<ProviderCatalog>;
+  /** The caller's own usage across tenants (`GET /v1/me/usage`). */
+  usage: (query?: MeUsageQuery, options?: CallOptions) => Promise<MeUsage>;
+  /** The caller's own principal budgets and states (`GET /v1/me/budget`). */
+  budget: (options?: CallOptions) => Promise<MeBudget>;
   llm: {
     get: (options?: CallOptions) => Promise<PrincipalLlm>;
     putRole: (role: PrincipalLlmRole | string, body: PrincipalLlmBindingUpdate, options?: CallOptions) => Promise<PrincipalLlm>;
@@ -79,6 +107,11 @@ export interface MeApi {
     deleteCredential: (provider: string, options?: CallOptions) => Promise<PrincipalCredentialStatus>;
     acknowledgeBillingNotice: (provider: string, input: PrincipalBillingAckInput, options?: CallOptions) => Promise<PrincipalBillingAckResult>;
     oauthStart: (provider: string, input: PrincipalOAuthStartInput, options?: CallOptions) => Promise<PrincipalOAuthStarted>;
+  };
+  oauth: {
+    callback: (input: PrincipalOAuthCallbackInput, options?: CallOptions) => Promise<PrincipalCredentialStatus>;
+    flowStatus: (flowId: string, options?: CallOptions) => Promise<PrincipalOAuthFlowStatus>;
+    cancel: (flowId: string, options?: CallOptions) => Promise<void>;
   };
 }
 
@@ -122,6 +155,21 @@ const isOAuthStarted = (value: unknown): value is PrincipalOAuthStarted =>
   typeof value["redirect_uri"] === "string" &&
   typeof value["expires_at"] === "string";
 
+const isOAuthFlowStatus = (value: unknown): value is PrincipalOAuthFlowStatus =>
+  isRecord(value) &&
+  typeof value["flow_id"] === "string" &&
+  typeof value["provider"] === "string" &&
+  typeof value["status"] === "string" &&
+  typeof value["updated_at"] === "string";
+
+const FLOW_ID = /^oaf_[0-9A-HJKMNP-TV-Z]{26}$/;
+
+const isMeUsage = (value: unknown): value is MeUsage =>
+  isRecord(value) && Array.isArray(value["groups"]) && ("next_cursor" in value);
+
+const isMeBudget = (value: unknown): value is MeBudget =>
+  isRecord(value) && Array.isArray(value["budgets"]) && Array.isArray(value["states"]);
+
 /** Builds the me area over a caller. */
 export const createMeApi = (caller: Caller): MeApi => {
   const json = <T>(
@@ -136,6 +184,35 @@ export const createMeApi = (caller: Caller): MeApi => {
 
   return {
     catalog: async (options) => json("getProviderCatalog", {}, isProviderCatalog, "provider catalog", options),
+
+    usage: async (q = {}, options) => {
+      const params = new URLSearchParams();
+      for (const name of ["from", "to"] as const) {
+        const value = q[name];
+        if (value !== undefined) {
+          if (typeof value !== "string" || Number.isNaN(Date.parse(value))) throw invalid(name, "it must be an RFC 3339 time");
+          params.set(name, value);
+        }
+      }
+      if (q.tenant_id !== undefined) {
+        if (typeof q.tenant_id !== "string" || q.tenant_id.length === 0 || q.tenant_id.length > 128) {
+          throw invalid("tenant_id", "it must be 1 to 128 characters");
+        }
+        params.set("tenant_id", q.tenant_id);
+      }
+      if (q.cursor !== undefined) {
+        if (typeof q.cursor !== "string" || !/^[0-9]{1,18}$/.test(q.cursor)) throw invalid("cursor", "it must be a numeric cursor");
+        params.set("cursor", q.cursor);
+      }
+      if (q.limit !== undefined) {
+        if (!Number.isInteger(q.limit) || q.limit < 1 || q.limit > 100) throw invalid("limit", "it must be 1 to 100");
+        params.set("limit", String(q.limit));
+      }
+      const query = Object.fromEntries(params.entries());
+      return caller.json("getMeUsage", {}, isMeUsage, "me usage", options, Object.keys(query).length === 0 ? undefined : { query });
+    },
+
+    budget: async (options) => json("getMeBudget", {}, isMeBudget, "me budget", options),
 
     llm: {
       get: async (options) => json("getPrincipalLlm", {}, isPrincipalLlm, "principal llm", options),
@@ -215,6 +292,28 @@ export const createMeApi = (caller: Caller): MeApi => {
         if (input.opener_origin !== undefined) body["opener_origin"] = input.opener_origin;
         if (input.label !== undefined) body["label"] = input.label;
         return json("startPrincipalOAuth", { provider: id }, isOAuthStarted, "principal oauth", options, JSON.stringify(body));
+      },
+    },
+
+    oauth: {
+      callback: async (input, options) => {
+        if (!isRecord(input)) throw invalid("input", "it must be an OAuth callback request");
+        if (typeof input.redirect_uri !== "string" || input.redirect_uri.length === 0 || input.redirect_uri.length > 512) {
+          throw invalid("redirect_uri", "it is required, at most 512 characters");
+        }
+        if (typeof input.query !== "string" || input.query.length === 0 || input.query.length > 4096) {
+          throw invalid("query", "it is required, at most 4096 characters");
+        }
+        const body = { redirect_uri: input.redirect_uri, query: input.query.replace(/^\?/, "") };
+        return json("completePrincipalOAuth", {}, isCredentialStatus, "principal oauth callback", options, JSON.stringify(body));
+      },
+      flowStatus: async (flowId, options) => {
+        if (typeof flowId !== "string" || !FLOW_ID.test(flowId)) throw invalid("flow_id", "it must be an oaf_ ULID");
+        return json("getPrincipalOAuthFlow", { flow_id: flowId }, isOAuthFlowStatus, "principal oauth flow", options);
+      },
+      cancel: async (flowId, options) => {
+        if (typeof flowId !== "string" || !FLOW_ID.test(flowId)) throw invalid("flow_id", "it must be an oaf_ ULID");
+        await caller.empty("cancelPrincipalOAuthFlow", { flow_id: flowId }, options);
       },
     },
   };

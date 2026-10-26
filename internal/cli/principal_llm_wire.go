@@ -10,14 +10,18 @@ import (
 // principalLLMHolder keeps the wired service for retention erase and STT resolution.
 var principalLLMHolder *principalLLM
 
-// principalLLMProvide wires PrincipalLLMService from the external admin (called by providers_external).
+// principalLLMProvide wires PrincipalLLMService and MeUsageBudgetService from the external admin
+// (called by providers_external).
 func principalLLMProvide(services *gateway.Services, admin *externalAdmin) error {
 	if admin == nil || services == nil {
 		return nil
 	}
 	s := newPrincipalLLM(admin)
 	principalLLMHolder = s
-	return gateway.Provide[gateway.PrincipalLLMService](services, s)
+	if err := gateway.Provide[gateway.PrincipalLLMService](services, s); err != nil {
+		return err
+	}
+	return gateway.Provide[gateway.MeUsageBudgetService](services, s)
 }
 
 // principalLLMPolicy wraps the static routing policy with per-principal bindings (ADR 0041).

@@ -73,6 +73,8 @@ describe("client.me and client.memory against the fake", () => {
     expect((await client.me.providers.oauthStart("openai", { capabilities: ["chat"], redirect_uri: "http://127.0.0.1/cb" })).authorization_url).toContain(
       "oauth",
     );
+    expect((await client.me.usage()).groups).toEqual([]);
+    expect((await client.me.budget()).budgets).toEqual([]);
     expect((await client.memory.list()).items).toEqual([]);
     const created = await client.memory.create({ text: "prefer dark mode" });
     expect(created.text).toBe("prefer dark mode");

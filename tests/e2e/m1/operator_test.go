@@ -26,13 +26,30 @@ const (
 	audience = "alixai"
 	// auditSignerID is the platform key that signs integration-audit reports. It is generated
 	// for the test: `alixai audit run` refuses the published TEST-ONLY key for that role.
-	auditSignerID  = "m1-gate-audit-signer"
-	gateOperator   = "m1-gate-operator"
-	strangerKeyID  = "m1-gate-stranger"
-	clinicPkgDir   = clinicDir + "/package"
-	signedAtOfPkg  = "2026-10-01T00:00:00Z"
-	signExpiresPkg = "2036-10-01T00:00:00Z"
+	auditSignerID    = "m1-gate-audit-signer"
+	gateOperator     = "m1-gate-operator"
+	strangerKeyID    = "m1-gate-stranger"
+	clinicPkgDir     = clinicDir + "/package"
+	signedAtOfPkg    = "2026-10-01T00:00:00Z"
+	signExpiresPkg   = "2036-10-01T00:00:00Z"
+	clinicMCPCredRef = "cred:clinic-booking-mcp"
+	clinicMCPCredEnv = "ALIXAI_SECRET_CLINIC_BOOKING_MCP"
+	clinicMCPTenant  = "clinic-m1"
 )
+
+var (
+	clinicMCPSecret     string
+	clinicMCPSecretOnce sync.Once
+)
+
+func ensureClinicMCPSecret() string {
+	clinicMCPSecretOnce.Do(func() {
+		clinicMCPSecret = fmt.Sprintf("m1-clinic-mcp-%d", time.Now().UnixNano())
+		// EnvBackend resolves via os.LookupEnv; LookupEnv on cli.Env alone is not enough.
+		_ = os.Setenv(clinicMCPCredEnv, clinicMCPSecret)
+	})
+	return clinicMCPSecret
+}
 
 // cliMu serialises the in-process command line: the configuration registry and the
 // sections it fills are process-wide, as they are in the real binary, one process per command.
@@ -77,6 +94,7 @@ func newOperator(t tb) *operator {
 	o.signerKeyPath = privPath
 
 	o.cfgPath = filepath.Join(root, "alixai.yaml")
+	secret := ensureClinicMCPSecret()
 	cfg := fmt.Sprintf(`data_dir: %q
 identity:
   deployment_id: %s
@@ -85,10 +103,18 @@ integration_audit:
   signing_key_id: %s
   signing_key_file: %q
   accept_operators: [%s]
-`, filepath.ToSlash(o.dataDir), deploymentID, audience, auditSignerID, filepath.ToSlash(privPath), gateOperator)
+application_credentials:
+  credentials:
+    - ref: %s
+      application: %s
+      tenant: %s
+      env: %s
+`, filepath.ToSlash(o.dataDir), deploymentID, audience, auditSignerID, filepath.ToSlash(privPath), gateOperator,
+		clinicMCPCredRef, clinicApplication, clinicMCPTenant, clinicMCPCredEnv)
 	if err := os.WriteFile(o.cfgPath, []byte(cfg), 0o600); err != nil {
 		t.Fatal(err)
 	}
+	_ = secret
 
 	o.must("trust", "add-key", "-app", trust.PlatformApplicationID, "-key-id", auditSignerID, "-public-key-file", pubPath, "-operator", "root")
 	o.must("trust", "add-key", "-app", clinicApplication, "-key-id", devkeys.KeyID, "-public-key", devkeys.PublicKeyBase64(),
@@ -109,10 +135,16 @@ func (o *operator) run(args ...string) cliResult {
 	}
 	full := append(append(append([]string{}, args[:words]...), "-config", o.cfgPath), args[words:]...)
 	var out, errb bytes.Buffer
+	secret := ensureClinicMCPSecret()
 	code := cli.Run(context.Background(), full, &cli.Env{
 		Stdin: strings.NewReader(""), Stdout: &out, Stderr: &errb,
-		LookupEnv: func(string) (string, bool) { return "", false },
-		Config:    config.Default,
+		LookupEnv: func(k string) (string, bool) {
+			if k == clinicMCPCredEnv {
+				return secret, true
+			}
+			return "", false
+		},
+		Config: config.Default,
 	})
 	return cliResult{Code: code, Stdout: out.String(), Stderr: errb.String()}
 }

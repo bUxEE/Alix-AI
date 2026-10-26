@@ -30,6 +30,7 @@ const (
 type clinicApp struct {
 	baseURL string
 	mcpURL  string
+	bearer  string
 
 	cmd  *exec.Cmd
 	done chan struct{}
@@ -61,7 +62,8 @@ func startClinic(t *testing.T) *clinicApp {
 			cmd.Env = append(cmd.Env, kv)
 		}
 	}
-	cmd.Env = append(cmd.Env, "CLINIC_PORT=0", "CLINIC_TEST_SUPPORT=1")
+	secret := ensureClinicMCPSecret()
+	cmd.Env = append(cmd.Env, "CLINIC_PORT=0", "CLINIC_TEST_SUPPORT=1", "CLINIC_MCP_BEARER="+secret)
 	out, err := cmd.StdoutPipe()
 	if err != nil {
 		t.Fatal(err)
@@ -71,7 +73,7 @@ func startClinic(t *testing.T) *clinicApp {
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("start the clinic application: %v", err)
 	}
-	c := &clinicApp{cmd: cmd, done: make(chan struct{})}
+	c := &clinicApp{cmd: cmd, done: make(chan struct{}), bearer: secret}
 	go func() {
 		err := cmd.Wait()
 		c.mu.Lock()
@@ -146,6 +148,9 @@ func (c *clinicApp) stats(t *testing.T) clinicStats {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/test/stats", nil)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if c.bearer != "" {
+		req.Header.Set("Authorization", "Bearer "+c.bearer)
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

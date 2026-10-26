@@ -252,7 +252,7 @@ func (v *Validator) checkBlock(val conversation.RichBlockValue, ctx Context, raw
 			col.add(rule, "/code")
 		}
 	case conversation.TableBlock:
-		v.checkTable(b, col)
+		v.checkTable(b, ctx, col)
 	case conversation.ChartBlock:
 		v.checkChart(b, ctx, col)
 	case conversation.DiagramBlock:

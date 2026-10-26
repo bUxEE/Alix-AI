@@ -219,6 +219,8 @@ type UsageQuery struct {
 	Provider string
 	Channel  pv.Channel
 	Scope    UsageScope
+	// PrincipalID narrows the export to one principal (operators only).
+	PrincipalID string
 }
 
 // UsageExport is the usage records (no prompt and no response) with totals per provider, channel and currency,
@@ -678,6 +680,12 @@ func (p *ProvidersClient) ExportUsage(ctx context.Context, query UsageQuery, opt
 		q.Set("scope", string(query.Scope))
 	default:
 		return nil, invalidArgument("Scope", "it must be tenant or application")
+	}
+	if query.PrincipalID != "" {
+		if len(query.PrincipalID) > 128 {
+			return nil, invalidArgument("PrincipalID", "it must be at most 128 characters")
+		}
+		q.Set("principal_id", query.PrincipalID)
 	}
 	q.Set("format", "json")
 	out, err := doJSON[UsageExport](ctx, p.c.t, providersRequest(opExportProviderUsage, nil, q, nil), applyOptions(options).deadline(p.c.timeout), nil)

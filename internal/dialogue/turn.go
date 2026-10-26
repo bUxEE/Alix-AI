@@ -1094,7 +1094,7 @@ func (t *turn) read(ctx context.Context, spec ap.Capability, g *sessions.Goal) (
 	d.PermittedNextActions = t.permitted(ctx, ro.Result.AllowedNextActions)
 	g.Phase, g.Pending = capabilities.PhaseSuccess, nil
 	t.recordRead(capID, ro.Result)
-	return outcome{dir: d, capID: capID}, nil
+	return outcome{dir: d, capID: capID, resultIDs: ro.Result.Identifiers, resultValues: ro.Result.Values}, nil
 }
 
 // prepare validates and stages a consequential action through the coordinator and

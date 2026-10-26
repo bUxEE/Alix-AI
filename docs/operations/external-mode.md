@@ -20,14 +20,14 @@ For a chat-only (or STT-local) deployment with **no local LLM**, see [Light Exte
 | --- | --- |
 | Operator API (modes, egress policy, budgets, usage export, kill switch, credentials, billing acknowledgement, OAuth start and callback) | built, `alixai serve` provides it when the section below is enabled; writes are also checked inside the service (a mode, a provider-wide budget, the usage of the whole application, the kill switch and the deployment and application policy need a deployment operator) |
 | Credential service (encrypted file), egress guard, budgets, mode resolver, kill switch | built and used by that API |
-| Provider adapters | OpenAI, Anthropic, Gemini (API key or OAuth), Meta, OpenRouter, xAI and Moonshot (Kimi) are built into the default binary. OAuth is off until `external_providers.oauth.providers.<id>` is enabled (presets: openai SIWC, gemini/google-stt, openrouter). A Gemini or OpenAI (SIWC) profile uses the API key or the OAuth access token of the bound credential, chosen per call from the kind of the reference (the shared OAuth engine refreshes tokens). Slash-bearing wire ids map through `meta_models` / `openrouter_models` / `xai_models` / `moonshot_models`. A manual key is validated against its own provider on submit; a key the provider rejects is refused and not stored |
+| Provider adapters | OpenAI, Anthropic, Gemini (API key or OAuth), Meta, OpenRouter, xAI, Moonshot (Kimi) and **Mistral** (EU-default residency; GDPR-relevant) are built into the default binary. OAuth is off until `external_providers.oauth.providers.<id>` is enabled (presets: openai SIWC, gemini/google-stt, openrouter). A Gemini or OpenAI (SIWC) profile uses the API key or the OAuth access token of the bound credential, chosen per call from the kind of the reference (the shared OAuth engine refreshes tokens). Slash-bearing wire ids map through `meta_models` / `openrouter_models` / `xai_models` / `moonshot_models` / `mistral_models`. A manual key is validated against its own provider on submit; a key the provider rejects is refused and not stored |
 | Provider profile lifecycle | **operator commands**, section 3a (`alixai providers ...`), offline against the data directory |
 | Turn routing in `alixai serve` | the **controller** role is routed by `internal/dialogue/extmode` when the mode is External and `external_providers.routing` names profiles for it; under Hybrid the controller stays local. Everything else stays as it was |
 | Hybrid realisation (`internal/modes/hybrid`) | **called** from the response step of the dialogue core (`dialogue.ResponseRealiser`, implemented by the provider selector `serve` builds the engine with). In Hybrid mode, when `routing.realisation` names profiles, the directive goes to Hybrid, which applies its fail-closed rules (egress policy, `hybrid_fact_class`, budget, verification) and answers from the provider, the local model or the template; model text is verified again in the core. In Local and External mode, with the kill switch engaged, or with nothing routed, the seam declines and the reply is written exactly as before. `hybrid_fact_class` empty keeps every Hybrid turn local |
 | RAG answers | **External mode** answers a question from the excerpts the egress guard lets through (`allow_excerpt` sources of an allowed class) with the external answerer, over the same citation resolver as the local one, so every reference opens through `/v1/rag/citations`; a source that must stay local gives `no_supported_evidence` with reason `egress_restricted` and nothing is sent. **Local and Hybrid** answer locally, unchanged |
 | Scheduled terms revalidation | runs: `providerreg.revalidate` is queued at start and every `revalidate_every` (default one hour) on the RAG stack's queue and pool, under the service identity `providerreg.revalidate`, class 6 (maintenance) |
 | Budget sweep of stale reservations | runs: `providerbudget.sweep` is queued at start and every `budget_sweep_every` (default 15 minutes) for each application with a live profile, on the same queue and pool, under the service identity `providerbudget.sweep`, class 6 (maintenance); it marks timed-out reservations expired and drops their holds (a timed-out hold was already ignored, so the sweep changes no figure) |
-| Multimodal / speech gate (`extmodal`) | built. With external mode on, routed `stt` / `tts` go through the gates (local first). External TTS needs attested verified text and prefers `characters_in` metering (ADR 0043). External STT adapters: OpenAI, Google STT v2, Deepgram, ElevenLabs. External TTS adapters: OpenAI, ElevenLabs, Google Cloud TTS, Amazon Polly (`adapters/external/tts/...`). Raw audio leaves only when segmented, modality and raw-audio policy admit it, the data-egress guard allows the audio class under the egress policy's `audio` setting (**off by default**, section 4), and the provider budget reserves `audio_seconds_in`. Dictation: `POST /v1/sessions/{id}/dictations`. Spoken text is `user_message` at the session class |
+| Multimodal / speech gate (`extmodal`) | built. With external mode on, routed `stt` / `tts` go through the gates (local first). External TTS needs attested verified text and prefers `characters_in` metering (ADR 0043). External STT adapters: OpenAI, Google STT v2, Deepgram, ElevenLabs, **Mistral (Voxtral)**. External TTS adapters: OpenAI, ElevenLabs, Google Cloud TTS, Amazon Polly, **Mistral (Voxtral TTS)** (`adapters/external/tts/...`). Raw audio leaves only when segmented, modality and raw-audio policy admit it, the data-egress guard allows the audio class under the egress policy's `audio` setting (**off by default**, section 4), and the provider budget reserves `audio_seconds_in`. Dictation: `POST /v1/sessions/{id}/dictations`. Spoken text is `user_message` at the session class |
 | SDK helpers for these routes | in the SDKs (task X-14) |
 
 ## 1. Enabling it
@@ -50,11 +50,12 @@ External mode needs every item below. Missing one leaves the deployment local, w
        realisation:
          profiles: [pprf_...]
      hybrid_fact_class: ""                    # public or internal lets Hybrid facts leave; empty keeps every turn local
+     directive_class: ""                      # public|internal|confidential: External may realise from the directive; empty keeps the template
      revalidate_every: 1h
      budget_sweep_every: 15m
    ```
 
-   Other keys: `anthropic_base_url`, `gemini_base_url`, `meta_base_url`, `meta_dialect` (`meta-model-api`, the default, or `openai-compatible` for a hosted Llama endpoint, which needs `meta_base_url`), `meta_api_prefix` and `meta_models` (maps the slash-free model id of a profile to the wire id, because a registry model id cannot contain `/`), plus `openrouter_base_url` / `xai_base_url` / `moonshot_base_url` and matching `*_models` maps. Every base URL is a bare origin. OAuth catalog and env/file credential refs: section 3.
+   Other keys: `anthropic_base_url`, `gemini_base_url`, `meta_base_url`, `meta_dialect` (`meta-model-api`, the default, or `openai-compatible` for a hosted Llama endpoint, which needs `meta_base_url`), `meta_api_prefix` and `meta_models` (maps the slash-free model id of a profile to the wire id, because a registry model id cannot contain `/`), plus `openrouter_base_url` / `xai_base_url` / `moonshot_base_url` / `mistral_base_url` and matching `*_models` maps. Every base URL is a bare origin. OAuth catalog and env/file credential refs: section 3.
 
    Operators are read from these two lists and from nothing a token says: a token claiming an admin role is as powerless as one claiming nothing, and with both lists empty nobody can call any route. A deployment operator is also a tenant administrator. Every entry names the application whose verified token the operator arrives with: each application's issuer chooses the subject (`sub`) it signs, so `usr_ops` of `app_console` and `usr_ops` of any other application are different principals, and only the listed one passes. An entry without the application (`usr_ops`, `ten_acme/usr_admin`, the form of earlier builds) is refused at start-up.
 3. Check the file: `alixai config check -config file.yaml` (prints `config ok`; a malformed operator entry stops it).
@@ -69,7 +70,7 @@ The destination of every provider call must also be on the network allowlist (`i
 
 - **Local** (default): no external processing.
 - **Hybrid**: language realisation only. Identity, scope, routing, the controller and RAG stay local; only a verified dialogue directive may be sent for wording, with the local text or the deterministic template as fallback. By default nothing is classed as sendable (`FactClass` and `DirectiveClass` are empty), so a Hybrid deployment sends nothing until the operator names a class.
-- **External**: the hosted model may serve the roles the profile and policy permit.
+- **External**: the hosted model may serve the roles the profile and policy permit. By default a response directive (live capability facts) stays local and the deterministic template realises the reply. Set `external_providers.directive_class` to `public`, `internal` or `confidential` to let that directive leave at the named class; the tenant egress policy must still allow categories `dialogue_directive` and `deterministic_fact` at that class, or the template is used and the refusal is recorded. Provider table/chart JSON is accepted only when every number matches the directive's facts (`verify.RealiseRich`); otherwise the template (which may itself include a validated table/chart of host records) is shown.
 - **The most restrictive level wins** (Local < Hybrid < External). A level with no setting counts as Local, so all three levels must opt in. The kill switch forces Local.
 
 Switching mode changes no application data and no integration contract.
@@ -80,7 +81,7 @@ A profile is the record of one provider and model: endpoint, capabilities, terms
 
 | Command | What it does |
 | --- | --- |
-| `providers register (-template anthropic \| -profile-file F) [-permit-tenant T]... [-reviewed-on D] [-terms-hash H] [-pricing-file F] [-billing-notice-file F]` | stores a new candidate profile and prints it (with its `pprf_` id). The price table and the billing notice are set here. Change either later with the two commands below, without a new profile |
+| `providers register (-template anthropic\|mistral \| -profile-file F) [-permit-tenant T]... [-reviewed-on D] [-terms-hash H] [-pricing-file F] [-billing-notice-file F]` | stores a new candidate profile and prints it (with its `pprf_` id). Shipped templates: `anthropic`, `mistral` (EU). The price table and the billing notice are set here. Change either later with the two commands below, without a new profile |
 | `providers set-pricing -profile ID -pricing-file F` | replaces the price table (same id, credential, acknowledgement, report and lifecycle). A later call is priced from the new table; a call already reserved keeps the estimate it was admitted with. A quarantined profile stays quarantined; a retired one is refused |
 | `providers set-billing-notice -profile ID -billing-notice-file F` | replaces the billing notice. A changed notice drops the acknowledgement and takes a qualified profile back to candidate until it is acknowledged (`ack-billing`) and qualified again; the same notice is a no-op; a notice that says a subscription is API access is refused |
 | `providers list` | prints the application's profiles |
@@ -131,7 +132,7 @@ external_providers:
 | OpenAI (SIWC) | Browser login, **loopback only** (same-machine). Plan usage is the signed-in person's ChatGPT plan; the credential resolves only for that application+principal (`--for` on CLI login). Remote deployments: manual key. | Nothing (dynamic client registration). Persist `ext_agent_host_id` is automatic under `<data_dir>/external/siwc_host_id`. |
 | Gemini / google-stt | Browser login (loopback Desktop client or host https Web client). Gemini OAuth uses `generative-language.retriever` only; google-stt uses `cloud-platform` (whole Cloud project — prefer a dedicated project). | Your own Google OAuth client id (+ secret for Web) in the catalog entry. |
 | OpenRouter | Browser PKCE → issued API key (`oauth_issued_key`, no refresh). Prefer `127.0.0.1` (AlixAI refuses `localhost`). | Nothing beyond enabling the catalog entry. |
-| Anthropic, xAI, Moonshot | **No** official third-party OAuth; use a manual key (or reach their models through OpenRouter). | — |
+| Anthropic, xAI, Moonshot, Mistral | **No** official third-party OAuth; use a manual key (or reach their models through OpenRouter where available). | — |
 
 Operator CLI (offline against the data directory, same pattern as other `alixai providers` commands):
 
@@ -165,7 +166,7 @@ Before a request is made a host can show the user what would leave: `GET /v1/pro
 
 ### Routing speech-to-text (`stt`)
 
-Put a profile id under `external_providers.routing.stt` (same shape as `controller`). The profile must list role `stt`, declare media handling for audio, state retention, and set an `audio_seconds_in` price (no price → external STT is refused as not estimable). Supported provider ids: `openai` (POST `/v1/audio/transcriptions`), `google-stt` (Speech-to-Text v2 Recognize / Chirp 3), `deepgram` (POST `/v1/listen`), `elevenlabs` (POST `/v1/speech-to-text`). Credentials use the existing manual key flow (Google may use the `google-stt` OAuth connection once connected).
+Put a profile id under `external_providers.routing.stt` (same shape as `controller`). The profile must list role `stt`, declare media handling for audio, state retention, and set an `audio_seconds_in` price (no price → external STT is refused as not estimable). Supported provider ids: `openai` (POST `/v1/audio/transcriptions`), `google-stt` (Speech-to-Text v2 Recognize / Chirp 3), `deepgram` (POST `/v1/listen`), `elevenlabs` (POST `/v1/speech-to-text`), `mistral` (POST `/v1/audio/transcriptions`, Voxtral). Credentials use the existing manual key flow (Google may use the `google-stt` OAuth connection once connected).
 
 **Audio egress for dictation.** Raw audio stays home until the egress policy's **`audio` setting** is enabled at every required level (deployment, application, tenant, workspace); it stays **off by default**. Use `PUT /v1/providers/egress-policy` with body fields `level`, `expected_revision`, and `audio: { "enabled": true, "max_class": "public" | "internal" | "confidential" }` (same shape as `files`, section 4). `max_class` must be at least the class dictation attaches to the clip. That class is `dictation.audio_class` in config (`public` | `internal` | `confidential`, default `internal`; override `ALIXAI_DICTATION_AUDIO_CLASS`). Example:
 
@@ -179,7 +180,27 @@ Dictation marks the clip user-segmented; voice conversation still needs a VAD cu
 
 ### Routing text-to-speech (`tts`)
 
-Put a profile id under `external_providers.routing.tts` (same shape as `stt`). The profile must list role `tts`. Prefer a `characters_in` price (ADR 0043). Estimation rule: `characters_in` when priced; else `toks_in` when priced (legacy); else refused as not estimable (same as STT without `audio_seconds_in`). A profile that prices only `audio_seconds_out` is also refused (length unknown before the call). Supported provider ids: `openai`, `elevenlabs`, `google-tts`, `polly`. Credentials: manual key (Polly as `ACCESS_KEY_ID:SECRET[:SESSION_TOKEN]`); Google may use the `google-tts` OAuth connection or a key. External synthesis speaks only attested verified reply text; local fallback runs only when the role policy names it. A principal may bind role `tts` (and optional `voice` / `language`) via `PUT /v1/me/llm/tts`. Each role resolves independently: the same provider or different ones; one credential per (principal or tenant, provider).
+Put a profile id under `external_providers.routing.tts` (same shape as `stt`). The profile must list role `tts`. Prefer a `characters_in` price (ADR 0043). Estimation rule: `characters_in` when priced; else `toks_in` when priced (legacy); else refused as not estimable (same as STT without `audio_seconds_in`). A profile that prices only `audio_seconds_out` is also refused (length unknown before the call). Supported provider ids: `openai`, `elevenlabs`, `google-tts`, `polly`, `mistral` (POST `/v1/audio/speech`, Voxtral TTS). Credentials: manual key (Polly as `ACCESS_KEY_ID:SECRET[:SESSION_TOKEN]`); Google may use the `google-tts` OAuth connection or a key. External synthesis speaks only attested verified reply text; local fallback runs only when the role policy names it. A principal may bind role `tts` (and optional `voice` / `language`) via `PUT /v1/me/llm/tts`. Each role resolves independently: the same provider or different ones; one credential per (principal or tenant, provider).
+
+### Provider × role matrix (external adapters in this release)
+
+Which hosted adapters exist for each speech/chat role (✓ = wired; — = not offered by that product or not shipped). Controllers and realisation also use Meta, OpenRouter, xAI and Moonshot (chat only).
+
+| Provider id | Chat (controller / realisation) | STT | TTS |
+| --- | --- | --- | --- |
+| `openai` | ✓ | ✓ | ✓ |
+| `anthropic` | ✓ | — | — |
+| `gemini` | ✓ | — | — |
+| `meta` | ✓ | — | — |
+| `openrouter` | ✓ | — | — |
+| `xai` | ✓ | — | — |
+| `moonshot` | ✓ | — | — |
+| `mistral` | ✓ | ✓ | ✓ |
+| `google-stt` | — | ✓ | — |
+| `deepgram` | — | ✓ | — |
+| `elevenlabs` | — | ✓ | ✓ |
+| `google-tts` | — | — | ✓ |
+| `polly` | — | — | ✓ |
 
 ## 5. Application packages
 
@@ -191,9 +212,11 @@ A profile records the provider's retention, training use, region and price at th
 
 ## 7. Budgets, usage and the kill switch
 
-**Budgets.** `GET /v1/providers/budgets` returns budgets and their states; `PUT /v1/providers/budgets` creates or changes one (subject provider, tenant, workspace or principal; channel `interactive` or `background`; integer micro-unit `daily_micro_units` and `monthly_micro_units`, both required, plus `warn_at_percent`). There is no unlimited budget. **A call with no applicable budget is refused (`no_budget`)**, and an exhausted budget stops external calls with `resource_exhausted` and chooses no other provider. A provider-wide budget needs a deployment operator. Windows are UTC days and months. Estimates are upper bounds; the provider's invoice is the final cost.
+**Budgets.** `GET /v1/providers/budgets` returns budgets and their states; `PUT /v1/providers/budgets` creates or changes one (subject provider, tenant, workspace, principal, or `principal_application`; channel `interactive` or `background`; integer micro-unit `daily_micro_units` and `monthly_micro_units`, both required, plus `warn_at_percent`). Kind `principal_application` is application-wide for one principal (application and principal only): one hard stop across every tenant that principal acts in. There is no unlimited budget. **A call with no applicable budget is refused (`no_budget`)**, and an exhausted budget stops external calls with `resource_exhausted` and chooses no other provider. Every applicable budget admits the call; the strictest stop wins. A provider-wide budget needs a deployment operator. Windows are UTC days and months. Estimates are upper bounds; the provider's invoice is the final cost.
 
-**Usage.** `GET /v1/providers/usage/export?from=&to=&provider=&channel=&format=json|csv[&scope=application]` (`scope=application` needs a deployment operator). It holds counts and costs, never prompts or answers.
+**Self-service.** `GET /v1/me/budget` returns the caller's own principal and `principal_application` budgets with their states. `GET /v1/me/usage?from=&to=&tenant_id=&cursor=&limit=` returns the caller's own usage across tenants of the application (or one tenant), grouped by provider, role and UTC day, with meter units and charged micro-units. Never another principal's rows. Operators still set budgets with `PUT /v1/providers/budgets`.
+
+**Usage.** `GET /v1/providers/usage/export?from=&to=&provider=&channel=&format=json|csv[&scope=application][&principal_id=]` (`scope=application` needs a deployment operator; `principal_id` narrows to one principal). It holds counts and costs, never prompts or answers.
 
 **Kill switch (deployment operator).** `PUT /v1/providers/kill-switch` with `{"engaged": true, "reason": "operator_emergency"}` stops all external processing for the deployment at once, whatever any policy says, and survives a restart; `{"engaged": false}` releases it. Releasing enables nothing by itself: the mode and policies must still allow external use. `GET /v1/providers/kill-switch` reads it. The reason is a fixed lower snake_case code.
 

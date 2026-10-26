@@ -366,7 +366,7 @@ class _ProviderCalls:
         )
 
     @staticmethod
-    def export_usage(from_: Any, to: Any, provider: Any, channel: Any, scope: Any, timeout_ms: Any) -> Call[dict[str, Any]]:
+    def export_usage(from_: Any, to: Any, provider: Any, channel: Any, scope: Any, principal_id: Any, timeout_ms: Any) -> Call[dict[str, Any]]:
         query: list[tuple[str, str]] = []
         for name, value in (("from", from_), ("to", to)):
             if value is not None:
@@ -383,6 +383,10 @@ class _ProviderCalls:
             if scope not in ("tenant", "application"):
                 raise _invalid("scope", "it must be tenant or application")
             query.append(("scope", scope))
+        if principal_id is not None:
+            if not isinstance(principal_id, str) or not (1 <= len(principal_id) <= 128):
+                raise _invalid("principal_id", "it must be 1 to 128 characters")
+            query.append(("principal_id", principal_id))
         query.append(("format", "json"))
         return Call("exportProviderUsage", _usage, timeout_ms=_timeout(timeout_ms), what="usage export", query=query)
 
@@ -596,11 +600,13 @@ class ProvidersApi:
         provider: Optional[str] = None,
         channel: Optional[str] = None,
         scope: Optional[str] = None,
+        principal_id: Optional[str] = None,
         timeout_ms: Optional[int] = None,
     ) -> dict[str, Any]:
         """The usage records (no prompt and no response) with totals per provider, channel and currency, for reconciliation with the
-        provider's invoice. The caller's tenant by default; ``scope="application"`` needs a deployment operator. JSON only."""
-        return self._client._execute(_ProviderCalls.export_usage(from_, to, provider, channel, scope, timeout_ms))
+        provider's invoice. The caller's tenant by default; ``scope="application"`` needs a deployment operator. ``principal_id``
+        narrows to one principal. JSON only."""
+        return self._client._execute(_ProviderCalls.export_usage(from_, to, provider, channel, scope, principal_id, timeout_ms))
 
     def get_kill_switch(self, *, timeout_ms: Optional[int] = None) -> ProviderKillSwitch:
         """Whether the global external-disable switch is engaged. A deployment operator only."""
@@ -762,10 +768,11 @@ class AsyncProvidersApi:
         provider: Optional[str] = None,
         channel: Optional[str] = None,
         scope: Optional[str] = None,
+        principal_id: Optional[str] = None,
         timeout_ms: Optional[int] = None,
     ) -> dict[str, Any]:
         """See :meth:`ProvidersApi.export_usage`."""
-        return await self._client._execute(_ProviderCalls.export_usage(from_, to, provider, channel, scope, timeout_ms))
+        return await self._client._execute(_ProviderCalls.export_usage(from_, to, provider, channel, scope, principal_id, timeout_ms))
 
     async def get_kill_switch(self, *, timeout_ms: Optional[int] = None) -> ProviderKillSwitch:
         """See :meth:`ProvidersApi.get_kill_switch`."""

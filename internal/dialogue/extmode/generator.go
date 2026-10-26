@@ -370,8 +370,36 @@ func (r *Runtime) chatResult(st *staged, res providers.RichResult) (providers.Ch
 		}
 		return cr, strings.TrimSpace(cr.Text) != "" || len(cr.JSON) > 0
 	}
-	cr.Text = res.Text()
-	return cr, strings.TrimSpace(cr.Text) != ""
+	// A response may carry rich blocks (table/chart JSON parts) beside prose. Prose becomes Text;
+	// candidate block JSON is packed into JSON for the dialogue verifier (RealiseRich).
+	var prose []string
+	var blockRaw []json.RawMessage
+	for _, p := range res.Parts {
+		if p.Kind != providers.ModText {
+			continue
+		}
+		raw := strings.TrimSpace(p.Text)
+		if raw == "" {
+			continue
+		}
+		if raw[0] == '{' && json.Valid([]byte(raw)) {
+			blockRaw = append(blockRaw, json.RawMessage(raw))
+			continue
+		}
+		prose = append(prose, p.Text)
+	}
+	switch {
+	case len(prose) > 0:
+		cr.Text = strings.Join(prose, "")
+	case len(blockRaw) == 0:
+		cr.Text = res.Text()
+	}
+	if len(blockRaw) > 0 {
+		if enc, err := json.Marshal(blockRaw); err == nil {
+			cr.JSON = enc
+		}
+	}
+	return cr, strings.TrimSpace(cr.Text) != "" || len(cr.JSON) > 0
 }
 
 // ---- pricing ----

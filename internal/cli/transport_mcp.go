@@ -16,6 +16,7 @@ import (
 	"time"
 
 	mcptransport "github.com/buxee/alix-ai/adapters/mcp"
+	openapitransport "github.com/buxee/alix-ai/adapters/openapi"
 	"github.com/buxee/alix-ai/internal/adapters"
 	"github.com/buxee/alix-ai/internal/config"
 	"github.com/buxee/alix-ai/internal/egress"
@@ -55,8 +56,14 @@ import (
 //     reachable through this adapter.
 //   - contract_sha256, when the endpoint declares it, is the pin of the approved
 //     tool list. A listing that hashes differently refuses the mapped tools.
-//   - credential_ref has no credential service to resolve it yet (milestone X); the
-//     adapter connects without a credential and says so in the log.
+//   - credential_ref is resolved by the credential provider this build has
+//     (RegisterOpenAPISecretProvider; the same service OpenAPI and RAG api use).
+//     An endpoint that declares a reference and finds no provider is refused when
+//     the adapter is built (fail closed, same rule as OpenAPI). The resolved value
+//     is sent as Authorization: <scheme> <value> on streamable HTTP / SSE (header
+//     and scheme from the adapter configuration, defaults Authorization / Bearer).
+//     Endpoints without credential_ref send no auth header. Stdio is not used for
+//     packages.
 func init() { RegisterTransport(TransportKindMCP, mcpTransportOpen) }
 
 // mcpTransportMaxConfigBytes bounds an adapter configuration file.
@@ -191,8 +198,14 @@ func mcpTransportConfig(ctx context.Context, req TransportRequest, log *slog.Log
 		}
 		ep.Allow = ac.Tools.Allow
 		if v.CredentialRef != nil {
-			log.Warn("an endpoint declares a credential reference and this build has no credential service: connecting without a credential",
-				slog.String("application_id", req.ApplicationID), slog.String("endpoint", te.ID))
+			ref := string(*v.CredentialRef)
+			secrets := openapiTransportSecretProvider()
+			if secrets == nil {
+				return cfg, fmt.Errorf("endpoint %q declares a credential reference and no credential provider is configured", te.ID)
+			}
+			header, scheme := mcpTransportAuth(ac)
+			ep.AuthHeader, ep.AuthScheme = header, scheme
+			ep.Authorization = mcpTransportAuthorization(secrets, ref, scheme)
 		}
 		cfg.Endpoints = append(cfg.Endpoints, ep)
 
@@ -246,6 +259,38 @@ func mcpTransportConfig(ctx context.Context, req TransportRequest, log *slog.Log
 		cfg.Capabilities = append(cfg.Capabilities, mc)
 	}
 	return cfg, ctx.Err()
+}
+
+// mcpTransportAuth returns the header and scheme from an adapter configuration
+// (defaults Authorization / Bearer).
+func mcpTransportAuth(ac mcptransport.AdapterConfig) (header, scheme string) {
+	header, scheme = mcptransport.DefaultAuthHeader, mcptransport.DefaultAuthScheme
+	if ac.Auth == nil {
+		return header, scheme
+	}
+	if ac.Auth.Header != "" {
+		header = ac.Auth.Header
+	}
+	if ac.Auth.Scheme != nil {
+		scheme = *ac.Auth.Scheme
+	}
+	return header, scheme
+}
+
+// mcpTransportAuthorization builds the per-request Authorization value from the
+// shared credential provider (scheme plus secret, or bare secret when scheme is "").
+func mcpTransportAuthorization(secrets openapitransport.SecretProvider, ref, scheme string) func(context.Context) (string, error) {
+	return func(ctx context.Context) (string, error) {
+		sec, err := secrets.Secret(ctx, ref)
+		if err != nil {
+			return "", err
+		}
+		v := sec.Reveal()
+		if scheme == "" {
+			return v, nil
+		}
+		return scheme + " " + v, nil
+	}
 }
 
 // mcpTransportBinding translates one operation binding.

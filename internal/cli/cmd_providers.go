@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/buxee/alix-ai/adapters/external/anthropic"
+	"github.com/buxee/alix-ai/adapters/external/mistral"
 	"github.com/buxee/alix-ai/internal/audit"
 	"github.com/buxee/alix-ai/internal/clock"
 	"github.com/buxee/alix-ai/internal/identity"
@@ -28,7 +29,7 @@ import (
 // The operator commands that manage a provider profile (milestone X, X-26). They work offline against the data
 // directory, like `alixai keys init`: no HTTP route, no OpenAPI or SDK change, and no running server needed.
 //
-//	alixai providers register   -operator ID -application APP (-template anthropic | -profile FILE.json)
+//	alixai providers register   -operator ID -application APP (-template anthropic|mistral | -profile FILE.json)
 //	alixai providers list       -operator ID -application APP
 //	alixai providers set-pricing -operator ID -application APP [-tenant T] -profile ID -pricing-file FILE.json
 //	alixai providers set-billing-notice -operator ID -application APP [-tenant T] -profile ID -billing-notice-file FILE.json
@@ -108,7 +109,7 @@ func extWireCommands() []Command {
 	specs := []extWireSpec{
 		{
 			name: "providers register", summary: "register a candidate provider profile from the shipped template or a profile file",
-			usage: "alixai providers register [-config f] -operator ID -application APP (-template anthropic | -profile-file FILE) [-permit-tenant T]... [-reviewed-on D] [-terms-hash H] [-pricing-file F] [-billing-notice-file F]",
+			usage: "alixai providers register [-config f] -operator ID -application APP (-template anthropic|mistral | -profile-file FILE) [-permit-tenant T]... [-reviewed-on D] [-terms-hash H] [-pricing-file F] [-billing-notice-file F]",
 			flags: func(fs *flag.FlagSet) func() error {
 				fs.StringVar(&template, "template", "", "start from the profile an adapter ships (anthropic)")
 				fs.StringVar(&file, "profile-file", "", "start from this provider profile JSON (the id, credential, lifecycle and timestamps are ignored)")
@@ -461,8 +462,10 @@ func extWireDraft(template, file, application string, tenants []string) (pv.Prov
 	switch {
 	case template == ExternalProviderAnthropic:
 		raw = anthropic.ProfileJSON()
+	case template == ExternalProviderMistral:
+		raw = mistral.ProfileJSON()
 	case template != "":
-		return pv.ProviderProfile{}, Usagef("-template %q: only anthropic ships a profile; use -profile-file", template)
+		return pv.ProviderProfile{}, Usagef("-template %q: known templates are anthropic, mistral; use -profile-file", template)
 	default:
 		b, err := os.ReadFile(file)
 		if err != nil {

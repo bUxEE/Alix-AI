@@ -36,7 +36,25 @@ const (
 	conformanceDeployment = "dep_conformance"
 	conformanceAudience   = "alixai"
 	platformSignerID      = "conformance-audit-signer"
+	clinicMCPCredRef      = "cred:clinic-booking-mcp"
+	clinicMCPCredEnv      = "ALIXAI_SECRET_CLINIC_BOOKING_MCP"
+	clinicMCPTenant       = "clinic-conformance"
+	clinicApplication     = "clinic-booking"
 )
+
+var (
+	clinicMCPSecret     string
+	clinicMCPSecretOnce sync.Once
+)
+
+func ensureClinicMCPSecret() string {
+	clinicMCPSecretOnce.Do(func() {
+		clinicMCPSecret = fmt.Sprintf("conformance-clinic-mcp-%d", time.Now().UnixNano())
+		// EnvBackend resolves via os.LookupEnv; LookupEnv on cli.Env alone is not enough.
+		_ = os.Setenv(clinicMCPCredEnv, clinicMCPSecret)
+	})
+	return clinicMCPSecret
+}
 
 // cliMu serialises the in-process command line: the configuration registry and the
 // sections it fills are process-wide, as in the real binary (one process per command).
@@ -85,7 +103,14 @@ integration_audit:
   signing_key_id: %s
   signing_key_file: %q
   accept_operators: []
-`, filepath.ToSlash(d.dataDir), conformanceDeployment, conformanceAudience, platformSignerID, filepath.ToSlash(privPath))
+application_credentials:
+  credentials:
+    - ref: %s
+      application: %s
+      tenant: %s
+      env: %s
+`, filepath.ToSlash(d.dataDir), conformanceDeployment, conformanceAudience, platformSignerID, filepath.ToSlash(privPath),
+		clinicMCPCredRef, clinicApplication, clinicMCPTenant, clinicMCPCredEnv)
 	if err := os.WriteFile(d.cfgPath, []byte(cfg), 0o600); err != nil {
 		return nil, err
 	}
@@ -119,10 +144,16 @@ func runCLI(ctx context.Context, cfgPath string, args ...string) cliResult {
 		full = append(append(append([]string{}, args[:2]...), "-config", cfgPath), args[2:]...)
 	}
 	var out, errb bytes.Buffer
+	secret := ensureClinicMCPSecret()
 	code := cli.Run(ctx, full, &cli.Env{
 		Stdin: strings.NewReader(""), Stdout: &out, Stderr: &errb,
-		LookupEnv: func(string) (string, bool) { return "", false },
-		Config:    config.Default,
+		LookupEnv: func(k string) (string, bool) {
+			if k == clinicMCPCredEnv {
+				return secret, true
+			}
+			return "", false
+		},
+		Config: config.Default,
 	})
 	return cliResult{Code: code, Stdout: out.String(), Stderr: errb.String()}
 }

@@ -3,17 +3,23 @@
 All notable changes to this package. The format follows [Keep a Changelog](https://keepachangelog.com/); versions follow semantic versioning once 1.0.0
 ships, with the rules of [compatibility.md](../../docs/policies/compatibility.md).
 
-## 1.3.0 — 2026-10-26
+## 1.3.0 — 2026-10-27
 
 ### Added
 
 - Principal LLM role `tts` and optional `voice` / `language` on `me.llm.putRole` / binding types (ADR 0043). Meter unit `characters_in` in generated provider types.
+- `client.me.oauth.callback` / `flowStatus` / `cancel` for per-user host-callback OAuth (`POST /v1/me/oauth/callback`, flow status/cancel).
+- `client.ops.erasure.start` / `status` for GDPR erasure over HTTP (`POST|GET /v1/ops/erasure…`, operator only).
+- Optional `scope` on erasure start (`tenant` default / `application` for deployment-operator GDPR erase).
+- `client.me.usage()` (`GET /v1/me/usage`) and `client.me.budget()` (`GET /v1/me/budget`); optional `principal_id` on `providers.exportUsage`.
 
 ### Notes (core)
 
-- External TTS adapters (OpenAI, ElevenLabs, Google Cloud TTS, Amazon Polly) behind `routing.tts` / principal `tts` bindings; attested verified text only; per-role provider choice (ADR 0043).
-- CLI OAuth system-browser opener only follows validated `https` or loopback `http` URLs.
-- Light External mode: documented minimum recommended hardware (all models external; 4 vCPU / 8 GB ceiling).
+- External TTS adapters (OpenAI, ElevenLabs, Google Cloud TTS, Amazon Polly, Mistral) behind `routing.tts` / principal `tts` bindings; attested verified text only; per-role provider choice (ADR 0043).
+- Per-user usage view and application-wide principal budgets across tenants; Mistral chat + Voxtral STT/TTS (EU-default residency).
+- CLI OAuth system-browser opener only follows validated `https` or loopback `http` URLs; light External hardware guide (4 vCPU / 8 GB).
+- Opt-in `external_providers.directive_class` (live facts to the external model), verified table/chart blocks, and additive conversation-contract `presentation.chart` (ADR 0044).
+- Outbound `credential_ref` for OpenAPI, MCP and RAG api (`application_credentials`); optional RAG `scope_params.include_principal_id`. Kit fullscreen z-index default 2400; npm publish readiness. No TypeScript SDK API change beyond the surfaces above.
 - Dev cores report `1.3.0-dev`; packages for this line use `compatibility.alixai_core` `[1.0.0, 2.0.0)`.
 
 ## 1.2.0 — 2026-10-26

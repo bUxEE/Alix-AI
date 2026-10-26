@@ -25,15 +25,20 @@ describe("the SDK's operation table matches schemas/api/openapi.yaml", () => {
   });
 
   it("covers every operation of the areas this SDK version implements (sessions, actions, applications, files, history, settings, me, memory, exports, probes)", () => {
-    // The RAG area is spoken too (src/rag, its own table, checked by test/rag.test.ts); voice, providers, oauth, decision and ops have no operations yet.
+    // The RAG area is spoken too (src/rag, its own table, checked by test/rag.test.ts); voice, providers, oauth and decision
+    // stay out. Ops is spoken in part: erasure over HTTP (1.3.0); queue/providers/audit-export stay out.
     const implemented = new Set(["root", "sessions", "actions", "apps", "files", "history", "settings", "me", "memory", "exports"]);
     const missing = spec.operations.filter((o) => implemented.has(o.area) && !(o.operationId in OPERATIONS)).map((o) => o.operationId);
     expect(missing, "operations in the document that the SDK does not speak").toEqual([]);
   });
 
   it("has a row for every operation of the document whose area is implemented, and for nothing the document lacks", () => {
-    const documented = spec.operations.filter((o) =>
-      ["root", "sessions", "actions", "apps", "files", "history", "settings", "me", "memory", "exports"].includes(o.area),
+    // Partial ops surface (1.3.0): startErasure / getErasureJob only.
+    const partialOps = new Set(["startErasure", "getErasureJob"]);
+    const documented = spec.operations.filter(
+      (o) =>
+        ["root", "sessions", "actions", "apps", "files", "history", "settings", "me", "memory", "exports"].includes(o.area) ||
+        partialOps.has(o.operationId),
     );
     expect(Object.keys(OPERATIONS).sort()).toEqual(documented.map((o) => o.operationId).sort());
   });
@@ -264,6 +269,13 @@ describe("every answer of the fake server conforms to the OpenAPI document", () 
       separate_api_billing_understood: true,
     });
     await client.me.providers.oauthStart("openai", { capabilities: ["chat"], redirect_uri: "http://127.0.0.1:5555/cb" });
+    await client.me.oauth.callback({ redirect_uri: "https://host.example/cb", query: "code=c&state=s" });
+    await client.me.oauth.flowStatus("oaf_01J0000000000000000000000A");
+    await client.me.oauth.cancel("oaf_01J0000000000000000000000A");
+    await client.ops.erasure.start({ level: "principal", principal_id: "usr_alice", reason: "gdpr" });
+    await client.ops.erasure.status("erj_01J0000000000000000000000A");
+    await client.me.usage();
+    await client.me.budget();
     await client.memory.list();
     const remembered = await client.memory.create({ text: "prefer dark mode" });
     await client.memory.patch(remembered.id, { text: "prefer light mode" });

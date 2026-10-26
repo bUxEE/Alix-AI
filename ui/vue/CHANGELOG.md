@@ -3,11 +3,15 @@
 All notable changes to this package. Versions follow semantic versioning with the rules of
 [compatibility.md](../../docs/policies/compatibility.md).
 
-## 1.3.0 — 2026-10-26
+## 1.3.0 — 2026-10-27
+
+### Added
+
+- Fullscreen overlay z-index: CSS custom property `--alix-fullscreen-z` (default **2400**, above typical Vuetify/MUI overlays at ~2000) and prop `fullscreenZIndex` to override it. Body-teleported dialogs/menus opened from the panel must use a higher z-index than the overlay. npm publish readiness.
 
 ### Notes (core)
 
-- No kit API change. Core 1.3.0 adds external TTS and per-role provider choice (ADR 0043), `characters_in` metering, browser-URL hardening for CLI OAuth, and light External hardware guidance.
+- Core 1.3.0: external TTS (OpenAI, ElevenLabs, Google, Polly, Mistral) and per-role provider choice (ADR 0043); `characters_in`; directive_class + verified tables/charts (ADR 0044); me OAuth callback/flows; ops erasure; credential_ref / application_credentials; me usage/budget; Mistral; browser-URL hardening; light External hardware docs.
 
 ## 1.2.0 — 2026-10-26
 

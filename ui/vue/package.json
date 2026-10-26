@@ -8,11 +8,25 @@
   "engines": {
     "node": ">=22"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bUxEE/Alix-AI.git",
+    "directory": "ui/vue"
+  },
+  "homepage": "https://github.com/bUxEE/Alix-AI/tree/main/ui/vue#readme",
+  "bugs": {
+    "url": "https://github.com/bUxEE/Alix-AI/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "dev": "vite",
     "demo:build": "vite build",
     "typecheck": "vue-tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "prepublishOnly": "pnpm run typecheck"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
@@ -49,7 +63,10 @@
   },
   "files": [
     "src",
-    "!src/**/*.test.ts"
+    "!src/**/*.test.ts",
+    "!src/**/*.spec.ts",
+    "!**/fixtures/**",
+    "!**/.env*"
   ],
   "dependencies": {
     "@alixai/sdk": "workspace:*",

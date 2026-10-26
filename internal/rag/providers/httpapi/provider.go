@@ -163,7 +163,26 @@ func (p *Provider) sentNames(def source.Definition) []string {
 	if def.Workspace.Mode != ap.RAGSourceScopeBindingModeShared {
 		n = append(n, p.cfg.Params.Workspace)
 	}
+	if name, ok := p.principalParam(def); ok {
+		n = append(n, name)
+	}
 	return n
+}
+
+// principalParam is the query parameter name for the requesting principal when
+// the source opts in via scope_params.include_principal_id.
+func (p *Provider) principalParam(def source.Definition) (name string, ok bool) {
+	sp := def.Decl.ScopeParams
+	if sp == nil || sp.IncludePrincipalID == nil || !*sp.IncludePrincipalID {
+		return "", false
+	}
+	if sp.PrincipalParam != nil && *sp.PrincipalParam != "" {
+		return *sp.PrincipalParam, true
+	}
+	if p.cfg.Params.Principal != "" {
+		return p.cfg.Params.Principal, true
+	}
+	return DefaultParamPrincipal, true
 }
 
 // checkQueryScope applies the declaration's query_scope: a fixed parameter may
@@ -178,6 +197,10 @@ func (p *Provider) checkQueryScope(def source.Definition) (fixed url.Values, err
 	reserved := map[string]bool{}
 	for _, n := range p.cfg.Params.all() {
 		reserved[strings.ToLower(n)] = true
+	}
+	reserved[strings.ToLower(DefaultParamPrincipal)] = true
+	if p.cfg.Params.Principal != "" {
+		reserved[strings.ToLower(p.cfg.Params.Principal)] = true
 	}
 	for name, value := range qs.FixedParameters {
 		if !paramNameRE.MatchString(name) {
@@ -276,6 +299,9 @@ func (s *session) query() url.Values {
 	}
 	if s.def.Workspace.Mode != ap.RAGSourceScopeBindingModeShared {
 		q.Set(n.Workspace, s.scope.WorkspaceID)
+	}
+	if name, ok := s.p.principalParam(s.def); ok {
+		q.Set(name, s.scope.PrincipalID)
 	}
 	return q
 }

@@ -18,6 +18,7 @@ endpoints:
     base_url: http://127.0.0.1:8790
     spec: schemas/help-api.openapi.yaml
     adapter_config: schemas/adapters/help-api.yaml
+    credential_ref: cred:help-api
 context_exchange:
   mode: context_token
   issuer: https://help.example.test

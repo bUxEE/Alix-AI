@@ -385,6 +385,13 @@ func (e *Engine) Begin(ctx context.Context, scope contracts.Scope, req BeginRequ
 	if callback != CallbackHost && callback != CallbackLoopback {
 		return Authorization{}, fail(contracts.ErrValidationFailed, ReasonBadRequest, "oauth: callback is host or loopback")
 	}
+	if p.LoopbackOnly && callback != CallbackLoopback {
+		// SIWC (and any other loopback-only provider): remote host callbacks are not offered.
+		// Answer manual_fallback so hosts use the API-key path instead of a rejected redirect.
+		return Authorization{}, fail(contracts.ErrValidationFailed, ReasonManualFallback,
+			"oauth: this provider only allows loopback redirects (same-machine deployments); use a manual API key for remote hosts").
+			WithDetails("fallback", "api_key")
+	}
 	redirectURI := req.RedirectURI
 	if callback == CallbackLoopback {
 		if redirectURI != LoopbackPlaceholder && !isBoundLoopbackURI(redirectURI, p.LoopbackPath) {
@@ -411,10 +418,6 @@ func (e *Engine) Begin(ctx context.Context, scope contracts.Scope, req BeginRequ
 		}
 	} else if req.OpenerOrigin != "" {
 		return Authorization{}, fail(contracts.ErrValidationFailed, ReasonBadRequest, "oauth: opener_origin is only for presentation popup")
-	}
-	if p.LoopbackOnly && callback != CallbackLoopback {
-		return Authorization{}, fail(contracts.ErrValidationFailed, ReasonRedirectRejected,
-			"oauth: this provider only allows loopback redirects (same-machine deployments)")
 	}
 	scopes := make([]string, 0, len(consent.Scopes))
 	for _, s := range consent.Scopes {

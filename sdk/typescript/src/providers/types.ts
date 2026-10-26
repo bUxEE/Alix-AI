@@ -169,6 +169,8 @@ export interface UsageQuery {
   channel?: "interactive" | "background";
   /** The caller's tenant (default) or the whole application (a deployment operator). */
   scope?: "tenant" | "application";
+  /** Narrow to one principal (operators only). */
+  principal_id?: string;
 }
 
 /** The usage records (no prompt and no response) with totals per provider, channel and currency. */

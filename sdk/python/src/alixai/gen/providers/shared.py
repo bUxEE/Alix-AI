@@ -152,12 +152,14 @@ class SafeAccount(BaseModel):
 class BudgetSubject(BaseModel):
     """
     What a budget applies to: one provider, or a tenant, workspace or principal (additive plan
-    section 11.2), each optionally narrowed to one provider. The ids a kind needs are required
-    and no id wider or narrower than the kind is allowed, so a tenant budget cannot name a
-    workspace.
+    section 11.2, ADR 0041), each optionally narrowed to one provider. The ids a kind needs are
+    required and no id wider or narrower than the kind is allowed, so a tenant budget cannot
+    name a workspace. Kind principal_application (1.3) is application-wide for one principal
+    across every tenant: it names application_id and principal_id only (the service refuses
+    tenant_id and workspace_id on that kind).
     """
     model_config = ConfigDict(extra="forbid", protected_namespaces=())
-    kind: Literal["provider", "tenant", "workspace", "principal"]
+    kind: Literal["provider", "tenant", "workspace", "principal", "principal_application"]
     provider_id: Optional[ProviderId] = None
     application_id: Optional[Identifier] = None
     tenant_id: Optional[Identifier] = None

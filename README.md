@@ -31,7 +31,7 @@
 > **AlixAI 1.3.0 (in tree).** Additive on 1.2.0: external TTS and per-role provider choice ([ADR 0043](docs/decisions/0043-external-tts-and-per-role-provider-choice.md)). Prior **1.2.0**: per-principal LLM accounts (operator catalog, `/v1/me/…`, reserved-tenant
 > credentials); long-term memory (consent-gated proposals, `memory.enabled` default off); downloadable exports from verified
 > turn blocks (`POST /v1/sessions/{session_id}/exports`); UI kit fullscreen overlay and opt-in answer downloads. 1.1 features
-> remain: light external setups, dictation, popup OAuth, OpenRouter / xAI / Moonshot. Still not verified: live provider runs
+> remain: light external setups, dictation, popup OAuth, OpenRouter / xAI / Moonshot / Mistral (EU). Still not verified: live provider runs
 > against real endpoints, voicebench on real hardware, certification on a real 8 GB x86-64 machine (ARM64 has never been run),
 > 24-hour and 7-day soaks (analysis only), and an independent external security review. Details:
 > [Project status](#project-status) and [docs/verification/README.md](docs/verification/README.md).
@@ -490,8 +490,10 @@ docs/                  architecture, ADRs, integration guides, operations, secur
 
 - Document minimum recommended hardware for light External mode (all models external; 4 vCPU / 8 GB ceiling).
 - Harden the CLI OAuth system-browser opener: only validated `https` or loopback `http` URLs; fixed OS program names, no shell.
+- Per-user usage (`GET /v1/me/usage`) and application-wide principal budgets (`GET /v1/me/budget`, subject kind `principal_application`); operator usage export `principal_id` filter.
+- Mistral chat + Voxtral STT/TTS adapters; kit fullscreen z-index default 2400; npm publish readiness for `@alixai/*` (workflow skips without `NPM_TOKEN`).
 
-**1.3.0 is in tree** (minor, additive on 1.2.0). What 1.3.0 adds: external TTS and per-role provider choice ([ADR 0043](docs/decisions/0043-external-tts-and-per-role-provider-choice.md)) — OpenAI / ElevenLabs / Google Cloud TTS / Polly behind `routing.tts` and principal `tts` bindings (optional `voice` / `language`); attested verified text only; additive meter unit `characters_in`; each of controller, realisation, STT and TTS may use the same provider or different ones. **1.2.0** remains: per-principal LLM accounts ([ADR 0041](docs/decisions/0041-per-principal-llm-accounts.md)), long-term memory ([ADR 0042](docs/decisions/0042-long-term-memory.md)), downloadable exports, UI kit fullscreen and opt-in downloads. Source builds report `1.3.0-dev`; packages declaring `[1.0.0, 2.0.0)` still validate. Contract changes are additive and frozen into `schemas/_frozen/v1`. Not verified in 1.3: live provider runs, voicebench on real hardware, real 8 GB certification, independent security review. Summary:
+**1.3.0 is in tree** (minor, additive on 1.2.0). What 1.3.0 adds: external TTS and per-role provider choice ([ADR 0043](docs/decisions/0043-external-tts-and-per-role-provider-choice.md)) — OpenAI / ElevenLabs / Google Cloud TTS / Polly / **Mistral** behind `routing.tts` and principal `tts` bindings (optional `voice` / `language`); attested verified text only; additive meter unit `characters_in`; each of controller, realisation, STT and TTS may use the same provider or different ones; Mistral chat + Voxtral STT + TTS (EU-default residency; `-template mistral`); per-user usage view and application-wide principal budgets across tenants; UI kit fullscreen z-index default 2400 (`fullscreenZIndex` / `--alix-fullscreen-z` / `--alixai-z-fullscreen`). **1.2.0** remains: per-principal LLM accounts ([ADR 0041](docs/decisions/0041-per-principal-llm-accounts.md)), long-term memory ([ADR 0042](docs/decisions/0042-long-term-memory.md)), downloadable exports, UI kit fullscreen and opt-in downloads. Source builds report `1.3.0-dev`; packages declaring `[1.0.0, 2.0.0)` still validate. Contract changes are additive and frozen into `schemas/_frozen/v1`. Not verified in 1.3: live provider runs, voicebench on real hardware, real 8 GB certification, independent security review. Summary:
 
 | Status | Areas |
 | --- | --- |

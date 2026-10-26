@@ -22,6 +22,8 @@ import { createMeApi } from "./me/client.js";
 import type { MeApi } from "./me/client.js";
 import { createMemoryApi } from "./memory/client.js";
 import type { MemoryApi } from "./memory/client.js";
+import { createOpsApi } from "./ops/client.js";
+import type { OpsApi } from "./ops/client.js";
 import { createSettingsApi } from "./settings.js";
 import type { SettingsApi } from "./settings.js";
 import { createConversation } from "./conversation.js";
@@ -191,6 +193,8 @@ export interface AlixAIClient {
   readonly memory: MemoryApi;
   /** Downloadable files from a turn's verified blocks (1.2.0): `exports.create`. Needs `exports.create`. */
   readonly exports: ExportsApi;
+  /** Operator erasure over HTTP (1.3.0, ADR 0036): `ops.erasure.start` / `status`. Server-side only. */
+  readonly ops: OpsApi;
 
   // ---- conversations ----
   /**
@@ -570,6 +574,7 @@ const build = (caller: Caller, options: ClientOptions, turnTimeout: number): Ali
     me: createMeApi(caller),
     memory: createMemoryApi(caller),
     exports: createExportsApi(caller),
+    ops: createOpsApi(caller),
     forSession: (sessionId) => build(caller.bind(pathId("sessionId", sessionId)), options, turnTimeout),
     conversation: (sessionId, conversationOptions) => createConversation(build(caller.bind(pathId("sessionId", sessionId)), options, turnTimeout), pathId("sessionId", sessionId), conversationOptions),
 

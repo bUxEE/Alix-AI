@@ -73,6 +73,11 @@ type Params struct {
 	Application string
 	Tenant      string
 	Workspace   string
+	// Principal is the name of the principal_id parameter when a source opts in
+	// via scope_params.include_principal_id. Empty means the provider default
+	// (DefaultParamPrincipal) is used for that source; the parameter is only
+	// sent when the declaration opts in.
+	Principal string
 }
 
 // The default parameter names.
@@ -82,6 +87,7 @@ const (
 	DefaultParamApplication = "application_id"
 	DefaultParamTenant      = "tenant_id"
 	DefaultParamWorkspace   = "workspace_id"
+	DefaultParamPrincipal   = "principal_id"
 )
 
 func (p Params) withDefaults() Params {
@@ -99,7 +105,11 @@ func (p Params) withDefaults() Params {
 }
 
 func (p Params) all() []string {
-	return []string{p.Cursor, p.Limit, p.Application, p.Tenant, p.Workspace}
+	out := []string{p.Cursor, p.Limit, p.Application, p.Tenant, p.Workspace}
+	if p.Principal != "" {
+		out = append(out, p.Principal)
+	}
+	return out
 }
 
 func (p Params) validate() error {

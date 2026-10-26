@@ -3,6 +3,7 @@ package verify
 import (
 	"strings"
 
+	"github.com/buxee/alix-ai/internal/blocks"
 	"github.com/buxee/alix-ai/pkg/contracts"
 	"github.com/buxee/alix-ai/pkg/contracts/gen/actions"
 	"github.com/buxee/alix-ai/pkg/contracts/gen/conversation"
@@ -32,7 +33,8 @@ const (
 )
 
 // Outcome is a response that is safe to show or to speak: either the model's text, verified, or
-// the template. Text is never unverified model output.
+// the template. Text is never unverified model output. Blocks, when set, are validated rich blocks
+// (tables, charts) whose every number is an authoritative fact of the directive.
 type Outcome struct {
 	Text   string
 	Source Source
@@ -40,6 +42,9 @@ type Outcome struct {
 	// Violations are why the model's text was rejected; empty unless Reason is
 	// ReasonVerificationFailed.
 	Violations []Violation
+	// Blocks are verified rich blocks of the reply (tables and charts from a model or from the
+	// deterministic template). Empty when the reply is text only.
+	Blocks []conversation.RichBlock
 }
 
 // Realise is the last step of a turn (master plan 11.1, "verified natural response"). It verifies
@@ -51,12 +56,36 @@ type Outcome struct {
 // failed verification, which would be a bug in the templates; in both cases nothing is returned
 // to say, and the caller reports a typed failure instead.
 func Realise(modelText string, d *conversation.DialogueDirective, r *actions.ActionReceipt, opts Options) (Outcome, error) {
+	return RealiseRich(modelText, nil, d, r, opts)
+}
+
+// RealiseRich is Realise with optional rich blocks the model (or provider) proposed. Every block
+// is validated against the directive's facts (numbers in table cells and chart data included); a
+// refused block, or text that fails Verify, yields the deterministic template instead.
+func RealiseRich(modelText string, proposed []conversation.RichBlock, d *conversation.DialogueDirective, r *actions.ActionReceipt, opts Options) (Outcome, error) {
 	v, err := prepare(d, r, opts)
 	if err != nil {
 		return Outcome{}, err
 	}
+	facts := blocks.NewFactSet(nil)
+	if d != nil {
+		facts.AddFacts(d.Facts)
+	}
+	if r != nil {
+		facts.AddFacts(r.Facts)
+	}
+	var accepted []conversation.RichBlock
+	for _, b := range proposed {
+		clean, err := blocks.Default().Block(b, blocks.Context{Facts: facts})
+		if err != nil {
+			out, terr := v.template(ReasonVerificationFailed)
+			out.Violations = append(out.Violations, Violation{Kind: ViolationUnknownNumber, Got: "block"})
+			return out, terr
+		}
+		accepted = append(accepted, clean)
+	}
 	if res := v.check(modelText); res.OK {
-		return Outcome{Text: strings.TrimSpace(modelText), Source: SourceModel, Reason: ReasonVerified}, nil
+		return Outcome{Text: strings.TrimSpace(modelText), Source: SourceModel, Reason: ReasonVerified, Blocks: accepted}, nil
 	} else {
 		out, err := v.template(ReasonVerificationFailed)
 		out.Violations = res.Violations
@@ -76,7 +105,8 @@ func Degraded(d *conversation.DialogueDirective, r *actions.ActionReceipt, opts 
 }
 
 // template renders the directive and checks the rendering with the same verifier. A template that
-// does not verify is a bug; it is reported, not shown.
+// does not verify is a bug; it is reported, not shown. When opts carry record rows (or a chart
+// presentation hint), validated table/chart blocks are attached.
 func (v *verification) template(reason Reason) (Outcome, error) {
 	text := v.render()
 	// An outcome with no receipt is rendered as unconfirmed, which is true. Only a model's text
@@ -91,7 +121,7 @@ func (v *verification) template(reason Reason) (Outcome, error) {
 		return Outcome{}, failure(contracts.ErrInternal, ErrTemplateUnverified, "the %s template for act %q failed verification: %s",
 			v.lang, string(v.d.Act), violationSummary(bad))
 	}
-	return Outcome{Text: text, Source: SourceTemplate, Reason: reason}, nil
+	return Outcome{Text: text, Source: SourceTemplate, Reason: reason, Blocks: presentBlocks(v.d, v.opts)}, nil
 }
 
 func violationSummary(vs []Violation) string {

@@ -524,7 +524,7 @@ func TestErasureRefusesEventsPendingActionsDependOn(t *testing.T) {
 	// A principal's erasure that does not touch the uncertain action's events, or Bob's, goes through
 	// while it is still pending: what depends on nothing of Alice's may go.
 	code, out, errOut := runCLI(t, "retention", "erase", "-config", cfg, "-application", retentionTestApp, "-tenant", "tenant-a",
-		"-principal", "usr_carol", "-reason", "principal erasure request", "-operator", "ops-alice", "-dry-run")
+		"-principal", "usr_carol", "-tenant-scoped", "-reason", "principal erasure request", "-operator", "ops-alice", "-dry-run")
 	if code != ExitOK {
 		t.Fatalf("a dry run for a principal the pending action does not involve = %d\n%s\n%s", code, out, errOut)
 	}
@@ -547,7 +547,7 @@ func TestErasureRefusesEventsPendingActionsDependOn(t *testing.T) {
 	})
 	before = snapshot()
 	code, out, errOut = runCLI(t, "retention", "erase", "-config", cfg, "-application", retentionTestApp, "-tenant", "tenant-a",
-		"-principal", "usr_alice", "-reason", "principal erasure request", "-operator", "ops-alice")
+		"-principal", "usr_alice", "-tenant-scoped", "-reason", "principal erasure request", "-operator", "ops-alice")
 	if code == ExitOK || !strings.Contains(errOut, "refused") {
 		t.Fatalf("erasing the events of a principal that name an uncertain action = %d\n%s\n%s", code, out, errOut)
 	}
@@ -605,8 +605,9 @@ func TestErasureRefusesEventsPendingActionsDependOn(t *testing.T) {
 // finished preparations they made, and leaves the rest of the tenant.
 func TestErasureOfAPrincipalTakesWhatNamesThem(t *testing.T) {
 	cfg, dataDir := retentionEraseWorld(t)
+	// -tenant-scoped: only tenant-a; Alice's data in tenant-b and her application-wide credentials stay.
 	code, out, errOut := runCLI(t, "retention", "erase", "-config", cfg, "-application", retentionTestApp, "-tenant", "tenant-a",
-		"-principal", "usr_alice", "-reason", "principal erasure request", "-operator", "ops-alice")
+		"-principal", "usr_alice", "-tenant-scoped", "-reason", "principal erasure request", "-operator", "ops-alice")
 	if code != ExitOK {
 		t.Fatalf("erase = %d\n%s\n%s", code, out, errOut)
 	}
@@ -618,11 +619,20 @@ func TestErasureOfAPrincipalTakesWhatNamesThem(t *testing.T) {
 	if rep.AuditEventsErased != 3 || rep.PreparationsRemoved != 1 || rep.ReceiptsRemoved != 1 || rep.PrincipalID != "usr_alice" {
 		t.Errorf("report = %+v", rep)
 	}
+	if rep.Scope != "tenant" || rep.PrincipalCredentialsRevoked != 0 || rep.PrincipalBindingsRemoved != 0 {
+		t.Errorf("tenant-scoped must not revoke credentials: %+v", rep)
+	}
 	if n := retentionCount(t, dataDir, `SELECT COUNT(*) FROM audit_events WHERE tenant_id = 'tenant-a' AND data LIKE '%BOBSECRET%'`); n != 1 {
 		t.Error("Bob's event was erased by Alice's erasure")
 	}
 	if n := retentionCount(t, dataDir, `SELECT COUNT(*) FROM action_preparations WHERE id = 'prep_live'`); n != 1 {
 		t.Error("Bob's uncertain preparation was removed")
+	}
+	if n := retentionCount(t, dataDir, `SELECT COUNT(*) FROM audit_events WHERE tenant_id = 'tenant-b' AND data LIKE '%OTHERTENANT%'`); n != 1 {
+		t.Error("Alice's tenant-b event was erased by a tenant-scoped request")
+	}
+	if n := retentionCount(t, dataDir, `SELECT COUNT(*) FROM action_preparations WHERE id = 'prep_b'`); n != 1 {
+		t.Error("Alice's tenant-b preparation was removed by a tenant-scoped request")
 	}
 	// The tombstones name the operator and the reason, never the principal.
 	if n := retentionCount(t, dataDir, `SELECT COUNT(*) FROM audit_tombstones WHERE body LIKE '%"operator":"ops-alice"%' AND body LIKE '%principal erasure request%'`); n != 3 {
@@ -630,6 +640,48 @@ func TestErasureOfAPrincipalTakesWhatNamesThem(t *testing.T) {
 	}
 	if n := retentionCount(t, dataDir, `SELECT COUNT(*) FROM audit_events WHERE event_type IN ('audit.erased', 'deletion.receipts') AND data LIKE '%usr_alice%'`); n != 0 {
 		t.Errorf("%d erasure records name the principal", n)
+	}
+}
+
+func TestErasureOfAPrincipalApplicationWideTakesEveryTenant(t *testing.T) {
+	cfg, dataDir := retentionEraseWorld(t)
+	var llmCalls int
+	old := retentionErasePrincipalLLMHook
+	retentionErasePrincipalLLMHook = func(ctx context.Context, e *retentionEngine, application, principal string) (int, int, error) {
+		llmCalls++
+		if application != retentionTestApp || principal != "usr_alice" {
+			t.Errorf("PrincipalLLM args = %s %s", application, principal)
+		}
+		return 2, 3, nil
+	}
+	t.Cleanup(func() { retentionErasePrincipalLLMHook = old })
+
+	code, out, errOut := runCLI(t, "retention", "erase", "-config", cfg, "-application", retentionTestApp, "-tenant", "tenant-a",
+		"-principal", "usr_alice", "-reason", "gdpr erase person", "-operator", "ops-deploy")
+	if code != ExitOK {
+		t.Fatalf("erase = %d\n%s\n%s", code, out, errOut)
+	}
+	var rep retentionEraseReport
+	if err := json.Unmarshal([]byte(out), &rep); err != nil {
+		t.Fatal(err)
+	}
+	if rep.Scope != "application" || rep.PrincipalCredentialsRevoked != 2 || rep.PrincipalBindingsRemoved != 3 {
+		t.Errorf("application-wide report = %+v", rep)
+	}
+	if llmCalls != 1 {
+		t.Errorf("PrincipalLLM calls = %d, want 1", llmCalls)
+	}
+	if n := retentionCount(t, dataDir, `SELECT COUNT(*) FROM audit_events WHERE tenant_id = 'tenant-b' AND data LIKE '%OTHERTENANT%'`); n != 0 {
+		t.Error("Alice's tenant-b event survived application-wide erasure")
+	}
+	if n := retentionCount(t, dataDir, `SELECT COUNT(*) FROM action_preparations WHERE id = 'prep_b'`); n != 0 {
+		t.Error("Alice's tenant-b preparation survived application-wide erasure")
+	}
+	if n := retentionCount(t, dataDir, `SELECT COUNT(*) FROM audit_events WHERE tenant_id = 'tenant-a' AND data LIKE '%BOBSECRET%'`); n != 1 {
+		t.Error("Bob's tenant-a event was erased")
+	}
+	if n := retentionCount(t, dataDir, `SELECT COUNT(*) FROM audit_tombstones WHERE body LIKE '%gdpr erase person%'`); n < 4 {
+		t.Errorf("%d tombstones for application-wide, want at least 4", n)
 	}
 }
 

@@ -56,10 +56,11 @@ import (
 //     operation subset (openapi.ContractSHA256). A document whose subset hashes
 //     differently is refused when the adapter is built.
 //   - credential_ref is resolved by the credential provider this build has
-//     (RegisterOpenAPISecretProvider; the credential service of milestone X is the
-//     intended one). An endpoint that declares a reference and finds no provider
-//     is refused when the adapter is built, not called without a credential:
-//     the application is then unavailable (open_failed) and the audit says why.
+//     (RegisterOpenAPISecretProvider; serve registers application_credentials over
+//     the credential service). An endpoint that declares a reference and finds no
+//     provider is refused when the adapter is built, not called without a
+//     credential: the application is then unavailable (open_failed) and the audit
+//     says why.
 func init() { RegisterTransport(TransportKindOpenAPI, openapiTransportOpen) }
 
 // Bounds on the files an endpoint names.

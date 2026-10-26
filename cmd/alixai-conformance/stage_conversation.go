@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	openapitransport "github.com/buxee/alix-ai/adapters/openapi"
 	"github.com/buxee/alix-ai/internal/apppkg"
 	"github.com/buxee/alix-ai/internal/apps/convstage"
 	"github.com/buxee/alix-ai/internal/cli"
@@ -41,6 +42,11 @@ func replayExamples(ctx context.Context, e *env) (Stage, int, int) {
 		return finish(Item{ID: "conversation.rig", Name: "conversation rig", Status: StatusFail, Message: err.Error()})
 	}
 	declared = convstage.Declared(installed)
+
+	// Audit's stack unregisters application_credentials on close; conversation builds
+	// the adapter in-process and needs the same provider serve would register.
+	cli.RegisterOpenAPISecretProvider(openapitransport.StaticSecrets{clinicMCPCredRef: ensureClinicMCPSecret()})
+	defer cli.RegisterOpenAPISecretProvider(nil)
 
 	built, err := cli.BuildPackageAdapter(ctx, cli.BuildRequest{
 		ApplicationID: e.applicationID, Package: installed, ManifestHash: hash, Dir: e.dir,

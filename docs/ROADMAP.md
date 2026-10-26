@@ -14,14 +14,27 @@ and reviewed. See [Project status](../README.md#project-status) and
 ## Shipped in 1.3.0
 
 - **External TTS and per-role provider choice** ([ADR 0043](decisions/0043-external-tts-and-per-role-provider-choice.md)):
-  OpenAI, ElevenLabs, Google Cloud TTS and Amazon Polly behind `routing.tts` / principal `tts` bindings;
+  OpenAI, ElevenLabs, Google Cloud TTS, Amazon Polly and Mistral behind `routing.tts` / principal `tts` bindings;
   attested verified text only; `characters_in` metering; each of controller, realisation, STT and TTS may use
   the same provider or different ones with one credential per (principal or tenant, provider).
+- **Opt-in external realisation of live facts** ([ADR 0044](decisions/0044-external-directive-class-and-result-blocks.md)):
+  `external_providers.directive_class`; verified table/chart blocks; conversation-contract `presentation.chart`.
+- **Per-user OAuth callback/flows** and **ops erasure** (tenant vs application scope) over HTTP.
+- **Outbound `credential_ref`** for OpenAPI, MCP and RAG api (`application_credentials`); optional RAG
+  `scope_params.include_principal_id`.
+- **Per-user usage and principal budgets** (`GET /v1/me/usage`, `GET /v1/me/budget`, `principal_application`
+  subject kind; operator usage export `principal_id` filter).
+- **Mistral (EU) chat + STT + TTS**: `adapters/external/mistral`, `adapters/external/stt/mistral` (Voxtral
+  transcription) and `adapters/external/tts/mistral` (Voxtral TTS). Default data residency EU; register chat with
+  `-template mistral`.
+- **UI kit fullscreen z-index**: configurable `--alix-fullscreen-z` / `fullscreenZIndex` (default 2400); npm
+  publish readiness for `@alixai/*`.
+- **Browser-URL hardening** for CLI OAuth; **light External hardware** guidance.
 
 ## Provider auth
 
-- **OAuth for Anthropic / xAI / Kimi** if and when those vendors offer third-party OAuth for API access. Today:
-  API key, or their models through OpenRouter's OAuth. Never impersonate another product's OAuth client.
+- **OAuth for Anthropic / xAI / Kimi / Mistral** if and when those vendors offer third-party OAuth for API access. Today:
+  API key, or their models through OpenRouter's OAuth where available. Never impersonate another product's OAuth client.
 
 ## Shipped in 1.2.0
 

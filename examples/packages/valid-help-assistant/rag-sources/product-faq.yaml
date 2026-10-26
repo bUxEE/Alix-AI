@@ -21,7 +21,7 @@ include:
 - '**/*.md'
 exclude:
 - drafts/**
-credential_ref: null
+credential_ref: cred:help-faq
 formats:
 - text/markdown
 limits:

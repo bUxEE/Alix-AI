@@ -3,7 +3,9 @@
 package applicationpackage
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 
 	"github.com/buxee/alix-ai/pkg/contracts/gen/common"
 )
@@ -68,6 +70,13 @@ type ConversationContract struct {
 	// The labels of the capability's permitted next actions in this language: one per entry of
 	// the capability's next_actions. May be empty when the capability has none.
 	NextActions []ConversationContractNextActionLabel `json:"next_actions"`
+
+	// Optional, additive presentation hint for present_result replies built from host records.
+	// When a capability result has records (rows) or a typed series, AlixAI may emit a
+	// validated table of those rows; with presentation.chart set it also emits a chart whose
+	// every number is an authoritative fact. Absent means text (and a table of records when
+	// rows exist) only.
+	Presentation *ConversationContractPresentation `json:"presentation,omitzero"`
 }
 
 // MarshalJSON encodes the value with its const members forced to the value the
@@ -102,6 +111,71 @@ type ConversationContractCancellations struct {
 	// What AlixAI says after the task is cancelled. Cancelling a prepared action discards it;
 	// nothing is committed.
 	Acknowledgement Template `json:"acknowledgement"`
+}
+
+// ConversationContractChartHint mirrors
+// urn:alixai:schema:application-package:conversation-contract:v1#/$defs/chartHint.
+type ConversationContractChartHint struct {
+	// The chart mark type.
+	Type ConversationContractChartHintType `json:"type"`
+
+	// The result field used for the x (or category) channel.
+	X common.FieldName `json:"x"`
+
+	// The result field used for the y (or value) channel; must be a number the host stated.
+	Y common.FieldName `json:"y"`
+}
+
+// ConversationContractChartHintType mirrors
+// urn:alixai:schema:application-package:conversation-contract:v1#/$defs/chartHint/properties/type.
+//
+// The chart mark type.
+//
+// Only the values listed in the schema are valid.
+type ConversationContractChartHintType string
+
+// The valid values of ConversationContractChartHintType.
+const (
+	ConversationContractChartHintTypeBar   ConversationContractChartHintType = "bar"
+	ConversationContractChartHintTypeLine  ConversationContractChartHintType = "line"
+	ConversationContractChartHintTypeArea  ConversationContractChartHintType = "area"
+	ConversationContractChartHintTypePoint ConversationContractChartHintType = "point"
+	ConversationContractChartHintTypePie   ConversationContractChartHintType = "pie"
+)
+
+// Valid reports whether v is one of the values the schema lists.
+func (v ConversationContractChartHintType) Valid() bool {
+	switch v {
+	case ConversationContractChartHintTypeBar, ConversationContractChartHintTypeLine, ConversationContractChartHintTypeArea, ConversationContractChartHintTypePoint, ConversationContractChartHintTypePie:
+		return true
+	}
+	return false
+}
+
+// MarshalJSON refuses to encode a value outside the enum, so an unset or
+// corrupt value fails instead of producing a document the schema rejects.
+func (v ConversationContractChartHintType) MarshalJSON() ([]byte, error) {
+	if !v.Valid() {
+		return nil, fmt.Errorf("ConversationContractChartHintType: %v is not a valid value", string(v))
+	}
+	return json.Marshal(string(v))
+}
+
+// UnmarshalJSON accepts only the values the schema lists; null and anything
+// else is an error.
+func (v *ConversationContractChartHintType) UnmarshalJSON(data []byte) error {
+	if bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
+		return fmt.Errorf("ConversationContractChartHintType: null is not a valid value")
+	}
+	var raw string
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return fmt.Errorf("ConversationContractChartHintType: %w", err)
+	}
+	if !ConversationContractChartHintType(raw).Valid() {
+		return fmt.Errorf("ConversationContractChartHintType: %v is not a valid value", raw)
+	}
+	*v = ConversationContractChartHintType(raw)
+	return nil
 }
 
 // ConversationContractClarification mirrors
@@ -201,6 +275,14 @@ type ConversationContractNextActionLabel struct {
 
 	// The text of the suggestion shown to the user.
 	Label Label `json:"label"`
+}
+
+// ConversationContractPresentation mirrors
+// urn:alixai:schema:application-package:conversation-contract:v1#/$defs/presentation.
+type ConversationContractPresentation struct {
+	// When set, the deterministic template (and a verified external realisation) may include a
+	// chart of the named fields from the result rows.
+	Chart *ConversationContractChartHint `json:"chart,omitzero"`
 }
 
 // ConversationContractSuccessResponse mirrors

@@ -44,6 +44,10 @@ const (
 	// DefaultConnectTimeout bounds opening a session (dialling and the MCP
 	// handshake) when the caller's context has no earlier deadline.
 	DefaultConnectTimeout = 15 * time.Second
+	// DefaultAuthHeader and DefaultAuthScheme say how a credential is sent on
+	// streamable HTTP / SSE (mirroring the OpenAPI adapter).
+	DefaultAuthHeader = "Authorization"
+	DefaultAuthScheme = "Bearer"
 
 	maxEndpoints    = 16
 	maxCapabilities = 1024
@@ -59,6 +63,8 @@ var (
 	endpointIDRE   = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,62}$`)
 	argumentNameRE = regexp.MustCompile(`^[a-z][a-z0-9_]{0,63}$`)
 	sha256HexRE    = regexp.MustCompile(`^[0-9a-f]{64}$`)
+	authHeaderRE   = regexp.MustCompile("^[A-Za-z0-9!#$%&'*+.^_`|~-]{1,64}$")
+	authSchemeRE   = regexp.MustCompile(`^[A-Za-z0-9._~+/-]{0,32}$`)
 )
 
 // Command describes a local MCP server that is spoken to over stdio. It exists
@@ -101,9 +107,16 @@ type Endpoint struct {
 	// the lower-case hex ContractSHA256 of the mapped tools of this endpoint. A
 	// listing that hashes differently is drift.
 	ContractSHA256 string
-	// Authorization returns the value of the Authorization header for the
-	// server, or "" for none. It is called per request and its value is only
-	// ever sent to this endpoint's own origin.
+	// AuthHeader is the request header that carries the credential (default
+	// "Authorization"). AuthScheme is the word before the value (default
+	// "Bearer"); "" sends the credential alone. Both are ignored for stdio
+	// endpoints: a local process has no HTTP headers.
+	AuthHeader string
+	AuthScheme string
+	// Authorization returns the header value for the server (scheme plus
+	// credential, or the bare credential when AuthScheme is ""), or "" for
+	// none. It is called per request and its value is only ever sent to this
+	// endpoint's own origin. Stdio endpoints ignore it.
 	Authorization func(ctx context.Context) (string, error)
 }
 
@@ -224,6 +237,15 @@ func (c *Config) validate() error {
 		if ep.ContractSHA256 != "" && !sha256HexRE.MatchString(ep.ContractSHA256) {
 			return cfgErr("endpoint %q: contract_sha256 is not a lower-case hex SHA-256", ep.ID)
 		}
+		if ep.AuthHeader == "" {
+			ep.AuthHeader = DefaultAuthHeader
+		}
+		if !authHeaderRE.MatchString(ep.AuthHeader) {
+			return cfgErr("endpoint %q: auth header is malformed", ep.ID)
+		}
+		if ep.AuthScheme != "" && !authSchemeRE.MatchString(ep.AuthScheme) {
+			return cfgErr("endpoint %q: auth scheme is malformed", ep.ID)
+		}
 		for _, t := range ep.Allow {
 			if !toolNameRE.MatchString(t) {
 				return cfgErr("endpoint %q: %q is not a valid tool name", ep.ID, truncate(t, 40))
@@ -343,6 +365,14 @@ func truncate(s string, n int) string {
 	return s[:n] + "..."
 }
 
+// AuthConfig says how a credential_ref is sent on streamable HTTP / SSE: the
+// header and the scheme that precedes the value ("Bearer", "Basic", …). A
+// scheme of "" sends the value as it is. Stdio endpoints ignore auth.
+type AuthConfig struct {
+	Header string  `yaml:"header"`
+	Scheme *string `yaml:"scheme"`
+}
+
 // AdapterConfig is the content of the adapter configuration file of an MCP
 // endpoint (the file the manifest's adapter_config names). Version 1 of its
 // format is deliberately small: which server it configures and which of the
@@ -350,6 +380,9 @@ func truncate(s string, n int) string {
 // setting a newer package relies on is never silently ignored.
 //
 //	server: clinic-mcp        # optional; when present it must be the endpoint's ID
+//	auth:                     # only with a credential_ref; defaults Authorization / Bearer
+//	  header: Authorization
+//	  scheme: Bearer          # "" sends the credential as it is
 //	tools:
 //	  allow:                  # the approved tools; everything else on the server is
 //	    - availability_list   # invisible to the model and cannot be called
@@ -359,9 +392,11 @@ func truncate(s string, n int) string {
 // mapped by nobody (the provisioning tools of the audit's disposable tenants)
 // are approved for the package but are not reachable through the adapter
 // contract. The management tools describe, health and inspect are the adapter's
-// own protocol and need no entry.
+// own protocol and need no entry. auth applies only to URL (HTTP/SSE) endpoints;
+// a stdio Command ignores it.
 type AdapterConfig struct {
-	Server string `yaml:"server"`
+	Server string      `yaml:"server"`
+	Auth   *AuthConfig `yaml:"auth"`
 	Tools  struct {
 		Allow []string `yaml:"allow"`
 	} `yaml:"tools"`
@@ -384,6 +419,20 @@ func ParseAdapterConfig(raw []byte, endpointID string) (AdapterConfig, error) {
 	}
 	if c.Server != "" && c.Server != endpointID {
 		return AdapterConfig{}, cfgErr("the adapter configuration names server %q but configures endpoint %q", truncate(c.Server, 40), endpointID)
+	}
+	if c.Auth != nil {
+		if c.Auth.Header == "" {
+			c.Auth.Header = DefaultAuthHeader
+		}
+		if !authHeaderRE.MatchString(c.Auth.Header) {
+			return AdapterConfig{}, cfgErr("auth.header is malformed")
+		}
+		if c.Auth.Scheme == nil {
+			s := DefaultAuthScheme
+			c.Auth.Scheme = &s
+		} else if *c.Auth.Scheme != "" && !authSchemeRE.MatchString(*c.Auth.Scheme) {
+			return AdapterConfig{}, cfgErr("auth.scheme is malformed")
+		}
 	}
 	seen := map[string]bool{}
 	for _, t := range c.Tools.Allow {

@@ -92,6 +92,13 @@ var (
 	opDeletePrincipalProviderCredential = Operation{"deletePrincipalProviderCredential", http.MethodDelete, "/v1/me/providers/{provider}/credential", true, false}
 	opAckPrincipalProviderBillingNotice = Operation{"ackPrincipalProviderBillingNotice", http.MethodPost, "/v1/me/providers/{provider}/billing-notice/ack", true, false}
 	opStartPrincipalOAuth               = Operation{"startPrincipalOAuth", http.MethodPost, "/v1/me/oauth/{provider}/start", true, false}
+	opCompletePrincipalOAuth            = Operation{"completePrincipalOAuth", http.MethodPost, "/v1/me/oauth/callback", true, false}
+	opGetPrincipalOAuthFlow             = Operation{"getPrincipalOAuthFlow", http.MethodGet, "/v1/me/oauth/flows/{flow_id}", true, true}
+	opCancelPrincipalOAuthFlow          = Operation{"cancelPrincipalOAuthFlow", http.MethodDelete, "/v1/me/oauth/flows/{flow_id}", true, false}
+	opStartErasure                      = Operation{"startErasure", http.MethodPost, "/v1/ops/erasure", true, false}
+	opGetErasureJob                     = Operation{"getErasureJob", http.MethodGet, "/v1/ops/erasure/{job_id}", true, true}
+	opGetMeUsage                        = Operation{"getMeUsage", http.MethodGet, "/v1/me/usage", true, true}
+	opGetMeBudget                       = Operation{"getMeBudget", http.MethodGet, "/v1/me/budget", true, true}
 
 	// Long-term memory (ADR 0042, 1.2.0).
 	opListMemory    = Operation{"listMemory", http.MethodGet, "/v1/memory", true, true}
@@ -124,6 +131,9 @@ func Operations() []Operation {
 		opStartProviderOAuth, opCompleteProviderOAuth, opGetProviderOAuthFlow, opCancelProviderOAuthFlow,
 		opGetProviderCatalog, opGetPrincipalLlm, opPutPrincipalLlmRole, opDeletePrincipalLlmRole,
 		opPutPrincipalProviderCredential, opDeletePrincipalProviderCredential, opAckPrincipalProviderBillingNotice, opStartPrincipalOAuth,
+		opCompletePrincipalOAuth, opGetPrincipalOAuthFlow, opCancelPrincipalOAuthFlow,
+		opStartErasure, opGetErasureJob,
+		opGetMeUsage, opGetMeBudget,
 		opListMemory, opCreateMemory, opPatchMemory, opDeleteMemory, opConfirmMemory, opRejectMemory,
 		opCreateExport,
 	}

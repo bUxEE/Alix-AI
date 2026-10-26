@@ -54,17 +54,20 @@ func TestOperationsCoverTheImplementedAreas(t *testing.T) {
 	// The decision area is spoken in part on purpose: the read-only status. The operator-only configuration
 	// (getDecisionConfig, putDecisionConfig) is not part of the SDK surface.
 	// Voice is spoken in part: dictation HTTP only (not the WebSocket openVoiceSession).
+	// Ops is spoken in part: erasure over HTTP (1.3.0); queue/providers/audit-export stay out.
 	partial := map[string]bool{
 		"getDecisionStatus":        true,
 		"getDictationCapabilities": true,
 		"createSessionDictation":   true,
+		"startErasure":             true,
+		"getErasureJob":            true,
 	}
 	have := map[string]bool{}
 	for _, op := range sdkgo.Operations() {
 		have[op.ID] = true
 	}
 	for _, o := range s.ops {
-		if (o.area == "decision" || o.area == "voice") && have[o.id] != partial[o.id] {
+		if (o.area == "decision" || o.area == "voice" || o.area == "ops") && have[o.id] != partial[o.id] {
 			t.Errorf("%s: the SDK speaks only the partial %s surface (have=%v)", o.id, o.area, have[o.id])
 		}
 		if implemented[o.area] && !have[o.id] {
@@ -74,7 +77,7 @@ func TestOperationsCoverTheImplementedAreas(t *testing.T) {
 	// Areas the SDK does not implement stay out on purpose: the TypeScript SDK does not speak them either
 	// (files, settings and history are not part of the SDK surface of M3-09 and M3-10).
 	for _, o := range s.ops {
-		if !implemented[o.area] && o.area != "decision" && o.area != "voice" && have[o.id] {
+		if !implemented[o.area] && o.area != "decision" && o.area != "voice" && o.area != "ops" && have[o.id] {
 			t.Errorf("%s is spoken by the SDK but belongs to the unimplemented area %s", o.id, o.area)
 		}
 	}
@@ -587,6 +590,19 @@ func TestFakeAnswersConformToOpenAPI(t *testing.T) {
 	must("principal billing ack", err)
 	_, err = client.Me().StartOAuth(ctx, "openai", sdkgo.PrincipalOAuthStart{Capabilities: []string{"chat"}, RedirectURI: "http://127.0.0.1:5555/cb"})
 	must("principal oauth start", err)
+	_, err = client.Me().CompleteOAuth(ctx, sdkgo.PrincipalOAuthCallback{RedirectURI: "https://host.example/cb", Query: "code=c&state=s"})
+	must("principal oauth callback", err)
+	_, err = client.Me().OAuthFlowStatus(ctx, "oaf_01J0000000000000000000000A")
+	must("principal oauth flow status", err)
+	must("principal oauth flow cancel", client.Me().CancelOAuthFlow(ctx, "oaf_01J0000000000000000000000A"))
+	_, err = client.Ops().StartErasure(ctx, sdkgo.ErasureRequest{Level: "principal", PrincipalID: "usr_alice", Reason: "gdpr"})
+	must("ops erasure start", err)
+	_, err = client.Ops().ErasureStatus(ctx, "erj_01J0000000000000000000000A")
+	must("ops erasure status", err)
+	_, err = client.Me().Usage(ctx, sdkgo.MeUsageQuery{})
+	must("me usage", err)
+	_, err = client.Me().Budget(ctx)
+	must("me budget", err)
 	_, err = client.Memory().List(ctx, nil)
 	must("memory list", err)
 	created, err := client.Memory().Create(ctx, memgen.MemoryCreate{Text: "prefer dark mode"})
@@ -758,6 +774,13 @@ var goTypes = map[string]func() any{
 	"deletePrincipalProviderCredential": func() any { return new(sdkgo.PrincipalCredentialStatus) },
 	"ackPrincipalProviderBillingNotice": func() any { return new(sdkgo.PrincipalBillingAckResult) },
 	"startPrincipalOAuth":               func() any { return new(sdkgo.PrincipalOAuthStarted) },
+	"completePrincipalOAuth":            func() any { return new(sdkgo.PrincipalCredentialStatus) },
+	"getPrincipalOAuthFlow":             func() any { return new(sdkgo.PrincipalOAuthFlowStatus) },
+	"cancelPrincipalOAuthFlow":          func() any { return nil }, // 204
+	"startErasure":                      func() any { return new(sdkgo.ErasureJobAccepted) },
+	"getErasureJob":                     func() any { return new(sdkgo.ErasureJobStatus) },
+	"getMeUsage":                        func() any { return new(pv.MeUsage) },
+	"getMeBudget":                       func() any { return new(pv.MeBudget) },
 	"listMemory":                        func() any { return new(memgen.MemoryList) },
 	"createMemory":                      func() any { return new(memgen.MemoryItem) },
 	"patchMemory":                       func() any { return new(memgen.MemoryItem) },
@@ -768,7 +791,7 @@ var goTypes = map[string]func() any{
 }
 
 func (c *conformance) checkGoType(opID string, body []byte) {
-	if opID == "removeRagSource" || opID == "streamTurnEvents" || opID == "cancelProviderOAuthFlow" || opID == "deleteMemory" {
+	if opID == "removeRagSource" || opID == "streamTurnEvents" || opID == "cancelProviderOAuthFlow" || opID == "cancelPrincipalOAuthFlow" || opID == "deleteMemory" {
 		return
 	}
 	newValue, ok := goTypes[opID]

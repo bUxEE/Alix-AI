@@ -97,6 +97,9 @@
   --alix-dur-fast: 160ms;
   --alix-dur-base: 220ms;
   --alix-dur-slow: 320ms;
+  // Above typical framework overlays (Vuetify ~2000+); hosts that open teleported
+  // dialogs from the panel should set those overlays higher than this value.
+  --alix-fullscreen-z: 2400;
   --alix-shimmer: running;
   @include light;
 

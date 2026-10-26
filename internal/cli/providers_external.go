@@ -23,6 +23,7 @@ import (
 	"github.com/buxee/alix-ai/adapters/external/anthropic"
 	"github.com/buxee/alix-ai/adapters/external/gemini"
 	"github.com/buxee/alix-ai/adapters/external/meta"
+	"github.com/buxee/alix-ai/adapters/external/mistral"
 	"github.com/buxee/alix-ai/adapters/external/moonshot"
 	"github.com/buxee/alix-ai/adapters/external/openai"
 	"github.com/buxee/alix-ai/adapters/external/openrouter"
@@ -96,6 +97,7 @@ type ExternalProviderSpec struct {
 	OpenRouter openrouter.Config
 	XAI        xai.Config
 	Moonshot   moonshot.Config
+	Mistral    mistral.Config
 	// GeminiTokens resolves the OAuth access token of a Gemini connection per call (extFinalEngineTokens over the
 	// shared OAuth engine). Only a Gemini.Auth of gemini.AuthOAuth uses it.
 	GeminiTokens gemini.TokenSource
@@ -125,6 +127,7 @@ func init() {
 		ExternalProviderOpenRouter: externalProviderBuildOpenRouter,
 		ExternalProviderXAI:        externalProviderBuildXAI,
 		ExternalProviderMoonshot:   externalProviderBuildMoonshot,
+		ExternalProviderMistral:    externalProviderBuildMistral,
 	}
 	extWireEngineSeams = extWireSeams
 	registerServeProvider(extWireProviderName, extWireProvide)
@@ -149,6 +152,7 @@ const (
 	ExternalProviderOpenRouter = openrouter.ProviderName
 	ExternalProviderXAI        = xai.ProviderName
 	ExternalProviderMoonshot   = moonshot.ProviderName
+	ExternalProviderMistral    = mistral.ProviderName
 )
 
 // NewExternalProvider builds the adapter for spec.Provider. It sends nothing.
@@ -344,6 +348,28 @@ func externalProviderBuildMoonshot(spec ExternalProviderSpec) (ExternalProvider,
 	return c, nil
 }
 
+func externalProviderBuildMistral(spec ExternalProviderSpec) (ExternalProvider, error) {
+	if spec.Egress == nil || spec.Keys == nil {
+		return nil, contracts.New(contracts.ErrValidationFailed, "cli: external providers need a destination registry and a key source")
+	}
+	base := spec.Mistral.BaseURL
+	if base == "" {
+		base = mistral.DefaultBaseURL
+	}
+	if err := extWireAllowOrigin(spec.Egress, mistral.ProviderName, base); err != nil {
+		return nil, err
+	}
+	var opts []mistral.Option
+	if spec.Logger != nil {
+		opts = append(opts, mistral.WithLogger(spec.Logger))
+	}
+	c, err := mistral.New(spec.Mistral, spec.Egress.Dialer(mistral.ProviderName), mistral.KeySource(spec.Keys), opts...)
+	if err != nil {
+		return nil, fmt.Errorf("cli: %w", err)
+	}
+	return c, nil
+}
+
 // ---------------------------------------------------------------------------------------------
 // The providers and oauth areas of `alixai serve` (milestone X, X-13).
 //
@@ -389,6 +415,11 @@ type externalConfig struct {
 	// HybridFactClass is the data class the operator assigns to the facts of a directive in Hybrid mode
 	// (public or internal for the text to leave). Empty, the default, keeps every turn local.
 	HybridFactClass string `yaml:"hybrid_fact_class"`
+	// DirectiveClass is the data class a response directive (and its deterministic facts) may leave at
+	// in External mode (public, internal or confidential). Empty, the default, keeps the directive
+	// local so the deterministic template realises the reply. The tenant egress policy must still
+	// allow categories dialogue_directive and deterministic_fact at that class.
+	DirectiveClass string `yaml:"directive_class"`
 	// RevalidateEvery is how often expired provider reviews are looked for (default one hour).
 	RevalidateEvery time.Duration `yaml:"revalidate_every"`
 	// BudgetSweepEvery is how often the timed-out budget reservations are marked expired (default 15 minutes).
@@ -397,13 +428,15 @@ type externalConfig struct {
 	OAuth externalOAuthConfig `yaml:"oauth"`
 	// Credentials lists env/file secret references bound at startup (never plaintext keys in YAML).
 	Credentials []externalCredRefConfig `yaml:"credentials"`
-	// OpenRouter / xAI / Moonshot origins and slash-free model maps (like meta_models).
+	// OpenRouter / xAI / Moonshot / Mistral origins and slash-free model maps (like meta_models).
 	OpenRouterBaseURL string            `yaml:"openrouter_base_url"`
 	XAIBaseURL        string            `yaml:"xai_base_url"`
 	MoonshotBaseURL   string            `yaml:"moonshot_base_url"`
+	MistralBaseURL    string            `yaml:"mistral_base_url"`
 	OpenRouterModels  map[string]string `yaml:"openrouter_models"`
 	XAIModels         map[string]string `yaml:"xai_models"`
 	MoonshotModels    map[string]string `yaml:"moonshot_models"`
+	MistralModels     map[string]string `yaml:"mistral_models"`
 }
 
 // externalRoute is the routing of one role.
@@ -461,6 +494,9 @@ func (c externalConfig) Validate() error {
 	if c.HybridFactClass != "" && !pv.DataClassification(c.HybridFactClass).Valid() {
 		return contracts.New(contracts.ErrValidationFailed, "external_providers.hybrid_fact_class: not a data class")
 	}
+	if c.DirectiveClass != "" && !pv.EgressEligibleClass(c.DirectiveClass).Valid() {
+		return contracts.New(contracts.ErrValidationFailed, "external_providers.directive_class: must be public, internal or confidential")
+	}
 	if c.RevalidateEvery < 0 {
 		return contracts.New(contracts.ErrValidationFailed, "external_providers.revalidate_every must not be negative")
 	}
@@ -487,6 +523,7 @@ func (c externalConfig) Validate() error {
 	}
 	for name, v := range map[string]string{
 		"openrouter_base_url": c.OpenRouterBaseURL, "xai_base_url": c.XAIBaseURL, "moonshot_base_url": c.MoonshotBaseURL,
+		"mistral_base_url": c.MistralBaseURL,
 	} {
 		if v != "" {
 			if _, err := egress.DestinationFromURL(v); err != nil {
@@ -1169,7 +1206,8 @@ func (a *externalAdmin) Usage(ctx context.Context, scope contracts.Scope, q gate
 		return gateway.ProvidersUsageResult{}, err
 	}
 	// The export is the tenant's (every workspace of it) or, for a deployment operator who asks, the application's.
-	exp, err := a.budget.ExportUsage(ctx, scope, providerbudget.UsageFilter{From: q.From, To: q.To, TenantWide: !q.Wide, ApplicationWide: q.Wide, ProviderID: q.ProviderID, Channel: q.Channel})
+	// PrincipalID (when set) narrows to one principal; operators only (already gated above).
+	exp, err := a.budget.ExportUsage(ctx, scope, providerbudget.UsageFilter{From: q.From, To: q.To, TenantWide: !q.Wide, ApplicationWide: q.Wide, ProviderID: q.ProviderID, Channel: q.Channel, PrincipalID: q.PrincipalID})
 	if err != nil {
 		return gateway.ProvidersUsageResult{}, err
 	}
@@ -1468,7 +1506,7 @@ func extWireCompose(d extWireDeps) (*extWireStack, error) {
 	rt, err := extmode.New(extmode.Config{
 		Local: d.Delegate.local, Modes: a.modes, KillSwitch: a.egress, Policy: routePolicy,
 		LocalProviders: d.Local, Profiles: profiles, Egress: a.egress, Budgets: a.budget, Packages: d.Delegate.packages,
-		Sender: gs, Budget: d.Delegate.budget, Clock: d.Clock,
+		Sender: gs, Budget: d.Delegate.budget, Clock: d.Clock, DirectiveClass: d.Section.DirectiveClass,
 		OnOutcome: func(scope contracts.Scope, o modes.Outcome) { st.recordOutcome(scope, o) },
 	})
 	if err != nil {
@@ -1616,6 +1654,13 @@ func (s *extWireSender) generatorFor(p pv.ProviderProfile) (providers.Multimodal
 			wire, reply = w, string(p.ModelID)
 		}
 		spec.Moonshot = moonshot.Config{BaseURL: s.sec.MoonshotBaseURL, CredentialRef: ref, Model: wire, ReplyModel: reply}
+		spec.Keys = bearer
+	case ExternalProviderMistral:
+		wire, reply := string(p.ModelID), ""
+		if w, ok := s.sec.MistralModels[wire]; ok {
+			wire, reply = w, string(p.ModelID)
+		}
+		spec.Mistral = mistral.Config{BaseURL: s.sec.MistralBaseURL, CredentialRef: ref, Model: wire, ReplyModel: reply}
 		spec.Keys = bearer
 	default:
 		return nil, contracts.New(contracts.ErrUnavailable, "no external adapter is built for this provider")

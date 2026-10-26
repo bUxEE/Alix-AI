@@ -115,7 +115,38 @@ func (f *meTestFake) OAuthStart(_ context.Context, _ contracts.Scope, req Princi
 		AuthorizationURL: "https://example.test/auth",
 		RedirectURI:      req.RedirectURI,
 		ExpiresAt:        time.Now().UTC().Add(time.Minute),
+		FlowID:           "oaf_01J0000000000000000000000A",
+		PollIntervalMS:   1500,
 	}, nil
+}
+
+func (f *meTestFake) OAuthCallback(_ context.Context, scope contracts.Scope, _ PrincipalOAuthCallback) (PrincipalCredentialStatus, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.calls = append(f.calls, "OAuthCallback:"+scope.PrincipalID)
+	return PrincipalCredentialStatus{ProviderID: "openai", Status: "active"}, nil
+}
+
+func (f *meTestFake) OAuthFlowStatus(_ context.Context, scope contracts.Scope, flowID string) (PrincipalOAuthFlowStatus, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.calls = append(f.calls, "OAuthFlowStatus:"+scope.PrincipalID+":"+flowID)
+	if flowID == "oaf_01J0000000000000000000000Z" {
+		return PrincipalOAuthFlowStatus{}, contracts.New(contracts.ErrValidationFailed, "unknown flow").WithDetails("reason", "not_found")
+	}
+	return PrincipalOAuthFlowStatus{
+		FlowID: flowID, Provider: "openai", Status: "pending", UpdatedAt: time.Now().UTC(),
+	}, nil
+}
+
+func (f *meTestFake) OAuthFlowCancel(_ context.Context, scope contracts.Scope, flowID string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.calls = append(f.calls, "OAuthFlowCancel:"+scope.PrincipalID+":"+flowID)
+	if flowID == "oaf_01J0000000000000000000000Z" {
+		return contracts.New(contracts.ErrValidationFailed, "unknown flow").WithDetails("reason", "not_found")
+	}
+	return nil
 }
 
 var meFakeSets sync.Map
@@ -154,6 +185,9 @@ func TestMeRoutesMatchInventory(t *testing.T) {
 		"DELETE /v1/me/providers/{provider}/credential",
 		"POST /v1/me/providers/{provider}/billing-notice/ack",
 		"POST /v1/me/oauth/{provider}/start",
+		"POST /v1/me/oauth/callback",
+		"GET /v1/me/oauth/flows/{flow_id}",
+		"DELETE /v1/me/oauth/flows/{flow_id}",
 	} {
 		if !have[r] {
 			t.Errorf("missing route %s (have %v)", r, e.srv.AreaRoutes("v1_me"))
@@ -212,6 +246,37 @@ func TestMeCredentialWriteOnlyAndValidation(t *testing.T) {
 		"capabilities": []string{"chat"}, "redirect_uri": "http://127.0.0.1:5555/cb",
 	})
 	wantStatus(t, start, http.StatusOK)
+}
+
+func TestMeOAuthCallbackAndFlowsSelfOnly(t *testing.T) {
+	e := newAPIEnv(t)
+	_ = meFakeOf(e)
+
+	start := e.call(http.MethodPost, "/v1/me/oauth/openrouter/start", map[string]any{
+		"capabilities": []string{"chat"}, "redirect_uri": "https://host.example/cb",
+		"presentation": "popup", "callback": "host", "opener_origin": "https://host.example",
+	})
+	wantStatus(t, start, http.StatusOK)
+	var started PrincipalOAuthStarted
+	if err := json.Unmarshal(start.Body.Bytes(), &started); err != nil {
+		t.Fatal(err)
+	}
+	if started.FlowID == "" {
+		t.Fatal("flow_id missing")
+	}
+
+	cb := e.call(http.MethodPost, "/v1/me/oauth/callback", map[string]any{
+		"redirect_uri": "https://host.example/cb", "query": "code=c&state=s",
+	})
+	wantStatus(t, cb, http.StatusOK)
+
+	st := e.call(http.MethodGet, "/v1/me/oauth/flows/"+started.FlowID, nil)
+	wantStatus(t, st, http.StatusOK)
+	wantError(t, e.call(http.MethodGet, "/v1/me/oauth/flows/oaf_01J0000000000000000000000Z", nil), http.StatusNotFound, contracts.ErrValidationFailed)
+	wantError(t, e.call(http.MethodGet, "/v1/me/oauth/flows/bad", nil), http.StatusBadRequest, contracts.ErrValidationFailed)
+
+	wantStatus(t, e.call(http.MethodDelete, "/v1/me/oauth/flows/"+started.FlowID, nil), http.StatusNoContent)
+	wantStatus(t, e.call(http.MethodDelete, "/v1/me/oauth/flows/"+started.FlowID, nil), http.StatusNoContent)
 }
 
 func TestMeRoutesUnavailableWithoutService(t *testing.T) {

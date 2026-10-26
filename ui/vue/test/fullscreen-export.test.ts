@@ -51,6 +51,16 @@ describe("fullscreen overlay", () => {
     expect(document.activeElement).toBe(panel.find('button[aria-label="Full screen"]').element);
   });
 
+  it("applies fullscreenZIndex to --alix-fullscreen-z", async () => {
+    const client = scriptedClient(() => []);
+    const wrapper = wrap(AlixChatPanel, { client, threadId: "ses_1", autoConnect: false, fullscreen: true, fullscreenZIndex: 3100 });
+    await nextTick();
+    const section = document.querySelector("section.alix-chat-fullscreen") as HTMLElement | null;
+    expect(section).toBeTruthy();
+    expect(section!.style.getPropertyValue("--alix-fullscreen-z")).toBe("3100");
+    wrapper.unmount();
+  });
+
   it("supports v-model:fullscreen", async () => {
     const client = scriptedClient(() => []);
     const fullscreen = ref(false);

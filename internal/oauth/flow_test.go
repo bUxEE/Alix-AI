@@ -528,6 +528,35 @@ func TestSIWCBindsOwnerPrincipal(t *testing.T) {
 	}
 }
 
+func TestSIWCHostCallbackIsManualFallback(t *testing.T) {
+	g := newRig(t)
+	g.scope.PrincipalID = "usr_remote"
+	preset, ok := Preset("openai")
+	if !ok {
+		t.Fatal("preset")
+	}
+	preset.AuthorizationEndpoint = "https://auth.openai.com/authorize"
+	preset.TokenEndpoint = "https://auth.openai.com/api/accounts/oauth/token"
+	np := mustNorm(t, preset)
+	g.eng.prov[np.ID] = np
+
+	consent, err := g.eng.Prepare(bg, g.scope, PrepareRequest{ProviderID: np.ID, Capabilities: []string{"inference"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = g.eng.Begin(bg, g.scope, BeginRequest{
+		PrepareRequest: PrepareRequest{ProviderID: np.ID, Capabilities: []string{"inference"}},
+		ConsentDigest:  consent.Digest,
+		RedirectURI:    "https://host.example/oauth/callback",
+		CallbackMode:   CallbackHost,
+		Presentation:   PresentationRedirect,
+		ExtAgentHostID: "urn:uuid:11111111-2222-3333-4444-555555555555",
+	})
+	if !IsManualFallback(err) {
+		t.Fatalf("SIWC with host callback = %v, want manual_fallback", err)
+	}
+}
+
 func allowURL(t *testing.T, g *rig, raw string) {
 	t.Helper()
 	dest, err := egress.DestinationFromURL(raw)

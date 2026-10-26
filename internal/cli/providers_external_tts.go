@@ -10,6 +10,7 @@ import (
 
 	ttseleven "github.com/buxee/alix-ai/adapters/external/tts/elevenlabs"
 	ttsgoogle "github.com/buxee/alix-ai/adapters/external/tts/googletts"
+	ttsmistral "github.com/buxee/alix-ai/adapters/external/tts/mistral"
 	ttsopenai "github.com/buxee/alix-ai/adapters/external/tts/openai"
 	ttspolly "github.com/buxee/alix-ai/adapters/external/tts/polly"
 	"github.com/buxee/alix-ai/internal/egress"
@@ -19,7 +20,7 @@ import (
 	pv "github.com/buxee/alix-ai/pkg/contracts/gen/providers"
 )
 
-// External TTS voice-kit source (ADR 0043). Mirrors providers_external_stt.go: the four adapters
+// External TTS voice-kit source (ADR 0043). Mirrors providers_external_stt.go: the adapters
 // are registered through RegisterExternalTTSFactory* so -tags noexternal excludes them.
 
 func init() {
@@ -27,6 +28,7 @@ func init() {
 	RegisterExternalTTSFactoryElevenLabs(extTTSBuildElevenLabs)
 	RegisterExternalTTSFactoryGoogle(extTTSBuildGoogle)
 	RegisterExternalTTSFactoryPolly(extTTSBuildPolly)
+	RegisterExternalTTSFactoryMistral(extTTSBuildMistral)
 	prev := extFinalVoiceSourceHook
 	extFinalVoiceSourceHook = func(a *externalAdmin) extFinalVoiceSource {
 		var inner extFinalVoiceSource = extFinalNoVoice{}
@@ -59,6 +61,7 @@ var (
 	extTTSFactoryElevenLabs extTTSFactory
 	extTTSFactoryGoogle     extTTSFactory
 	extTTSFactoryPolly      extTTSFactory
+	extTTSFactoryMistral    extTTSFactory
 )
 
 // RegisterExternalTTSFactoryOpenAI plugs the OpenAI TTS constructor once adapters/external/tts/openai is linked.
@@ -82,6 +85,12 @@ func RegisterExternalTTSFactoryGoogle(f extTTSFactory) {
 // RegisterExternalTTSFactoryPolly plugs the Amazon Polly TTS constructor.
 func RegisterExternalTTSFactoryPolly(f extTTSFactory) {
 	extTTSFactoryPolly = f
+	RegisterExternalTTSAdapter()
+}
+
+// RegisterExternalTTSFactoryMistral plugs the Mistral (Voxtral) TTS constructor.
+func RegisterExternalTTSFactoryMistral(f extTTSFactory) {
+	extTTSFactoryMistral = f
 	RegisterExternalTTSAdapter()
 }
 
@@ -139,6 +148,18 @@ func extTTSBuildPolly(in extTTSBuildInput) (voice.TTS, bool) {
 	return c, true
 }
 
+func extTTSBuildMistral(in extTTSBuildInput) (voice.TTS, bool) {
+	cfg := ttsmistral.Config{CredentialRef: in.CredentialRef, Model: in.Model, Voice: in.Voice}
+	if in.Endpoint != "" {
+		cfg.BaseURL = in.Endpoint
+	}
+	c, err := ttsmistral.New(cfg, in.Dialer, in.Keys)
+	if err != nil || c == nil {
+		return nil, false
+	}
+	return c, true
+}
+
 // extTTSPollyRegion picks an AWS region from the build input (Location, else default).
 func extTTSPollyRegion(in extTTSBuildInput) string {
 	if r := strings.TrimSpace(in.Location); r != "" {
@@ -157,6 +178,7 @@ func extTTSDialerRegistry() *egress.ProviderRegistry {
 		extTTSEgress = egress.NewProviderRegistry(platformDenyOption())
 		_ = extWireAllowOrigin(extTTSEgress, ttsopenai.ProviderName, ttsopenai.DefaultBaseURL)
 		_ = extWireAllowOrigin(extTTSEgress, ttseleven.ProviderName, ttseleven.DefaultBaseURL)
+		_ = extWireAllowOrigin(extTTSEgress, ttsmistral.ProviderName, ttsmistral.DefaultBaseURL)
 		_ = extSTTAllowOrigins(extTTSEgress, ttsgoogle.ProviderName, ttsgoogle.DefaultBaseURL)
 		// Polly is regional: allow the common SynhesizeSpeech hosts (operator Endpoint may replace BaseURL).
 		_ = extSTTAllowOrigins(extTTSEgress, ttspolly.ProviderName,
@@ -268,6 +290,10 @@ func (s *extTTSSource) clientFor(ctx context.Context, scope contracts.Scope, p p
 	case ttspolly.ProviderName:
 		if extTTSFactoryPolly != nil {
 			tts, built = extTTSFactoryPolly(in)
+		}
+	case ttsmistral.ProviderName:
+		if extTTSFactoryMistral != nil {
+			tts, built = extTTSFactoryMistral(in)
 		}
 	}
 	if !built || tts == nil {

@@ -162,7 +162,12 @@ func (g *rig) reserve(scope contracts.Scope, c Call) (Reservation, error) {
 
 func (g *rig) mustReserve(c Call) Reservation {
 	g.t.Helper()
-	r, err := g.reserve(g.scope, c)
+	return g.mustReserveScope(g.scope, c)
+}
+
+func (g *rig) mustReserveScope(scope contracts.Scope, c Call) Reservation {
+	g.t.Helper()
+	r, err := g.reserve(scope, c)
 	if err != nil {
 		g.t.Fatalf("Reserve: %v", err)
 	}
@@ -171,10 +176,15 @@ func (g *rig) mustReserve(c Call) Reservation {
 
 func (g *rig) mustSettle(r Reservation, a Actual) Settlement {
 	g.t.Helper()
+	return g.mustSettleScope(g.scope, r, a)
+}
+
+func (g *rig) mustSettleScope(scope contracts.Scope, r Reservation, a Actual) Settlement {
+	g.t.Helper()
 	if a.Outcome == "" {
 		a.Outcome = providers.UsageRecordOutcomeSucceeded
 	}
-	s, err := g.svc.Settle(context.Background(), g.scope, r.ID, a)
+	s, err := g.svc.Settle(context.Background(), scope, r.ID, a)
 	if err != nil {
 		g.t.Fatalf("Settle: %v", err)
 	}

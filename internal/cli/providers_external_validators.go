@@ -9,6 +9,7 @@ import (
 	"github.com/buxee/alix-ai/adapters/external/anthropic"
 	"github.com/buxee/alix-ai/adapters/external/gemini"
 	"github.com/buxee/alix-ai/adapters/external/meta"
+	"github.com/buxee/alix-ai/adapters/external/mistral"
 	"github.com/buxee/alix-ai/adapters/external/moonshot"
 	"github.com/buxee/alix-ai/adapters/external/openai"
 	"github.com/buxee/alix-ai/adapters/external/openrouter"
@@ -23,7 +24,7 @@ import (
 // the fallback where OAuth is not offered). Each makes the one minimal authenticated request that proves the key
 // works, through the destination allowlist, with the candidate key and nothing else: no tenant, no prompt.
 //
-//	openai / openrouter / xai / moonshot / meta  GET …/models (the model list)
+//	openai / openrouter / xai / moonshot / mistral / meta  GET …/models (the model list)
 //	anthropic  GET /v1/models/<model> (a model of the adapter's table)
 //	gemini     GET /v1beta/models/<model>, key in the x-goog-api-key header (never the URL)
 //
@@ -40,6 +41,7 @@ const (
 	extGapProbeModelOpenRouter = "openrouter-probe"
 	extGapProbeModelXAI        = "grok-4"
 	extGapProbeModelMoonshot   = "moonshot-v1-8k"
+	extGapProbeModelMistral    = "mistral-small-latest"
 )
 
 // extGapProbeSpec is the adapter spec of a provider for the key probe, over a fresh destination registry that
@@ -69,6 +71,8 @@ func (v externalKeyValidator) extGapProbeSpec(provider string, key credentials.S
 		spec.XAI = xai.Config{BaseURL: v.sec.XAIBaseURL, CredentialRef: ref, Model: extGapProbeModelXAI}
 	case ExternalProviderMoonshot:
 		spec.Moonshot = moonshot.Config{BaseURL: v.sec.MoonshotBaseURL, CredentialRef: ref, Model: extGapProbeModelMoonshot}
+	case ExternalProviderMistral:
+		spec.Mistral = mistral.Config{BaseURL: v.sec.MistralBaseURL, CredentialRef: ref, Model: extGapProbeModelMistral}
 	default:
 		return ExternalProviderSpec{}, false
 	}

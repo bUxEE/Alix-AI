@@ -1250,8 +1250,43 @@ class FakeAlixAIServer:
                     "authorization_url": "https://example.test/oauth",
                     "redirect_uri": (body or {}).get("redirect_uri", "http://127.0.0.1/cb"),
                     "expires_at": "2026-10-26T00:01:00Z",
+                    "flow_id": "oaf_01J0000000000000000000000A",
+                    "poll_interval_ms": 1500,
                 },
             )
+        if operation == "completePrincipalOAuth":
+            return self._json(200, {"provider_id": "openai", "status": "active"})
+        if operation == "getPrincipalOAuthFlow":
+            return self._json(
+                200,
+                {
+                    "flow_id": params.get("flow_id", "oaf_01J0000000000000000000000A"),
+                    "provider": "openai",
+                    "status": "pending",
+                    "updated_at": "2026-10-26T00:00:00Z",
+                },
+            )
+        if operation == "cancelPrincipalOAuthFlow":
+            return httpx.Response(204, headers={"Cache-Control": "no-store", "X-Request-ID": "req_fake"})
+        if operation == "startErasure":
+            return self._json(202, {"job_id": "erj_01J0000000000000000000000A", "status": "queued"})
+        if operation == "getErasureJob":
+            return self._json(
+                200,
+                {
+                    "job_id": params.get("job_id", "erj_01J0000000000000000000000A"),
+                    "status": "completed",
+                    "level": "principal",
+                    "tenant_id": scope.tenant_id,
+                    "principal_id": "usr_alice",
+                    "counts": {"audit_events_erased": 1, "sessions_removed": 1},
+                    "finished_at": "2026-10-26T00:00:00Z",
+                },
+            )
+        if operation == "getMeUsage":
+            return self._json(200, {"groups": [], "next_cursor": None})
+        if operation == "getMeBudget":
+            return self._json(200, {"budgets": [], "states": []})
         if operation == "listMemory":
             return self._json(200, {"items": []})
         if operation == "createMemory":

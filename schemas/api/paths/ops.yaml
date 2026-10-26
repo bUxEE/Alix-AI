@@ -108,8 +108,195 @@ paths:
         '503':
           $ref: ../openapi.yaml#/components/responses/Unavailable
 
+  /v1/ops/erasure:
+    post:
+      operationId: startErasure
+      tags: [operations]
+      summary: Start a GDPR erasure job (ADR 0036)
+      description: |
+        Starts the same erasure as `alixai retention erase` (sessions, history, durable turn
+        blocks, memory, files including generated exports; audit payloads become signed tombstones —
+        the chain survives). For `level: principal`, `scope` chooses the breadth:
+
+        - omitted or `tenant` (default): erase the principal **inside that tenant only**. A tenant
+          administrator of that tenant may start it. Never revokes principal-owned LLM credentials
+          or bindings (ADR 0041: those belong to the person across every tenant).
+        - `application`: erase the principal in **every tenant** of the application and revoke their
+          principal-owned credentials/bindings. **Deployment operator only** — the GDPR "erase this
+          person" path (`alixai retention erase -principal` without `-tenant-scoped`).
+
+        Answers `202` with a job. Idempotent: a second request for the same target while one runs
+        returns the running job. RAG source registrations use their own deletion path and are not
+        removed here.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ErasureRequest'
+      responses:
+        '202':
+          description: The erasure job was accepted (or the running job for the same target).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErasureJobAccepted'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/ops/erasure/{job_id}:
+    get:
+      operationId: getErasureJob
+      tags: [operations]
+      summary: Read the status of an erasure job
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^erj_[0-9A-HJKMNP-TV-Z]{26}$'
+      responses:
+        '200':
+          description: The job status and counts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErasureJobStatus'
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: '#/components/responses/ErasureJobNotFound'
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
 components:
+  responses:
+    ErasureJobNotFound:
+      description: The job id is unknown or out of the caller's tenant (`not_found`).
+      content:
+        application/json:
+          schema:
+            $ref: ../openapi.yaml#/components/schemas/Error
   schemas:
+    ErasureRequest:
+      type: object
+      additionalProperties: false
+      required: [level]
+      properties:
+        level:
+          type: string
+          enum: [principal, tenant, workspace]
+        scope:
+          type: string
+          enum: [tenant, application]
+          description: |
+            Only when level is principal. `tenant` (default when omitted) is tenant-local;
+            `application` is GDPR application-wide (deployment operator only).
+        tenant_id:
+          type: string
+          description: |
+            Defaults to the token's tenant. A tenant admin may only name their own. Ignored when
+            scope is application (every tenant of the application is erased).
+        workspace_id:
+          type: string
+          description: Required when level is workspace (defaults to the token's workspace).
+        principal_id:
+          type: string
+          description: Required when level is principal.
+        reason:
+          type: string
+          maxLength: 512
+          description: Short reason signed into tombstones; no personal data.
+    ErasureJobAccepted:
+      type: object
+      additionalProperties: false
+      required: [job_id, status]
+      properties:
+        job_id:
+          type: string
+          pattern: '^erj_[0-9A-HJKMNP-TV-Z]{26}$'
+        status:
+          type: string
+          enum: [queued, running, completed, failed]
+    ErasureCounts:
+      type: object
+      additionalProperties: false
+      properties:
+        audit_events_erased:
+          type: integer
+          minimum: 0
+        preparations_removed:
+          type: integer
+          minimum: 0
+        receipts_removed:
+          type: integer
+          minimum: 0
+        transcript_turns_removed:
+          type: integer
+          minimum: 0
+        session_turns_removed:
+          type: integer
+          minimum: 0
+        sessions_removed:
+          type: integer
+          minimum: 0
+        sessions_ended:
+          type: integer
+          minimum: 0
+        memory_items_removed:
+          type: integer
+          minimum: 0
+        files_removed:
+          type: integer
+          minimum: 0
+        principal_credentials_revoked:
+          type: integer
+          minimum: 0
+        principal_bindings_removed:
+          type: integer
+          minimum: 0
+        more:
+          type: boolean
+    ErasureJobStatus:
+      type: object
+      additionalProperties: false
+      required: [job_id, status, level, tenant_id]
+      properties:
+        job_id:
+          type: string
+        status:
+          type: string
+          enum: [queued, running, completed, failed]
+        level:
+          type: string
+          enum: [principal, tenant, workspace]
+        scope:
+          type: string
+          enum: [tenant, application]
+          description: Present when level is principal (`tenant` or `application`).
+        tenant_id:
+          type: string
+          description: Empty when scope is application (every tenant of the application).
+        workspace_id:
+          type: string
+        principal_id:
+          type: string
+        counts:
+          $ref: '#/components/schemas/ErasureCounts'
+        error:
+          type: string
+        finished_at:
+          type: string
+          format: date-time
     QueueClass:
       type: object
       additionalProperties: false

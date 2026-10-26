@@ -129,7 +129,9 @@ func (c *mcpProvisionClinic) stats(t testing.TB) mcpProvisionStats {
 // ---- the audit's input for the clinic package -------------------------------
 
 // mcpProvisionLoadClinic loads the clinic package (its signature is not checked here: the
-// loader's own tests do that) and returns it with its absolute directory.
+// loader's own tests do that) and returns it with its absolute directory. credential_ref is
+// cleared so provision unit tests that do not provision application_credentials can build
+// the adapter (production DR/e2e keep the package ref and provision the secret).
 func mcpProvisionLoadClinic(t testing.TB) (*apppkg.Package, string) {
 	t.Helper()
 	dir, err := filepath.Abs(filepath.Join(mcpProvisionClinicDir, "package"))
@@ -142,6 +144,14 @@ func mcpProvisionLoadClinic(t testing.TB) (*apppkg.Package, string) {
 	}
 	if !res.OK() {
 		t.Fatalf("the clinic package does not load: %+v", res.Findings)
+	}
+	for id, ep := range res.Package.Manifest.Endpoints {
+		v, ok := ep.Value.(ap.ManifestMCPEndpoint)
+		if !ok || v.CredentialRef == nil {
+			continue
+		}
+		v.CredentialRef = nil
+		res.Package.Manifest.Endpoints[id] = ap.ManifestEndpoint{Value: v}
 	}
 	return res.Package, dir
 }

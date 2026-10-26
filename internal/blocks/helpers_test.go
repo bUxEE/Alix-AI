@@ -3,6 +3,7 @@ package blocks
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -66,8 +67,9 @@ func blocksIntegerFact(field string, n int64) actions.Fact {
 }
 
 // blocksFactsOfChart builds the fact set a host would have stated for the
-// numbers of a chart document: every number in its data records. It is how the
-// tests give a valid example chart the authority it needs.
+// numbers of a chart or table document: every number in chart data records and
+// every numeric table cell. It is how the tests give a valid example the
+// authority it needs.
 func blocksFactsOfChart(t *testing.T, raw []byte) *FactSet {
 	t.Helper()
 	dec := json.NewDecoder(bytes.NewReader(raw))
@@ -83,6 +85,15 @@ func blocksFactsOfChart(t *testing.T, raw []byte) *FactSet {
 		for k, v := range rec {
 			if n, ok := v.(json.Number); ok {
 				facts = append(facts, blocksDecimalFact(k+string(rune('a'+i%26)), n.String()))
+			}
+		}
+	}
+	rows, _ := doc["rows"].([]any)
+	for i, row := range rows {
+		cells, _ := row.([]any)
+		for j, cell := range cells {
+			if n, ok := cell.(json.Number); ok {
+				facts = append(facts, blocksDecimalFact(fmt.Sprintf("c%d_%d", i, j), n.String()))
 			}
 		}
 	}

@@ -2,8 +2,11 @@ package gateway
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"net/url"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/buxee/alix-ai/pkg/contracts"
@@ -20,6 +23,9 @@ import (
 //	DELETE /v1/me/providers/{provider}/credential
 //	POST   /v1/me/providers/{provider}/billing-notice/ack
 //	POST   /v1/me/oauth/{provider}/start
+//	POST   /v1/me/oauth/callback
+//	GET    /v1/me/oauth/flows/{flow_id}
+//	DELETE /v1/me/oauth/flows/{flow_id}
 //
 // Self-service only: the verified token's principal. Needs ApplicationService; Wants
 // PrincipalLLMService (unwired → unavailable). Never returns a secret.
@@ -46,6 +52,11 @@ type PrincipalLLMService interface {
 	DeleteCredential(ctx context.Context, scope contracts.Scope, provider pv.ProviderID) (PrincipalCredentialStatus, error)
 	AcknowledgeBillingNotice(ctx context.Context, scope contracts.Scope, provider pv.ProviderID, in PrincipalBillingAckInput) (PrincipalBillingAckResult, error)
 	OAuthStart(ctx context.Context, scope contracts.Scope, req PrincipalOAuthStart) (PrincipalOAuthStarted, error)
+	// OAuthCallback completes a host-callback flow the caller started (1.3.0). Foreign scope → not_found.
+	OAuthCallback(ctx context.Context, scope contracts.Scope, cb PrincipalOAuthCallback) (PrincipalCredentialStatus, error)
+	// OAuthFlowStatus / OAuthFlowCancel are the caller's own popup flows only (1.3.0).
+	OAuthFlowStatus(ctx context.Context, scope contracts.Scope, flowID string) (PrincipalOAuthFlowStatus, error)
+	OAuthFlowCancel(ctx context.Context, scope contracts.Scope, flowID string) error
 }
 
 // PrincipalLLMBindingInput is the body of PUT /v1/me/llm/{role}.
@@ -104,6 +115,25 @@ type PrincipalOAuthStarted struct {
 	Consent          map[string]any `json:"consent,omitempty"`
 }
 
+// PrincipalOAuthCallback is the body of POST /v1/me/oauth/callback (1.3.0).
+type PrincipalOAuthCallback struct {
+	RedirectURI string
+	Query       url.Values
+}
+
+// PrincipalOAuthFlowStatus is the body of GET /v1/me/oauth/flows/{flow_id} (1.3.0).
+type PrincipalOAuthFlowStatus struct {
+	FlowID    string    `json:"flow_id"`
+	Provider  string    `json:"provider"`
+	Status    string    `json:"status"`
+	Reason    string    `json:"reason,omitempty"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+const meCallbackQueryMax = 4096
+
+var meFlowIDPattern = regexp.MustCompile(`^oaf_[0-9A-HJKMNP-TV-Z]{26}$`)
+
 type meHandler struct {
 	apps ApplicationService
 	svc  PrincipalLLMService
@@ -126,6 +156,9 @@ func registerV1Me(rt *Router, d *Deps) {
 	v1.HandleFunc("DELETE /me/providers/{provider}/credential", h.deleteCredential)
 	v1.HandleFunc("POST /me/providers/{provider}/billing-notice/ack", h.ackBilling)
 	v1.HandleFunc("POST /me/oauth/{provider}/start", h.oauthStart)
+	v1.HandleFunc("POST /me/oauth/callback", h.oauthCallback)
+	v1.HandleFunc("GET /me/oauth/flows/{flow_id}", h.oauthFlowStatus)
+	v1.HandleFunc("DELETE /me/oauth/flows/{flow_id}", h.oauthFlowCancel)
 }
 
 func (h *meHandler) begin(w http.ResponseWriter, r *http.Request) (contracts.Scope, bool) {
@@ -361,4 +394,99 @@ func (h *meHandler) oauthStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, got)
+}
+
+func (h *meHandler) oauthCallback(w http.ResponseWriter, r *http.Request) {
+	scope, ok := h.begin(w, r)
+	if !ok || !h.refuseQuery(w, r) {
+		return
+	}
+	var in struct {
+		RedirectURI string `json:"redirect_uri"`
+		Query       string `json:"query"`
+	}
+	if !decodeJSON(w, r, &in) {
+		return
+	}
+	if in.RedirectURI == "" || len(in.RedirectURI) > 512 || in.Query == "" || len(in.Query) > meCallbackQueryMax {
+		WriteError(w, r, contracts.New(contracts.ErrValidationFailed, "redirect_uri and query are required and bounded"))
+		return
+	}
+	q, err := url.ParseQuery(strings.TrimPrefix(in.Query, "?"))
+	if err != nil || q.Get("state") == "" {
+		WriteError(w, r, contracts.New(contracts.ErrValidationFailed, "the callback query has no usable state"))
+		return
+	}
+	got, err := h.svc.OAuthCallback(r.Context(), scope, PrincipalOAuthCallback{RedirectURI: in.RedirectURI, Query: q})
+	if err != nil {
+		meOAuthFlowError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, got)
+}
+
+func (h *meHandler) meFlowID(w http.ResponseWriter, r *http.Request) (string, bool) {
+	id := r.PathValue("flow_id")
+	if !meFlowIDPattern.MatchString(id) {
+		WriteError(w, r, contracts.New(contracts.ErrValidationFailed, "the flow id is malformed"))
+		return "", false
+	}
+	return id, true
+}
+
+func (h *meHandler) oauthFlowStatus(w http.ResponseWriter, r *http.Request) {
+	scope, ok := h.begin(w, r)
+	if !ok || !h.refuseQuery(w, r) {
+		return
+	}
+	id, ok := h.meFlowID(w, r)
+	if !ok {
+		return
+	}
+	got, err := h.svc.OAuthFlowStatus(r.Context(), scope, id)
+	if err != nil {
+		meOAuthFlowError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, got)
+}
+
+func (h *meHandler) oauthFlowCancel(w http.ResponseWriter, r *http.Request) {
+	scope, ok := h.begin(w, r)
+	if !ok || !h.refuseQuery(w, r) {
+		return
+	}
+	id, ok := h.meFlowID(w, r)
+	if !ok {
+		return
+	}
+	if err := h.svc.OAuthFlowCancel(r.Context(), scope, id); err != nil {
+		meOAuthFlowError(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// meOAuthFlowError maps validation_failed with details.reason not_found to 404 so a
+// foreign principal cannot distinguish unknown from out-of-scope.
+func meOAuthFlowError(w http.ResponseWriter, r *http.Request, err error) {
+	var ce *contracts.Error
+	if errors.As(err, &ce) && ce != nil {
+		reason, _ := ce.Details["reason"].(string)
+		if ce.Code == contracts.ErrValidationFailed && reason == "not_found" {
+			WriteErrorStatus(w, r, http.StatusNotFound, err)
+			return
+		}
+		// Soften callback failures the way the operator oauth callback does: no code/state/URL.
+		if ce.Code == contracts.ErrScopeViolation || reason == "scope_mismatch" || reason == "state_unknown" ||
+			reason == "replayed" || reason == "state_expired" {
+			code := ce.Code
+			if code == "" {
+				code = contracts.ErrInternal
+			}
+			WriteError(w, r, contracts.New(code, "the authorization could not be completed").WithDetails("reason", reason))
+			return
+		}
+	}
+	WriteError(w, r, err)
 }

@@ -742,7 +742,7 @@ func TestApplicableBudgetsUseTheSubjectIndexAndAgree(t *testing.T) {
 	}
 	p := plan(applicableSQL, applicableArgs(g.scope, "openai", in)...)
 	t.Logf("plan:\n%s", p)
-	if strings.Contains(p, "SCAN providerbudget_budgets") || strings.Count(p, "USING INDEX providerbudget_budgets_subject") != 4 {
+	if strings.Contains(p, "SCAN providerbudget_budgets") || strings.Count(p, "USING INDEX providerbudget_budgets_subject") != 5 {
 		t.Errorf("the applicable budgets are not found through the subject index, once per kind:\n%s", p)
 	}
 

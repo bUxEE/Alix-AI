@@ -109,6 +109,61 @@ class MeApi:
             )
         )
 
+    def oauth_callback(self, *, redirect_uri: str, query: str, timeout_ms: Optional[int] = None) -> Any:
+        return self._client._execute(
+            Call(
+                "completePrincipalOAuth",
+                lambda d: d,
+                body=_json({"redirect_uri": redirect_uri, "query": query}),
+                content_type="application/json",
+                timeout_ms=timeout_ms,
+            )
+        )
+
+    def oauth_flow_status(self, flow_id: str, *, timeout_ms: Optional[int] = None) -> Any:
+        return self._client._execute(
+            Call("getPrincipalOAuthFlow", lambda d: d, params={"flow_id": path_id("flow_id", flow_id)}, timeout_ms=timeout_ms)
+        )
+
+    def oauth_cancel(self, flow_id: str, *, timeout_ms: Optional[int] = None) -> None:
+        self._client._execute(
+            Call(
+                "cancelPrincipalOAuthFlow",
+                lambda d: d,
+                params={"flow_id": path_id("flow_id", flow_id)},
+                empty=True,
+                timeout_ms=timeout_ms,
+            )
+        )
+
+    def usage(
+        self,
+        *,
+        from_: Optional[str] = None,
+        to: Optional[str] = None,
+        tenant_id: Optional[str] = None,
+        cursor: Optional[str] = None,
+        limit: Optional[int] = None,
+        timeout_ms: Optional[int] = None,
+    ) -> Any:
+        """The caller's own usage across tenants (``GET /v1/me/usage``)."""
+        query: list[tuple[str, str]] = []
+        if from_ is not None:
+            query.append(("from", from_))
+        if to is not None:
+            query.append(("to", to))
+        if tenant_id is not None:
+            query.append(("tenant_id", tenant_id))
+        if cursor is not None:
+            query.append(("cursor", cursor))
+        if limit is not None:
+            query.append(("limit", str(limit)))
+        return self._client._execute(Call("getMeUsage", lambda d: d, query=query, timeout_ms=timeout_ms))
+
+    def budget(self, *, timeout_ms: Optional[int] = None) -> Any:
+        """The caller's own principal budgets and states (``GET /v1/me/budget``)."""
+        return self._client._execute(Call("getMeBudget", lambda d: d, timeout_ms=timeout_ms))
+
 
 class AsyncMeApi:
     def __init__(self, client: AlixAIAsyncClient) -> None:
@@ -201,3 +256,56 @@ class AsyncMeApi:
                 timeout_ms=timeout_ms,
             )
         )
+
+    async def oauth_callback(self, *, redirect_uri: str, query: str, timeout_ms: Optional[int] = None) -> Any:
+        return await self._client._execute(
+            Call(
+                "completePrincipalOAuth",
+                lambda d: d,
+                body=_json({"redirect_uri": redirect_uri, "query": query}),
+                content_type="application/json",
+                timeout_ms=timeout_ms,
+            )
+        )
+
+    async def oauth_flow_status(self, flow_id: str, *, timeout_ms: Optional[int] = None) -> Any:
+        return await self._client._execute(
+            Call("getPrincipalOAuthFlow", lambda d: d, params={"flow_id": path_id("flow_id", flow_id)}, timeout_ms=timeout_ms)
+        )
+
+    async def oauth_cancel(self, flow_id: str, *, timeout_ms: Optional[int] = None) -> None:
+        await self._client._execute(
+            Call(
+                "cancelPrincipalOAuthFlow",
+                lambda d: d,
+                params={"flow_id": path_id("flow_id", flow_id)},
+                empty=True,
+                timeout_ms=timeout_ms,
+            )
+        )
+
+    async def usage(
+        self,
+        *,
+        from_: Optional[str] = None,
+        to: Optional[str] = None,
+        tenant_id: Optional[str] = None,
+        cursor: Optional[str] = None,
+        limit: Optional[int] = None,
+        timeout_ms: Optional[int] = None,
+    ) -> Any:
+        query: list[tuple[str, str]] = []
+        if from_ is not None:
+            query.append(("from", from_))
+        if to is not None:
+            query.append(("to", to))
+        if tenant_id is not None:
+            query.append(("tenant_id", tenant_id))
+        if cursor is not None:
+            query.append(("cursor", cursor))
+        if limit is not None:
+            query.append(("limit", str(limit)))
+        return await self._client._execute(Call("getMeUsage", lambda d: d, query=query, timeout_ms=timeout_ms))
+
+    async def budget(self, *, timeout_ms: Optional[int] = None) -> Any:
+        return await self._client._execute(Call("getMeBudget", lambda d: d, timeout_ms=timeout_ms))
