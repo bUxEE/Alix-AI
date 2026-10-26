@@ -331,6 +331,7 @@ type goreleaserFile struct {
 	Version  int               `yaml:"version"`
 	Builds   []goreleaserBuild `yaml:"builds"`
 	Archives []struct {
+		IDs   []string                `yaml:"ids"`
 		Files []goreleaserArchiveFile `yaml:"files"`
 	} `yaml:"archives"`
 	Release struct {
@@ -399,9 +400,25 @@ func TestGoreleaserBuildsTheFourStaticTargets(t *testing.T) {
 	if len(g.Archives) == 0 || !slices.Contains(g.Archives[0].Files, goreleaserArchiveFile("deploy/native/**/*")) {
 		t.Error("the archives must carry deploy/native")
 	}
+	if wantIDs := []string{"alixai", "alixai-parser"}; len(g.Archives) == 0 || !slices.Equal(g.Archives[0].IDs, wantIDs) {
+		got := []string(nil)
+		if len(g.Archives) > 0 {
+			got = g.Archives[0].IDs
+		}
+		t.Errorf("archives[0].ids = %v, want %v (build order; release runs GoReleaser with --parallelism 1 so archive member order stays stable)", got, wantIDs)
+	}
 	for _, f := range []string{"../../LICENSE", "../../NOTICE", "systemd/alixai.service", "launchd/ai.alixai.service.plist", "windows/alixai.yaml"} {
 		if _, err := os.Stat(f); err != nil {
 			t.Errorf("the archives name a file that does not exist: %v", err)
 		}
+	}
+	// The release workflow must keep --parallelism 1: higher parallelism lets the two binaries
+	// finish in either order and the packed archives then differ between the two compare runs.
+	wf, err := os.ReadFile("../../.github/workflows/release.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c := strings.Count(string(wf), "goreleaser release --clean --skip=publish --parallelism 1"); c != 2 {
+		t.Errorf("release.yml: want two GoReleaser invocations with --parallelism 1 (the double-build compare), found %d", c)
 	}
 }

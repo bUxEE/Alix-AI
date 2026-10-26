@@ -472,6 +472,8 @@ docs/                  architecture, ADRs, integration guides, operations, secur
 
 ## Project status
 
+**Unreleased (1.2.0).** Release archives: GoReleaser packs both binaries with `--parallelism 1` so member order stays stable and two clean runs produce identical `SHA256SUMS` (the v1.0.0/v1.1.0 release job failed when parallelism let `alixai` and `alixai-parser` swap order). `tools/release` skips operator-local model weights under `deploy/container/**/data` when copying the module tree for reproducible-check.
+
 **1.1.0 is released** (minor, additive on 1.0.0). What 1.1.0 adds: light external setup (per-layer local/external routing,
 including no local LLM when the controller is external); dictation (`GET /v1/dictations/capabilities`,
 `POST /v1/sessions/{id}/dictations`) with local STT packs (Parakeet, Whisper turbo / large-v3 as candidates) or external

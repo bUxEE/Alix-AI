@@ -65,6 +65,12 @@ builds:
 
 archives:
   - id: alixai
+    # Build ids in this order. GoReleaser packs binaries in artifact-registration
+    # order (build completion order); with --parallelism > 1 that order races and two
+    # clean runs produce different archives (v1.0.0/v1.1.0 release job). The release
+    # workflow therefore runs GoReleaser with --parallelism 1 so alixai always lands
+    # before alixai-parser and SHA256SUMS match.
+    ids: [alixai, alixai-parser]
     formats: [tar.gz]
     format_overrides:
       - goos: windows

@@ -423,7 +423,7 @@ func TestPackagedInstallsShipTheParserWorker(t *testing.T) {
 			"no -s -w":                   {"    ldflags:\n      - -s -w\n    mod_timestamp", "    ldflags:\n      - -X main.x=1\n    mod_timestamp"},
 			"no timestamp":               {"      - -s -w\n    mod_timestamp: \"{{ .CommitTimestamp }}\"\n    targets:\n      - linux_amd64\n      - linux_arm64\n      - windows_amd64\n      - darwin_arm64\n\narchives", "      - -s -w\n    targets:\n      - linux_amd64\n      - linux_arm64\n      - windows_amd64\n      - darwin_arm64\n\narchives"},
 			"fewer targets":              {"      - darwin_arm64\n\narchives", "\narchives"},
-			"archive without the worker": {"  - id: alixai\n    formats", "  - id: alixai\n    ids: [alixai]\n    formats"},
+			"archive without the worker": {"ids: [alixai, alixai-parser]", "ids: [alixai]"},
 		} {
 			if !strings.Contains(goreleaser, edit[0]) {
 				t.Fatalf("%s: the edit does not apply to .goreleaser.yaml (the fixture moved)", name)

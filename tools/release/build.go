@@ -236,9 +236,10 @@ func tail(s string, n int) string {
 }
 
 // copyModuleTree copies the source of the module at root into dst. It never follows a symbolic link or copies any
-// other non-regular entry, and it leaves out dot-directories (.git, .worktrees), node_modules and the root-level
-// bin, dist and data directories: none of them is build input. include, when not empty, limits the copy to those
-// slash paths; go.mod and go.sum are always copied.
+// other non-regular entry, and it leaves out dot-directories (.git, .worktrees), node_modules, the root-level
+// bin, dist and data directories, and deploy/container/**/data (operator-downloaded model weights; see .gitignore):
+// none of them is build input. include, when not empty, limits the copy to those slash paths; go.mod and go.sum
+// are always copied.
 func copyModuleTree(root, dst string, include []string) error {
 	paths := []string{"go.mod", "go.sum"}
 	if len(include) == 0 {
@@ -295,6 +296,11 @@ func skipDir(rel, name string) bool {
 	}
 	switch rel {
 	case "bin", "dist", "data":
+		return true
+	}
+	// Operator-local model weights under deploy/container/*/data (gitignored) are not build input;
+	// copying them into a repro work dir exhausts temp disks on developer machines.
+	if name == "data" && strings.HasPrefix(rel, "deploy/container/") {
 		return true
 	}
 	return false

@@ -119,14 +119,16 @@ func TestBuildRefusesUnsafeSettings(t *testing.T) {
 func TestCopyModuleTreeLeavesOutWhatIsNotBuildInput(t *testing.T) {
 	src := t.TempDir()
 	for name, body := range map[string]string{
-		"go.mod":                    "module m\n",
-		"go.sum":                    "",
-		"a/a.go":                    "package a\n",
-		".git/config":               "x",
-		".worktrees/w/go.mod":       "x",
-		"node_modules/n/index.js":   "x",
-		"dist/out.bin":              "x",
-		"a/node_modules/n/index.js": "x",
+		"go.mod":                                "module m\n",
+		"go.sum":                                "",
+		"a/a.go":                                "package a\n",
+		".git/config":                           "x",
+		".worktrees/w/go.mod":                   "x",
+		"node_modules/n/index.js":               "x",
+		"dist/out.bin":                          "x",
+		"a/node_modules/n/index.js":             "x",
+		"deploy/container/localai/compose.yaml": "services: {}\n",
+		"deploy/container/localai/data/models/x.gguf": "weights",
 	} {
 		p := filepath.Join(src, filepath.FromSlash(name))
 		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
@@ -143,12 +145,12 @@ func TestCopyModuleTreeLeavesOutWhatIsNotBuildInput(t *testing.T) {
 	if err := copyModuleTree(src, dst, nil); err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"go.mod", "go.sum", "a/a.go"} {
+	for _, want := range []string{"go.mod", "go.sum", "a/a.go", "deploy/container/localai/compose.yaml"} {
 		if _, err := os.Stat(filepath.Join(dst, filepath.FromSlash(want))); err != nil {
 			t.Errorf("%s was not copied: %v", want, err)
 		}
 	}
-	for _, not := range []string{".git", ".worktrees", "node_modules", "dist", "a/node_modules", "a/link.go"} {
+	for _, not := range []string{".git", ".worktrees", "node_modules", "dist", "a/node_modules", "a/link.go", "deploy/container/localai/data"} {
 		if _, err := os.Lstat(filepath.Join(dst, filepath.FromSlash(not))); err == nil {
 			t.Errorf("%s was copied", not)
 		}

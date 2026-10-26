@@ -157,11 +157,13 @@ jobs:
       - name: Build the archives twice, nothing published
         # .goreleaser.yaml (M5-02) has release.disable, and --skip=publish says it again. The archives carry the commit's own
         # timestamp, so two runs must give the same checksum file.
+        # --parallelism 1: GoReleaser packs the two binaries in completion order; with parallelism > 1 that order races
+        # and SHA256SUMS differ between the two runs (seen on v1.0.0 and v1.1.0 for the Linux archives).
         run: |
           set -euo pipefail
-          goreleaser release --clean --skip=publish
+          goreleaser release --clean --skip=publish --parallelism 1
           cp -r dist "$RUNNER_TEMP/dist-first"
-          goreleaser release --clean --skip=publish
+          goreleaser release --clean --skip=publish --parallelism 1
           if ! diff -u "$RUNNER_TEMP/dist-first/SHA256SUMS" dist/SHA256SUMS; then
             echo "::error::two GoReleaser runs produced different archives"
             exit 1

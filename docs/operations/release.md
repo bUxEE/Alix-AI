@@ -117,7 +117,7 @@ the repository-wide invariant tests); it has not run, and the first real run wil
 | --- | --- |
 | `prepare` | Version from the tag, commit, commit time. Refuses a non-tag ref. |
 | `reproducible` | `reproducible-check` for the four release targets and for netctl. |
-| `binaries` | GoReleaser builds the archives twice (nothing published) and the two `SHA256SUMS` must be identical; extracts the binaries; one SBOM each. |
+| `binaries` | GoReleaser builds the archives twice with `--parallelism 1` (nothing published) and the two `SHA256SUMS` must be identical; extracts the binaries; one SBOM each. Parallelism stays at 1 so the two binaries (`alixai`, `alixai-parser`) keep a stable archive member order between the two runs. |
 | `image` | Builds the service and netctl images, pushes them, **signs each image by digest with cosign (keyless, GitHub OIDC)**, attaches the image SBOM as a cosign CycloneDX attestation. |
 | `manifest` | Writes the **unsigned** manifest from the downloaded files and the image digests. |
 | `draft` | Behind the `release` environment (configure required reviewers): creates a **draft** GitHub release holding everything. |
