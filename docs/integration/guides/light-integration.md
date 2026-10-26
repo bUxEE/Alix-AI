@@ -29,6 +29,8 @@ browser  →  host backend (mints a single-use context token per request)
 
 Follow [light External deployments](../../operations/guides/light-external.md): `external_providers.enabled: true`, `routing.controller` (and usually `realisation`) naming a qualified profile, empty `inference.models` when there is no local LLM, RAG and decision layer as you need them.
 
+Minimum recommended hosts for light mode (every model external; ceiling **4 vCPU / 8 GB**): [Hardware](../../operations/guides/light-external.md#hardware).
+
 Credentials are **env or file refs only** through the credentials service — never in the package, prompts, logs, URLs or browser storage (`internal/credentials`; [External mode](../external-mode.md) §3).
 
 ## Per-tenant onboarding checklist

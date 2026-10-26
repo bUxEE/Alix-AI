@@ -398,6 +398,23 @@ A profile is certified only when it keeps ≥ 15 % (or 1 GB) memory headroom wit
 keeps background work inside its limits, passes latency gates, and survives 24-hour mixed-load and 7-day soak tests. Numbers
 measured in containers or on a developer box are published as **emulated**.
 
+### Light External mode (all models external)
+
+Light mode means **every model external** (no local LLM, no local STT/TTS). Optional local pieces are only the AlixAI
+core, a local embedder, and VAD. **4 vCPU / 8 GB RAM is the light-mode ceiling.** Figures are minimum recommended —
+generous (~2–3× measured peaks from [resource budgets](docs/operations/resource-budgets.md), emulated, not certified).
+Full table and notes: [light External deployments](docs/operations/guides/light-external.md#hardware).
+
+| Setup (all models external) | What runs locally | Minimum recommended (generous) |
+| --- | --- | --- |
+| Chat + dictation (external STT), RAG by word match | AlixAI only (no LocalAI) | **2 vCPU, 4 GB RAM, 20 GB SSD free** + documents and index |
+| + local embedder (meaning-based RAG search) | + LocalAI with the embedder (≈ 0.6 GB) | **4 vCPU, 8 GB RAM, 40 GB SSD free** + documents |
+| + VAD (live voice conversation, external STT, answers as text) | + LocalAI with VAD (≈ 0.2 GB) | **4 vCPU, 8 GB RAM, 40 GB SSD free** |
+
+The largest light-mode setup uses about **1.5 GB at peak**, so 4 vCPU / 8 GB is already generous; answer speed depends on
+the external providers, not local hardware. No GPU needed. **Not light mode:** local Whisper tiny STT still fits that
+machine; local TTS and larger local STT need **8 vCPU / 16 GB** — see the guide.
+
 Model choices are never permanent. Every feature starts from the smallest deterministic method, then the smallest model, and
 moves up only when measured quality or safety justifies the cost; the reasoning is recorded in
 [docs/efficiency/](docs/efficiency/) and the model registry in [models/registry/](models/registry/).
@@ -471,6 +488,7 @@ docs/                  architecture, ADRs, integration guides, operations, secur
 
 ### Unreleased
 
+- Document minimum recommended hardware for light External mode (all models external; 4 vCPU / 8 GB ceiling).
 - Harden the CLI OAuth system-browser opener: only validated `https` or loopback `http` URLs; fixed OS program names, no shell.
 
 **1.2.0 is released** (minor, additive on 1.1.0). What 1.2.0 adds: per-principal LLM accounts ([ADR 0041](docs/decisions/0041-per-principal-llm-accounts.md)) — operator catalog (`alixai providers catalog-*`), `GET /v1/providers/catalog`, `/v1/me/llm…` and `/v1/me/providers/…`, reserved-tenant credentials, router resolution (principal binding → deployment default → local or `llm_not_configured`); long-term memory ([ADR 0042](docs/decisions/0042-long-term-memory.md)) — `memory.enabled` (default off), `/v1/memory`, consent-gated `memory_proposal` on task proposals and turn events, retention erase for memory and principal LLM accounts; downloadable exports from a turn's verified rich blocks — `POST /v1/sessions/{session_id}/exports` (`csv` / `xlsx` / `html` / `md`, capability `exports.create`, durable turn-block store); UI kit fullscreen chat overlay and opt-in answer download actions (host-supplied exporter; kits never call AlixAI). Source builds report `1.2.0-dev`; packages declaring `[1.0.0, 2.0.0)` still validate. Contract changes are additive and frozen into `schemas/_frozen/v1`. Release archives stay reproducible (GoReleaser `--parallelism 1`; `tools/release` skips local model weights). Not verified in 1.2: live provider runs, voicebench on real hardware, real 8 GB certification, independent security review. Summary:

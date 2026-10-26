@@ -161,6 +161,14 @@ figure of section 3, bar 2048; backend peak is the figure to compare with the ro
 The spare of the allowance is under 100 MiB in every profile. On 4g it is 72 MiB with the parser worker running at its cap and the operating
 system at 600 MiB, neither of which anybody has measured on a 4 GB machine.
 
+### Light External mode (no local LLM)
+
+Light mode = every model external. Local peaks that still apply: outside-container rows above (AlixAI core ≤ 160 MiB,
+≈ 55 idle; vector index cache ≤ 64 MiB; parser worker ≤ 256 MiB one at a time) plus, when used, LocalAI service ≈ 150 MiB,
+embedder Granite 97M ≤ 450 MiB (390 measured), and VAD ≈ 41 MiB. Peak of the largest light setup is about 1.5 GB; the
+recommended host ceiling is **4 vCPU / 8 GB**. Local Whisper tiny / TTS / larger STT are **not** light mode (see the
+guide). Host sizes: [light External deployments — Hardware](guides/light-external.md#hardware). Emulated; not certified.
+
 ### 4.3 What the co-residency measurement says (rule R3)
 
 Controller (Qwen3.5-0.8B) and embedder (Granite Embedding 97M Q4_K_M) taking turns the way a RAG turn does (embed the question, then answer), six

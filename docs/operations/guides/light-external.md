@@ -140,6 +140,32 @@ external_providers:
 After register / qualify / credential / budget: enable egress `audio` at deployment, application, tenant and workspace via `PUT /v1/providers/egress-policy` with `audio: { "enabled": true, "max_class": "internal" }` (or higher if `dictation.audio_class` is `confidential`; section 4 of [External mode](../external-mode.md)), set mode External at every level, then `GET /v1/dictations/capabilities` should report `available: true` and `locality: external`.
 
 
+## Hardware
+
+Light mode means **every model external** (hosted LLM and STT; no local speech models). Optional local pieces are only the AlixAI core, a local embedder, and VAD. **4 vCPU / 8 GB RAM is the light-mode ceiling.** Host sizes below are minimum recommended — generous (~2–3× measured peaks from [resource budgets](../resource-budgets.md), emulated containers, **not certified hardware**).
+
+Measured / budgeted peaks with the main LLM external: AlixAI core ≤ 160 MiB (≈ 55 idle), vector index cache ≤ 64 MiB, parser worker ≤ 256 MiB (one at a time, while indexing), LocalAI service ≈ 150 MiB, embedder Granite 97M ≤ 450 MiB (390 measured), VAD ≈ 41 MiB (VAD + Whisper tiny ≈ 245 MiB when a local STT worker is also loaded — that STT case is not light mode; see below).
+
+| Setup (all models external) | What runs locally | Minimum recommended (generous) |
+| --- | --- | --- |
+| Chat + dictation (external STT), RAG by word match | AlixAI only (no LocalAI) | **2 vCPU, 4 GB RAM, 20 GB SSD free** + documents and index |
+| + local embedder (meaning-based RAG search) | + LocalAI with the embedder (≈ 0.6 GB) | **4 vCPU, 8 GB RAM, 40 GB SSD free** + documents |
+| + VAD (live voice conversation, external STT, answers as text) | + LocalAI with VAD (≈ 0.2 GB) | **4 vCPU, 8 GB RAM, 40 GB SSD free** |
+
+The largest light-mode setup uses about **1.5 GB at peak**, so 4 vCPU / 8 GB is already generous. Answer speed in light mode depends on the external providers, not local hardware.
+
+### Not light mode: local voice models
+
+Local dictation STT (Whisper tiny, ≈ 200 MiB) still fits the **4 vCPU / 8 GB** machine. Local TTS for spoken answers (Piper/Kokoro, +350–800 MiB) and the larger local STT models (Parakeet v3, Whisper large-v3-turbo) need more cores for low latency → **8 vCPU, 16 GB** recommended. External TTS is on the roadmap and would keep spoken answers within the light-mode machine.
+
+Notes (light and not-light rows):
+
+- No GPU needed for any row.
+- x86-64 tested; ARM64 not yet run.
+- Use Docker/Podman for LocalAI where a row uses it.
+- The first full indexing of many documents is the main CPU job (bounded background job) — budget time for it.
+- Emulated measurements, not certified hardware (same honesty as the README profile table).
+
 ## What still applies
 
 Everything that applies in a full local or External deployment still applies here: context tokens, tenant scope, policy gateway, action prepare / confirm / commit, audit, data-egress guard, provider budgets, kill switch, signed application packages, adapters, sessions, verifier, and the readiness / `/readyz` scan. External mode remains off by default; nothing above turns it on for you.
