@@ -164,7 +164,7 @@ func newNCStack(t *testing.T, parserWorker string) *ncStack {
 	ctx := context.Background()
 	root := moduleRoot(t)
 	pkgDir := filepath.Join(root, "examples", "reference-apps", "clinic-booking", "package")
-	res, err := apppkg.Load(ctx, apppkg.FromDir(pkgDir), apppkg.Options{CoreVersion: "0.1.0"})
+	res, err := apppkg.Load(ctx, apppkg.FromDir(pkgDir), apppkg.Options{CoreVersion: apppkg.DevCoreVersion})
 	if err != nil || res.Package == nil || !res.OK() {
 		t.Fatalf("the clinic package does not load clean: %v %v", err, res.Findings)
 	}

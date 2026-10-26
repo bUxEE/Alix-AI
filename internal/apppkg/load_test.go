@@ -309,7 +309,7 @@ func TestUnsignedPackageIsCritical(t *testing.T) {
 		opts Options
 	}{
 		{"with a trust store", loadOptions()},
-		{"without a trust anchor", Options{CoreVersion: "0.1.0"}},
+		{"without a trust anchor", Options{CoreVersion: DevCoreVersion}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			res := mustLoad(t, valid(t).fsys(), tc.opts)
@@ -382,7 +382,7 @@ func TestTamperedPackageIsCritical(t *testing.T) {
 		files.edit(t, "documentation/catalog/find-title.md", "Risk", "Hazard")
 		fsys := files.fsys()
 		fsys["signatures/signature-manifest.json"] = signed["signatures/signature-manifest.json"]
-		res := mustLoad(t, fsys, Options{CoreVersion: "0.1.0"})
+		res := mustLoad(t, fsys, Options{CoreVersion: DevCoreVersion})
 		requireCritical(t, res, "signature.tampered")
 	})
 }
@@ -390,17 +390,19 @@ func TestTamperedPackageIsCritical(t *testing.T) {
 // TestIncompatibleCoreVersionRejected: the installed core must lie in
 // [min, max_exclusive) of the package's compatibility range (14.3).
 func TestIncompatibleCoreVersionRejected(t *testing.T) {
-	fsys := valid(t).signed(t) // compatible with 0.1.0 up to, excluding, 1.0.0
+	fsys := valid(t).signed(t) // compatible with 1.0.0 up to, excluding, 2.0.0
 	for _, tc := range []struct {
 		core string
 		ok   bool
 	}{
-		{"0.1.0", true},
-		{"0.9.9", true},
-		{"0.2.0-rc.1", true},
-		{"0.0.9", false},
-		{"1.0.0", false},
-		{"1.0.0-rc.1", true}, // a pre-release of 1.0.0 sorts below 1.0.0
+		{"1.0.0", true},
+		{"1.1.0", true},
+		{"1.1.0-dev", true}, // SemVer: a prerelease of 1.1.0 sorts below 1.1.0 and above 1.0.0
+		{"1.9.9", true},
+		{"0.9.9", false},
+		{"1.0.0-rc.1", false}, // a pre-release of 1.0.0 sorts below 1.0.0
+		{"2.0.0", false},
+		{"2.0.0-rc.1", true}, // a pre-release of 2.0.0 sorts below max_exclusive
 		{"2.3.4", false},
 	} {
 		t.Run(tc.core, func(t *testing.T) {
@@ -409,9 +411,20 @@ func TestIncompatibleCoreVersionRejected(t *testing.T) {
 			res := mustLoad(t, fsys, opts)
 			if tc.ok {
 				requireCritical(t, res)
+				f, ok := find(res.Findings, "compat.core_out_of_range")
+				if ok {
+					t.Fatalf("unexpected out-of-range finding: %s", f.String())
+				}
 				return
 			}
 			requireCritical(t, res, "compat.core_out_of_range")
+			f, ok := find(res.Findings, "compat.core_out_of_range")
+			if !ok {
+				t.Fatal("missing compat.core_out_of_range finding")
+			}
+			if !strings.Contains(f.Message, tc.core) || !strings.Contains(f.Message, "1.0.0") || !strings.Contains(f.Message, "2.0.0") {
+				t.Fatalf("out-of-range message does not name the core and the range: %s", f.Message)
+			}
 		})
 	}
 	t.Run("core version that is not semantic", func(t *testing.T) {
@@ -420,7 +433,7 @@ func TestIncompatibleCoreVersionRejected(t *testing.T) {
 		requireCritical(t, mustLoad(t, fsys, opts), "compat.core_version_unknown")
 	})
 	t.Run("empty range", func(t *testing.T) {
-		files := valid(t).edit(t, "alixai.yaml", "max_exclusive: 1.0.0", "max_exclusive: 0.1.0")
+		files := valid(t).edit(t, "alixai.yaml", "max_exclusive: 2.0.0", "max_exclusive: 1.0.0")
 		requireCritical(t, mustLoad(t, files.signed(t), loadOptions()), "compat.range_invalid")
 	})
 }

@@ -326,7 +326,7 @@ func TestDeploymentSourceDoesNotPileUpAcrossAudits(t *testing.T) {
 		if c.ID() != ragaudit.IDSources {
 			continue
 		}
-		res, err := apppkg.Load(context.Background(), apppkg.FromDir(filepath.Join(fixtures, "valid-minimal")), apppkg.Options{CoreVersion: "0.1.0"})
+		res, err := apppkg.Load(context.Background(), apppkg.FromDir(filepath.Join(fixtures, "valid-minimal")), apppkg.Options{CoreVersion: apppkg.DevCoreVersion})
 		if err != nil || res.Package == nil {
 			t.Fatalf("load: %v %v", err, res.Findings)
 		}

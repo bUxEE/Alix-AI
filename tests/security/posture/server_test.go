@@ -173,11 +173,11 @@ func newRig(t *testing.T, opts ...func(*rigOptions)) *rig {
 		s := rec.Subject
 		return audit.ForIDs(s.ApplicationID, s.TenantID, s.WorkspaceID, s.PrincipalID, s.SessionID)
 	})))
-	inst, err := apppkg.NewInstaller(apppkg.InstallerOptions{DB: r.db, Clock: r.clk, DataDir: r.dataDir, Verifier: verifier, CoreVersion: "0.1.0"})
+	inst, err := apppkg.NewInstaller(apppkg.InstallerOptions{DB: r.db, Clock: r.clk, DataDir: r.dataDir, Verifier: verifier, CoreVersion: apppkg.DevCoreVersion})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if r.apps, err = gateway.NewApplications(inst, apppkg.Options{Verifier: verifier, CoreVersion: "0.1.0"}, r.clk, 0); err != nil {
+	if r.apps, err = gateway.NewApplications(inst, apppkg.Options{Verifier: verifier, CoreVersion: apppkg.DevCoreVersion}, r.clk, 0); err != nil {
 		t.Fatal(err)
 	}
 	registry := capabilities.NewRegistry(r.apps.Source(), capabilities.WithClock(r.clk))

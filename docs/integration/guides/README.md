@@ -8,10 +8,11 @@ These guides are for the people who put an application on AlixAI: the operator w
 | --- | --- |
 | [Readiness discovery](readiness.md) | You are about to integrate a project and want to know what it already provides and what is missing, before any package is signed. Advisory; it is not an audit pass. |
 | [Getting started](getting-started.md) | You want to go from nothing to an audited, active application. The worked example is the clinic-booking reference application. |
+| [Light integration (external AI, no local LLM)](light-integration.md) | You want a signed help / FAQ chat assistant in light External mode. Starts from `examples/packages/valid-help-assistant`. |
 | [CopilotKit and AG-UI](copilotkit.md) | You want a chat UI in front of AlixAI from a Next.js, Express, Go or Python host. |
 
 Reference pages these guides point to: [application package format](../application-package.md), [conversation objects](../conversation-objects.md), [AG-UI mapping](../agui.md),
-[CopilotKit compatibility and version matrix](../copilotkit-compatibility.md), [External provider mode](../external-mode.md), [operator commands](../../operations/guides/operator-commands.md).
+[CopilotKit compatibility and version matrix](../copilotkit-compatibility.md), [External provider mode](../external-mode.md), [light External deployments](../../operations/guides/light-external.md), [operator commands](../../operations/guides/operator-commands.md).
 
 ## What each SDK has
 
@@ -41,7 +42,7 @@ Not in any SDK: the operator-only decision configuration routes. None of the SDK
 ## Status and promises
 
 - The v1 public contracts are frozen (`schemas/_frozen/v1`, checked by `tools/compat`); the SDKs speak them.
-- **1.0.0 is released.** The packages and changelogs read `1.0.0` ([TypeScript](../../../sdk/typescript/CHANGELOG.md), [Python](../../../sdk/python/CHANGELOG.md), and the changelog section of the [Go README](../../../pkg/sdk-go/README.md)).
+- **1.1.0 is released.** The packages and changelogs read `1.1.0` ([TypeScript](../../../sdk/typescript/CHANGELOG.md), [Python](../../../sdk/python/CHANGELOG.md), and the changelog section of the [Go README](../../../pkg/sdk-go/README.md)).
 - **Support windows and notice periods** are in [compatibility](../../policies/compatibility.md) and [migration and support](../../policies/migration-and-support.md); these guides repeat none of them and commit to nothing.
 - An SDK is tested against the core of the same repository commit.
 - External providers are opt-in and off by default; the Lite profile is uncertified; the figures elsewhere in the repository are labelled emulated until measured on the target host.

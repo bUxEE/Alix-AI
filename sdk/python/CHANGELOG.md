@@ -3,13 +3,17 @@
 All notable changes to this package. The format follows [Keep a Changelog](https://keepachangelog.com/); versions follow semantic versioning once 1.0.0
 ships, with the rules of [compatibility.md](../../docs/policies/compatibility.md).
 
-## Unreleased
+## 1.1.0 — 2026-10-26
 
 ### Added
 
 - Generated models for popup OAuth flow status and popup result message; credential kind `oauth_issued_key`.
 - Dictation models and client: `client.dictations.capabilities()` / `client.dictations.create(session_id, wav, …)` for record-to-text (`GET /v1/dictations/capabilities`, `POST /v1/sessions/{session_id}/dictations`).
-- `providers.get_oauth_flow` / `cancel_oauth_flow` and optional `start_oauth` members `presentation`, `callback`, `opener_origin` (popup OAuth, 1.1.0).
+- `providers.get_oauth_flow` / `cancel_oauth_flow` and optional `start_oauth` members `presentation`, `callback`, `opener_origin` (popup OAuth).
+
+### Notes (core)
+
+- Dev cores report `1.1.0-dev`; packages for this line use `compatibility.alixai_core` `[1.0.0, 2.0.0)`. See `docs/integration/guides/light-integration.md`.
 
 ## 1.0.0
 

@@ -6,6 +6,7 @@ package looks like. The format is specified in `docs/integration/application-pac
 | Directory | What it is |
 | --- | --- |
 | `valid-minimal` | A complete, signed, valid package for the synthetic `demo-library` application: two capabilities (a read-only search and a reservation that is prepared, confirmed and committed), conversation contracts in English and Italian, documentation, policy, terminology, one RAG source and a test suite. |
+| `valid-help-assistant` | The smallest signed package for a chat help assistant: one OpenAPI endpoint, one read capability `help.overview`, en+it contracts and docs, one FAQ RAG source that allows excerpts, context-token exchange, core range `[1.0.0, 2.0.0)`. Start here for light External integration ([guide](../../docs/integration/guides/light-integration.md)). |
 | `egress-local-only`, `egress-allow-excerpt` | `valid-minimal` plus egress declarations (external provider mode): a restricted source that stays `local_only` with a `local_only`, confidential field, and a public source that allows excerpts. Both stay valid; the loader never lets them leave anything by itself. |
 | `broken-restricted-excerpt` | A restricted source that declares `egress_mode: allow_excerpt`: critical `egress.restricted_source_exposed`. |
 | `broken-*` | `valid-minimal` with exactly one defect each: unsigned, changed after signing, a missing documentation facet, a missing conversation contract, a capability with no adapter mapping, a RAG source with no scope, missing safe-execution probes and an incompatible core version. |

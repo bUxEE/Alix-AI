@@ -8,8 +8,8 @@
     "files": [
       {
         "path": "alixai.yaml",
-        "sha256": "f05075ef779ba385d97dde3ac926e5da11439518a761b06249ef99041e994014",
-        "size": 3991
+        "sha256": "af67babe4c98fe33227a1816dbcd4b089c1e5c05a5b5a6395c5e0d7dde9aff05",
+        "size": 3987
       },
       {
         "path": "capabilities/invoices-find.yaml",
@@ -227,7 +227,7 @@
     {
       "key_id": "alixai-test-only-publisher",
       "algorithm": "ed25519",
-      "signature": "fFM7odKcZ9VjtNa7JxFtC4AcsW+BTbSrgjsiPhJ1p/GzWLHvIH4AZUWspkmTOrlWqiAl82yBVeVzraoTm7S0Cw==",
+      "signature": "8O5Zf+nehhhTc7oLTCHojNyK0VNioMb9fegeokp49TffjbSEpVkWqi76YPmB+UyxjEuuXrn5CeAxQFAxGm7lCw==",
       "signed_at": "2026-10-02T00:00:00Z",
       "expires_at": "2036-10-01T00:00:00Z"
     }

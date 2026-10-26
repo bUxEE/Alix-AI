@@ -248,7 +248,7 @@ func listTree(t testing.TB, root string) []string {
 // refused before anything is parsed.
 func TestSec059ArchiveShapeAndLimits(t *testing.T) {
 	good := tarGz(t, valid(t).signed(t))
-	small := Options{CoreVersion: "0.1.0"}
+	small := Options{CoreVersion: DevCoreVersion}
 
 	cases := []struct {
 		name string
@@ -263,11 +263,11 @@ func TestSec059ArchiveShapeAndLimits(t *testing.T) {
 		{"a second gzip member", append(append([]byte(nil), good...), good...), small, "archive.invalid"},
 		{"entry shorter than its header says (truncated tar)", gz(t, rawTar(t, tf("alixai.yaml", strings.Repeat("a", 2000)))[:700]), small, "archive.invalid"},
 		{"decompression bomb", gz(t, rawTar(t, tf("alixai.yaml", "a: 1\n"), tf("documentation/zeros.md", strings.Repeat("\x00", 24<<20)))), small, "archive.compression_ratio"},
-		{"file larger than the limit", gz(t, rawTar(t, tf("alixai.yaml", strings.Repeat("a", 4096)))), Options{CoreVersion: "0.1.0", Limits: Limits{MaxFileBytes: 1024}}, "package.limit_exceeded"},
-		{"package larger than the limit", gz(t, rawTar(t, tf("a.md", strings.Repeat("a", 800)), tf("b.md", strings.Repeat("b", 800)))), Options{CoreVersion: "0.1.0", Limits: Limits{MaxTotalBytes: 1000}}, "package.limit_exceeded"},
-		{"too many files", gz(t, rawTar(t, tf("a.md", "a"), tf("b.md", "b"), tf("c.md", "c"))), Options{CoreVersion: "0.1.0", Limits: Limits{MaxFiles: 2}}, "package.limit_exceeded"},
-		{"path too deep", gz(t, rawTar(t, tf("a/b/c/d/e.md", "a"))), Options{CoreVersion: "0.1.0", Limits: Limits{MaxDepth: 3}}, "package.limit_exceeded"},
-		{"archive larger than the limit", good, Options{CoreVersion: "0.1.0", Limits: Limits{MaxArchiveBytes: 1000}}, "package.limit_exceeded"},
+		{"file larger than the limit", gz(t, rawTar(t, tf("alixai.yaml", strings.Repeat("a", 4096)))), Options{CoreVersion: DevCoreVersion, Limits: Limits{MaxFileBytes: 1024}}, "package.limit_exceeded"},
+		{"package larger than the limit", gz(t, rawTar(t, tf("a.md", strings.Repeat("a", 800)), tf("b.md", strings.Repeat("b", 800)))), Options{CoreVersion: DevCoreVersion, Limits: Limits{MaxTotalBytes: 1000}}, "package.limit_exceeded"},
+		{"too many files", gz(t, rawTar(t, tf("a.md", "a"), tf("b.md", "b"), tf("c.md", "c"))), Options{CoreVersion: DevCoreVersion, Limits: Limits{MaxFiles: 2}}, "package.limit_exceeded"},
+		{"path too deep", gz(t, rawTar(t, tf("a/b/c/d/e.md", "a"))), Options{CoreVersion: DevCoreVersion, Limits: Limits{MaxDepth: 3}}, "package.limit_exceeded"},
+		{"archive larger than the limit", good, Options{CoreVersion: DevCoreVersion, Limits: Limits{MaxArchiveBytes: 1000}}, "package.limit_exceeded"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

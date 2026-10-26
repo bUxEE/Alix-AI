@@ -30,7 +30,7 @@ import (
 const (
 	appID         = "demo-library"
 	platformKeyID = "alixai-triggers-signer-test"
-	coreVersion   = "0.1.0"
+	coreVersion   = apppkg.DevCoreVersion
 	// validMinimalDir is the committed fixture package, signed with the published
 	// TEST-ONLY publisher key.
 	validMinimalDir = "../../../examples/packages/valid-minimal"

@@ -430,7 +430,7 @@ func runAudit(t testing.TB, files pkgFiles, ad adapters.AppAdapter) []integratio
 	}
 	ver := trust.NewVerifier(ts, clk)
 	dataDir := t.TempDir()
-	inst, err := apppkg.NewInstaller(apppkg.InstallerOptions{DB: db, Clock: clk, DataDir: dataDir, Verifier: ver, CoreVersion: "0.1.0"})
+	inst, err := apppkg.NewInstaller(apppkg.InstallerOptions{DB: db, Clock: clk, DataDir: dataDir, Verifier: ver, CoreVersion: apppkg.DevCoreVersion})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -448,7 +448,7 @@ func runAudit(t testing.TB, files pkgFiles, ad adapters.AppAdapter) []integratio
 		}
 	}
 	runner, err := integrationaudit.NewRunner(integrationaudit.Config{
-		DB: db, Clock: clk, Installer: inst, DataDir: dataDir, Verifier: ver, CoreVersion: "0.1.0",
+		DB: db, Clock: clk, Installer: inst, DataDir: dataDir, Verifier: ver, CoreVersion: apppkg.DevCoreVersion,
 		Signing: &trust.SigningKey{KeyID: platformKey, Key: priv}, Log: alog, Checks: checks,
 	})
 	if err != nil {

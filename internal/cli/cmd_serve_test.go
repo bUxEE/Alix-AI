@@ -1411,11 +1411,11 @@ func TestAdapterSourceFailsClosed(t *testing.T) {
 	db := storetest.Open(t, nil)
 	keys := devTrust{}
 	verifier := trust.NewVerifier(keys, clk)
-	inst, err := apppkg.NewInstaller(apppkg.InstallerOptions{DB: db, Clock: clk, DataDir: dataDir, Verifier: verifier, CoreVersion: "0.1.0"})
+	inst, err := apppkg.NewInstaller(apppkg.InstallerOptions{DB: db, Clock: clk, DataDir: dataDir, Verifier: verifier, CoreVersion: apppkg.DevCoreVersion})
 	if err != nil {
 		t.Fatal(err)
 	}
-	apps, err := gateway.NewApplications(inst, apppkg.Options{Verifier: verifier, CoreVersion: "0.1.0"}, clk, 0)
+	apps, err := gateway.NewApplications(inst, apppkg.Options{Verifier: verifier, CoreVersion: apppkg.DevCoreVersion}, clk, 0)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:voice:transcription-capabilities:v1",
+  "title": "Dictation transcription capabilities",
+  "description": "What a deployment offers for record-to-text dictation (1.1.0): whether the host should show a record button, whether recognition is local or external, the maximum clip length, and the only accepted audio shape. Dictation is not the voice-conversation WebSocket: there is no VAD, the user's record and stop are the segmentation, the transcript is returned for the user to edit, and AlixAI never submits it as a turn. Raw audio is not retained.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["available", "locality", "max_seconds", "sample_rate_hz", "format", "languages"],
+  "properties": {
+    "available": {
+      "description": "true when POST /v1/sessions/{session_id}/dictations can succeed for this scope; false when the host should hide the record control.",
+      "x-alixai-authority": "alixai",
+      "type": "boolean"
+    },
+    "locality": {
+      "description": "local: speech recognition runs in the deployment. external: an operator-enabled external STT may be used under the egress and budget rules. none: no recogniser is available (available is false).",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "enum": ["local", "external", "none"]
+    },
+    "max_seconds": {
+      "description": "Longest clip the route accepts, in whole seconds. Default 60; the operator may lower or raise it. The body-size limit is derived from this and the fixed PCM rate.",
+      "x-alixai-authority": "alixai",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 300
+    },
+    "sample_rate_hz": {
+      "description": "Only accepted sample rate for the WAV body.",
+      "x-alixai-authority": "alixai",
+      "const": 16000
+    },
+    "format": {
+      "description": "Only accepted Content-Type and container: WAV wrapping PCM s16le mono.",
+      "x-alixai-authority": "alixai",
+      "const": "audio/wav"
+    },
+    "languages": {
+      "description": "BCP 47 language tags the recogniser accepts as a language query hint. Empty when available is false.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "$ref": "urn:alixai:schema:voice:shared:v1#/$defs/language"
+      }
+    }
+  },
+  "allOf": [
+    {
+      "description": "When nothing is available, locality is none.",
+      "if": {
+        "required": ["available"],
+        "properties": { "available": { "const": false } }
+      },
+      "then": {
+        "properties": { "locality": { "const": "none" } }
+      }
+    }
+  ]
+}

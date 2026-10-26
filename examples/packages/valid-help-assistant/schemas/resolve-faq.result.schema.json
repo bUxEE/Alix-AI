@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Result of resolving a FAQ entry",
+  "type": "object",
+  "required": ["status", "entries"],
+  "additionalProperties": false,
+  "properties": {
+    "status": { "enum": ["ok", "unavailable"] },
+    "entries": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "required": ["faq_id", "title"],
+        "additionalProperties": false,
+        "properties": {
+          "faq_id": { "type": "string", "maxLength": 64 },
+          "title": { "type": "string", "maxLength": 300 }
+        }
+      }
+    }
+  }
+}

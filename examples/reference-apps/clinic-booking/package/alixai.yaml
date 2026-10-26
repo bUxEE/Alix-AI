@@ -10,8 +10,8 @@ package:
   description: 'Initial integration package: availability, patient search, booking, cancellation and contact-detail updates, in English and Italian.'
 compatibility:
   alixai_core:
-    min: 0.1.0
-    max_exclusive: 1.0.0
+    min: 1.0.0
+    max_exclusive: 2.0.0
 endpoints:
   clinic-mcp:
     transport: mcp

@@ -1,0 +1,34 @@
+capability_id: help.overview
+language: it
+contract_version: 1.0.0
+terminology:
+- faq
+field_prompts:
+- field: topic
+  label: Argomento
+  prompt: Quale funzione, limite o procedura devo cercare?
+  examples:
+  - reimposta password
+  - esporta dati
+- field: max_results
+  label: Numero di estratti
+  prompt: Quanti estratti FAQ devo considerare?
+clarifications: []
+corrections:
+  acknowledgement: D'accordo, cerco {input.topic} invece.
+  correctable_fields:
+  - topic
+  - max_results
+cancellations:
+  acknowledgement: D'accordo, ho interrotto la ricerca nell'aiuto.
+success:
+- outcome: found
+  text: 'Ecco cosa ho trovato ({help.count} voce/i): {help.summary}.'
+- outcome: none_found
+  text: Non ho trovato voci FAQ per {input.topic}. Sono {help.count} risultati.
+failures:
+- code: validation_failed
+  text: Non ho potuto cercare perché {input.topic} è troppo breve. Indica almeno due caratteri.
+- code: unavailable
+  text: Il servizio di aiuto non è raggiungibile in questo momento, quindi non ho potuto rispondere. Non è stato modificato nulla.
+next_actions: []

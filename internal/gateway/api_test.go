@@ -352,12 +352,12 @@ func newAPIEnv(t testing.TB, opts ...apiOpt) *apiEnv {
 	if o.real {
 		e.dataDir = t.TempDir()
 		inst, err := apppkg.NewInstaller(apppkg.InstallerOptions{
-			DB: e.db, Clock: e.clk, DataDir: e.dataDir, Verifier: trust.NewVerifier(devTrust{}, e.clk), CoreVersion: "0.1.0",
+			DB: e.db, Clock: e.clk, DataDir: e.dataDir, Verifier: trust.NewVerifier(devTrust{}, e.clk), CoreVersion: apppkg.DevCoreVersion,
 		})
 		if err != nil {
 			t.Fatal(err)
 		}
-		e.real, err = NewApplications(inst, apppkg.Options{Verifier: trust.NewVerifier(devTrust{}, e.clk), CoreVersion: "0.1.0"}, e.clk, 0)
+		e.real, err = NewApplications(inst, apppkg.Options{Verifier: trust.NewVerifier(devTrust{}, e.clk), CoreVersion: apppkg.DevCoreVersion}, e.clk, 0)
 		if err != nil {
 			t.Fatal(err)
 		}

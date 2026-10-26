@@ -1,0 +1,115 @@
+{
+  "format": "alixai.signature-manifest/v1",
+  "signed": {
+    "application_id": "help-assistant",
+    "package_version": "1.0.0",
+    "created_at": "2026-10-01T00:00:00Z",
+    "hash_algorithm": "sha256",
+    "files": [
+      {
+        "path": "alixai.yaml",
+        "sha256": "d4f29377a5e18609cae42bfa5151b115b323d968edca1178e324a5ae33906dac",
+        "size": 2248
+      },
+      {
+        "path": "capabilities/help-overview.yaml",
+        "sha256": "9998f62ebb42731fb3539c389e82ef54ac72380dc59f08e4ae85e3ab75b35858",
+        "size": 2246
+      },
+      {
+        "path": "conversation-contracts/help-overview.en.yaml",
+        "sha256": "13c6ec2c82f41764e7aa28e833d495a22533905faa05361f1e596dca2d67d236",
+        "size": 1022
+      },
+      {
+        "path": "conversation-contracts/help-overview.it.yaml",
+        "sha256": "ecce9d9ae2a37c9e87a2d106123d05421b0c71f5fe4aa40e8332ee785875b681",
+        "size": 1064
+      },
+      {
+        "path": "documentation/faq/export.en.md",
+        "sha256": "6cc0f12a472bd36f7d9e7458bce96fce39de2055a54e0b985dfe894425ee61e2",
+        "size": 190
+      },
+      {
+        "path": "documentation/faq/export.it.md",
+        "sha256": "a53c0d8f1745b23f882e1feeea39979957e98bb6e1f31d08d019a54941c34207",
+        "size": 200
+      },
+      {
+        "path": "documentation/faq/password.en.md",
+        "sha256": "2cca157f9273c8c1b44392c313e1596ff724fbca94dc3aacce5f232dbb9947eb",
+        "size": 190
+      },
+      {
+        "path": "documentation/faq/password.it.md",
+        "sha256": "4f0a3ca4ae7d9024a74f1890a6fd2c37fce6eab15dfa8093e23084a9cb8ff2a5",
+        "size": 208
+      },
+      {
+        "path": "documentation/help/overview.md",
+        "sha256": "1086327c195673fca214e7ceb84dfe404fbbe5819258f78110c7de745f24b519",
+        "size": 1209
+      },
+      {
+        "path": "documentation/index.yaml",
+        "sha256": "e1dc284a7e2cdf583a53c7f0ed574a9d40a050450a11a90ce9d13a48c563252e",
+        "size": 3206
+      },
+      {
+        "path": "policies/default-access.yaml",
+        "sha256": "1ff491362fdb592fd01a32cdac3af2a2c60f3b9b0ee65014e846e86821b572be",
+        "size": 185
+      },
+      {
+        "path": "rag-sources/product-faq.yaml",
+        "sha256": "efa7c04952a3c231726514471b4359dadab01e742acd752eb01920eb7b7792dc",
+        "size": 1088
+      },
+      {
+        "path": "schemas/adapters/help-api.yaml",
+        "sha256": "45bbd1de00b1e74c7bd07116a9527bb8892acfb2371fe921f54004b2d7ea83ef",
+        "size": 304
+      },
+      {
+        "path": "schemas/help-api.openapi.yaml",
+        "sha256": "ef832458ea09e4e2a2d55a836651b45ff2024c08e06f8f89650def30cabcef02",
+        "size": 4114
+      },
+      {
+        "path": "schemas/help-overview.result.schema.json",
+        "sha256": "8dbd8309925ea03531f849df58119e634bf4bc775048d8ccf1ed2d159ceededd",
+        "size": 469
+      },
+      {
+        "path": "schemas/resolve-faq.result.schema.json",
+        "sha256": "f66e097dcef61b1b8f8bf4044cd0ca4ee52fde96b0b3a9928f2c26a013545d67",
+        "size": 621
+      },
+      {
+        "path": "terminology/help-terms.yaml",
+        "sha256": "5f26862bdde30411b5af0f14c5f84d45b3964fe84a7bd9b175a9d257375bd91b",
+        "size": 383
+      },
+      {
+        "path": "tests/core-safety.yaml",
+        "sha256": "750ad13071639ec04ca5b00d61cd181c8c857975753e0cc1e1de69c574a8f9d8",
+        "size": 2704
+      },
+      {
+        "path": "tests/seed/help.json",
+        "sha256": "8a8bd449848934511d00f29cc912cf97b31bfe55653469eb3bab7a2cd76a54f4",
+        "size": 260
+      }
+    ]
+  },
+  "signatures": [
+    {
+      "key_id": "alixai-test-only-publisher",
+      "algorithm": "ed25519",
+      "signature": "CGXDykXNrPHziv1kYhVx3z6+PEWVRM0tVo1e03WwHVUHjqs6MnSyNHyYOD4KklljGin5tk/J9NxY6FEMcJTyAw==",
+      "signed_at": "2026-10-01T00:00:00Z",
+      "expires_at": "2036-10-01T00:00:00Z"
+    }
+  ]
+}

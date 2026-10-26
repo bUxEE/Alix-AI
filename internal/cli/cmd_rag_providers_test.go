@@ -438,7 +438,7 @@ func TestRAGInstallerSourceTeachesTheNetwork(t *testing.T) {
 	ctx := context.Background()
 	clk := clock.NewFake(time.Date(2026, 10, 2, 12, 0, 0, 0, time.UTC))
 	db := storetest.Open(t, nil)
-	inst, err := apppkg.NewInstaller(apppkg.InstallerOptions{DB: db, Clock: clk, DataDir: t.TempDir(), Verifier: trust.NewVerifier(devTrust{}, clk), CoreVersion: "0.1.0"})
+	inst, err := apppkg.NewInstaller(apppkg.InstallerOptions{DB: db, Clock: clk, DataDir: t.TempDir(), Verifier: trust.NewVerifier(devTrust{}, clk), CoreVersion: apppkg.DevCoreVersion})
 	if err != nil {
 		t.Fatal(err)
 	}

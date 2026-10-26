@@ -1,0 +1,81 @@
+format: alixai.application-package/v1
+application:
+  id: help-assistant
+  name: Demo Help Assistant
+  version: 1.0.0
+  vendor: Example Help Ltd
+  description: A synthetic in-app help assistant used as the smallest chat-assistant example package (FAQ answers over one OpenAPI read).
+package:
+  version: 1.0.0
+  description: 'Initial integration package: one read capability that answers questions about the host app from signed FAQ documents.'
+compatibility:
+  alixai_core:
+    min: 1.0.0
+    max_exclusive: 2.0.0
+endpoints:
+  help-api:
+    transport: openapi
+    base_url: http://127.0.0.1:8790
+    spec: schemas/help-api.openapi.yaml
+    adapter_config: schemas/adapters/help-api.yaml
+context_exchange:
+  mode: context_token
+  issuer: https://help.example.test
+  audience: alixai
+  key_ids:
+  - help-assistant-ctx-2026
+  max_lifetime_seconds: 600
+tenancy:
+  tenant:
+    label: organisation
+    description: One customer organisation of a deployment. FAQ answers never cross organisations.
+  workspace:
+    label: product
+    description: One product line of the organisation. Help content is shared across products of the same organisation in this fixture.
+  principal_kinds:
+  - human
+  roles:
+    user:
+      description: A signed-in user who may ask help questions about the product.
+    guest:
+      description: An unauthenticated visitor who may not use the help capability.
+languages:
+  default: en
+  supported:
+  - en
+  - it
+capabilities:
+  help.overview: capabilities/help-overview.yaml
+rag_sources:
+  product-faq: rag-sources/product-faq.yaml
+model_requirements:
+  minimum_profile: lite
+  controller:
+    need: required
+    languages:
+    - en
+    - it
+    min_context_tokens: 4096
+  embedding:
+    need: optional
+retention:
+  session_state_days: 7
+  transcript_days: 30
+  action_receipt_days: 365
+  audit_days: 730
+  log_days: 14
+network:
+  default: deny
+  egress:
+    help-loopback:
+      host: 127.0.0.1
+      ports:
+      - 8790
+      scheme: http
+      purpose: The help-assistant application's HTTP API on the same machine (loopback only; a test fixture)
+integrity:
+  signature_manifest: signatures/signature-manifest.json
+  hash_algorithm: sha256
+  signature_algorithm: ed25519
+  publisher_key_ids:
+  - alixai-test-only-publisher

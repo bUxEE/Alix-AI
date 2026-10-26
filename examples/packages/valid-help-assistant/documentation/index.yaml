@@ -1,0 +1,99 @@
+entries:
+- id: ho-field-topic
+  capability_id: help.overview
+  facet: field
+  language: en
+  title: 'Field: topic'
+  summary: Words that name the feature, limit or how-to. Required, 2 to 200 characters; blank topics are rejected.
+  location:
+    path: documentation/help/overview.md
+    anchor: field-topic
+  field: topic
+- id: ho-field-max-results
+  capability_id: help.overview
+  facet: field
+  language: en
+  title: 'Field: max_results'
+  summary: Optional integer 1 to 10, default 5. Caps how many FAQ snippets are considered.
+  location:
+    path: documentation/help/overview.md
+    anchor: field-max-results
+  field: max_results
+- id: ho-rule-topic-not-blank
+  capability_id: help.overview
+  facet: validation_rule
+  language: en
+  title: 'Rule: topic_not_blank'
+  summary: The topic must hold at least two non-space characters, otherwise validation_failed is returned and no overview runs.
+  location:
+    path: documentation/help/overview.md
+    anchor: rule-topic-not-blank
+  rule_id: topic_not_blank
+- id: ho-perm-help-read
+  capability_id: help.overview
+  facet: permission
+  language: en
+  title: 'Permission: help.read'
+  summary: Held by users. Without it the host refuses the lookup with permission_denied.
+  location:
+    path: documentation/help/overview.md
+    anchor: permission-help-read
+  permission: help.read
+- id: ho-fail-validation-failed
+  capability_id: help.overview
+  facet: failure_state
+  language: en
+  title: 'Failure: validation_failed'
+  summary: The topic was blank or too short. Nothing was looked up; the user is asked for a longer topic.
+  location:
+    path: documentation/help/overview.md
+    anchor: failure-validation-failed
+  error_code: validation_failed
+- id: ho-fail-unavailable
+  capability_id: help.overview
+  facet: failure_state
+  language: en
+  title: 'Failure: unavailable'
+  summary: The help service could not be reached. No answer is shown and none is guessed.
+  location:
+    path: documentation/help/overview.md
+    anchor: failure-unavailable
+  error_code: unavailable
+- id: ho-risk
+  capability_id: help.overview
+  facet: risk_level
+  language: en
+  title: Risk level 0
+  summary: A read-only FAQ overview of low-sensitivity help text. It runs after authorization with no confirmation.
+  location:
+    path: documentation/help/overview.md
+    anchor: risk
+- id: ho-confirmation
+  capability_id: help.overview
+  facet: confirmation_rule
+  language: en
+  title: 'Confirmation: none'
+  summary: No confirmation is needed because the capability changes nothing.
+  location:
+    path: documentation/help/overview.md
+    anchor: confirmation
+- id: ho-outcome-found
+  capability_id: help.overview
+  facet: user_visible_outcome
+  language: en
+  title: 'Outcome: found'
+  summary: The user sees how many FAQ items matched and a short summary.
+  location:
+    path: documentation/help/overview.md
+    anchor: outcome-found
+  outcome: found
+- id: ho-outcome-none-found
+  capability_id: help.overview
+  facet: user_visible_outcome
+  language: en
+  title: 'Outcome: none_found'
+  summary: The user is told that no FAQ entry matched the topic they gave.
+  location:
+    path: documentation/help/overview.md
+    anchor: outcome-none-found
+  outcome: none_found

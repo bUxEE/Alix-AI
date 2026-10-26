@@ -1,0 +1,85 @@
+id: help.overview
+version: 1.0.0
+audience: user
+title: Ask about the product
+purpose: Answer a question about the host application's features, limits or how-to steps from the signed FAQ, as a read-only overview. Nothing is changed.
+scope_level: workspace
+permissions:
+- help.read
+fields:
+- name: topic
+  type: string
+  required: true
+  description: Words that name the feature, limit or how-to the user is asking about.
+  min_length: 2
+  max_length: 200
+- name: max_results
+  type: integer
+  required: false
+  description: How many FAQ snippets to consider at most.
+  minimum: 1
+  maximum: 10
+  default:
+    source: literal
+    value: 5
+entity_types:
+  faq_entry:
+    description: A FAQ entry of the product help set.
+    resolve:
+      endpoint: help-api
+      openapi_operation_id: resolveFAQEntry
+      result_schema: schemas/resolve-faq.result.schema.json
+ambiguity: []
+validation:
+- id: topic_not_blank
+  fields:
+  - topic
+  description: The topic must contain at least two characters that are not spaces.
+  error_code: validation_failed
+failure_states:
+- code: validation_failed
+  description: The topic is blank or too short, so no overview was returned.
+- code: unavailable
+  description: The help service cannot be reached. No answer is available and none is guessed.
+effect_class: none
+risk_level: 0
+operations:
+  read:
+    endpoint: help-api
+    openapi_operation_id: getHelpOverview
+    result_schema: schemas/help-overview.result.schema.json
+    timeout_ms: 5000
+confirmation:
+  mode: none
+next_actions: []
+response_obligations:
+- fact: help.count
+  when: success
+  description: How many FAQ items matched.
+- fact: help.summary
+  when: success
+  description: The overview text built from the matching FAQ items.
+doc_refs:
+- ho-field-topic
+- ho-field-max-results
+- ho-rule-topic-not-blank
+- ho-perm-help-read
+- ho-fail-validation-failed
+- ho-fail-unavailable
+- ho-risk
+- ho-confirmation
+- ho-outcome-found
+- ho-outcome-none-found
+examples:
+- id: en-reset-password
+  language: en
+  test_only: true
+  utterance: How do I reset my password?
+  expected_fields:
+    topic: reset password
+- id: it-reimposta-password
+  language: it
+  test_only: true
+  utterance: Come reimposto la password?
+  expected_fields:
+    topic: reimposta password

@@ -129,7 +129,7 @@ func newHarness(t *testing.T, mutate ...func(*hopts)) *harness {
 	}
 	verifier := trust.NewVerifier(h.trust, h.clk)
 	if h.inst, err = apppkg.NewInstaller(apppkg.InstallerOptions{
-		DB: h.db, Clock: h.clk, DataDir: h.dataDir, Verifier: verifier, CoreVersion: "0.1.0",
+		DB: h.db, Clock: h.clk, DataDir: h.dataDir, Verifier: verifier, CoreVersion: apppkg.DevCoreVersion,
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -138,7 +138,7 @@ func newHarness(t *testing.T, mutate ...func(*hopts)) *harness {
 	}
 	h.reg = capabilities.NewRegistry(capabilities.InstallerSource(h.inst), capabilities.WithClock(h.clk))
 	h.cfg = Config{
-		DB: h.db, Clock: h.clk, Installer: h.inst, DataDir: h.dataDir, Verifier: verifier, CoreVersion: "0.1.0",
+		DB: h.db, Clock: h.clk, Installer: h.inst, DataDir: h.dataDir, Verifier: verifier, CoreVersion: apppkg.DevCoreVersion,
 		Signing: &trust.SigningKey{KeyID: platformKeyID, Key: h.priv}, Log: h.log,
 		Checks: newChecks(t, o.probes), Authorizer: o.authorizer, MaxReportAge: o.maxAge, Profile: o.profile,
 	}

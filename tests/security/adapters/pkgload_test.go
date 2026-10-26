@@ -124,7 +124,7 @@ func verifier(t testing.TB, apps ...string) *trust.Verifier {
 // load loads a signed package with the production loader.
 func load(t testing.TB, v *trust.Verifier, fsys fs.FS) *apppkg.Result {
 	t.Helper()
-	res, err := apppkg.Load(context.Background(), apppkg.FromFS(fsys), apppkg.Options{Verifier: v, CoreVersion: "0.1.0"})
+	res, err := apppkg.Load(context.Background(), apppkg.FromFS(fsys), apppkg.Options{Verifier: v, CoreVersion: apppkg.DevCoreVersion})
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}

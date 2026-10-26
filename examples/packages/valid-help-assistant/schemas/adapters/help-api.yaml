@@ -1,0 +1,11 @@
+# Adapter configuration of the OpenAPI endpoint help-api.
+server: help-api
+identity:
+  header: X-AlixAI-Identity
+idempotency:
+  header: Idempotency-Key
+management:
+  describe: describeApplication
+  health: getHealth
+  inspect: inspectApplication
+  provisioning: [createTenant, seedTenant, cleanupTenant]

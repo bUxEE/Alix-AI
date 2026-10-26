@@ -1,0 +1,13 @@
+{
+  "tenants": [
+    {
+      "ref": "org-a",
+      "workspaces": ["product-1", "product-2"]
+    },
+    {
+      "ref": "org-b",
+      "workspaces": ["product-1"]
+    }
+  ],
+  "notes": "Synthetic only; the help API seeds nothing beyond disposable tenant ids."
+}

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:providers:oauth-popup-result:v1",
+  "title": "OAuth popup result message",
+  "description": "What the OAuth callback page posts to its opener with window.postMessage when presentation is popup (1.1.0). targetOrigin is the opener_origin the start request named (never *). The message carries only type, flow_id and status: no code, state, token, error text or redirect URI. The opener treats the server-side GET /v1/oauth/flows/{flow_id} as the source of truth; this message is only a fast path when Cross-Origin-Opener-Policy has not nulled window.opener.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["type", "flow_id", "status"],
+  "properties": {
+    "type": {
+      "description": "Discriminant of the message.",
+      "x-alixai-authority": "alixai",
+      "const": "alixai.oauth.result"
+    },
+    "flow_id": {
+      "description": "The flow id returned by start; the opener polls the same id.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "pattern": "^oaf_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "status": {
+      "description": "Outcome the callback page observed. completed or failed after the exchange attempt; cancelled when the user closed the popup before a result.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "enum": ["completed", "failed", "cancelled"]
+    }
+  }
+}

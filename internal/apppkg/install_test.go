@@ -52,7 +52,7 @@ func newHarness(t *testing.T, registerKey bool) *harness {
 		Clock:       clk,
 		DataDir:     dataDir,
 		Verifier:    trust.NewVerifier(ts, clk),
-		CoreVersion: "0.1.0",
+		CoreVersion: DevCoreVersion,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -297,9 +297,9 @@ func TestInstallRefusals(t *testing.T) {
 func TestInstallerNeedsATrustAnchor(t *testing.T) {
 	db := storetest.Open(t, nil)
 	for name, o := range map[string]InstallerOptions{
-		"no verifier":     {DB: db, DataDir: t.TempDir(), CoreVersion: "0.1.0"},
-		"no database":     {DataDir: t.TempDir(), Verifier: newVerifierWithoutKeys(), CoreVersion: "0.1.0"},
-		"no data dir":     {DB: db, Verifier: newVerifierWithoutKeys(), CoreVersion: "0.1.0"},
+		"no verifier":     {DB: db, DataDir: t.TempDir(), CoreVersion: DevCoreVersion},
+		"no database":     {DataDir: t.TempDir(), Verifier: newVerifierWithoutKeys(), CoreVersion: DevCoreVersion},
+		"no data dir":     {DB: db, Verifier: newVerifierWithoutKeys(), CoreVersion: DevCoreVersion},
 		"no core version": {DB: db, DataDir: t.TempDir(), Verifier: newVerifierWithoutKeys()},
 	} {
 		if _, err := NewInstaller(o); err == nil {

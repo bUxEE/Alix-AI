@@ -1,0 +1,51 @@
+id: product-faq
+type: documentation_package
+title: Product FAQ
+description: Public FAQ documents shipped with the package so they are versioned and signed with it. Excerpts may leave under an External-mode egress policy that allows category user_message and RAG excerpts at class internal/public as configured.
+languages:
+- en
+- it
+owner:
+  name: Help Editorial
+  contact: help@help.example.test
+scope:
+  application_id: help-assistant
+  tenant:
+    mode: shared
+  workspace:
+    mode: shared
+root:
+  kind: package
+  path: documentation/faq
+include:
+- '**/*.md'
+exclude:
+- drafts/**
+credential_ref: null
+formats:
+- text/markdown
+limits:
+  max_file_bytes: 1048576
+  max_total_bytes: 52428800
+  max_files: 500
+sync:
+  method: manual
+deletion:
+  purge_after_hours: 0
+  on_source_removed: purge
+parser:
+  ocr: disabled
+  max_pages_per_file: 200
+  timeout_seconds: 30
+citation:
+  kind: alixai_preview
+egress:
+  entries: []
+retention:
+  derived_data_days: null
+  import_originals: false
+  audit:
+    record_access: true
+    retention_days: 365
+egress_mode: allow_excerpt
+classification: public

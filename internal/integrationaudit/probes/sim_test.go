@@ -966,7 +966,7 @@ func newEnvWith(t *testing.T, pkg *apppkg.Package, s *sim) *simEnv {
 	}
 	e.in = &integrationaudit.Input{
 		Description: &desc,
-		Package:     pkg, Adapter: guard, Clock: clk, CoreVersion: "0.1.0",
+		Package:     pkg, Adapter: guard, Clock: clk, CoreVersion: apppkg.DevCoreVersion,
 		Scope: contracts.Scope{
 			DeploymentID: "alixai-audit", ApplicationID: simAppID, TenantID: "alixai-audit", WorkspaceID: "alixai-audit",
 			PrincipalID: "alixai-audit", Roles: []string{"auditor"}, CapabilityScopes: []string{"audit.inspect"}, SessionID: "audit-run",

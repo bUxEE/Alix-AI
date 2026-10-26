@@ -50,7 +50,11 @@ Connecting a provider from a popup must not navigate the host page. Call `start`
 
 With `callback: "loopback"`, AlixAI binds an ephemeral `127.0.0.1` listener and completes the exchange itself. `redirect_uri` stays required on the wire for compatibility; send the placeholder `http://127.0.0.1/oauth/loopback`. A connection that stores a provider-issued API key from browser login (for example OpenRouter PKCE) reports `kind: "oauth_issued_key"` so status can say connected via browser login without claiming access/refresh tokens.
 
-## 4. Errors you may see
+## 4. Chat text leaves as class `internal`
+
+User-authored context (the current message, earlier turns and session slots) is classed **confidential** by the dialogue core. In External mode it is **mapped to `internal`** for the egress decision: that is what the principal told the assistant, and the operator's internal-class approval is what lets it leave (`internal/dialogue/extmode/mapping.go` `part`, `internal/dialogue/extmode/doc.go`). The send category is `user_message` (and related history categories). An egress policy that does not allow `user_message` at class `internal` denies the first turn with a typed egress error. Integrators: [light integration guide](guides/light-integration.md) tenant checklist.
+
+## 5. Errors you may see
 
 They use the standard error body and codes of `common/error`; external mode adds reasons, not codes.
 
@@ -65,10 +69,10 @@ They use the standard error body and codes of `common/error`; external mode adds
 | invalid credential or unqualified profile | `permission_denied` (reason `credential_invalid`, `credential_missing`, `not_qualified`) | never retried on another provider |
 | stale or quarantined profile | `quarantined` | `details.reason` is the quarantine reason; never retried on another provider |
 
-## 5. SDK usage
+## 6. SDK usage
 
 The generated provider types exist: Go `github.com/buxee/alix-ai/pkg/contracts/gen/providers`, TypeScript `sdk/typescript/src/gen/providers`. **The SDKs have no helpers for these routes yet** (`sdk/typescript/src/providers/index.ts` is empty and the route set is not in the TypeScript operation table; the helpers are task X-14). Until then call the routes with your HTTP client and a context token, and decode responses with the generated types, which reject unknown fields and enum values. The existing conversation SDK calls (sessions, turns, confirmations, streams) are unchanged and work in every mode.
 
-## 6. Testing
+## 7. Testing
 
 Never test against a real provider. The repository tests use recorded fixtures and a local mock server; run the conformance tool with `go run ./tools/providerconf run` (recorded fixtures, no network) and `go run ./tools/providerconf check report.json`. A live run spends real money and is a separate, human-gated step.

@@ -94,7 +94,7 @@ var brokenFixtures = []brokenFixture{
 	{
 		dir: "broken-incompatible-core",
 		build: signedWith(func(t *testing.T, p pkgFiles) {
-			p.edit(t, "alixai.yaml", "    min: 0.1.0\n    max_exclusive: 1.0.0", "    min: 5.0.0\n    max_exclusive: 6.0.0")
+			p.edit(t, "alixai.yaml", "    min: 1.0.0\n    max_exclusive: 2.0.0", "    min: 5.0.0\n    max_exclusive: 6.0.0")
 		}),
 		want: []string{"compat.core_out_of_range"},
 	},
@@ -174,6 +174,42 @@ func writeMapFS(t *testing.T, dir string, m fstest.MapFS) {
 		if err := os.WriteFile(p, m[n].Data, 0o644); err != nil {
 			t.Fatal(err)
 		}
+	}
+}
+
+// validShippedPackages are the committed packages that must load cleanly against
+// both the development core (1.1.0-dev) and a stamped 1.1.0 release.
+var validShippedPackages = []string{
+	"valid-minimal",
+	"valid-help-assistant",
+	"egress-local-only",
+	"egress-allow-excerpt",
+}
+
+// TestValidShippedPackagesAcceptDevAndReleaseCore: every valid example package
+// declares [1.0.0, 2.0.0) and validates against DevCoreVersion and 1.1.0.
+func TestValidShippedPackagesAcceptDevAndReleaseCore(t *testing.T) {
+	for _, dir := range validShippedPackages {
+		t.Run(dir, func(t *testing.T) {
+			path := filepath.Join(fixturesRoot, dir)
+			if _, err := os.Stat(path); err != nil {
+				t.Fatalf("%s: %v", path, err)
+			}
+			for _, core := range []string{DevCoreVersion, "1.1.0"} {
+				t.Run(core, func(t *testing.T) {
+					opts := loadOptions()
+					opts.CoreVersion = core
+					res, err := Load(context.Background(), FromDir(path), opts)
+					if err != nil {
+						t.Fatal(err)
+					}
+					requireCritical(t, res)
+					if !res.OK() {
+						t.Fatalf("findings: %s", dump(res.Findings))
+					}
+				})
+			}
+		})
 	}
 }
 

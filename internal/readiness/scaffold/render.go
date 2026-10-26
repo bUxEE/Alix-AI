@@ -96,7 +96,7 @@ func scaffoldManifest(p scaffoldPlan) string {
 	w("  name: %s\n", scaffoldQuote("TODO(owner): application name"))
 	w("  version: 0.0.0-draft # TODO(owner): the application version\n")
 	w("package:\n  version: 0.0.0-draft # TODO(owner): the package version\n")
-	w("compatibility:\n  alixai_core:\n    min: 0.1.0 # TODO(owner): confirm the AlixAI core range this package was written for\n    max_exclusive: 1.0.0\n")
+	w("compatibility:\n  alixai_core:\n    min: 1.0.0 # TODO(owner): confirm the AlixAI core range this package was written for\n    max_exclusive: 2.0.0\n")
 	w("endpoints:\n")
 	b.WriteString(scaffoldRefLines("  # ", p.transportBy))
 	if len(p.transportBy) == 0 {

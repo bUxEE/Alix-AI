@@ -25,7 +25,7 @@ Each command block carries one of the states of the [deployment guides](../../op
 
 What you should know before you start:
 
-1. **1.0.0 is released.** SDKs and packages are versioned `1.0.0`. You can still build from source; a signed release archive is optional for this guide. Compatibility and support rules are in
+1. **1.1.0 is released.** SDKs and packages are versioned `1.1.0`. You can still build from source; a signed release archive is optional for this guide. Compatibility and support rules are in
    [migration and support](../../policies/migration-and-support.md).
 2. **The keys in this guide are published TEST-ONLY keys.** The clinic's package is signed with `tools/devkeys`, a key anyone can sign with, and the commands need explicit `-allow-test-keys` flags to accept it. A real
    deployment signs its own packages and registers its own keys (step 7, "For a real application").
@@ -336,6 +336,7 @@ confirmation commits through the application's idempotent commit, and the answer
 ## Where to go next
 
 - [Integration guides index](README.md): what each SDK has, side by side.
+- [Light integration (external AI, no local LLM)](light-integration.md): smallest path to a help / FAQ assistant in light External mode (`valid-help-assistant`).
 - [CopilotKit and AG-UI](copilotkit.md): put a chat UI in front of this, from Next.js, Express, Go or Python.
 - [Integration readiness discovery](readiness.md): scan your own project, read the report and scaffold a draft package.
 - [Application package format](../application-package.md): write a package for your own application.

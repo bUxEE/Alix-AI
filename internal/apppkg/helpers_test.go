@@ -56,7 +56,7 @@ func testVerifier(clk clock.Clock) *trust.Verifier {
 
 // loadOptions are the Options of a load that should authenticate.
 func loadOptions() Options {
-	return Options{Verifier: testVerifier(nil), CoreVersion: "0.1.0"}
+	return Options{Verifier: testVerifier(nil), CoreVersion: DevCoreVersion}
 }
 
 // pkgFiles is a package held as name -> content, outside signatures/.

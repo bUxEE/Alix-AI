@@ -838,11 +838,11 @@ func TestAdapterSourceBuildsOnceAndClosesWhatItDrops(t *testing.T) {
 	dataDir := t.TempDir()
 	db := storetest.Open(t, nil)
 	verifier := trust.NewVerifier(devTrust{}, clk)
-	inst, err := apppkg.NewInstaller(apppkg.InstallerOptions{DB: db, Clock: clk, DataDir: dataDir, Verifier: verifier, CoreVersion: "0.1.0"})
+	inst, err := apppkg.NewInstaller(apppkg.InstallerOptions{DB: db, Clock: clk, DataDir: dataDir, Verifier: verifier, CoreVersion: apppkg.DevCoreVersion})
 	if err != nil {
 		t.Fatal(err)
 	}
-	apps, err := gateway.NewApplications(inst, apppkg.Options{Verifier: verifier, CoreVersion: "0.1.0"}, clk, 0)
+	apps, err := gateway.NewApplications(inst, apppkg.Options{Verifier: verifier, CoreVersion: apppkg.DevCoreVersion}, clk, 0)
 	if err != nil {
 		t.Fatal(err)
 	}

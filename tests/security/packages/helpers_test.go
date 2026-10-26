@@ -36,7 +36,7 @@ const (
 	// with the published TEST-ONLY publisher key from 2026-10-01 for ten years.
 	validMinimalDir = "examples/packages/valid-minimal"
 	appID           = "demo-library"
-	coreVersion     = "0.1.0"
+	coreVersion     = apppkg.DevCoreVersion
 )
 
 // tNow is inside the validity window of the fixture's signature.

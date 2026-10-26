@@ -10,8 +10,8 @@ package:
   description: "Initial integration package: invoice search, quote drafting, invoice issuing, payment recording and invoice voiding, in English and Italian, with a contracts document source."
 compatibility:
   alixai_core:
-    min: "0.1.0"
-    max_exclusive: "1.0.0"
+    min: 1.0.0
+    max_exclusive: 2.0.0
 endpoints:
   ledger-bridge:
     transport: "native"

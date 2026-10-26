@@ -1,0 +1,8 @@
+policy_id: default-access
+description: Users may ask help questions; guests may not.
+role_grants:
+- role: user
+  capabilities:
+  - help.overview
+risk_overrides: []
+field_projection: []

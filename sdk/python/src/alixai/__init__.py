@@ -39,7 +39,7 @@ from alixai.providers import AsyncProvidersApi, ProvidersApi, Secret, is_manual_
 from alixai.turn import CONFIRMATION_TOKEN_HEADER, MAX_TURN_ATTACHMENTS, AsyncTurnStream, ConfirmationGrant, TurnInput, TurnResult, TurnStream
 from alixai.types import Liveness
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 __all__ = [
     "AlixAIAsyncClient",

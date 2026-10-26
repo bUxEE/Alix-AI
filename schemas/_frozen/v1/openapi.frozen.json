@@ -269,6 +269,16 @@
         },
         "description": "The session has ended; a new session needs a new authenticated context (`expired`)."
       },
+      "OAuthFlowNotFound": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "description": "The flow id is unknown or belongs to another principal (`not_found`)."
+      },
       "PayloadTooLarge": {
         "content": {
           "application/json": {
@@ -1028,6 +1038,9 @@
       "DecisionStatus": {
         "$ref": "schemas/decision/decision-status.schema.json"
       },
+      "DictationTranscript": {
+        "$ref": "schemas/voice/dictation-transcript.schema.json"
+      },
       "EgressDisclosure": {
         "$ref": "schemas/providers/egress-disclosure.schema.json"
       },
@@ -1607,9 +1620,23 @@
       "OAuthConnectionStatus": {
         "$ref": "schemas/providers/connection-status.schema.json"
       },
+      "OAuthFlowStatus": {
+        "$ref": "schemas/providers/oauth-flow-status.schema.json"
+      },
+      "OAuthPopupResult": {
+        "$ref": "schemas/providers/oauth-popup-result.schema.json"
+      },
       "OAuthStartRequest": {
         "additionalProperties": false,
         "properties": {
+          "callback": {
+            "description": "Who receives the provider redirect. Default host. loopback: AlixAI binds 127.0.0.1 and completes the exchange; redirect_uri must still be the documented placeholder.",
+            "enum": [
+              "host",
+              "loopback"
+            ],
+            "type": "string"
+          },
           "capabilities": {
             "description": "The capabilities to connect for; the engine requests the smallest set of provider scopes they map to.",
             "items": {
@@ -1623,12 +1650,26 @@
             "maxLength": 128,
             "type": "string"
           },
+          "opener_origin": {
+            "description": "Exact origin of the host page that opened the popup (scheme://host[:port], no path, query or fragment).\nRequired when presentation is popup; used only as postMessage targetOrigin. Validated against the operator allowlist\n`external_providers.oauth.popup_origins` (never `*`). Ignored for presentation redirect.\n",
+            "maxLength": 256,
+            "pattern": "^https?://[A-Za-z0-9._~-]+(:[0-9]{1,5})?$",
+            "type": "string"
+          },
+          "presentation": {
+            "description": "How the authorization URL is shown. Default redirect (1.0). popup keeps the host page from navigating and enables flow polling.",
+            "enum": [
+              "redirect",
+              "popup"
+            ],
+            "type": "string"
+          },
           "reauthorize": {
             "description": "An existing connection to renew (re-consent or account switch).",
             "type": "string"
           },
           "redirect_uri": {
-            "description": "Where the provider sends the browser back. Bound to the flow and checked again at the callback.",
+            "description": "Where the provider sends the browser back. Bound to the flow and checked again at the callback when `callback` is `host`.\nRemains required for wire compatibility with 1.0 (dropping a required member is a breaking change under tools/compat).\nWhen `callback` is `loopback`, send the placeholder `http://127.0.0.1/oauth/loopback`; AlixAI ignores it and uses the ephemeral listener it bound.\n",
             "maxLength": 512,
             "type": "string"
           },
@@ -1709,6 +1750,17 @@
           "expires_at": {
             "format": "date-time",
             "type": "string"
+          },
+          "flow_id": {
+            "description": "Opaque id of the flow. Present when presentation is popup so the opener can poll; optional for additive compatibility with 1.0 responses.",
+            "pattern": "^oaf_[0-9A-HJKMNP-TV-Z]{26}$",
+            "type": "string"
+          },
+          "poll_interval_ms": {
+            "description": "Suggested polling interval for GET /v1/oauth/flows/{flow_id}. Present with flow_id when presentation is popup.",
+            "maximum": 10000,
+            "minimum": 250,
+            "type": "integer"
           },
           "redirect_uri": {
             "type": "string"
@@ -3228,6 +3280,9 @@
         ],
         "type": "object"
       },
+      "TranscriptionCapabilities": {
+        "$ref": "schemas/voice/transcription-capabilities.schema.json"
+      },
       "TurnEvent": {
         "$ref": "schemas/conversation/turn-event.schema.json"
       },
@@ -4122,6 +4177,37 @@
         ]
       }
     },
+    "/v1/dictations/capabilities": {
+      "get": {
+        "description": "Reports whether record-to-text is available for the token's scope, whether recognition is local or external,\nthe maximum clip length, and the only accepted audio shape (WAV, PCM s16le, mono, 16000 Hz). The host uses\nthis to show or hide the record control. Scoped like every other `/v1` route. A deployment with no STT\nanswers with `available` false and `locality` `none` (or `503 unavailable` when the transcription service\nis not wired at all).\n",
+        "operationId": "getDictationCapabilities",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscriptionCapabilities"
+                }
+              }
+            },
+            "description": "Capabilities for the scope."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Dictation capabilities of this deployment",
+        "tags": [
+          "sessions"
+        ]
+      }
+    },
     "/v1/events": {
       "post": {
         "description": "The host application tells AlixAI that something changed, so that state AlixAI holds about it is\ninvalidated and the sessions it concerns are told. The body is the delivery of the event adapter\n(adapters/events): the event and exactly ONE detached Ed25519 signature over the canonical JSON (RFC 8785) of\nthe event as received, by a key registered for the application. A delivery with no signature is\n`unauthenticated`, with several `schema_invalid`; a signature valid for more than 15 minutes is refused. The\nbody is at most 64 KiB.\n\n**What authenticates and scopes it.** The request carries a context token like every `/v1` request, and the\ntoken's application is the one thing taken from it: it picks the application whose keys are tried (an\napplication whose package is not active serves nothing, `quarantined`). The signature authenticates the event.\nThe tenant and workspace an event is about, and so the sessions it reaches, come ONLY from the signed\npayload: the token's own tenant, workspace, principal and session, the URL, the query and the headers never\nname or widen a scope. An event for another application than the token's is `scope_violation` even when its\nsignature is genuine.\n\n**Replay.** The event `id` is remembered until its signature expires; a second delivery of the same event is\nacknowledged with `status: duplicate` and changes nothing, whatever signature it carries.\n\n**What the sessions see.** Each session the event changed is told with a notice (a failed turn of two events:\na `stale` error that says nothing was committed, and `done` failed) and an announcement on\n`GET /v1/sessions/{session_id}/events`. A `5xx`/`503` means the event was not applied (or not recorded) and\nshould be delivered again: applying is idempotent.\n",
@@ -4764,7 +4850,7 @@
     },
     "/v1/oauth/callback": {
       "post": {
-        "description": "Passes the redirect the browser followed to the OAuth engine, with the token's scope (which must be the scope that started the flow, principal included). A state that is unknown, replayed, expired or issued to another scope is refused and spent; nothing is stored unless every check passed. The code and the state are never echoed or logged. Operator only (a tenant administrator of the deployment's own configuration unless said otherwise); `permission_denied` for everybody else, before the body is read.\n",
+        "description": "Passes the redirect the browser followed to the OAuth engine, with the token's scope (which must be the scope that started the flow, principal included). A state that is unknown, replayed, expired or issued to another scope is refused and spent; nothing is stored unless every check passed. The code and the state are never echoed or logged. Operator only (a tenant administrator of the deployment's own configuration unless said otherwise); `permission_denied` for everybody else, before the body is read. Used by the host-callback path; a loopback popup flow completes inside AlixAI and does not call this route.\n",
         "operationId": "completeProviderOAuth",
         "requestBody": {
           "content": {
@@ -4815,13 +4901,84 @@
         ]
       }
     },
+    "/v1/oauth/flows/{flow_id}": {
+      "delete": {
+        "description": "Cancels a pending flow (the user closed the popup). Idempotent: a flow that is already completed, failed, expired or cancelled answers `204` without changing a finished outcome. Only the principal that started the flow may cancel it; any other caller answers `not_found`. Operator only.\n",
+        "operationId": "cancelProviderOAuthFlow",
+        "responses": {
+          "204": {
+            "description": "The flow is cancelled, or was already terminal."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/OAuthFlowNotFound"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Cancel a pending popup OAuth flow",
+        "tags": [
+          "oauth"
+        ]
+      },
+      "get": {
+        "description": "Returns the server-side status of a flow started with `presentation` `popup`. Only the principal that started the flow may read it (same application, tenant, workspace and principal); any other caller, and an unknown id, answers `not_found`. Operator only. This is the source of truth when `window.opener` is nulled.\n",
+        "operationId": "getProviderOAuthFlow",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthFlowStatus"
+                }
+              }
+            },
+            "description": "The current flow status."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/OAuthFlowNotFound"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Read the status of a popup OAuth flow",
+        "tags": [
+          "oauth"
+        ]
+      },
+      "parameters": [
+        {
+          "description": "The opaque flow id returned by start when presentation is popup.",
+          "in": "path",
+          "name": "flow_id",
+          "required": true,
+          "schema": {
+            "pattern": "^oaf_[0-9A-HJKMNP-TV-Z]{26}$",
+            "type": "string"
+          }
+        }
+      ]
+    },
     "/v1/oauth/{provider}/start": {
       "post": {
-        "description": "Prepares the consent for the requested capabilities (the smallest set of provider scopes they map to) and begins the authorization. A provider without OAuth for API access answers `validation_failed` with `details.reason` `manual_fallback`: use the manual credential route. Operator only (a tenant administrator of the deployment's own configuration unless said otherwise); `permission_denied` for everybody else, before the body is read.\n",
+        "description": "Prepares the consent for the requested capabilities (the smallest set of provider scopes they map to) and begins the authorization. A provider without OAuth for API access answers `validation_failed` with `details.reason` `manual_fallback`: use the manual credential route. Operator only (a tenant administrator of the deployment's own configuration unless said otherwise); `permission_denied` for everybody else, before the body is read.\n\n**Presentation.** `presentation` defaults to `redirect` (1.0 behaviour: the host navigates or opens a full window and relays the callback). `popup` keeps the host page in place: the response includes `flow_id` and `poll_interval_ms` so the opener can poll `GET /v1/oauth/flows/{flow_id}`. With `popup`, `opener_origin` is required: the exact origin (scheme://host[:port], no path) of the host page, used only as the `targetOrigin` of the callback page's postMessage. It is validated against the operator allowlist `external_providers.oauth.popup_origins` (never `*`).\n\n**Callback.** `callback` defaults to `host` (the host's registered `redirect_uri` receives the provider redirect). `loopback` means AlixAI binds an ephemeral 127.0.0.1 listener and completes the exchange itself; the caller still sends `redirect_uri` (required for wire compatibility) with the placeholder `http://127.0.0.1/oauth/loopback`.\n",
         "operationId": "startProviderOAuth",
         "parameters": [
           {
-            "description": "The provider id (for example `openai`).",
+            "description": "The provider id (for example `openai`, `openrouter`, `xai`, `moonshot`, `deepgram`, `elevenlabs`, `google-stt`). Slug pattern; not an enum.",
             "in": "path",
             "name": "provider",
             "required": true,
@@ -6475,6 +6632,73 @@
           "$ref": "#/components/parameters/SessionId"
         }
       ]
+    },
+    "/v1/sessions/{session_id}/dictations": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/VoiceSessionId"
+        },
+        {
+          "description": "Optional BCP 47 language hint for the recogniser.",
+          "in": "query",
+          "name": "language",
+          "required": false,
+          "schema": {
+            "maxLength": 35,
+            "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "description": "Accepts raw `audio/wav` bytes (PCM signed 16-bit little-endian, mono, 16000 Hz only). The server computes\nthe duration from the PCM payload and never trusts a client duration. Default maximum length is 60 seconds\n(operator configurable); the body-size limit is derived from that rate. The response is a DictationTranscript\nfor the host to place in the chat input so the user can edit it. The transcript is data, never instructions;\nAlixAI never submits it as a turn; raw audio is not retained. This route does not use the voice-conversation\nWebSocket and does not involve VAD: the user's record and stop are the segmentation (`segment_kind`\n`user_recorded`).\n\nErrors use the typed envelope: `unavailable` (no STT), `validation_failed` (wrong Content-Type, malformed\nWAV, wrong format, too long, too short or silent), `permission_denied`, `resource_exhausted` (budget), and\nthe existing egress denial when external STT is refused.\n",
+        "operationId": "createSessionDictation",
+        "requestBody": {
+          "content": {
+            "audio/wav": {
+              "schema": {
+                "format": "binary",
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DictationTranscript"
+                }
+              }
+            },
+            "description": "The recognised text and metadata."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Transcribe a user-recorded clip (dictation)",
+        "tags": [
+          "sessions"
+        ]
+      }
     },
     "/v1/sessions/{session_id}/events": {
       "get": {

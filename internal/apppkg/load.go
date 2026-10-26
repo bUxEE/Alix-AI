@@ -15,14 +15,16 @@ import (
 
 	"github.com/buxee/alix-ai/internal/policy"
 	"github.com/buxee/alix-ai/internal/trust"
+	"github.com/buxee/alix-ai/internal/version"
 	"github.com/buxee/alix-ai/pkg/contracts"
 	ap "github.com/buxee/alix-ai/pkg/contracts/gen/applicationpackage"
 )
 
 // DevCoreVersion is the AlixAI core version assumed when the binary is not
-// stamped with a release version (a development build): the first version
-// packages are written for.
-const DevCoreVersion = "0.1.0"
+// stamped with a release version (a development build). It is the current
+// release line as a SemVer prerelease so it sorts inside [1.0.0, 2.0.0) like a
+// stamped 1.1.0 binary, and below the stamped release.
+const DevCoreVersion = version.ReleaseLine + "-dev"
 
 // Authenticity says how far the signature of a loaded package was checked.
 type Authenticity string

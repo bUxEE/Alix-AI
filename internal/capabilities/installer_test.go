@@ -31,7 +31,7 @@ func TestRegistryOverTheRealInstaller(t *testing.T) {
 		t.Fatal(err)
 	}
 	in, err := apppkg.NewInstaller(apppkg.InstallerOptions{
-		DB: db, Clock: clk, DataDir: t.TempDir(), Verifier: trust.NewVerifier(ts, clk), CoreVersion: "0.1.0",
+		DB: db, Clock: clk, DataDir: t.TempDir(), Verifier: trust.NewVerifier(ts, clk), CoreVersion: apppkg.DevCoreVersion,
 	})
 	if err != nil {
 		t.Fatal(err)

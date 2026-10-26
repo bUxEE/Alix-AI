@@ -1,0 +1,15 @@
+terms:
+- id: faq
+  labels:
+    en:
+      preferred: FAQ
+      synonyms:
+      - help article
+      - how-to
+      definition: A signed help document that answers a common question about the product.
+    it:
+      preferred: FAQ
+      synonyms:
+      - articolo di aiuto
+      - guida
+      definition: Un documento di aiuto firmato che risponde a una domanda frequente sul prodotto.

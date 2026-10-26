@@ -289,7 +289,7 @@ func TestRegisterApplicationIsGuarded(t *testing.T) {
 
 	// A signature by a key the operator did not register is refused: the
 	// installer trusts the trust store and nothing in the request.
-	untrusted, err := NewApplications(e.real.in, apppkg.Options{Verifier: nil, CoreVersion: "0.1.0"}, e.clk, 0)
+	untrusted, err := NewApplications(e.real.in, apppkg.Options{Verifier: nil, CoreVersion: apppkg.DevCoreVersion}, e.clk, 0)
 	if err == nil || untrusted != nil {
 		t.Fatal("applications were built without a trust verifier")
 	}

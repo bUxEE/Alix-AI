@@ -51,6 +51,11 @@ For a bug report, the redacted diagnostics bundle ([server guide](server.md), se
 | 401 `wrong_issuer` or `wrong_application` | The token's `iss` or `application_id` is not the one the key was registered for. |
 | `replayed` | A context token was presented twice. Tokens are single use: mint one per request and per stream open ([browser hosts](browser-hosts.md)). |
 | `quarantined` on every route of an application | Its package is not active: installed but not audited, rejected, superseded or quarantined. `alixai audit run <app>`. |
+| Turn `unavailable` in light External | Tenant effective mode is not External, no controller route, or provider down. The turn event stream is fine in External mode; assistant text arrives whole after verification. [light integration](../../integration/guides/light-integration.md), [light-external](light-external.md). |
+| `permission_denied` with egress details on the first External turn | Egress policy denies category `user_message` (or related) at class `internal`. Chat text always leaves as `internal` (`internal/dialogue/extmode`). Allow it at deployment/application/tenant/workspace. |
+| `resource_exhausted` reason `no_budget` | No provider budget, or it is exhausted. Configure a budget before the first billed turn. |
+| Dictation `validation_failed` | Body is not WAV PCM s16le mono 16 kHz, or length/energy outside limits ([ADR 0039](../../decisions/0039-dictation-without-vad.md)). |
+| `/readyz` 503 with no local models in light External | No external controller cover: set `routing.controller` and External mode for tenants that chat ([light-external](light-external.md)). |
 
 (Table from `docs/operations/key-provisioning.md`, section 3, and `schemas/api/openapi.yaml`.)
 
@@ -59,6 +64,7 @@ For a bug report, the redacted diagnostics bundle ([server guide](server.md), se
 | Message | Cause and fix |
 | --- | --- |
 | `package install` exits 1 with findings and nothing installed | The package is unsigned, tampered, signed by a key the trust store does not trust (`alixai trust add-key -app <app>`) or has a critical finding. Read the findings; `alixai package validate` shows the same. |
+| `compat.core_out_of_range` | The installed core version is outside the package's `compatibility.alixai_core` range. The finding names the core version and `[min, max_exclusive)`. Shipped examples use `[1.0.0, 2.0.0)`; a source build reports `1.1.0-dev`. |
 | `audit run`: `no signing key: pass -signing-key KEYID=KEYFILE or set integration_audit.signing_key_id and signing_key_file` | The audit signer is not provisioned. [Operator commands](operator-commands.md), section 2. |
 | `audit run`: `the signing key is a published TEST-ONLY key that anyone can sign with` | Generate your own (`alixai package keygen`). |
 | `audit accept-warning`: `the operator is not authorised to accept audit warnings` | The operator is not in `integration_audit.accept_operators`, or the list is empty (the default). A critical finding can never be accepted. |

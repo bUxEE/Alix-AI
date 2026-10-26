@@ -228,7 +228,7 @@ func TestSentinelErrors(t *testing.T) {
 // FromPackage works on a package the loader produced: the committed
 // valid-minimal fixture declares one documentation source.
 func TestFromPackage(t *testing.T) {
-	res, err := apppkg.Load(context.Background(), apppkg.FromDir("../../../examples/packages/valid-minimal"), apppkg.Options{CoreVersion: "0.1.0"})
+	res, err := apppkg.Load(context.Background(), apppkg.FromDir("../../../examples/packages/valid-minimal"), apppkg.Options{CoreVersion: apppkg.DevCoreVersion})
 	if err != nil {
 		t.Fatal(err)
 	}

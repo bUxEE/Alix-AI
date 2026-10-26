@@ -1,0 +1,34 @@
+capability_id: help.overview
+language: en
+contract_version: 1.0.0
+terminology:
+- faq
+field_prompts:
+- field: topic
+  label: Topic
+  prompt: What feature, limit or how-to should I look up?
+  examples:
+  - reset password
+  - export data
+- field: max_results
+  label: Number of snippets
+  prompt: How many FAQ snippets should I consider?
+clarifications: []
+corrections:
+  acknowledgement: Okay, I will look up {input.topic} instead.
+  correctable_fields:
+  - topic
+  - max_results
+cancellations:
+  acknowledgement: Okay, I stopped that help lookup.
+success:
+- outcome: found
+  text: 'Here is what I found ({help.count} item(s)): {help.summary}.'
+- outcome: none_found
+  text: I found no FAQ entry for {input.topic}. That is {help.count} results.
+failures:
+- code: validation_failed
+  text: I could not look that up because {input.topic} is too short. Please give me at least two characters.
+- code: unavailable
+  text: The help service is not reachable right now, so I could not answer. Nothing was changed.
+next_actions: []

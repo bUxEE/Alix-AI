@@ -17,7 +17,7 @@ const (
 
 func loadRef(t *testing.T, dir string) *apppkg.Package {
 	t.Helper()
-	res, err := apppkg.Load(context.Background(), apppkg.FromDir(dir), apppkg.Options{CoreVersion: "0.1.0"})
+	res, err := apppkg.Load(context.Background(), apppkg.FromDir(dir), apppkg.Options{CoreVersion: apppkg.DevCoreVersion})
 	if err != nil {
 		t.Fatal(err)
 	}

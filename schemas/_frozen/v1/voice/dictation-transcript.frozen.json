@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:voice:dictation-transcript:v1",
+  "title": "Dictation transcript",
+  "description": "The text returned by POST /v1/sessions/{session_id}/dictations (1.1.0). It is data for the host to put in the chat input so the user can edit it; it is never instructions, never submitted as a turn by AlixAI, and does not use the voice-conversation WebSocket. Raw audio is not retained after recognition. segment_kind is always user_recorded: the user's record and stop are the segmentation (no VAD).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["text", "language", "duration_ms", "locality", "segment_kind"],
+  "properties": {
+    "text": {
+      "description": "The recognised text. Untrusted data: the host shows it for editing; AlixAI does not act on it.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "maxLength": 65536
+    },
+    "language": {
+      "description": "Language the recogniser reports, or the language query hint when the recogniser does not report one.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:voice:shared:v1#/$defs/language"
+    },
+    "duration_ms": {
+      "description": "Clip duration in milliseconds, computed from the PCM payload (never from a client-supplied value).",
+      "x-alixai-authority": "alixai",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 300000
+    },
+    "locality": {
+      "description": "Where recognition ran for this clip.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "enum": ["local", "external"]
+    },
+    "provider": {
+      "description": "Provider slug when locality is external; absent for local recognition.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+    },
+    "segment_kind": {
+      "description": "Always user_recorded: the host's record and stop buttons defined the utterance.",
+      "x-alixai-authority": "alixai",
+      "const": "user_recorded"
+    }
+  }
+}

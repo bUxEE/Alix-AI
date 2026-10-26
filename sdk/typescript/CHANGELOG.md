@@ -3,13 +3,18 @@
 All notable changes to this package. The format follows [Keep a Changelog](https://keepachangelog.com/); versions follow semantic versioning once 1.0.0
 ships, with the rules of [compatibility.md](../../docs/policies/compatibility.md).
 
-## Unreleased
+## 1.1.0 — 2026-10-26
 
 ### Added
 
 - Generated types for popup OAuth (`OAuthFlowStatus`, `OAuthPopupResult`) and optional start/response members (`presentation`, `callback`, `opener_origin`, `flow_id`, `poll_interval_ms`); credential kind `oauth_issued_key`.
 - Generated types for dictation: `TranscriptionCapabilities`, `DictationTranscript` (record-to-text; not the voice WebSocket).
 - Dictation HTTP client (`voice.createDictationClient` / `voice.dictations`): `capabilities()` and `create(sessionId, wav, opts)` for `GET /v1/dictations/capabilities` and `POST /v1/sessions/{session_id}/dictations`; helper `encodeWav16kMono`.
+- Providers popup OAuth: poll/cancel flow helpers that speak `GET`/`DELETE /v1/oauth/flows/{flow_id}` and the optional start members above.
+
+### Notes (core)
+
+- Dev cores report `1.1.0-dev`; packages for this line use `compatibility.alixai_core` `[1.0.0, 2.0.0)`. See `docs/integration/guides/light-integration.md`.
 
 ## 1.0.0
 

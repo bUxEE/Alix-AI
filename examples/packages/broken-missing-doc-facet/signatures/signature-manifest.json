@@ -8,7 +8,7 @@
     "files": [
       {
         "path": "alixai.yaml",
-        "sha256": "dc8fd6ccffd96873d4134f7c163373cc3e95b2066569032c1f7a28bb396ad5e5",
+        "sha256": "828b9123696350b7d14cf11c7693a88eeaa0d496eab480465600a40b19f77f59",
         "size": 2171
       },
       {
@@ -127,7 +127,7 @@
     {
       "key_id": "alixai-test-only-publisher",
       "algorithm": "ed25519",
-      "signature": "OIbMxP148nhxUEBGLTTvdMFF4fFxza7GW0/AxxYducd2rmyyfoQlW+/UcfY2ypWw3+GyknFE5JtW7mY36BC7Cg==",
+      "signature": "bEtSPtwapft6hQKOJXBNHyOkqN4j0MpmEWxmD1CyTJ38/MbTbn9PuSGVnSRE/e81yFgt7jNabDLiF1ipYIOSDA==",
       "signed_at": "2026-10-01T00:00:00Z",
       "expires_at": "2036-10-01T00:00:00Z"
     }

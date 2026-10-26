@@ -1,0 +1,158 @@
+openapi: 3.0.3
+info:
+  title: Help Assistant API
+  version: 1.0.0
+  description: Approved operations of the synthetic help-assistant fixture. Every capability reply is a DeterministicResult-shaped body with the HTTP status a REST host would pick.
+servers:
+- url: http://127.0.0.1:8790
+paths:
+  /v1/help/overview:
+    get:
+      operationId: getHelpOverview
+      summary: Return a read-only overview for a topic
+      parameters:
+      - $ref: '#/components/parameters/Identity'
+      - name: topic
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 2
+          maxLength: 200
+      - name: max_results
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 10
+      responses:
+        '200':
+          $ref: '#/components/responses/Result'
+        '403':
+          $ref: '#/components/responses/Result'
+        '422':
+          $ref: '#/components/responses/Result'
+        '503':
+          $ref: '#/components/responses/Result'
+  /v1/faq/resolve:
+    post:
+      operationId: resolveFAQEntry
+      summary: Resolve a FAQ entry by words from its title
+      parameters:
+      - $ref: '#/components/parameters/Identity'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          $ref: '#/components/responses/Result'
+        '403':
+          $ref: '#/components/responses/Result'
+        '422':
+          $ref: '#/components/responses/Result'
+        '503':
+          $ref: '#/components/responses/Result'
+  /describe:
+    get:
+      operationId: describeApplication
+      responses:
+        '200':
+          description: Contract versions the application speaks.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /health:
+    get:
+      operationId: getHealth
+      responses:
+        '200':
+          description: Whether the application can serve requests.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /inspect:
+    get:
+      operationId: inspectApplication
+      responses:
+        '200':
+          description: Facts the application exposes.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /tenants:
+    post:
+      operationId: createTenant
+      responses:
+        '201':
+          description: The tenant exists.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /tenants/{tenant_id}/seed:
+    post:
+      operationId: seedTenant
+      parameters:
+      - name: tenant_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Synthetic data loaded.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /tenants/{tenant_id}:
+    delete:
+      operationId: cleanupTenant
+      parameters:
+      - name: tenant_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The tenant is gone.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+components:
+  parameters:
+    Identity:
+      name: X-AlixAI-Identity
+      in: header
+      required: true
+      schema:
+        type: string
+  responses:
+    Result:
+      description: A DeterministicResult-shaped body.
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: true
+            required:
+            - status
+            properties:
+              status:
+                type: string

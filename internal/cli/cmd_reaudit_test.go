@@ -43,7 +43,7 @@ import (
 
 const (
 	reauditTestApp   = "demo-library"
-	reauditTestCore  = "0.1.0"
+	reauditTestCore  = apppkg.DevCoreVersion
 	reauditTestKeyID = "reaudit-test-signer"
 	// reauditTestPackage is the committed fixture package, signed with the published TEST-ONLY
 	// publisher key.

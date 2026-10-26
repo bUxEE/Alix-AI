@@ -16,8 +16,9 @@ This policy says what AlixAI promises about its **public contracts**: what may c
 | What a patch release may do | fix defects and security issues; **no** contract change | the same |
 | Supported releases | the latest release and `main` (as SECURITY.md) | section 6 |
 
-During the beta a `0.y` release stands where a major stands under semantic versioning: the same notice, the same migration note. The OpenAPI document currently reads `info.version: 1.0.0` and the SDKs read `0.1.0`;
-until milestone 6 freezes the v1 contracts, the beta column governs all of them whatever those numbers say.
+During the beta a `0.y` release stands where a major stands under semantic versioning: the same notice, the same migration note. From 1.0.0 the stable column
+governs: the OpenAPI document keeps `info.version: 1.0.0` with the `/v1` path prefix as the contract major (additive minors do not bump `info.version`); the
+shipped SDKs and kits carry the product release version (currently `1.1.0`).
 
 Areas that the project documents as optional and opt-in (voice, the decision layer, External provider mode, the 4 GB profile) fall under the **stable** column from the first release whose documentation calls
 them stable, and under the beta column until then.
@@ -34,7 +35,7 @@ A thing is a public contract when a host application, an SDK user, an applicatio
 | **Application package format** | `schemas/application-package/`, `docs/integration/application-package.md` | `alixai.application-package/v1`, `alixai.signature-manifest/v1`, `policy/v1`; each capability's `version` and each conversation contract's `contract_version`; the package's `compatibility.alixai_core` range |
 | **Context token** | ADR 0013 | `typ` `alixai-context+jwt`, one algorithm, `EdDSA`; at most 15 minutes, single use |
 | **Go contracts and SDK** | `pkg/contracts`, `pkg/sdk-go` | the Go module version (the module path is provisional until a public repository exists) |
-| **TypeScript, Python and CopilotKit SDKs** | `@alixai/sdk`, `alixai` (`sdk/python`), `@alixai/copilotkit-adapter` | each package's own version (currently 0.1.0) |
+| **TypeScript, Python and CopilotKit SDKs** | `@alixai/sdk`, `alixai` (`sdk/python`), `@alixai/copilotkit-adapter` | each package's own version (currently 1.1.0) |
 | **Command line** | the `alixai` commands, their flags, their exit statuses (`0`, `1`, `2`) and the members of the JSON they print | the version of the binary |
 | **Configuration** | YAML sections and keys, and the `ALIXAI_<SECTION>_<FIELD>` environment names | the version of the binary |
 | **Operator-facing formats** | the backup manifest (`alixai.backup-manifest.v1`), the release manifest (`alixai.release-manifest.v1`), audit events (`alixai.audit-event/v1`), audit checkpoints (`alixai.audit-checkpoint/v1`), integration-audit reports (`alixai.integration-audit-report/v1`), the diagnostics bundle (`alixai.diagnostics/v1`), the Prometheus metric and label names (`alixai_*`) | the format markers; metric names with the binary |
@@ -147,8 +148,8 @@ generated identifiers after their typed prefix; the documentation's prose.
 | Staged upgrade, rollback, backup that restores under a later release | Built; see [upgrades](../operations/guides/upgrades.md) for how much of it has run. |
 | **An automated breaking-change check on the OpenAPI document and the schemas** | **Not built.** Until it is, the release manager compares them by hand before each release. |
 | **A warning at run time for a deprecated flag, key or route** | **Not built.** Until it is, deprecations are announced in the release notes and the documentation only. |
-| **A published release with release notes and a supported-version table** | **Not yet:** no release has been published. |
-| **Stable support windows, frozen v1 contracts, the migration and support policy** | Milestone 6, written in docs/policies/migration-and-support.md. The values above are signed off by the owner (2026-10-08). |
+| **A published release with release notes and a supported-version table** | **1.0.0 and 1.1.0:** release notes live in the root README Project status and the SDK/kit changelogs; the supported-version table is [migration and support](migration-and-support.md). |
+| **Stable support windows, frozen v1 contracts, the migration and support policy** | In force from 1.0.0 (`schemas/_frozen/v1`, `tools/compat`); written in docs/policies/migration-and-support.md. The values above are signed off by the owner (2026-10-08). |
 
 ## 11. Changing this policy
 

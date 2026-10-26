@@ -511,7 +511,7 @@ func newSUEnv(t *testing.T, pkg *apppkg.Package, h *suHost, withStepUp bool) *su
 		e.prov = noStepUp{h}
 	}
 	e.in = &integrationaudit.Input{
-		Description: &desc, Package: pkg, Adapter: guard, Clock: h.clk, CoreVersion: "0.1.0",
+		Description: &desc, Package: pkg, Adapter: guard, Clock: h.clk, CoreVersion: apppkg.DevCoreVersion,
 		Scope: contracts.Scope{
 			DeploymentID: "alixai-audit", ApplicationID: suAppID, TenantID: "alixai-audit", WorkspaceID: "alixai-audit",
 			PrincipalID: "alixai-audit", Roles: []string{"auditor"}, CapabilityScopes: []string{"audit.inspect"}, SessionID: "audit-run",

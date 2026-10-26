@@ -8,7 +8,7 @@
 **Private, local language, voice, knowledge and safe application control — for any application —<br>without handing that application's authority to an LLM.**
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-![Status](https://img.shields.io/badge/status-1.0.0-brightgreen.svg)
+![Status](https://img.shields.io/badge/status-1.1.0-brightgreen.svg)
 ![Self-hosted](https://img.shields.io/badge/hosting-self--hosted-brightgreen.svg)
 ![Core](https://img.shields.io/badge/core-Go%20%2B%20SQLite-00ADD8.svg)
 ![Runtime](https://img.shields.io/badge/default%20runtime-LocalAI-8A2BE2.svg)
@@ -28,14 +28,16 @@
 ---
 
 > [!IMPORTANT]
-> **AlixAI 1.0.0 is released.** The service, conversational engine, scoped RAG,
-> MCP / OpenAPI / native adapters, SDKs (TypeScript, Go, Python), CopilotKit adapter, voice, decision layer, External and
-> Hybrid modes, the optional Vue and React kits and three reference applications are built and covered by tests. Still not
-> done: certification on a real 8 GB x86-64 machine (ARM64 has never been run), 24-hour and 7-day soaks (analysis only),
-> live provider runs against real endpoints, and an independent external security review. No model is certified for the
-> Lite profile. Signing keys, licence and legal reviews, provider-terms review and the maintainer security self-review are
-> done by the maintainer (not independently reviewed). Details: [Project status](#project-status) and
-> [docs/verification/README.md](docs/verification/README.md).
+> **AlixAI 1.1.0 is released.** Additive on 1.0.0: light external setups with no local LLM, record-to-text dictation
+> (local or external STT), popup OAuth and a provider catalog for browser login, and chat providers OpenRouter / xAI /
+> Moonshot. The service, conversational engine, scoped RAG, MCP / OpenAPI / native adapters, SDKs (TypeScript, Go, Python),
+> CopilotKit adapter, voice, decision layer, External and Hybrid modes, the optional Vue and React kits and three
+> reference applications remain covered by tests. Still not done: certification on a real 8 GB x86-64 machine (ARM64 has
+> never been run), 24-hour and 7-day soaks (analysis only), live provider runs against real endpoints, voicebench for
+> Parakeet / Whisper large-v3-turbo / Whisper large-v3 (candidates until measured), and an independent external security
+> review. No model is certified for the Lite profile. Signing keys, licence and legal reviews, provider-terms review and
+> the maintainer security self-review are done by the maintainer (not independently reviewed). Details:
+> [Project status](#project-status) and [docs/verification/README.md](docs/verification/README.md).
 
 ## Contents
 
@@ -229,6 +231,11 @@ documentation folders you choose) and it reports every requirement below as *met
 opens secret files, writes nothing into your project and can draft an unsigned package for you (`-scaffold OUTDIR`);
 `alixai readiness status` re-checks after you change things. It is advisory: the integration audit still decides activation.
 Guide: [docs/integration/guides/readiness.md](docs/integration/guides/readiness.md).
+
+**Integrating with external AI (light).** For a signed help / FAQ chat assistant with a hosted provider and no local LLM, start from
+[`examples/packages/valid-help-assistant`](examples/packages/valid-help-assistant) and
+[docs/integration/guides/light-integration.md](docs/integration/guides/light-integration.md) (architecture, per-tenant External
+checklist, whole-text replies on the event stream, STT choices). Operator setup: [docs/operations/guides/light-external.md](docs/operations/guides/light-external.md).
 
 An *Application Integration Package* is a signed directory:
 
@@ -465,16 +472,23 @@ docs/                  architecture, ADRs, integration guides, operations, secur
 
 ## Project status
 
-**1.0.0 is released.** The product surface (service, SDKs, adapters, optional UI kits, reference apps) is built and covered by
-tests. What was verified for this release — statuses **Done**, **Done (maintainer, not independent)**, **Analysis only**,
-and **Not done** — is listed on [docs/verification/README.md](docs/verification/README.md). Summary:
+**1.1.0 is released** (minor, additive on 1.0.0). What 1.1.0 adds: light external setup (per-layer local/external routing,
+including no local LLM when the controller is external); dictation (`GET /v1/dictations/capabilities`,
+`POST /v1/sessions/{id}/dictations`) with local STT packs (Parakeet, Whisper turbo / large-v3 as candidates) or external
+STT; popup OAuth and provider browser login (`alixai providers login`); OpenRouter, xAI and Moonshot chat providers; UI kit
+voice modes `off` | `dictation` | `conversation`; SDK clients for dictation and OAuth flow status; the
+[`valid-help-assistant`](examples/packages/valid-help-assistant) package and
+[light integration guide](docs/integration/guides/light-integration.md); and a core-version fix so source builds report
+`1.1.0-dev` and shipped packages declare `[1.0.0, 2.0.0)` (dev and release cores both accept them). Contract changes are
+additive and frozen into `schemas/_frozen/v1`. What was verified — statuses **Done**, **Done (maintainer, not independent)**,
+**Analysis only**, and **Not done** — is listed on [docs/verification/README.md](docs/verification/README.md). Summary:
 
 | Status | Areas |
 | --- | --- |
-| Done | Unit/integration/security/degradation/gate tests; CI workflows; API and schema compatibility; dependency vulnerability and licence checks; disaster-recovery drill; private security contact |
+| Done | Unit/integration/security/degradation/gate tests; CI workflows; API and schema compatibility (including the 1.1.0 additive freeze); dependency vulnerability and licence checks; disaster-recovery drill; private security contact |
 | Done (maintainer, not independent) | Reproducible build, SBOM and signed release manifest (`keys/alixai-release-2026.pub`); model, decision-layer and dependency licence reviews; External mode legal, residency and security review; provider terms; security self-review; internal penetration test; trademark policy |
 | Analysis only | Lite and Balanced profiles (measured under caps, not certified on a real 8 GB machine); 24-hour and 7-day soaks |
-| Not done | Real 8 GB x86-64 certification; ARM64 (never run); controller model qualification (no model certified for Lite); decision-layer hardware gates; live provider runs against real endpoints; independent external security review |
+| Not done | Real 8 GB x86-64 certification; ARM64 (never run); controller model qualification (no model certified for Lite); decision-layer hardware gates; live provider runs against real endpoints; voicebench for Parakeet / Whisper large-v3-turbo / Whisper large-v3; independent external security review |
 
 ## Development workflow
 
@@ -508,9 +522,9 @@ impact.
 | [docs/architecture/](docs/architecture/) | Overview, module map and import tiers, decision layer. |
 | [docs/decisions/](docs/decisions/) | Architecture decision records — what was decided, the alternatives, how to reverse it. |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Near-term roadmap: external TTS adapters, Parakeet Balanced STT after gates, provider OAuth, certification and review gaps. |
-| [docs/integration/guides/](docs/integration/guides/) | Getting started, readiness discovery, CopilotKit. |
+| [docs/integration/guides/](docs/integration/guides/) | Getting started, readiness discovery, light External chat-assistant integration, CopilotKit. |
 | [docs/integration/](docs/integration/) | The application package format, conversation and action objects, AG-UI, External mode. |
-| [docs/operations/guides/](docs/operations/guides/) | Local machine, server, private VPS, operator commands, backup and restore, upgrades, troubleshooting. |
+| [docs/operations/guides/](docs/operations/guides/) | Local machine, server, private VPS, light External, operator commands, backup and restore, upgrades, troubleshooting. |
 | [docs/operations/](docs/operations/) | Production, key provisioning, release, resource budgets, decision layer, LocalAI supervisor. |
 | [sdk/](sdk/), [pkg/sdk-go/](pkg/sdk-go/), [ui/](ui/) | The TypeScript and Python SDKs and the CopilotKit adapter, the Go SDK, the optional Vue and React kits. Each kit has an offline demo of every panel, chat block, voice and uploads: `pnpm dev` in `ui/vue` ([guide](ui/vue/demo/README.md)) or `ui/react` ([guide](ui/react/demo/README.md)). |
 | [examples/reference-apps/](examples/reference-apps/) | Three runnable reference applications: clinic booking (TypeScript, MCP), facility maintenance (Python, OpenAPI), ledger (Go, native). |
@@ -520,8 +534,21 @@ impact.
 
 ## FAQ
 
-**Is this a chatbot I can drop into a website?** No. It is a headless service. Your application owns the UI and calls AlixAI
-through the SDK or API.
+**Is this a chatbot I can drop into a website?** No. It is a headless service. Free-form chat is not supported: a signed
+application package with at least one endpoint and one capability is required. Your application owns the UI and calls AlixAI
+through the SDK or API. Smallest example: [`examples/packages/valid-help-assistant`](examples/packages/valid-help-assistant)
+and [light integration](docs/integration/guides/light-integration.md).
+
+**Does External mode stream answers?** The turn event stream still works (progress/step events arrive live). Assistant text
+arrives in one piece after verification, not fragment by fragment. Use a JSON turn or the event stream; an async
+accept-then-push pattern is about total latency, not about avoiding the stream ([light integration](docs/integration/guides/light-integration.md)).
+
+**Can the browser call AlixAI directly?** No. AlixAI sends no CORS headers. The browser talks to your backend; your backend
+mints a single-use context token and calls AlixAI on loopback or TLS.
+
+**Why `egress_denied` / permission_denied on the first External turn?** Chat text leaves as category `user_message` at class
+`internal`. Until egress policy allows that at every required level (and mode is External and a budget exists), the first turn
+fails closed. Checklist: [light integration](docs/integration/guides/light-integration.md).
 
 **Does it need a GPU or the internet?** No. The certified path is CPU-capable and works without internet once models and
 dependencies are installed. A GPU is optional and only changes how large a model you may choose.

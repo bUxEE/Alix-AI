@@ -30,7 +30,7 @@ var testT0 = time.Date(2026, 10, 9, 8, 0, 0, 0, time.UTC)
 // loadRef loads one of the repository's two signed reference packages.
 func loadRef(t testing.TB, dir string) *apppkg.Package {
 	t.Helper()
-	res, err := apppkg.Load(context.Background(), apppkg.FromDir(dir), apppkg.Options{CoreVersion: "0.1.0"})
+	res, err := apppkg.Load(context.Background(), apppkg.FromDir(dir), apppkg.Options{CoreVersion: apppkg.DevCoreVersion})
 	if err != nil {
 		t.Fatal(err)
 	}

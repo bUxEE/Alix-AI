@@ -146,6 +146,7 @@ Everything that applies in a full local or External deployment still applies her
 
 ## Related
 
+- [Integrate as a chat assistant with external AI](../../integration/guides/light-integration.md) — package, host architecture, **per-tenant onboarding checklist** (mode External + egress `user_message`/`internal` + budget), whole-text replies on the event stream, STT choices and the error table.
 - [Operating External and Hybrid mode](../external-mode.md)
 - [Readiness](../readiness.md)
 - [Operator commands](operator-commands.md)

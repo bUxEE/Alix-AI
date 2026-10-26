@@ -5,8 +5,8 @@ AlixAI public API (`schemas/api/openapi.yaml`). Documents that have a JSON Schem
 library and one small WebSocket library (`github.com/coder/websocket`). A fake AlixAI server for the tests of a host application is in `pkg/sdk-go/sdktest`, and an
 AG-UI proxy for CopilotKit and AG-UI frontends is in `pkg/sdk-go/agui`.
 
-**Status: 1.0.0.** The contracts this SDK speaks are frozen for v1 (`schemas/_frozen/v1`, checked by `tools/compat`).
-`Version` in this package is `"1.0.0"`. Compatibility and support rules are in
+**Status: 1.1.0.** The contracts this SDK speaks are frozen for v1 (`schemas/_frozen/v1`, checked by `tools/compat`).
+`Version` in this package is `"1.1.0"`. Compatibility and support rules are in
 [compatibility](../../docs/policies/compatibility.md) and [migration and support](../../docs/policies/migration-and-support.md). The version this SDK is tested against
 is the core in the same repository commit. The changelog is the last section of this file.
 
@@ -186,9 +186,9 @@ suite; `contract_test.go` and `spec_test.go` hold it to the OpenAPI document.
 
 ## Changelog
 
-### Unreleased
+### 1.1.0 — 2026-10-26
 
-**Added.** Generated contract types for popup OAuth (`flow_id` polling, `oauth-popup-result` postMessage shape, `oauth_issued_key` credential kind) and for dictation (`TranscriptionCapabilities`, `DictationTranscript`). Core serve wires `TranscriptionService` for `GET /v1/dictations/capabilities` and `POST /v1/sessions/{id}/dictations` (local or external STT; body cap from `max_seconds`). Dictation HTTP client: `Dictations().Capabilities` and `Dictations().Create` (record-to-text; not the voice WebSocket).
+**Added.** Generated contract types for popup OAuth (`flow_id` polling, `oauth-popup-result` postMessage shape, `oauth_issued_key` credential kind) and for dictation (`TranscriptionCapabilities`, `DictationTranscript`). Core serve wires `TranscriptionService` for `GET /v1/dictations/capabilities` and `POST /v1/sessions/{id}/dictations` (local or external STT; body cap from `max_seconds`). Dictation HTTP client: `Dictations().Capabilities` and `Dictations().Create` (record-to-text; not the voice WebSocket). Providers popup OAuth: `GetOAuthFlow` / `CancelOAuthFlow` and optional `StartOAuth` members `presentation`, `callback`, `opener_origin`. Dev cores report `1.1.0-dev` so packages with `alixai_core` `[1.0.0, 2.0.0)` load under source and release builds; light External chat-assistant guide and `examples/packages/valid-help-assistant`.
 
 ### 1.0.0
 

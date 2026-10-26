@@ -158,7 +158,7 @@ func TestPackageValidateBroken(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.dir, func(t *testing.T) {
-			res, out := validate(t, "-core-version", "0.1.0", filepath.Join(fixtures, c.dir))
+			res, out := validate(t, "-core-version", apppkg.DevCoreVersion, filepath.Join(fixtures, c.dir))
 			if res.code != ExitError {
 				t.Fatalf("exit = %d, want 1\nstderr: %s", res.code, res.stderr)
 			}
@@ -183,12 +183,15 @@ func TestPackageValidateBroken(t *testing.T) {
 
 func TestPackageValidateCoreVersionFlag(t *testing.T) {
 	dir := filepath.Join(fixtures, "valid-minimal")
-	res, out := validate(t, "-core-version", "1.0.0", dir)
-	if res.code != ExitError || out.CoreVersion != "1.0.0" || len(out.checks("critical")) != 1 || out.checks("critical")[0] != "compat.core_out_of_range" {
+	res, out := validate(t, "-core-version", "2.0.0", dir)
+	if res.code != ExitError || out.CoreVersion != "2.0.0" || len(out.checks("critical")) != 1 || out.checks("critical")[0] != "compat.core_out_of_range" {
 		t.Fatalf("exit = %d out = %+v", res.code, out)
 	}
-	if res, _ := validate(t, "-core-version", "0.5.0", dir); res.code != ExitOK {
-		t.Fatalf("0.5.0 is inside the range: exit = %d", res.code)
+	if res, _ := validate(t, "-core-version", "1.0.0", dir); res.code != ExitOK {
+		t.Fatalf("1.0.0 is inside the range: exit = %d", res.code)
+	}
+	if res, _ := validate(t, "-core-version", "0.5.0", dir); res.code != ExitError {
+		t.Fatalf("0.5.0 is outside the range: exit = %d", res.code)
 	}
 }
 
