@@ -161,8 +161,9 @@ type node struct {
 
 type tree map[string]node
 
-// walk records every path below root without following links: mode, size and a
-// content digest of each regular file.
+// walk records every path below root without following links: mode for every
+// path; size and a content digest only for regular files. Directory size is not
+// a content signal (on tmpfs/overlayfs/btrfs it changes when entries are added).
 func walk(t testing.TB, root string) tree {
 	t.Helper()
 	out := tree{}
@@ -178,8 +179,9 @@ func walk(t testing.TB, root string) tree {
 		if err != nil {
 			return err
 		}
-		n := node{mode: info.Mode(), size: info.Size()}
+		n := node{mode: info.Mode()}
 		if info.Mode().IsRegular() {
+			n.size = info.Size()
 			b, err := os.ReadFile(p)
 			if err != nil {
 				return err
@@ -199,6 +201,15 @@ func walk(t testing.TB, root string) tree {
 	return out
 }
 
+// same reports whether two nodes are the same content. Directories compare by
+// mode only: a directory replaced by a file or a link still differs.
+func same(a, b node) bool {
+	if a.mode.IsDir() && b.mode.IsDir() {
+		return a.mode == b.mode
+	}
+	return a == b
+}
+
 // diff lists what differs between two walks: paths that appeared, vanished or changed.
 func diff(before, after tree) []string {
 	var out []string
@@ -207,7 +218,7 @@ func diff(before, after tree) []string {
 		switch {
 		case !ok:
 			out = append(out, "added "+p)
-		case b != n:
+		case !same(b, n):
 			out = append(out, "changed "+p)
 		}
 	}

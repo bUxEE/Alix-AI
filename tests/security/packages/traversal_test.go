@@ -344,6 +344,47 @@ func TestSecPackageArchiveTraversal(t *testing.T) {
 	t.Run("limits", func(t *testing.T) { archiveLimits(t, base) })
 }
 
+// TestTreeDiffDirectorySizeIsNotContent proves the tree detector ignores a
+// directory node's size (the flake on tmpfs/overlayfs/btrfs) and still reports a
+// directory replaced by a regular file or a symbolic link.
+func TestTreeDiffDirectorySizeIsNotContent(t *testing.T) {
+	dir := fs.ModeDir | 0o755
+	reg := fs.FileMode(0o644)
+	link := fs.ModeSymlink | 0o777
+
+	before := tree{
+		".":      {mode: dir, size: 4096},
+		"subdir": {mode: dir, size: 4096},
+		"a.txt":  {mode: reg, size: 1, sum: "abc"},
+	}
+	sizeOnly := tree{
+		".":      {mode: dir, size: 80},
+		"subdir": {mode: dir, size: 160},
+		"a.txt":  {mode: reg, size: 1, sum: "abc"},
+	}
+	if d := diff(before, sizeOnly); len(d) != 0 {
+		t.Fatalf("two trees that differ only in directory size must not differ: %v", d)
+	}
+
+	asFile := tree{
+		".":      {mode: dir, size: 4096},
+		"subdir": {mode: reg, size: 3, sum: "def"},
+		"a.txt":  {mode: reg, size: 1, sum: "abc"},
+	}
+	if d := diff(before, asFile); len(d) != 1 || d[0] != "changed subdir" {
+		t.Fatalf("a directory replaced by a file is reported as %v", d)
+	}
+
+	asLink := tree{
+		".":      {mode: dir, size: 4096},
+		"subdir": {mode: link},
+		"a.txt":  {mode: reg, size: 1, sum: "abc"},
+	}
+	if d := diff(before, asLink); len(d) != 1 || d[0] != "changed subdir" {
+		t.Fatalf("a directory replaced by a symlink is reported as %v", d)
+	}
+}
+
 // detectorControls proves the tree walk is able to see each way an install can go
 // wrong, and does not cry wolf.
 func detectorControls(t *testing.T) {

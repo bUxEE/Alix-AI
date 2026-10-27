@@ -20,7 +20,8 @@
 // Every case runs in a temporary tree that holds the data directory the
 // installer writes to and a sentinel directory beside it that a traversal would
 // hit. The whole tree is walked before and after the load, and the two walks
-// must be identical (same paths, modes, sizes and content digests); the walk also
+// must be identical (same paths and modes; sizes and content digests of regular
+// files); the walk also
 // fails on any symbolic link or irregular file anywhere in the tree. Absolute,
 // drive-letter, UNC and \\?\ names are aimed at the real path of the sentinel
 // file, so an extractor that honoured them would overwrite it.
