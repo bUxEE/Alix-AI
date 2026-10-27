@@ -4,14 +4,23 @@ package providers
 
 // PrincipalLlmBindingUpdate mirrors urn:alixai:schema:providers:principal-llm-binding-update:v1.
 //
-// Body of PUT /v1/me/llm/{role}: choose a catalog profile and optional model (ADR 0041). Optional
-// voice and language for speech roles (ADR 0043). The role is the path.
+// Body of PUT /v1/me/llm/{role}: choose a catalog profile (ADR 0041) or a private endpoint (ADR
+// 0045). profile_id is always required. For a private bind, set private_endpoint_id and set
+// profile_id to that endpoint's profile_id (from GET endpoint). For a catalog bind, omit
+// private_endpoint_id. Optional voice and language for speech roles (ADR 0043). The role is the
+// path.
 type PrincipalLlmBindingUpdate struct {
 	// Authority: host.
 	ProfileID ProfileID `json:"profile_id" alixai:"host"`
 
-	// Required when the catalog entry lists several models; otherwise must match the entry's
-	// model_id or be omitted.
+	// When set, binds this role to a private self-hosted endpoint; profile_id must be that
+	// endpoint's profile_id.
+	//
+	// Authority: host.
+	PrivateEndpointID *PrivateEndpointID `json:"private_endpoint_id,omitzero" alixai:"host"`
+
+	// Required when the catalog entry or private endpoint lists several models; otherwise must
+	// match or be omitted.
 	//
 	// Authority: host.
 	ModelID *ModelID `json:"model_id,omitzero" alixai:"host"`

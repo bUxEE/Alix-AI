@@ -3,6 +3,12 @@
 All notable changes to this package. Versions follow semantic versioning with the rules of
 [compatibility.md](../../docs/policies/compatibility.md).
 
+## 1.4.0 — 2026-10-27
+
+### Added
+
+- `useAlixTextReplaced`: handle AG-UI `CUSTOM` `alixai.text_replaced` (ADR 0046) so superseded streamed assistant text is dropped before the template arrives.
+
 ## 1.3.0 — 2026-10-27
 
 ### Added

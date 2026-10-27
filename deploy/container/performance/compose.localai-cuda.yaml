@@ -1,0 +1,63 @@
+# Alternative Performance runtime: LocalAI CUDA instead of vLLM.
+# Use with the same loopback / bearer / bind-mount rules as ../localai.
+#
+#   docker compose --env-file .env -f compose.localai-cuda.yaml config -q
+#   docker compose --env-file .env -f compose.localai-cuda.yaml up -d
+#
+# Image pin resolved 2026-10-27 from Docker Hub tag v4.10.0-gpu-nvidia-cuda-12.
+
+name: alixai-performance-localai
+
+services:
+  localai:
+    image: docker.io/localai/localai:v4.10.0-gpu-nvidia-cuda-12@sha256:9f999a8cdb4d5468a6ed6574cfeab08ab1efe49466f5d88a3cc146b372c48d65
+    container_name: alixai-perf-localai
+    ports:
+      - "127.0.0.1:${LOCALAI_PORT:-8080}:8080"
+    environment:
+      LOCALAI_API_KEY: ${LOCALAI_API_KEY:?set LOCALAI_API_KEY in .env}
+      LOCALAI_SUBTLE_KEY_COMPARISON: "true"
+      LOCALAI_AUTH: "false"
+      LOCALAI_ADDRESS: ":8080"
+      LOCALAI_CORS: "false"
+      LOCALAI_MODELS_PATH: /models
+      LOCALAI_BACKENDS_PATH: /backends
+      LOCALAI_DATA_PATH: /data
+      LOCALAI_CONFIG_DIR: /configuration
+      LOCALAI_DISABLE_WEBUI: "true"
+      LOCALAI_DISABLE_RUNTIME_SETTINGS: "true"
+      LOCALAI_DISABLE_GALLERY_ENDPOINT: "true"
+      LOCALAI_GALLERIES: "[]"
+      LOCALAI_AUTOLOAD_GALLERIES: "false"
+      LOCALAI_AUTOLOAD_BACKEND_GALLERIES: "false"
+      LOCALAI_DISABLE_MCP: "true"
+      LOCALAI_DISABLE_AGENTS: "true"
+      LOCALAI_DISABLE_ASSISTANT: "true"
+      LOCALAI_P2P: "false"
+      LOCALAI_FEDERATED: "false"
+      LOCALAI_DISTRIBUTED: "false"
+      LOCALAI_ENABLE_TRACING: "false"
+      LOCALAI_AUTO_UPGRADE_BACKENDS: "false"
+      LOCALAI_LOG_LEVEL: info
+      LOCALAI_MAX_ACTIVE_BACKENDS: ${LOCALAI_MAX_ACTIVE_BACKENDS:-1}
+    volumes:
+      - ./data/models:/models
+      - ./data/backends:/backends
+      - ./data/state:/data
+      - ./config:/configuration:ro
+    gpus: all
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-m", "5", "http://127.0.0.1:8080/readyz"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60m
+    restart: unless-stopped
+    stop_grace_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    labels:
+      ai.alixai.component: performance-localai
+      ai.alixai.profile: performance

@@ -45,6 +45,11 @@ type Outcome struct {
 	// Blocks are verified rich blocks of the reply (tables and charts from a model or from the
 	// deterministic template). Empty when the reply is text only.
 	Blocks []conversation.RichBlock
+	// Streamed is true when verified segments were already handed to the turn's segment hook
+	// (ADR 0046). The composition root that publishes TurnEvents should not PublishResponse again
+	// for the same text; when Reason is ReasonVerificationFailed and Streamed is true, a
+	// text_replaced event plus the template tokens were already (or must be) published.
+	Streamed bool
 }
 
 // Realise is the last step of a turn (master plan 11.1, "verified natural response"). It verifies

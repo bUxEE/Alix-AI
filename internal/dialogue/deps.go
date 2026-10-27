@@ -70,3 +70,36 @@ func (t *turn) announceReply(ctx context.Context, out verify.Outcome) {
 	}()
 	h(ctx, t.scope.Clone(), out)
 }
+
+// VerifiedSegmentHook sees one verified incremental step of a streamed reply (ADR 0046).
+// Replace=true means discard every segment already delivered for this turn and show Text
+// (the deterministic template) instead. The hook must not fail the turn or emit unverified text.
+type VerifiedSegmentHook func(ctx context.Context, scope contracts.Scope, step VerifiedSegment)
+
+// VerifiedSegment is one mid-turn emission while StreamVerified is on.
+type VerifiedSegment struct {
+	// TurnID is the turn that produced the segment (trn_…); composition roots use it to publish into the stream hub.
+	TurnID string
+	// Text is a verified sentence to append, or the full template when Replace is true.
+	Text string
+	// Replace supersedes every previously emitted segment of this turn.
+	Replace bool
+	Reason  verify.Reason
+}
+
+// emitSegment calls OnVerifiedSegment; panics are recovered and logged.
+func (t *turn) emitSegment(ctx context.Context, step VerifiedSegment) {
+	h := t.e.onSegment
+	if h == nil || (step.Text == "" && !step.Replace) {
+		return
+	}
+	if step.TurnID == "" {
+		step.TurnID = t.id
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			t.e.log.Error("verified segment hook panicked", "turn_id", t.id)
+		}
+	}()
+	h(ctx, t.scope.Clone(), step)
+}

@@ -3,6 +3,18 @@
 All notable changes to this package. The format follows [Keep a Changelog](https://keepachangelog.com/); versions follow semantic versioning once 1.0.0
 ships, with the rules of [compatibility.md](../../docs/policies/compatibility.md).
 
+## 1.4.0 — 2026-10-27
+
+### Added
+
+- Ops private LLM routes (ADR 0045): `putPrivateLlmEndpoint` / `getPrivateLlmEndpoint` / `deletePrivateLlmEndpoint`, tenant pin and principal private binding operations under `/v1/ops/…`.
+- `me.llm.putRole` accepts optional `private_endpoint_id` (mutually exclusive with `profile_id`); binding types carry optional `source` / `lifecycle`.
+- TurnEvent type `text_replaced` / `TextReplacedEvent` (ADR 0046 verified incremental streaming). Fail-closed decode: upgrade the SDK before a core that emits it when `dialogue.stream_verified` is on.
+
+### Notes (core)
+
+- Private self-hosted OpenAI-compatible endpoints (`self_hosted`); tenant pin overrides personal external bindings inside that tenant; no silent fallback when warming/failed (`private_llm_starting` / `private_llm_unavailable`).
+
 ## 1.3.0 — 2026-10-27
 
 ### Added

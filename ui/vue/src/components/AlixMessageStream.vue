@@ -289,11 +289,16 @@ defineExpose({ toBottom: (): void => toBottom(true) });
             >
               {{ item.text }}
             </p>
-            <AlixMarkdown
+            <div
               v-else
-              :source="item.text"
-              :links="links"
-            />
+              :class="{ 'alix-msg-streaming': item.streaming && !reduced }"
+              class="alix-msg-body"
+            >
+              <AlixMarkdown
+                :source="item.text"
+                :links="links"
+              />
+            </div>
           </slot>
         </div>
         <div
@@ -588,6 +593,26 @@ defineExpose({ toBottom: (): void => toBottom(true) });
 
 .alix-pre-wrap {
   white-space: pre-wrap;
+}
+
+// Verified streaming (ADR 0046): a quiet caret after the live text, no layout jump.
+// Suppressed when prefers-reduced-motion (class omitted via `reduced`).
+.alix-msg-streaming::after {
+  content: "";
+  display: inline-block;
+  width: 0.55ch;
+  height: 1em;
+  margin-left: 0.15ch;
+  vertical-align: -0.1em;
+  background: currentColor;
+  opacity: 0.45;
+  animation: alix-caret 1.1s steps(1, end) infinite;
+}
+
+@keyframes alix-caret {
+  50% {
+    opacity: 0;
+  }
 }
 
 // "Jump to latest" floats above the log and rises in; the exit is faster than the enter.

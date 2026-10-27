@@ -1,0 +1,5 @@
+{
+  "endpoint_id": "ple_01J0000000000000000000000A",
+  "roles": ["conversational_controller"],
+  "extra": true
+}

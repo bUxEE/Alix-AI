@@ -149,6 +149,13 @@ func (s *recordingSender) Send(ctx context.Context, scope contracts.Scope, req S
 	return s.gen.Generate(ctx, scope, req.Rich)
 }
 
+func (s *recordingSender) SendStream(ctx context.Context, scope contracts.Scope, req SendRequest) (providers.RichStream, error) {
+	s.mu.Lock()
+	s.reqs = append(s.reqs, req)
+	s.mu.Unlock()
+	return s.gen.GenerateStream(ctx, scope, req.Rich)
+}
+
 func (s *recordingSender) sent() []SendRequest {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -194,6 +201,9 @@ type worldOpts struct {
 	noEgressPolicy  bool
 	withKnowledge   bool
 	externalProfile func(*pv.ProviderProfile)
+	streamVerified  bool
+	onSegment       dialogue.VerifiedSegmentHook
+	streamDelay     time.Duration
 }
 
 type worldOpt func(*worldOpts)
@@ -205,6 +215,12 @@ func withoutEgressPolicy() worldOpt        { return func(o *worldOpts) { o.noEgr
 func withKnowledge() worldOpt              { return func(o *worldOpts) { o.withKnowledge = true } }
 func withFeatures(f Features, c ...Feature) worldOpt {
 	return func(o *worldOpts) { o.features, o.convenience = f, c }
+}
+func withStreamVerified(h dialogue.VerifiedSegmentHook) worldOpt {
+	return func(o *worldOpts) { o.streamVerified, o.onSegment = true, h }
+}
+func withStreamDelay(d time.Duration) worldOpt {
+	return func(o *worldOpts) { o.streamDelay = d }
 }
 
 func allActs() []conversation.DialogueDirectiveAct { return []conversation.DialogueDirectiveAct{} }
@@ -297,11 +313,15 @@ func newWorld(t testing.TB, opts ...worldOpt) *world {
 		t.Fatal(err)
 	}
 	pkgSource := dialogue.PackageSourceFunc(func(context.Context, string) (capabilities.Package, error) { return w.pkg, nil })
+	var sender Sender = w.sender
+	if o.streamDelay > 0 {
+		sender = delaySender{inner: w.sender, delay: o.streamDelay}
+	}
 	w.rt, err = New(Config{
 		Local: localSel, Modes: w.modes, KillSwitch: w.eg,
 		Policy:         modes.StaticPolicy{modes.RoleController: {Profiles: []pv.ProfileID{testProfile}}},
 		LocalProviders: fakeLocal{}, Profiles: fakeProfiles{prof: w.prof}, Egress: w.eg, Budgets: w.budgets,
-		Packages: pkgSource, Sender: w.sender, Budget: budget, Clock: w.clk,
+		Packages: pkgSource, Sender: sender, Budget: budget, Clock: w.clk,
 		Features: o.features, Convenience: o.convenience, DirectiveClass: o.directiveClass,
 		OnOutcome: func(_ contracts.Scope, out modes.Outcome) {
 			w.outcomeMu.Lock()
@@ -315,6 +335,10 @@ func newWorld(t testing.TB, opts ...worldOpt) *world {
 	deps := dialogue.Deps{
 		Sessions: w.store, Registry: reg, Packages: pkgSource, Policy: w.gw, Actions: co,
 		Adapters: adapterSrc, Providers: w.rt, Guard: w.rt, Audit: w.alog, Clock: w.clk,
+		OnVerifiedSegment: o.onSegment,
+	}
+	if o.streamVerified {
+		deps.Config.StreamVerified = true
 	}
 	if !o.modelResponses {
 		deps.Config.TemplateOnly = []conversation.DialogueDirectiveAct{

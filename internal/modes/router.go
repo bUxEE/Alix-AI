@@ -221,8 +221,9 @@ func (x *run) route(ctx context.Context, res Resolved) Outcome {
 	}
 	rp, err := x.r.policy.RolePolicy(ctx, x.req.Scope, x.req.Role)
 	if err != nil {
-		if detailReason(err, "") == "llm_not_configured" {
-			return x.failed(&failure{kind: KindUnavailable, reason: "llm_not_configured"})
+		switch detailReason(err, "") {
+		case "llm_not_configured", "private_llm_starting", "private_llm_unavailable":
+			return x.failed(&failure{kind: KindUnavailable, reason: detailReason(err, "llm_not_configured")})
 		}
 		return x.local(ctx, "policy_unreadable", false)
 	}

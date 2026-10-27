@@ -107,6 +107,22 @@ describe("the reducer", () => {
     expect(state.running).toBe(false);
   });
 
+  it("discards superseded streamed text on alixai.text_replaced then accepts the template", () => {
+    const state = fold([
+      runStarted(),
+      ev("TEXT_MESSAGE_START", { messageId: "msg_1", role: "assistant" }),
+      ev("TEXT_MESSAGE_CONTENT", { messageId: "msg_1", delta: "Hello. " }),
+      ev("TEXT_MESSAGE_END", { messageId: "msg_1" }),
+      ev("CUSTOM", { name: "alixai.text_replaced", value: { reason: "verification_failed", messageId: "msg_1" } }),
+      ev("TEXT_MESSAGE_START", { messageId: "msg_2", role: "assistant" }),
+      ev("TEXT_MESSAGE_CONTENT", { messageId: "msg_2", delta: "Template reply." }),
+      ev("TEXT_MESSAGE_END", { messageId: "msg_2" }),
+      runFinished(),
+    ]);
+    expect(state.items).toHaveLength(1);
+    expect(state.items[0]).toMatchObject({ id: "msg_2", text: "Template reply.", streaming: false });
+  });
+
   it("never turns a malformed or unknown activity into content, and ignores unknown event types", () => {
     const state = fold([
       runStarted(),

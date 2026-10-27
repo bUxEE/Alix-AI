@@ -10,6 +10,7 @@ import { AlixDictationButton, insertIntoCopilotTextarea, type VoiceModeOption } 
 import type { AlixDownload, AlixExporter } from "./export.js";
 import { AlixExportsProvider } from "./exports-context.js";
 import { useAlixMemoryProposal } from "./hooks/useAlixMemoryProposal.js";
+import { useAlixTextReplaced } from "./hooks/useAlixTextReplaced.js";
 import { useFullscreen } from "./hooks/useFullscreen.js";
 import { AlixProvider, useAlixText } from "./i18n/context.js";
 import type { AlixProviderProps } from "./i18n/context.js";
@@ -268,6 +269,7 @@ const Chat = ({
   const text = useAlixText().chat;
   useAlixConfirmation(onContinueInApp === undefined ? {} : { onContinueInApp });
   useAlixAISuggestions();
+  useAlixTextReplaced(true);
   const memoryState = useAlixMemoryProposal(memory);
   const labels = {
     chatInputPlaceholder: text.placeholder,

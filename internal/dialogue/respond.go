@@ -148,6 +148,11 @@ func (t *turn) respond(ctx context.Context, out outcome, opts verify.Options) (v
 		t.recordCall(ModelCall{Purpose: "response", Err: failureCode(err, contracts.ErrValidationFailed)})
 		return verify.Degraded(d, out.receipt, opts)
 	}
+	if t.e.cfg.StreamVerified {
+		if o, ok, err := t.respondStream(ctx, built, out, opts); ok {
+			return o, err
+		}
+	}
 	res, call, err := t.callModel(ctx, built)
 	t.recordCall(call)
 	if err != nil {

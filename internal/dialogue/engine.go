@@ -69,6 +69,11 @@ type Config struct {
 	// RouterOptions are passed to capabilities.NewRouter when Deps.Router is nil:
 	// the composition root passes WithEmbedder / WithProviders / WithConfig here.
 	RouterOptions []capabilities.RouterOption
+	// StreamVerified, when true, realises replies through ChatStream where the provider
+	// supports it and emits each verified sentence as soon as it passes the incremental
+	// verifier (ADR 0046). Default false: keeps 1.3 whole-reply behaviour. Nothing
+	// unverified is ever emitted; a failing segment replaces shown text with the template.
+	StreamVerified bool
 }
 
 func defaultTemplateOnly() []conversation.DialogueDirectiveAct {
@@ -163,6 +168,10 @@ type Deps struct {
 	// OnReply, when set, sees the verified reply of every acknowledged turn (see ReplyHook). Nil: no hook, and the
 	// engine behaves exactly as before.
 	OnReply ReplyHook
+	// OnVerifiedSegment, when set with Config.StreamVerified, receives each verified sentence (or a
+	// replace+template step) during realisation (ADR 0046). Nil: segments are still verified but not
+	// pushed mid-turn; Outcome.Streamed is still set when streaming ran.
+	OnVerifiedSegment VerifiedSegmentHook
 }
 
 // Engine is the dialogue engine: the turn pipeline of master plan 11.1. It is safe
@@ -187,13 +196,14 @@ type Engine struct {
 	budget     providers.Budget
 	respBudget providers.Budget
 
-	decision DecisionStage
-	guard    PromptGuard
-	limiter  RateLimiter
-	resolver EntityResolver
-	detect   Detectors
-	uiTools  UIToolRegistry
-	onReply  ReplyHook
+	decision  DecisionStage
+	guard     PromptGuard
+	limiter   RateLimiter
+	resolver  EntityResolver
+	detect    Detectors
+	uiTools   UIToolRegistry
+	onReply   ReplyHook
+	onSegment VerifiedSegmentHook
 	// knowledge is the Knowledge of the engine (Deps.Knowledge, Engine.SetKnowledge): read by
 	// every turn and set at composition time, so it is an atomic value and a turn takes no
 	// lock to read it.
@@ -259,7 +269,7 @@ func New(d Deps) (*Engine, error) {
 		actions: d.Actions, providers: d.Providers, audit: d.Audit, clk: clk, ids: ids.NewGenerator(clk),
 		cfg: cfg, log: lg,
 		builder: builder, budget: builder.Budget(), respBudget: cfg.Profile.ResponseBudget(),
-		decision: d.Decision, guard: d.Guard, limiter: d.Limiter, resolver: d.Resolver, detect: d.Detectors.withDefaults(), uiTools: d.UITools, onReply: d.OnReply,
+		decision: d.Decision, guard: d.Guard, limiter: d.Limiter, resolver: d.Resolver, detect: d.Detectors.withDefaults(), uiTools: d.UITools, onReply: d.OnReply, onSegment: d.OnVerifiedSegment,
 		locks: keyedLocks{m: map[string]*lockEntry{}},
 	}
 	e.SetKnowledge(d.Knowledge)

@@ -488,12 +488,24 @@ docs/                  architecture, ADRs, integration guides, operations, secur
 
 ### Unreleased
 
+#### 1.4.0 (additive)
+
+- Private self-hosted LLM endpoints (ADR 0045): per-principal private bindings and per-tenant pins; `self_hosted` OpenAI-compatible adapter; ops routes; no silent fallback when warming/failed.
+- Verified incremental streaming (ADR 0046): opt-in `dialogue.stream_verified` (default off for 1.3 compatibility); sentence segments verified before emit; TurnEvent `text_replaced` → AG-UI `alixai.text_replaced`; Vue/React kits handle replace.
+- GPU **Performance** profile (`deploy/container/performance`): pinned vLLM OpenAI-compatible server (bearer auth, health, prefix caching / `cache_salt` isolation notes, max-num-seqs / GPU util / per-model max context) plus LocalAI CUDA alternative; loopback publish.
+- **Private-LLM deployment kit** (`deploy/private-llm`): provider-neutral cloud-init, Scaleway Terraform (L4 / L40S / H100), Hetzner Robot install script + firewall module; host activate/deactivate sequence.
+- Registry candidates `gpt-oss-20b`, `qwen3-30b-a3b`, `gpt-oss-120b` (pinned revisions/sha256; licences in `docs/verification/model-licences.md`).
+- **`tools/llmbench`**: AlixAI-shaped corpus (EN+IT), concurrency 1/4/16/64, TTFT / full-answer / tokens/s report; fake-endpoint tests.
+- [Hardware and pricing](docs/operations/hardware-and-pricing.md) for dedicated and shared segments (sourced rents; answer times and capacity are estimates until llmbench runs on real GPUs).
+
+#### Other unreleased
+
 - Document minimum recommended hardware for light External mode (all models external; 4 vCPU / 8 GB ceiling).
 - Harden the CLI OAuth system-browser opener: only validated `https` or loopback `http` URLs; fixed OS program names, no shell.
 - Per-user usage (`GET /v1/me/usage`) and application-wide principal budgets (`GET /v1/me/budget`, subject kind `principal_application`); operator usage export `principal_id` filter.
 - Mistral chat + Voxtral STT/TTS adapters; kit fullscreen z-index default 2400; npm publish readiness for `@alixai/*` (workflow skips without `NPM_TOKEN`).
 
-**1.3.0 is in tree** (minor, additive on 1.2.0). What 1.3.0 adds: external TTS and per-role provider choice ([ADR 0043](docs/decisions/0043-external-tts-and-per-role-provider-choice.md)) — OpenAI / ElevenLabs / Google Cloud TTS / Polly / **Mistral** behind `routing.tts` and principal `tts` bindings (optional `voice` / `language`); attested verified text only; additive meter unit `characters_in`; each of controller, realisation, STT and TTS may use the same provider or different ones; Mistral chat + Voxtral STT + TTS (EU-default residency; `-template mistral`); per-user usage view and application-wide principal budgets across tenants; UI kit fullscreen z-index default 2400 (`fullscreenZIndex` / `--alix-fullscreen-z` / `--alixai-z-fullscreen`). **1.2.0** remains: per-principal LLM accounts ([ADR 0041](docs/decisions/0041-per-principal-llm-accounts.md)), long-term memory ([ADR 0042](docs/decisions/0042-long-term-memory.md)), downloadable exports, UI kit fullscreen and opt-in downloads. Source builds report `1.3.0-dev`; packages declaring `[1.0.0, 2.0.0)` still validate. Contract changes are additive and frozen into `schemas/_frozen/v1`. Not verified in 1.3: live provider runs, voicebench on real hardware, real 8 GB certification, independent security review. Summary:
+**1.4.0 is in tree** (minor, additive on 1.3.0). Private LLM (ADR 0045), verified streaming (ADR 0046), Performance/private-LLM kit and llmbench are in this release; answer times and capacity in hardware-and-pricing remain **estimates until llmbench runs on real GPUs**. What 1.3.0 added: external TTS and per-role provider choice ([ADR 0043](docs/decisions/0043-external-tts-and-per-role-provider-choice.md)) — OpenAI / ElevenLabs / Google Cloud TTS / Polly / **Mistral** behind `routing.tts` and principal `tts` bindings (optional `voice` / `language`); attested verified text only; additive meter unit `characters_in`; each of controller, realisation, STT and TTS may use the same provider or different ones; Mistral chat + Voxtral STT + TTS (EU-default residency; `-template mistral`); per-user usage view and application-wide principal budgets across tenants; UI kit fullscreen z-index default 2400 (`fullscreenZIndex` / `--alix-fullscreen-z` / `--alixai-z-fullscreen`). **1.2.0** remains: per-principal LLM accounts ([ADR 0041](docs/decisions/0041-per-principal-llm-accounts.md)), long-term memory ([ADR 0042](docs/decisions/0042-long-term-memory.md)), downloadable exports, UI kit fullscreen and opt-in downloads. Source builds report `1.4.0-dev`; packages declaring `[1.0.0, 2.0.0)` still validate. Contract changes are additive and frozen into `schemas/_frozen/v1`. Not verified in 1.3: live provider runs, voicebench on real hardware, real 8 GB certification, independent security review. Summary:
 
 | Status | Areas |
 | --- | --- |
@@ -537,12 +549,15 @@ impact.
 | [docs/integration/guides/](docs/integration/guides/) | Getting started, readiness discovery, light External chat-assistant integration, CopilotKit. |
 | [docs/integration/](docs/integration/) | The application package format, conversation and action objects, AG-UI, External mode. |
 | [docs/operations/guides/](docs/operations/guides/) | Local machine, server, private VPS, light External, operator commands, backup and restore, upgrades, troubleshooting. |
-| [docs/operations/](docs/operations/) | Production, key provisioning, release, resource budgets, decision layer, LocalAI supervisor. |
+| [docs/operations/](docs/operations/) | Production, key provisioning, release, resource budgets, decision layer, LocalAI supervisor, [hardware and pricing](docs/operations/hardware-and-pricing.md). |
 | [sdk/](sdk/), [pkg/sdk-go/](pkg/sdk-go/), [ui/](ui/) | The TypeScript and Python SDKs and the CopilotKit adapter, the Go SDK, the optional Vue and React kits. Each kit has an offline demo of every panel, chat block, voice and uploads: `pnpm dev` in `ui/vue` ([guide](ui/vue/demo/README.md)) or `ui/react` ([guide](ui/react/demo/README.md)). |
 | [examples/reference-apps/](examples/reference-apps/) | Three runnable reference applications: clinic booking (TypeScript, MCP), facility maintenance (Python, OpenAPI), ledger (Go, native). |
 | [docs/security/](docs/security/) | Threat model, test backlog, LocalAI hardening checklist. |
 | [docs/efficiency/](docs/efficiency/) | Per-feature smallest-model / no-model reviews and resource measurements. |
 | [deploy/container/localai/](deploy/container/localai/) | The pinned, loopback-only LocalAI runtime stack. |
+| [deploy/container/performance/](deploy/container/performance/) | GPU Performance profile (vLLM + LocalAI CUDA). |
+| [deploy/private-llm/](deploy/private-llm/) | Private-LLM cloud-init / Terraform / Hetzner install kit. |
+| [tools/llmbench/](tools/llmbench/) | OpenAI-compatible latency / concurrency harness. |
 
 ## FAQ
 

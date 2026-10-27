@@ -1022,6 +1022,15 @@ export const createFakeServer = (options: FakeServerOptions = {}): FakeAlixAISer
       case "cancelPrincipalOAuthFlow":
       case "startErasure":
       case "getErasureJob":
+      case "putPrivateLlmEndpoint":
+      case "getPrivateLlmEndpoint":
+      case "deletePrivateLlmEndpoint":
+      case "putTenantPrivateLlm":
+      case "getTenantPrivateLlm":
+      case "deleteTenantPrivateLlm":
+      case "putPrincipalPrivateLlm":
+      case "getPrincipalPrivateLlm":
+      case "deletePrincipalPrivateLlm":
       case "getMeUsage":
       case "getMeBudget":
       case "listMemory":

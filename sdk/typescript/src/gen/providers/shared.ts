@@ -423,6 +423,49 @@ export type PrincipalLlmRole =
   | "tts";
 
 /**
+ * PrivateEndpointID mirrors urn:alixai:schema:providers:shared:v1#/$defs/privateEndpointId.
+ *
+ * ID of one private self-hosted LLM endpoint (ADR 0045). Minted by the AlixAI core or supplied by
+ * the operator on PUT: prefix ple, an underscore and a 26-character ULID (Crockford base32, upper
+ * case). The prefix is inside the 2 to 8 letter range of common ids typedId.
+ *
+ * JSON Schema constraints (enforced by schema validation, not by this type): pattern
+ * `^ple_[0-9A-HJKMNP-TV-Z]{26}$`.
+ */
+export type PrivateEndpointID = string;
+
+/**
+ * PrivateEndpointOwnerKind mirrors
+ * urn:alixai:schema:providers:shared:v1#/$defs/privateEndpointOwnerKind.
+ *
+ * Who may use a private endpoint: principal (one account), tenant (pin or principals of that
+ * tenant), or shared (many principals; context stays per tenant).
+ *
+ * Only the values listed in the schema are valid.
+ */
+export type PrivateEndpointOwnerKind =
+  | "principal"
+  | "tenant"
+  | "shared";
+
+/**
+ * PrivateLlmLifecycle mirrors urn:alixai:schema:providers:shared:v1#/$defs/privateLlmLifecycle.
+ *
+ * Lifecycle of a private self-hosted endpoint (ADR 0045). The host provisioner and AlixAI health
+ * checks set it. warming/provisioning refuse turns with private_llm_starting;
+ * failed/stopped/draining with private_llm_unavailable; ready serves.
+ *
+ * Only the values listed in the schema are valid.
+ */
+export type PrivateLlmLifecycle =
+  | "provisioning"
+  | "warming"
+  | "ready"
+  | "draining"
+  | "stopped"
+  | "failed";
+
+/**
  * ProfileID mirrors urn:alixai:schema:providers:shared:v1#/$defs/profileId.
  *
  * ID of one provider and model profile in the registry. Minted by the AlixAI core: prefix pprf, an

@@ -197,7 +197,10 @@ func (v voiceTurns) RunTextTurn(ctx context.Context, scope contracts.Scope, text
 	if v.hub == nil {
 		return res, terr
 	}
-	turn, err := v.hub.Begin(scope, res.TurnID)
+	turn, err := v.hub.Lookup(scope, res.TurnID)
+	if err != nil {
+		turn, err = v.hub.Begin(scope, res.TurnID)
+	}
 	if err != nil {
 		v.log.Error("the voice turn ran and its event stream could not be opened", "turn_id", res.TurnID,
 			"reason", string(stream.ReasonOf(err)), "code", string(contracts.CodeOf(err)))
@@ -205,7 +208,7 @@ func (v voiceTurns) RunTextTurn(ctx context.Context, scope contracts.Scope, text
 		return res, err
 	}
 	plan := buildTurnEvents(res, terr)
-	if perr := plan.publish(turn); perr != nil {
+	if perr := plan.publish(turn, res.Response.Streamed); perr != nil {
 		// An event the hub refused is not skipped over: the turn is failed, the
 		// secret is withheld (the user would confirm what the stream did not
 		// show) and nothing of the response is spoken.

@@ -86,6 +86,12 @@ func (s *principalLLM) PutRole(ctx context.Context, scope contracts.Scope, role 
 	if role == "" || !role.Valid() {
 		return pv.PrincipalLlm{}, contracts.New(contracts.ErrValidationFailed, "role must be conversational_controller, language_realization, stt or tts")
 	}
+	if in.ProfileID == "" {
+		return pv.PrincipalLlm{}, contracts.New(contracts.ErrValidationFailed, "profile_id is required")
+	}
+	if in.PrivateEndpointID != "" {
+		return s.putPrivateRole(ctx, scope, role, in)
+	}
 	entry, found, err := s.reg.CatalogEntry(ctx, scope, in.ProfileID)
 	if err != nil {
 		return pv.PrincipalLlm{}, err
@@ -140,6 +146,42 @@ func (s *principalLLM) PutRole(ctx context.Context, scope contracts.Scope, role 
 	return s.account(ctx, scope)
 }
 
+func (s *principalLLM) putPrivateRole(ctx context.Context, scope contracts.Scope, role pv.PrincipalLlmRole, in gateway.PrincipalLLMBindingInput) (pv.PrincipalLlm, error) {
+	ep, ok, err := s.reg.GetPrivateEndpoint(ctx, scope, in.PrivateEndpointID)
+	if err != nil {
+		return pv.PrincipalLlm{}, err
+	}
+	if !ok {
+		return pv.PrincipalLlm{}, contracts.New(contracts.ErrValidationFailed, "the private endpoint does not exist")
+	}
+	if in.ProfileID != ep.ProfileID {
+		return pv.PrincipalLlm{}, contracts.New(contracts.ErrValidationFailed, "profile_id must match the private endpoint's profile_id")
+	}
+	if err := providerreg.EndpointOwnerPermitsUse(scope, ep); err != nil {
+		return pv.PrincipalLlm{}, err
+	}
+	if !slices.Contains(ep.Roles, role) {
+		return pv.PrincipalLlm{}, contracts.New(contracts.ErrValidationFailed, "the endpoint does not offer this role")
+	}
+	model := ep.ModelIDs[0]
+	if in.ModelID != "" {
+		if !slices.Contains(ep.ModelIDs, in.ModelID) {
+			return pv.PrincipalLlm{}, contracts.New(contracts.ErrValidationFailed, "model_id is not offered by the endpoint")
+		}
+		model = in.ModelID
+	}
+	if err := s.reg.PutPrincipalPrivateBinding(ctx, scope, scope.PrincipalID, providerreg.PrincipalPrivateBinding{
+		Role: role, EndpointID: in.PrivateEndpointID, ModelID: model,
+	}); err != nil {
+		return pv.PrincipalLlm{}, err
+	}
+	if err := s.reg.DeletePrincipalBinding(ctx, scope, role); err != nil {
+		return pv.PrincipalLlm{}, err
+	}
+	s.auditBinding(ctx, scope, "bound_private", role, ep.ProfileID, providerreg.ProviderIDSelfHosted)
+	return s.account(ctx, scope)
+}
+
 func (s *principalLLM) DeleteRole(ctx context.Context, scope contracts.Scope, role pv.PrincipalLlmRole) (pv.PrincipalLlm, error) {
 	if role == "" || !role.Valid() {
 		return pv.PrincipalLlm{}, contracts.New(contracts.ErrValidationFailed, "role must be conversational_controller, language_realization, stt or tts")
@@ -147,6 +189,7 @@ func (s *principalLLM) DeleteRole(ctx context.Context, scope contracts.Scope, ro
 	if err := s.reg.DeletePrincipalBinding(ctx, scope, role); err != nil {
 		return pv.PrincipalLlm{}, err
 	}
+	_ = s.reg.DeletePrincipalPrivateBinding(ctx, scope, scope.PrincipalID, role)
 	s.auditBinding(ctx, scope, "cleared", role, "", "")
 	return s.account(ctx, scope)
 }
@@ -296,6 +339,14 @@ func (s *principalLLM) account(ctx context.Context, scope contracts.Scope) (pv.P
 	if err != nil {
 		return pv.PrincipalLlm{}, err
 	}
+	private, err := s.reg.ListPrincipalPrivateBindings(ctx, scope, scope.PrincipalID)
+	if err != nil {
+		return pv.PrincipalLlm{}, err
+	}
+	privByRole := map[pv.PrincipalLlmRole]providerreg.PrincipalPrivateBinding{}
+	for _, b := range private {
+		privByRole[b.Role] = b
+	}
 	cat, err := s.reg.Catalog(ctx, scope)
 	if err != nil {
 		return pv.PrincipalLlm{}, err
@@ -311,17 +362,38 @@ func (s *principalLLM) account(ctx context.Context, scope contracts.Scope) (pv.P
 		UpdatedAt:     common.Timestamp(s.clk.Now().UTC().Format("2006-01-02T15:04:05.000Z")),
 	}
 	var latest time.Time
+	seenRole := map[pv.PrincipalLlmRole]bool{}
 	for _, b := range bindings {
-		st := s.credStatus(ctx, scope, b.ProviderID)
-		acked := false
-		if notice, ok := noticeByProvider[b.ProviderID]; ok {
-			acked, _, _ = s.reg.PrincipalBillingAcked(ctx, scope, b.ProviderID, notice)
+		seenRole[b.Role] = true
+		bind := s.bindingView(ctx, scope, b, noticeByProvider)
+		bind.Source = ptrSource(pv.PrincipalLlmBindingSourcePrincipalExternal)
+		out.Bindings = append(out.Bindings, bind)
+		if b.UpdatedAt.After(latest) {
+			latest = b.UpdatedAt
 		}
+	}
+	for _, b := range private {
+		if seenRole[b.Role] {
+			continue
+		}
+		ep, ok, err := s.reg.GetPrivateEndpoint(ctx, scope, b.EndpointID)
+		if err != nil || !ok {
+			continue
+		}
+		st := pv.PrincipalLlmBindingAccountStatusActive
+		if ep.CredentialRef != nil {
+			st = pv.PrincipalLlmBindingAccountStatus(s.credStatus(ctx, scope, providerreg.ProviderIDSelfHosted).Status)
+		}
+		src := pv.PrincipalLlmBindingSourcePrincipalPrivate
+		if pin, ok, _ := s.reg.GetTenantPrivateLLMPin(ctx, scope, scope.TenantID); ok && pin.EndpointID == b.EndpointID {
+			src = pv.PrincipalLlmBindingSourceTenantPin
+		}
+		lc := ep.Lifecycle
+		eid := b.EndpointID
 		bind := pv.PrincipalLlmBinding{
-			Role: b.Role, ProfileID: b.ProfileID, ProviderID: b.ProviderID, ModelID: b.ModelID,
-			Voice: b.Voice, Language: b.Language,
-			AccountStatus:      pv.PrincipalLlmBindingAccountStatus(st.Status),
-			BillingNoticeAcked: acked, UpdatedAt: common.Timestamp(b.UpdatedAt.Format("2006-01-02T15:04:05.000Z")),
+			Role: b.Role, ProfileID: ep.ProfileID, PrivateEndpointID: &eid, ProviderID: providerreg.ProviderIDSelfHosted, ModelID: b.ModelID,
+			AccountStatus: st, BillingNoticeAcked: true, Source: ptrSource(src), Lifecycle: &lc,
+			UpdatedAt: common.Timestamp(b.UpdatedAt.Format("2006-01-02T15:04:05.000Z")),
 		}
 		out.Bindings = append(out.Bindings, bind)
 		if b.UpdatedAt.After(latest) {
@@ -333,6 +405,22 @@ func (s *principalLLM) account(ctx context.Context, scope contracts.Scope) (pv.P
 	}
 	return out, nil
 }
+
+func (s *principalLLM) bindingView(ctx context.Context, scope contracts.Scope, b providerreg.PrincipalBinding, noticeByProvider map[pv.ProviderID]string) pv.PrincipalLlmBinding {
+	st := s.credStatus(ctx, scope, b.ProviderID)
+	acked := false
+	if notice, ok := noticeByProvider[b.ProviderID]; ok {
+		acked, _, _ = s.reg.PrincipalBillingAcked(ctx, scope, b.ProviderID, notice)
+	}
+	return pv.PrincipalLlmBinding{
+		Role: b.Role, ProfileID: b.ProfileID, ProviderID: b.ProviderID, ModelID: b.ModelID,
+		Voice: b.Voice, Language: b.Language,
+		AccountStatus: pv.PrincipalLlmBindingAccountStatus(st.Status), BillingNoticeAcked: acked,
+		UpdatedAt: common.Timestamp(b.UpdatedAt.Format("2006-01-02T15:04:05.000Z")),
+	}
+}
+
+func ptrSource(s pv.PrincipalLlmBindingSource) *pv.PrincipalLlmBindingSource { return &s }
 
 func (s *principalLLM) credStatus(ctx context.Context, scope contracts.Scope, provider pv.ProviderID) gateway.PrincipalCredentialStatus {
 	refs, err := s.creds.ListPrincipal(ctx, scope, provider)
@@ -433,7 +521,11 @@ func ErasePrincipalLLM(ctx context.Context, s *principalLLM, scope contracts.Sco
 		return n, 0, err
 	}
 	b, err := s.reg.ErasePrincipalBindings(ctx, scope, principal)
-	return n, b, err
+	if err != nil {
+		return n, b, err
+	}
+	pb, err := s.reg.ErasePrincipalPrivateBindings(ctx, scope, principal)
+	return n, b + pb, err
 }
 
 // Ensure *principalLLM implements the gateway interface.

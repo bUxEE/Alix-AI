@@ -27,6 +27,7 @@ export const ALIXAI_CUSTOM_EVENT = Object.freeze({
   directive: "alixai.directive",
   suggestions: "alixai.suggestions",
   memoryProposal: "alixai.memory_proposal",
+  textReplaced: "alixai.text_replaced",
 } as const);
 
 export const CONFIRM_TOOL = "alixai_confirm_action";

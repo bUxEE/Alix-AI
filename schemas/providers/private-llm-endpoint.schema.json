@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:providers:private-llm-endpoint:v1",
+  "title": "Private LLM endpoint",
+  "description": "One self-hosted OpenAI-compatible LLM endpoint registered with the deployment (ADR 0045). No secret: cred_ref is opaque. The host provisions the server; AlixAI holds no cloud credentials. Member names avoid log-redactor substrings (origin not base_url; cred_ref not credential_ref).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "endpoint_id",
+    "origin",
+    "api_dialect",
+    "model_ids",
+    "roles",
+    "owner_kind",
+    "lifecycle",
+    "updated_at"
+  ],
+  "properties": {
+    "endpoint_id": {
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/privateEndpointId"
+    },
+    "origin": {
+      "description": "https origin, or http on loopback for a local mock. No credentials, query or fragment.",
+      "x-alixai-authority": "host",
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 512,
+      "pattern": "^https?://[^\\s?#]+$"
+    },
+    "api_dialect": {
+      "x-alixai-authority": "host",
+      "type": "string",
+      "const": "openai-compatible"
+    },
+    "model_ids": {
+      "x-alixai-authority": "host",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/modelId" }
+    },
+    "roles": {
+      "x-alixai-authority": "host",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4,
+      "items": { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/principalLlmRole" }
+    },
+    "cred_ref": {
+      "description": "Optional bearer credential in the credentials service. Omit for open loopback mocks.",
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/credentialRefId"
+    },
+    "owner_kind": {
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/privateEndpointOwnerKind"
+    },
+    "owner_principal_id": {
+      "description": "Required when owner_kind is principal.",
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+    },
+    "owner_tenant_id": {
+      "description": "Required when owner_kind is tenant.",
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+    },
+    "health_url": {
+      "description": "Optional health probe URL (same origin rules as origin).",
+      "x-alixai-authority": "host",
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 512,
+      "pattern": "^https?://[^\\s?#]+$"
+    },
+    "lifecycle": {
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/privateLlmLifecycle"
+    },
+    "profile_id": {
+      "description": "Synthetic qualified profile id used by the router when lifecycle is ready.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/profileId"
+    },
+    "internal_price_micro_per_mtok_in": {
+      "description": "Optional operator-set internal price (micro-units per million input toks). Zero when omitted.",
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/microUnits"
+    },
+    "internal_price_micro_per_mtok_out": {
+      "description": "Optional operator-set internal price (micro-units per million output toks). Zero when omitted.",
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/microUnits"
+    },
+    "updated_at": {
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    }
+  }
+}

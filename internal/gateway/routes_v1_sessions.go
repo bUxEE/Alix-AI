@@ -554,10 +554,12 @@ func (h *sessionsHandler) turn(w http.ResponseWriter, r *http.Request) {
 	}
 	log := loggerFrom(r.Context())
 
-	// The engine mints the turn id, so the stream is opened once the turn has
-	// run, and the hub is where its account is kept: what the client receives
-	// below is read back from it, which is also what a resume reads.
-	turn, err := h.hub.Begin(scope, res.TurnID)
+	// The engine mints the turn id. With dialogue.stream_verified, OnVerifiedSegment may
+	// already have begun the hub mid-turn (ADR 0046); otherwise open it now.
+	turn, err := h.hub.Lookup(scope, res.TurnID)
+	if err != nil {
+		turn, err = h.hub.Begin(scope, res.TurnID)
+	}
 	if err != nil {
 		// The turn ran and cannot be shown. Its receipt, if it has one, is
 		// still the actions route's to give.
@@ -567,7 +569,7 @@ func (h *sessionsHandler) turn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	plan := buildTurnEvents(res, terr)
-	perr := plan.publish(turn)
+	perr := plan.publish(turn, res.Response.Streamed)
 	if perr != nil {
 		// An event the hub refused is not sent and not skipped over: the turn
 		// is failed with an error event and a failed done, at the next numbers.
@@ -691,15 +693,19 @@ type turnEventsPlan struct {
 
 // publish puts the plan into the turn, numbering each event from the turn's
 // NextSeq as it goes. It stops at the first refusal and returns it; the caller
-// fails the turn.
-func (p turnEventsPlan) publish(t *stream.Turn) error {
+// fails the turn. When streamed is true and verified segments were already
+// published mid-turn (NextSeq > 0), the whole-text PublishResponse is skipped
+// so clients do not see the reply twice (ADR 0046).
+func (p turnEventsPlan) publish(t *stream.Turn, streamed bool) error {
 	for _, d := range p.leading {
 		if err := turnEventsPublishDraft(t, d); err != nil {
 			return err
 		}
 	}
-	if err := t.PublishResponse(p.text); err != nil {
-		return err
+	if !(streamed && t.NextSeq() > 0) {
+		if err := t.PublishResponse(p.text); err != nil {
+			return err
+		}
 	}
 	return turnEventsPublishDraft(t, p.done)
 }

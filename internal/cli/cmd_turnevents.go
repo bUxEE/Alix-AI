@@ -24,5 +24,6 @@ func init() { registerServeProvider("turnevents", turneventsProvide) }
 // text.
 func turneventsProvide(_ context.Context, d serveDeps) error {
 	hub := stream.NewHub(stream.Config{Clock: d.Clock, Logger: d.Log})
+	streamVerifiedHub.Store(hub)
 	return gateway.Provide(d.Services, hub)
 }

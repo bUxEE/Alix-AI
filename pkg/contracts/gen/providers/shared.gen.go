@@ -867,6 +867,121 @@ func (v *PrincipalLlmRole) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// PrivateEndpointID mirrors urn:alixai:schema:providers:shared:v1#/$defs/privateEndpointId.
+//
+// ID of one private self-hosted LLM endpoint (ADR 0045). Minted by the AlixAI core or supplied by
+// the operator on PUT: prefix ple, an underscore and a 26-character ULID (Crockford base32, upper
+// case). The prefix is inside the 2 to 8 letter range of common ids typedId.
+//
+// JSON Schema constraints (enforced by schema validation, not by this type): pattern
+// `^ple_[0-9A-HJKMNP-TV-Z]{26}$`.
+type PrivateEndpointID string
+
+// PrivateEndpointOwnerKind mirrors
+// urn:alixai:schema:providers:shared:v1#/$defs/privateEndpointOwnerKind.
+//
+// Who may use a private endpoint: principal (one account), tenant (pin or principals of that
+// tenant), or shared (many principals; context stays per tenant).
+//
+// Only the values listed in the schema are valid.
+type PrivateEndpointOwnerKind string
+
+// The valid values of PrivateEndpointOwnerKind.
+const (
+	PrivateEndpointOwnerKindPrincipal PrivateEndpointOwnerKind = "principal"
+	PrivateEndpointOwnerKindTenant    PrivateEndpointOwnerKind = "tenant"
+	PrivateEndpointOwnerKindShared    PrivateEndpointOwnerKind = "shared"
+)
+
+// Valid reports whether v is one of the values the schema lists.
+func (v PrivateEndpointOwnerKind) Valid() bool {
+	switch v {
+	case PrivateEndpointOwnerKindPrincipal, PrivateEndpointOwnerKindTenant, PrivateEndpointOwnerKindShared:
+		return true
+	}
+	return false
+}
+
+// MarshalJSON refuses to encode a value outside the enum, so an unset or
+// corrupt value fails instead of producing a document the schema rejects.
+func (v PrivateEndpointOwnerKind) MarshalJSON() ([]byte, error) {
+	if !v.Valid() {
+		return nil, fmt.Errorf("PrivateEndpointOwnerKind: %v is not a valid value", string(v))
+	}
+	return json.Marshal(string(v))
+}
+
+// UnmarshalJSON accepts only the values the schema lists; null and anything
+// else is an error.
+func (v *PrivateEndpointOwnerKind) UnmarshalJSON(data []byte) error {
+	if bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
+		return fmt.Errorf("PrivateEndpointOwnerKind: null is not a valid value")
+	}
+	var raw string
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return fmt.Errorf("PrivateEndpointOwnerKind: %w", err)
+	}
+	if !PrivateEndpointOwnerKind(raw).Valid() {
+		return fmt.Errorf("PrivateEndpointOwnerKind: %v is not a valid value", raw)
+	}
+	*v = PrivateEndpointOwnerKind(raw)
+	return nil
+}
+
+// PrivateLlmLifecycle mirrors urn:alixai:schema:providers:shared:v1#/$defs/privateLlmLifecycle.
+//
+// Lifecycle of a private self-hosted endpoint (ADR 0045). The host provisioner and AlixAI health
+// checks set it. warming/provisioning refuse turns with private_llm_starting;
+// failed/stopped/draining with private_llm_unavailable; ready serves.
+//
+// Only the values listed in the schema are valid.
+type PrivateLlmLifecycle string
+
+// The valid values of PrivateLlmLifecycle.
+const (
+	PrivateLlmLifecycleProvisioning PrivateLlmLifecycle = "provisioning"
+	PrivateLlmLifecycleWarming      PrivateLlmLifecycle = "warming"
+	PrivateLlmLifecycleReady        PrivateLlmLifecycle = "ready"
+	PrivateLlmLifecycleDraining     PrivateLlmLifecycle = "draining"
+	PrivateLlmLifecycleStopped      PrivateLlmLifecycle = "stopped"
+	PrivateLlmLifecycleFailed       PrivateLlmLifecycle = "failed"
+)
+
+// Valid reports whether v is one of the values the schema lists.
+func (v PrivateLlmLifecycle) Valid() bool {
+	switch v {
+	case PrivateLlmLifecycleProvisioning, PrivateLlmLifecycleWarming, PrivateLlmLifecycleReady, PrivateLlmLifecycleDraining, PrivateLlmLifecycleStopped, PrivateLlmLifecycleFailed:
+		return true
+	}
+	return false
+}
+
+// MarshalJSON refuses to encode a value outside the enum, so an unset or
+// corrupt value fails instead of producing a document the schema rejects.
+func (v PrivateLlmLifecycle) MarshalJSON() ([]byte, error) {
+	if !v.Valid() {
+		return nil, fmt.Errorf("PrivateLlmLifecycle: %v is not a valid value", string(v))
+	}
+	return json.Marshal(string(v))
+}
+
+// UnmarshalJSON accepts only the values the schema lists; null and anything
+// else is an error.
+func (v *PrivateLlmLifecycle) UnmarshalJSON(data []byte) error {
+	if bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
+		return fmt.Errorf("PrivateLlmLifecycle: null is not a valid value")
+	}
+	var raw string
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return fmt.Errorf("PrivateLlmLifecycle: %w", err)
+	}
+	if !PrivateLlmLifecycle(raw).Valid() {
+		return fmt.Errorf("PrivateLlmLifecycle: %v is not a valid value", raw)
+	}
+	*v = PrivateLlmLifecycle(raw)
+	return nil
+}
+
 // ProfileID mirrors urn:alixai:schema:providers:shared:v1#/$defs/profileId.
 //
 // ID of one provider and model profile in the registry. Minted by the AlixAI core: prefix pprf, an

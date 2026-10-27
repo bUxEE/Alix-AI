@@ -45,6 +45,27 @@ func (t *Turn) PublishResponse(text string) error {
 	return nil
 }
 
+// PublishVerifiedSegment publishes one already-verified sentence (ADR 0046). The segment is
+// sanitised on its own (sentence-sized, so constructs are not split across emits). Prefer
+// PublishResponse for a whole reply when StreamVerified is off.
+func (t *Turn) PublishVerifiedSegment(text string) error {
+	return t.PublishResponse(text)
+}
+
+// PublishTextReplaced announces that verified token text already shown for this turn is
+// superseded, then publishes template as token events (ADR 0046).
+func (t *Turn) PublishTextReplaced(template string) error {
+	ev := conversation.TurnEvent{Value: conversation.TextReplacedEvent{
+		TurnID: actions.TurnID(t.id),
+		Seq:    conversation.Seq(t.NextSeq()),
+		Reason: "verification_failed",
+	}}
+	if err := t.Publish(ev); err != nil {
+		return err
+	}
+	return t.PublishResponse(template)
+}
+
 // chunkRunes splits s into pieces of at most max runes, preferring to cut after
 // a newline or a space and never inside a rune. The pieces concatenate to s.
 func chunkRunes(s string, max int) []string {

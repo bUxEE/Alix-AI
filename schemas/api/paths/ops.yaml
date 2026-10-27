@@ -178,6 +178,219 @@ paths:
         '503':
           $ref: ../openapi.yaml#/components/responses/Unavailable
 
+  /v1/ops/private-llm/endpoints/{endpoint_id}:
+    parameters:
+      - name: endpoint_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^ple_[0-9A-HJKMNP-TV-Z]{26}$'
+    put:
+      operationId: putPrivateLlmEndpoint
+      tags: [operations]
+      summary: Register or update a private self-hosted LLM endpoint
+      description: |
+        Upserts one OpenAI-compatible private endpoint (ADR 0045). Deployment operator.
+        Needs `ops.private_llm.write`. No secret in the body beyond an opaque credential_ref.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrivateLlmEndpointUpdate'
+      responses:
+        '200':
+          description: The endpoint.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateLlmEndpoint'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+    get:
+      operationId: getPrivateLlmEndpoint
+      tags: [operations]
+      summary: Read a private LLM endpoint
+      description: Needs `ops.private_llm.read` (or write).
+      responses:
+        '200':
+          description: The endpoint.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateLlmEndpoint'
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: '#/components/responses/PrivateLlmEndpointNotFound'
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+    delete:
+      operationId: deletePrivateLlmEndpoint
+      tags: [operations]
+      summary: Remove a private LLM endpoint
+      description: |
+        Removes the endpoint and clears pins/bindings that named it. Needs `ops.private_llm.write`.
+      responses:
+        '204':
+          description: Removed (or already absent).
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/ops/tenants/{tenant_id}/private-llm:
+    parameters:
+      - name: tenant_id
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+    put:
+      operationId: putTenantPrivateLlm
+      tags: [operations]
+      summary: Pin a tenant to a private LLM endpoint
+      description: |
+        Inside this tenant every bindable role the endpoint serves uses it, overriding personal
+        external bindings (ADR 0045). Deployment operator, or tenant admin of this tenant with
+        `ops.private_llm.write`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrivateLlmTenantPinUpdate'
+      responses:
+        '200':
+          description: The pin.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateLlmTenantPin'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+    get:
+      operationId: getTenantPrivateLlm
+      tags: [operations]
+      summary: Read a tenant's private LLM pin
+      responses:
+        '200':
+          description: The pin.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateLlmTenantPin'
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: '#/components/responses/PrivateLlmTenantPinNotFound'
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+    delete:
+      operationId: deleteTenantPrivateLlm
+      tags: [operations]
+      summary: Clear a tenant's private LLM pin
+      responses:
+        '204':
+          description: Cleared (or already absent).
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
+  /v1/ops/principals/{principal_id}/private-llm:
+    parameters:
+      - name: principal_id
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+    put:
+      operationId: putPrincipalPrivateLlm
+      tags: [operations]
+      summary: Activate a principal's private LLM binding
+      description: |
+        Host activates the paid private-LLM feature for a principal and binds roles to an endpoint
+        (ADR 0045). Deployment operator. Needs `ops.private_llm.write`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrivateLlmPrincipalBindingUpdate'
+      responses:
+        '200':
+          description: The binding.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateLlmPrincipalBinding'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+    get:
+      operationId: getPrincipalPrivateLlm
+      tags: [operations]
+      summary: Read a principal's operator private LLM binding
+      responses:
+        '200':
+          description: The binding.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateLlmPrincipalBinding'
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: '#/components/responses/PrivateLlmPrincipalBindingNotFound'
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+    delete:
+      operationId: deletePrincipalPrivateLlm
+      tags: [operations]
+      summary: Clear a principal's operator private LLM binding
+      responses:
+        '204':
+          description: Cleared (or already absent).
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
 components:
   responses:
     ErasureJobNotFound:
@@ -186,7 +399,38 @@ components:
         application/json:
           schema:
             $ref: ../openapi.yaml#/components/schemas/Error
+    PrivateLlmEndpointNotFound:
+      description: The endpoint id is unknown (`not_found`).
+      content:
+        application/json:
+          schema:
+            $ref: ../openapi.yaml#/components/schemas/Error
+    PrivateLlmTenantPinNotFound:
+      description: The tenant has no private LLM pin (`not_found`).
+      content:
+        application/json:
+          schema:
+            $ref: ../openapi.yaml#/components/schemas/Error
+    PrivateLlmPrincipalBindingNotFound:
+      description: The principal has no operator private LLM binding (`not_found`).
+      content:
+        application/json:
+          schema:
+            $ref: ../openapi.yaml#/components/schemas/Error
   schemas:
+    PrivateLlmEndpoint:
+      $ref: ../../providers/private-llm-endpoint.schema.json
+    PrivateLlmEndpointUpdate:
+      $ref: ../../providers/private-llm-endpoint-update.schema.json
+    PrivateLlmTenantPin:
+      $ref: ../../providers/private-llm-tenant-pin.schema.json
+    PrivateLlmTenantPinUpdate:
+      $ref: ../../providers/private-llm-tenant-pin-update.schema.json
+    PrivateLlmPrincipalBinding:
+      $ref: ../../providers/private-llm-principal-binding.schema.json
+    PrivateLlmPrincipalBindingUpdate:
+      $ref: ../../providers/private-llm-principal-binding-update.schema.json
+
     ErasureRequest:
       type: object
       additionalProperties: false

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:providers:private-llm-tenant-pin-update:v1",
+  "title": "Tenant private LLM pin update",
+  "description": "Body of PUT /v1/ops/tenants/{tenant_id}/private-llm (ADR 0045).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["endpoint_id"],
+  "properties": {
+    "endpoint_id": {
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/privateEndpointId"
+    }
+  }
+}

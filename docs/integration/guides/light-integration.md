@@ -69,15 +69,15 @@ Read capabilities return deterministic facts. How the user sees them:
 
 `alixai config check` / `providers layers` print `directive_class`. See [external-mode.md](../../operations/external-mode.md) §2 and [ADR 0044](../../decisions/0044-external-directive-class-and-result-blocks.md).
 
-## Reply text arrives whole in External mode
+## Reply text: whole by default, optional verified streaming
 
-The turn **event stream** still works in External mode (`Accept: text/event-stream`, AG-UI / TurnEvents): progress and step events arrive live as they happen. What differs from Local is the **assistant text**: the dialogue engine calls `Chat` (not provider `ChatStream`), so the reply is verified first and then emitted as one piece (one `TEXT_MESSAGE_CONTENT` / token event), not fragment by fragment. A JSON turn or the event stream are both fine.
+The turn **event stream** works in External mode (`Accept: text/event-stream`, AG-UI / TurnEvents): progress and step events arrive live. By default (`dialogue.stream_verified` off, 1.3 behaviour) the assistant text is verified as a whole then emitted once. With **`dialogue.stream_verified: true`** (ADR 0046) the engine uses `ChatStream` when the provider supports it, splits the reply into language-aware sentences, verifies each before emit, and maps them to `TEXT_MESSAGE_CONTENT`. Nothing unverified is shown. If a later segment fails, TurnEvent `text_replaced` → AG-UI `CUSTOM` `alixai.text_replaced` clears shown text and the deterministic template follows. Default stays off so 1.3 clients are unchanged; turn it on for smoother first paint when the provider streams.
 
 Recommended host pattern (about **total latency**, not about avoiding the stream):
 
 1. Accept the user turn on your backend.
 2. Run the AlixAI turn in the background (JSON turn or event stream).
-3. Push progress and the verified result to the UI (websocket, SSE from *your* backend, or poll).
+3. Push progress and the verified result to the UI (websocket, SSE from *your* backend, or poll). Handle `alixai.text_replaced` by discarding the superseded assistant message.
 
 Set timeouts on the host call above the provider's own limits; a slow or dead provider surfaces as `unavailable` or `timeout` ([external-mode.md](../external-mode.md) §4).
 
@@ -206,6 +206,15 @@ Optional Vue / React chat panels support a fullscreen overlay (default z-index *
 
 Body-teleported dialogs/menus opened from the panel must use a higher z-index than that value. See `ui/vue/demo/README.md` and `ui/react/demo/README.md`.
 
+## Private self-hosted LLM (optional, 1.4.0)
+
+When the host runs its own OpenAI-compatible server (vLLM, LocalAI, …), register it as a **private endpoint** instead of (or beside) a catalog provider ([ADR 0045](../../decisions/0045-private-self-hosted-llm-endpoints.md), [operations/private-llm.md](../../operations/private-llm.md)):
+
+1. `PUT /v1/ops/private-llm/endpoints/{endpoint_id}` with `origin`, models, roles, `owner_kind`.
+2. Allowlist provider `self_hosted` and those model ids on egress; set mode External.
+3. Either **pin the tenant** (`PUT /v1/ops/tenants/{tenant_id}/private-llm`) so every principal in that company uses it, or **bind a principal** (`PUT /v1/ops/principals/{id}/private-llm` / `PUT /v1/me/llm/{role}` with `private_endpoint_id`).
+4. While the endpoint is warming, turns refuse with `private_llm_starting` — there is no silent fallback to OpenAI.
+
 ## Spike order
 
 1. Run AlixAI on loopback; `config check` / `providers layers` green for your light setup ([light-external.md](../../operations/guides/light-external.md)).
@@ -214,6 +223,7 @@ Body-teleported dialogs/menus opened from the panel must use a higher z-index th
 4. Enable External: credentials → qualify profile → egress (`user_message` / `internal`) → budget → mode External at all three levels.
 5. Confirm the first real turn; if denied, use the error table above.
 6. Add UI on the **host** only (SDK or AG-UI proxy). Optionally add dictation or host-side STT.
+7. Optionally register a private LLM endpoint and pin a tenant or bind a principal ([private-llm.md](../../operations/private-llm.md)).
 
 ## Related
 
@@ -221,4 +231,5 @@ Body-teleported dialogs/menus opened from the panel must use a higher z-index th
 - [Application package format](../application-package.md) (including `credential_ref` and outbound auth)
 - [External mode for integrators](../external-mode.md)
 - [Light External deployments](../../operations/guides/light-external.md)
+- [Private self-hosted LLM](../../operations/private-llm.md)
 - [Troubleshooting](../../operations/guides/troubleshooting.md)

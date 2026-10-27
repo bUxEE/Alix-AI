@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:providers:private-llm-principal-binding-update:v1",
+  "title": "Principal private LLM binding update (operator)",
+  "description": "Body of PUT /v1/ops/principals/{principal_id}/private-llm (ADR 0045).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["endpoint_id", "roles"],
+  "properties": {
+    "endpoint_id": {
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/privateEndpointId"
+    },
+    "roles": {
+      "x-alixai-authority": "host",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4,
+      "items": { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/principalLlmRole" }
+    }
+  }
+}

@@ -169,6 +169,11 @@ func (c *Client) prepare(scope contracts.Scope, req providers.RichRequest, strea
 	if c.cfg.ReasoningEffort != "" {
 		body["reasoning_effort"] = c.cfg.ReasoningEffort
 	}
+	if c.cfg.CacheSaltFromScope != nil {
+		if salt := c.cfg.CacheSaltFromScope(scope); salt != "" {
+			body["cache_salt"] = salt
+		}
+	}
 	if stream {
 		body["stream"] = true
 		// Usage arrives in a final chunk only when asked for; without it the

@@ -82,6 +82,24 @@
       "type": "string",
       "pattern": "^ack_[0-9A-HJKMNP-TV-Z]{26}$"
     },
+    "privateEndpointId": {
+      "title": "Private LLM endpoint ID",
+      "description": "ID of one private self-hosted LLM endpoint (ADR 0045). Minted by the AlixAI core or supplied by the operator on PUT: prefix ple, an underscore and a 26-character ULID (Crockford base32, upper case). The prefix is inside the 2 to 8 letter range of common ids typedId.",
+      "type": "string",
+      "pattern": "^ple_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "privateLlmLifecycle": {
+      "title": "Private LLM endpoint lifecycle",
+      "description": "Lifecycle of a private self-hosted endpoint (ADR 0045). The host provisioner and AlixAI health checks set it. warming/provisioning refuse turns with private_llm_starting; failed/stopped/draining with private_llm_unavailable; ready serves.",
+      "type": "string",
+      "enum": ["provisioning", "warming", "ready", "draining", "stopped", "failed"]
+    },
+    "privateEndpointOwnerKind": {
+      "title": "Private endpoint owner kind",
+      "description": "Who may use a private endpoint: principal (one account), tenant (pin or principals of that tenant), or shared (many principals; context stays per tenant).",
+      "type": "string",
+      "enum": ["principal", "tenant", "shared"]
+    },
     "fileId": {
       "title": "File ID",
       "description": "Opaque ID of a scoped file reference. Same grammar as urn:alixai:schema:actions:shared:v1#/$defs/fileId, repeated here so the providers area depends on common only. It is not a path and never resolves to one.",

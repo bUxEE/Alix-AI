@@ -35,6 +35,9 @@ const (
 	DirectiveName = "alixai.directive"
 	// MemoryProposalName is the CUSTOM event for an assistant-proposed memory item (ADR 0042).
 	MemoryProposalName = "alixai.memory_proposal"
+	// TextReplacedName is the CUSTOM event when verified streamed text is superseded by the
+	// deterministic template (ADR 0046). Payload: {"reason":"verification_failed","messageId":...}.
+	TextReplacedName = "alixai.text_replaced"
 
 	// ReasonConfirmation is the reason of the interrupt of a prepared action.
 	ReasonConfirmation = "confirmation_required"
@@ -315,6 +318,8 @@ func identify(ev conversation.TurnEvent) (turnID string, seq int64, ok bool) {
 		return string(v.TurnID), int64(v.Seq), true
 	case conversation.MemoryProposalEvent:
 		return string(v.TurnID), int64(v.Seq), true
+	case conversation.TextReplacedEvent:
+		return string(v.TurnID), int64(v.Seq), true
 	}
 	return "", 0, false
 }
@@ -373,6 +378,14 @@ func (m *Mapper) Map(ev conversation.TurnEvent) ([]Emitted, error) {
 	case conversation.MemoryProposalEvent:
 		b.closeText()
 		b.emit(NewCustom(MemoryProposalName, rawJSON(v.Memory)))
+	case conversation.TextReplacedEvent:
+		replacedID := b.m.w.text
+		b.closeText()
+		payload := map[string]any{"reason": v.Reason}
+		if replacedID != "" {
+			payload["messageId"] = replacedID
+		}
+		b.emit(NewCustom(TextReplacedName, rawJSON(payload)))
 	}
 	if b.err != nil {
 		return b.fail(b.err)

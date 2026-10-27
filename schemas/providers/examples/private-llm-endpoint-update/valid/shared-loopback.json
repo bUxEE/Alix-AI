@@ -1,0 +1,8 @@
+{
+  "origin": "http://127.0.0.1:8080",
+  "api_dialect": "openai-compatible",
+  "model_ids": ["llama-3.1-8b"],
+  "roles": ["conversational_controller", "language_realization"],
+  "owner_kind": "shared",
+  "lifecycle": "warming"
+}

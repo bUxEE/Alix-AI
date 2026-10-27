@@ -97,6 +97,15 @@ var (
 	opCancelPrincipalOAuthFlow          = Operation{"cancelPrincipalOAuthFlow", http.MethodDelete, "/v1/me/oauth/flows/{flow_id}", true, false}
 	opStartErasure                      = Operation{"startErasure", http.MethodPost, "/v1/ops/erasure", true, false}
 	opGetErasureJob                     = Operation{"getErasureJob", http.MethodGet, "/v1/ops/erasure/{job_id}", true, true}
+	opPutPrivateLlmEndpoint             = Operation{"putPrivateLlmEndpoint", http.MethodPut, "/v1/ops/private-llm/endpoints/{endpoint_id}", true, false}
+	opGetPrivateLlmEndpoint             = Operation{"getPrivateLlmEndpoint", http.MethodGet, "/v1/ops/private-llm/endpoints/{endpoint_id}", true, true}
+	opDeletePrivateLlmEndpoint          = Operation{"deletePrivateLlmEndpoint", http.MethodDelete, "/v1/ops/private-llm/endpoints/{endpoint_id}", true, false}
+	opPutTenantPrivateLlm               = Operation{"putTenantPrivateLlm", http.MethodPut, "/v1/ops/tenants/{tenant_id}/private-llm", true, false}
+	opGetTenantPrivateLlm               = Operation{"getTenantPrivateLlm", http.MethodGet, "/v1/ops/tenants/{tenant_id}/private-llm", true, true}
+	opDeleteTenantPrivateLlm            = Operation{"deleteTenantPrivateLlm", http.MethodDelete, "/v1/ops/tenants/{tenant_id}/private-llm", true, false}
+	opPutPrincipalPrivateLlm            = Operation{"putPrincipalPrivateLlm", http.MethodPut, "/v1/ops/principals/{principal_id}/private-llm", true, false}
+	opGetPrincipalPrivateLlm            = Operation{"getPrincipalPrivateLlm", http.MethodGet, "/v1/ops/principals/{principal_id}/private-llm", true, true}
+	opDeletePrincipalPrivateLlm         = Operation{"deletePrincipalPrivateLlm", http.MethodDelete, "/v1/ops/principals/{principal_id}/private-llm", true, false}
 	opGetMeUsage                        = Operation{"getMeUsage", http.MethodGet, "/v1/me/usage", true, true}
 	opGetMeBudget                       = Operation{"getMeBudget", http.MethodGet, "/v1/me/budget", true, true}
 
@@ -133,6 +142,9 @@ func Operations() []Operation {
 		opPutPrincipalProviderCredential, opDeletePrincipalProviderCredential, opAckPrincipalProviderBillingNotice, opStartPrincipalOAuth,
 		opCompletePrincipalOAuth, opGetPrincipalOAuthFlow, opCancelPrincipalOAuthFlow,
 		opStartErasure, opGetErasureJob,
+		opPutPrivateLlmEndpoint, opGetPrivateLlmEndpoint, opDeletePrivateLlmEndpoint,
+		opPutTenantPrivateLlm, opGetTenantPrivateLlm, opDeleteTenantPrivateLlm,
+		opPutPrincipalPrivateLlm, opGetPrincipalPrivateLlm, opDeletePrincipalPrivateLlm,
 		opGetMeUsage, opGetMeBudget,
 		opListMemory, opCreateMemory, opPatchMemory, opDeleteMemory, opConfirmMemory, opRejectMemory,
 		opCreateExport,

@@ -362,6 +362,36 @@
         },
         "description": "The flow id is unknown or belongs to another principal (`not_found`)."
       },
+      "PrivateLlmEndpointNotFound": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "description": "The endpoint id is unknown (`not_found`)."
+      },
+      "PrivateLlmPrincipalBindingNotFound": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "description": "The principal has no operator private LLM binding (`not_found`)."
+      },
+      "PrivateLlmTenantPinNotFound": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "description": "The tenant has no private LLM pin (`not_found`)."
+      },
       "RagNotFound": {
         "content": {
           "application/json": {
@@ -2452,6 +2482,24 @@
           "expires_at"
         ],
         "type": "object"
+      },
+      "PrivateLlmEndpoint": {
+        "$ref": "schemas/providers/private-llm-endpoint.schema.json"
+      },
+      "PrivateLlmEndpointUpdate": {
+        "$ref": "schemas/providers/private-llm-endpoint-update.schema.json"
+      },
+      "PrivateLlmPrincipalBinding": {
+        "$ref": "schemas/providers/private-llm-principal-binding.schema.json"
+      },
+      "PrivateLlmPrincipalBindingUpdate": {
+        "$ref": "schemas/providers/private-llm-principal-binding-update.schema.json"
+      },
+      "PrivateLlmTenantPin": {
+        "$ref": "schemas/providers/private-llm-tenant-pin.schema.json"
+      },
+      "PrivateLlmTenantPinUpdate": {
+        "$ref": "schemas/providers/private-llm-tenant-pin-update.schema.json"
       },
       "ProviderBudget": {
         "$ref": "schemas/providers/budget.schema.json"
@@ -5465,7 +5513,7 @@
         ]
       },
       "put": {
-        "description": "Chooses a catalog profile (and optional model) for the role. A profile not in the catalog is\n`validation_failed` with `details.reason` `provider_not_in_catalog`. Self only.\n",
+        "description": "Chooses a catalog profile (and optional model) or a private endpoint (`private_endpoint_id`,\nmutually exclusive with `profile_id`) for the role (ADR 0045). A profile not in the catalog is\n`validation_failed` with `details.reason` `provider_not_in_catalog`. Self only.\n",
         "operationId": "putPrincipalLlmRole",
         "parameters": [
           {
@@ -5512,7 +5560,7 @@
             "$ref": "#/components/responses/Unavailable"
           }
         },
-        "summary": "Bind a catalog profile to one LLM role",
+        "summary": "Bind a catalog profile or private endpoint to one LLM role",
         "tags": [
           "me"
         ]
@@ -6532,6 +6580,223 @@
         ]
       }
     },
+    "/v1/ops/principals/{principal_id}/private-llm": {
+      "delete": {
+        "operationId": "deletePrincipalPrivateLlm",
+        "responses": {
+          "204": {
+            "description": "Cleared (or already absent)."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Clear a principal's operator private LLM binding",
+        "tags": [
+          "operations"
+        ]
+      },
+      "get": {
+        "operationId": "getPrincipalPrivateLlm",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrivateLlmPrincipalBinding"
+                }
+              }
+            },
+            "description": "The binding."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/PrivateLlmPrincipalBindingNotFound"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Read a principal's operator private LLM binding",
+        "tags": [
+          "operations"
+        ]
+      },
+      "parameters": [
+        {
+          "in": "path",
+          "name": "principal_id",
+          "required": true,
+          "schema": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        }
+      ],
+      "put": {
+        "description": "Host activates the paid private-LLM feature for a principal and binds roles to an endpoint\n(ADR 0045). Deployment operator. Needs `ops.private_llm.write`.\n",
+        "operationId": "putPrincipalPrivateLlm",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrivateLlmPrincipalBindingUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrivateLlmPrincipalBinding"
+                }
+              }
+            },
+            "description": "The binding."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Activate a principal's private LLM binding",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/v1/ops/private-llm/endpoints/{endpoint_id}": {
+      "delete": {
+        "description": "Removes the endpoint and clears pins/bindings that named it. Needs `ops.private_llm.write`.\n",
+        "operationId": "deletePrivateLlmEndpoint",
+        "responses": {
+          "204": {
+            "description": "Removed (or already absent)."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Remove a private LLM endpoint",
+        "tags": [
+          "operations"
+        ]
+      },
+      "get": {
+        "description": "Needs `ops.private_llm.read` (or write).",
+        "operationId": "getPrivateLlmEndpoint",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrivateLlmEndpoint"
+                }
+              }
+            },
+            "description": "The endpoint."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/PrivateLlmEndpointNotFound"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Read a private LLM endpoint",
+        "tags": [
+          "operations"
+        ]
+      },
+      "parameters": [
+        {
+          "in": "path",
+          "name": "endpoint_id",
+          "required": true,
+          "schema": {
+            "pattern": "^ple_[0-9A-HJKMNP-TV-Z]{26}$",
+            "type": "string"
+          }
+        }
+      ],
+      "put": {
+        "description": "Upserts one OpenAI-compatible private endpoint (ADR 0045). Deployment operator.\nNeeds `ops.private_llm.write`. No secret in the body beyond an opaque credential_ref.\n",
+        "operationId": "putPrivateLlmEndpoint",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrivateLlmEndpointUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrivateLlmEndpoint"
+                }
+              }
+            },
+            "description": "The endpoint."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Register or update a private self-hosted LLM endpoint",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
     "/v1/ops/providers": {
       "get": {
         "description": "The model roles (controller, router, embedder, reranker and the voice roles): whether a provider is\nconfigured for each, which runtime and version serve it, its health and, when it is not `ok`, the stable\ndegradation code and what the service does instead (master plan 18). `status` is the summary: `unavailable`\nwhen the controller cannot answer, `degraded` when any other configured role is not `ok`. Reasons are\nredacted. Needs `ops.providers.read`.\n",
@@ -6589,6 +6854,114 @@
           }
         },
         "summary": "Queue status of the caller's own scope",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/v1/ops/tenants/{tenant_id}/private-llm": {
+      "delete": {
+        "operationId": "deleteTenantPrivateLlm",
+        "responses": {
+          "204": {
+            "description": "Cleared (or already absent)."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Clear a tenant's private LLM pin",
+        "tags": [
+          "operations"
+        ]
+      },
+      "get": {
+        "operationId": "getTenantPrivateLlm",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrivateLlmTenantPin"
+                }
+              }
+            },
+            "description": "The pin."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/PrivateLlmTenantPinNotFound"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Read a tenant's private LLM pin",
+        "tags": [
+          "operations"
+        ]
+      },
+      "parameters": [
+        {
+          "in": "path",
+          "name": "tenant_id",
+          "required": true,
+          "schema": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        }
+      ],
+      "put": {
+        "description": "Inside this tenant every bindable role the endpoint serves uses it, overriding personal\nexternal bindings (ADR 0045). Deployment operator, or tenant admin of this tenant with\n`ops.private_llm.write`.\n",
+        "operationId": "putTenantPrivateLlm",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrivateLlmTenantPinUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrivateLlmTenantPin"
+                }
+              }
+            },
+            "description": "The pin."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Pin a tenant to a private LLM endpoint",
         "tags": [
           "operations"
         ]

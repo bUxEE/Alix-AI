@@ -40,12 +40,24 @@ export interface OpsApi {
     start: (input: ErasureRequest, options?: CallOptions) => Promise<ErasureJobAccepted>;
     status: (jobId: string, options?: CallOptions) => Promise<ErasureJobStatus>;
   };
+  privateLlm: {
+    putEndpoint: (endpointId: string, body: Record<string, unknown>, options?: CallOptions) => Promise<Record<string, unknown>>;
+    getEndpoint: (endpointId: string, options?: CallOptions) => Promise<Record<string, unknown>>;
+    deleteEndpoint: (endpointId: string, options?: CallOptions) => Promise<void>;
+    putTenantPin: (tenantId: string, body: Record<string, unknown>, options?: CallOptions) => Promise<Record<string, unknown>>;
+    getTenantPin: (tenantId: string, options?: CallOptions) => Promise<Record<string, unknown>>;
+    deleteTenantPin: (tenantId: string, options?: CallOptions) => Promise<void>;
+    putPrincipalBinding: (principalId: string, body: Record<string, unknown>, options?: CallOptions) => Promise<Record<string, unknown>>;
+    getPrincipalBinding: (principalId: string, options?: CallOptions) => Promise<Record<string, unknown>>;
+    deletePrincipalBinding: (principalId: string, options?: CallOptions) => Promise<void>;
+  };
 }
 
 const invalid = (argument: string, reason: string) => sdkError("validation_failed", `${argument}: ${reason}`, { details: { argument } });
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 const JOB_ID = /^erj_[0-9A-HJKMNP-TV-Z]{26}$/;
+const PLE_ID = /^ple_[0-9A-HJKMNP-TV-Z]{26}$/;
 const LEVELS = ["principal", "tenant", "workspace"] as const;
 const SCOPES = ["tenant", "application"] as const;
 
@@ -89,6 +101,44 @@ export const createOpsApi = (caller: Caller): OpsApi => {
       status: async (jobId, options) => {
         if (typeof jobId !== "string" || !JOB_ID.test(jobId)) throw invalid("job_id", "it must be an erj_ ULID");
         return json("getErasureJob", { job_id: jobId }, isStatus, "erasure job", options);
+      },
+    },
+    privateLlm: {
+      putEndpoint: async (endpointId, body, options) => {
+        if (typeof endpointId !== "string" || !PLE_ID.test(endpointId)) throw invalid("endpoint_id", "it must be a ple_ ULID");
+        return json("putPrivateLlmEndpoint", { endpoint_id: endpointId }, isRecord, "private LLM endpoint", options, JSON.stringify(body));
+      },
+      getEndpoint: async (endpointId, options) => {
+        if (typeof endpointId !== "string" || !PLE_ID.test(endpointId)) throw invalid("endpoint_id", "it must be a ple_ ULID");
+        return json("getPrivateLlmEndpoint", { endpoint_id: endpointId }, isRecord, "private LLM endpoint", options);
+      },
+      deleteEndpoint: async (endpointId, options) => {
+        if (typeof endpointId !== "string" || !PLE_ID.test(endpointId)) throw invalid("endpoint_id", "it must be a ple_ ULID");
+        await caller.empty("deletePrivateLlmEndpoint", { endpoint_id: endpointId }, options);
+      },
+      putTenantPin: async (tenantId, body, options) => {
+        if (typeof tenantId !== "string" || tenantId === "") throw invalid("tenant_id", "it is required");
+        return json("putTenantPrivateLlm", { tenant_id: tenantId }, isRecord, "tenant private LLM pin", options, JSON.stringify(body));
+      },
+      getTenantPin: async (tenantId, options) => {
+        if (typeof tenantId !== "string" || tenantId === "") throw invalid("tenant_id", "it is required");
+        return json("getTenantPrivateLlm", { tenant_id: tenantId }, isRecord, "tenant private LLM pin", options);
+      },
+      deleteTenantPin: async (tenantId, options) => {
+        if (typeof tenantId !== "string" || tenantId === "") throw invalid("tenant_id", "it is required");
+        await caller.empty("deleteTenantPrivateLlm", { tenant_id: tenantId }, options);
+      },
+      putPrincipalBinding: async (principalId, body, options) => {
+        if (typeof principalId !== "string" || principalId === "") throw invalid("principal_id", "it is required");
+        return json("putPrincipalPrivateLlm", { principal_id: principalId }, isRecord, "principal private LLM", options, JSON.stringify(body));
+      },
+      getPrincipalBinding: async (principalId, options) => {
+        if (typeof principalId !== "string" || principalId === "") throw invalid("principal_id", "it is required");
+        return json("getPrincipalPrivateLlm", { principal_id: principalId }, isRecord, "principal private LLM", options);
+      },
+      deletePrincipalBinding: async (principalId, options) => {
+        if (typeof principalId !== "string" || principalId === "") throw invalid("principal_id", "it is required");
+        await caller.empty("deletePrincipalPrivateLlm", { principal_id: principalId }, options);
       },
     },
   };

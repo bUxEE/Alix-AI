@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:providers:private-llm-tenant-pin:v1",
+  "title": "Tenant private LLM pin",
+  "description": "A tenant pinned to a private endpoint (ADR 0045). Inside that tenant every principal uses this endpoint for every bindable role the endpoint serves; personal external bindings are overridden for those roles.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["tenant_id", "endpoint_id", "updated_at"],
+  "properties": {
+    "tenant_id": {
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+    },
+    "endpoint_id": {
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/privateEndpointId"
+    },
+    "lifecycle": {
+      "description": "Effective lifecycle of the pinned endpoint at read time.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/privateLlmLifecycle"
+    },
+    "updated_at": {
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    }
+  }
+}

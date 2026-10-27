@@ -106,8 +106,9 @@ var registrationNouns = set(
 // the integration audit activates it, and a RAG source can only be one the active
 // package declares by name.
 var documentedRegistrations = map[string]string{
-	"POST /v1/applications": "installs a signed package into quarantine",
-	"POST /v1/rag/sources":  "registers a source the active package declares, by name",
+	"POST /v1/applications":                           "installs a signed package into quarantine",
+	"POST /v1/rag/sources":                            "registers a source the active package declares, by name",
+	"PUT /v1/ops/private-llm/endpoints/{endpoint_id}": "registers a self-hosted OpenAI-compatible origin the deployment owner operates (ADR 0045); no free-form tool/agent/MCP definition",
 }
 
 // registrationRoutes lists the mutating routes whose last static segment is a

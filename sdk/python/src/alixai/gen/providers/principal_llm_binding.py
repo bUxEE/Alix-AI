@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal, Optional
 from alixai.gen.common.timestamps import Timestamp
-from alixai.gen.providers.shared import ModelId, PrincipalLlmRole, ProfileId, ProviderId, ProviderVoiceId, SpeechLanguage
+from alixai.gen.providers.shared import ModelId, PrincipalLlmRole, PrivateEndpointId, PrivateLlmLifecycle, ProfileId, ProviderId, ProviderVoiceId, SpeechLanguage
 from pydantic import BaseModel, ConfigDict
 
 __all__ = ['PrincipalLLMBinding']
@@ -12,17 +12,21 @@ __all__ = ['PrincipalLLMBinding']
 
 class PrincipalLLMBinding(BaseModel):
     """
-    One role binding of a principal's LLM account (ADR 0041): catalog profile, optional model
-    override, credential status. Optional voice and language for speech roles (ADR 0043). Never
-    a secret.
+    One role binding of a principal's LLM account (ADR 0041 / 0045): catalog or private endpoint
+    profile, optional model override, credential status, effective source and private lifecycle.
+    Optional voice and language for speech roles (ADR 0043). Never a secret. profile_id is
+    always present (for a private bind it is the endpoint's synthetic profile id).
     """
     model_config = ConfigDict(extra="forbid", protected_namespaces=())
     role: PrincipalLlmRole
     profile_id: ProfileId
+    private_endpoint_id: Optional[PrivateEndpointId] = None
     provider_id: ProviderId
     model_id: ModelId
     voice: Optional[ProviderVoiceId] = None
     language: Optional[SpeechLanguage] = None
     account_status: Literal["missing", "pending", "active", "expired", "revoked", "invalid", "quarantined", "reauthorization_required"]
     billing_notice_acked: bool
+    source: Optional[Literal["tenant_pin", "principal_private", "principal_external", "deployment_default", "none"]] = None
+    lifecycle: Optional[PrivateLlmLifecycle] = None
     updated_at: Timestamp

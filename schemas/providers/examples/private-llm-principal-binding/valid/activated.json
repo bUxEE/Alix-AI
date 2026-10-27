@@ -1,0 +1,7 @@
+{
+  "principal_id": "usr_01J0000000000000000000000A",
+  "endpoint_id": "ple_01J0000000000000000000000A",
+  "roles": ["conversational_controller"],
+  "lifecycle": "ready",
+  "updated_at": "2026-10-26T12:00:00.000Z"
+}

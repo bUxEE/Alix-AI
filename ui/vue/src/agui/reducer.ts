@@ -234,6 +234,23 @@ export const applyEvent = (state: ChatState, event: AguiEvent): void => {
     }
     case "CUSTOM": {
       if (event["name"] === ALIXAI_CUSTOM_EVENT.suggestions) state.suggestions = parseSuggestions(event["value"]);
+      if (event["name"] === ALIXAI_CUSTOM_EVENT.textReplaced) {
+        // ADR 0046: discard superseded verified text; the template follows as a new TEXT_MESSAGE_*.
+        const value = isRecord(event["value"]) ? event["value"] : undefined;
+        const messageId = value !== undefined ? str(value["messageId"]) : undefined;
+        if (messageId !== undefined) {
+          const idx = itemIndex(state, messageId);
+          if (idx >= 0) state.items.splice(idx, 1);
+        } else {
+          for (let i = state.items.length - 1; i >= 0; i--) {
+            const item = state.items[i];
+            if (item?.kind === "message" && item.role === "assistant") {
+              state.items.splice(i, 1);
+              break;
+            }
+          }
+        }
+      }
       if (state.memoryEnabled && event["name"] === ALIXAI_CUSTOM_EVENT.memoryProposal) {
         const proposal = parseMemoryProposal(event["value"]);
         if (proposal !== undefined) {

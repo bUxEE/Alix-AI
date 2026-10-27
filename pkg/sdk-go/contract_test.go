@@ -54,13 +54,22 @@ func TestOperationsCoverTheImplementedAreas(t *testing.T) {
 	// The decision area is spoken in part on purpose: the read-only status. The operator-only configuration
 	// (getDecisionConfig, putDecisionConfig) is not part of the SDK surface.
 	// Voice is spoken in part: dictation HTTP only (not the WebSocket openVoiceSession).
-	// Ops is spoken in part: erasure over HTTP (1.3.0); queue/providers/audit-export stay out.
+	// Ops is spoken in part: erasure (1.3.0) and private LLM (1.4.0); queue/providers/audit-export stay out.
 	partial := map[string]bool{
-		"getDecisionStatus":        true,
-		"getDictationCapabilities": true,
-		"createSessionDictation":   true,
-		"startErasure":             true,
-		"getErasureJob":            true,
+		"getDecisionStatus":         true,
+		"getDictationCapabilities":  true,
+		"createSessionDictation":    true,
+		"startErasure":              true,
+		"getErasureJob":             true,
+		"putPrivateLlmEndpoint":     true,
+		"getPrivateLlmEndpoint":     true,
+		"deletePrivateLlmEndpoint":  true,
+		"putTenantPrivateLlm":       true,
+		"getTenantPrivateLlm":       true,
+		"deleteTenantPrivateLlm":    true,
+		"putPrincipalPrivateLlm":    true,
+		"getPrincipalPrivateLlm":    true,
+		"deletePrincipalPrivateLlm": true,
 	}
 	have := map[string]bool{}
 	for _, op := range sdkgo.Operations() {
@@ -599,6 +608,26 @@ func TestFakeAnswersConformToOpenAPI(t *testing.T) {
 	must("ops erasure start", err)
 	_, err = client.Ops().ErasureStatus(ctx, "erj_01J0000000000000000000000A")
 	must("ops erasure status", err)
+	_, err = client.Ops().PutPrivateLlmEndpoint(ctx, "ple_01J0000000000000000000000A", map[string]any{
+		"origin": "http://127.0.0.1:8080", "api_dialect": "openai-compatible",
+		"model_ids": []string{"local-model"}, "roles": []string{"conversational_controller"}, "owner_kind": "shared",
+	})
+	must("ops put private llm endpoint", err)
+	_, err = client.Ops().GetPrivateLlmEndpoint(ctx, "ple_01J0000000000000000000000A")
+	must("ops get private llm endpoint", err)
+	must("ops delete private llm endpoint", client.Ops().DeletePrivateLlmEndpoint(ctx, "ple_01J0000000000000000000000A"))
+	_, err = client.Ops().PutTenantPrivateLlm(ctx, "ten-1", map[string]any{"endpoint_id": "ple_01J0000000000000000000000A"})
+	must("ops put tenant private llm", err)
+	_, err = client.Ops().GetTenantPrivateLlm(ctx, "ten-1")
+	must("ops get tenant private llm", err)
+	must("ops delete tenant private llm", client.Ops().DeleteTenantPrivateLlm(ctx, "ten-1"))
+	_, err = client.Ops().PutPrincipalPrivateLlm(ctx, "usr_alice", map[string]any{
+		"endpoint_id": "ple_01J0000000000000000000000A", "roles": []string{"conversational_controller"},
+	})
+	must("ops put principal private llm", err)
+	_, err = client.Ops().GetPrincipalPrivateLlm(ctx, "usr_alice")
+	must("ops get principal private llm", err)
+	must("ops delete principal private llm", client.Ops().DeletePrincipalPrivateLlm(ctx, "usr_alice"))
 	_, err = client.Me().Usage(ctx, sdkgo.MeUsageQuery{})
 	must("me usage", err)
 	_, err = client.Me().Budget(ctx)
@@ -779,6 +808,15 @@ var goTypes = map[string]func() any{
 	"cancelPrincipalOAuthFlow":          func() any { return nil }, // 204
 	"startErasure":                      func() any { return new(sdkgo.ErasureJobAccepted) },
 	"getErasureJob":                     func() any { return new(sdkgo.ErasureJobStatus) },
+	"putPrivateLlmEndpoint":             func() any { return new(pv.PrivateLlmEndpoint) },
+	"getPrivateLlmEndpoint":             func() any { return new(pv.PrivateLlmEndpoint) },
+	"deletePrivateLlmEndpoint":          func() any { return nil }, // 204
+	"putTenantPrivateLlm":               func() any { return new(pv.PrivateLlmTenantPin) },
+	"getTenantPrivateLlm":               func() any { return new(pv.PrivateLlmTenantPin) },
+	"deleteTenantPrivateLlm":            func() any { return nil }, // 204
+	"putPrincipalPrivateLlm":            func() any { return new(pv.PrivateLlmPrincipalBinding) },
+	"getPrincipalPrivateLlm":            func() any { return new(pv.PrivateLlmPrincipalBinding) },
+	"deletePrincipalPrivateLlm":         func() any { return nil }, // 204
 	"getMeUsage":                        func() any { return new(pv.MeUsage) },
 	"getMeBudget":                       func() any { return new(pv.MeBudget) },
 	"listMemory":                        func() any { return new(memgen.MemoryList) },
@@ -791,7 +829,8 @@ var goTypes = map[string]func() any{
 }
 
 func (c *conformance) checkGoType(opID string, body []byte) {
-	if opID == "removeRagSource" || opID == "streamTurnEvents" || opID == "cancelProviderOAuthFlow" || opID == "cancelPrincipalOAuthFlow" || opID == "deleteMemory" {
+	if opID == "removeRagSource" || opID == "streamTurnEvents" || opID == "cancelProviderOAuthFlow" || opID == "cancelPrincipalOAuthFlow" || opID == "deleteMemory" ||
+		opID == "deletePrivateLlmEndpoint" || opID == "deleteTenantPrivateLlm" || opID == "deletePrincipalPrivateLlm" {
 		return
 	}
 	newValue, ok := goTypes[opID]

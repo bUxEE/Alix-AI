@@ -6,7 +6,7 @@ from typing import Annotated, Literal, Optional, Union
 from alixai.gen.common.ids import Identifier
 from pydantic import BaseModel, ConfigDict, Field
 
-__all__ = ['ProviderId', 'ModelId', 'ModelVersion', 'ProfileId', 'CredentialRefId', 'EgressPolicyId', 'EgressDecisionId', 'EnvelopeId', 'UsageId', 'BudgetId', 'ReservationId', 'ReportId', 'AcknowledgementId', 'FileId', 'SourceId', 'MicroUnits', 'Counter', 'Currency', 'RegionCode', 'Sha256', 'ReasonCode', 'EgressMode', 'EgressLevel', 'DeploymentMode', 'Role', 'AccountMode', 'PrincipalLlmRole', 'ProviderVoiceId', 'SpeechLanguage', 'ReservedPrincipalCredentialTenant', 'Modality', 'MeterUnit', 'Channel', 'SendCategory', 'BlockedCategory', 'RetentionMode', 'TrainingUse', 'Residency', 'BudgetStatus', 'ProviderErrorKind', 'ProfileLifecycle', 'CredentialKind', 'ConnectionWarning', 'SafeAccount', 'BudgetSubject', 'ModelRef', 'ProviderRef', 'Subject']
+__all__ = ['ProviderId', 'ModelId', 'ModelVersion', 'ProfileId', 'CredentialRefId', 'EgressPolicyId', 'EgressDecisionId', 'EnvelopeId', 'UsageId', 'BudgetId', 'ReservationId', 'ReportId', 'AcknowledgementId', 'PrivateEndpointId', 'PrivateLlmLifecycle', 'PrivateEndpointOwnerKind', 'FileId', 'SourceId', 'MicroUnits', 'Counter', 'Currency', 'RegionCode', 'Sha256', 'ReasonCode', 'EgressMode', 'EgressLevel', 'DeploymentMode', 'Role', 'AccountMode', 'PrincipalLlmRole', 'ProviderVoiceId', 'SpeechLanguage', 'ReservedPrincipalCredentialTenant', 'Modality', 'MeterUnit', 'Channel', 'SendCategory', 'BlockedCategory', 'RetentionMode', 'TrainingUse', 'Residency', 'BudgetStatus', 'ProviderErrorKind', 'ProfileLifecycle', 'CredentialKind', 'ConnectionWarning', 'SafeAccount', 'BudgetSubject', 'ModelRef', 'ProviderRef', 'Subject']
 
 
 ProviderId = Annotated[str, Field(pattern='^[a-z][a-z0-9_-]{0,31}$')]
@@ -46,6 +46,15 @@ ReportId = Annotated[str, Field(pattern='^conf_[0-9A-HJKMNP-TV-Z]{26}$')]
 
 
 AcknowledgementId = Annotated[str, Field(pattern='^ack_[0-9A-HJKMNP-TV-Z]{26}$')]
+
+
+PrivateEndpointId = Annotated[str, Field(pattern='^ple_[0-9A-HJKMNP-TV-Z]{26}$')]
+
+
+PrivateLlmLifecycle = Literal["provisioning", "warming", "ready", "draining", "stopped", "failed"]
+
+
+PrivateEndpointOwnerKind = Literal["principal", "tenant", "shared"]
 
 
 FileId = Annotated[str, Field(pattern='^fil_[0-9A-HJKMNP-TV-Z]{26}$')]

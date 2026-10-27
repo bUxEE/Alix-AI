@@ -812,7 +812,7 @@ func wireV1(ctx context.Context, in wireInput) (*v1Wiring, error) {
 	}
 	eng, err := serveProfileNewEngine(dialogue.Deps{
 		Sessions: sess, Registry: registry, Packages: apps, Policy: gw, Actions: co, Adapters: adapterSource,
-		Config:    dialogue.Config{Profile: profile},
+		Config:    dialogue.Config{Profile: profile, StreamVerified: dialogue.Loaded().StreamVerified},
 		Providers: seams.Selector,
 		Audit:     alg, Clock: clk, Logger: log,
 		Decision: dec.stage(), Detectors: dec.detectors(), Guard: seams.Guard,

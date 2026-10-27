@@ -483,7 +483,10 @@ func (h *aguiHandler) run(w http.ResponseWriter, r *http.Request) {
 	}
 	log := loggerFrom(r.Context())
 
-	turn, err := h.hub.Begin(scope, res.TurnID)
+	turn, err := h.hub.Lookup(scope, res.TurnID)
+	if err != nil {
+		turn, err = h.hub.Begin(scope, res.TurnID)
+	}
 	if err != nil {
 		log.Error("the run's turn ran but its event stream could not be opened", "turn_id", res.TurnID,
 			"reason", string(stream.ReasonOf(err)), "code", string(contracts.CodeOf(err)))
@@ -491,7 +494,7 @@ func (h *aguiHandler) run(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	plan := buildTurnEvents(res, terr)
-	perr := plan.publish(turn)
+	perr := plan.publish(turn, res.Response.Streamed)
 	if perr != nil {
 		log.Error("a turn event of the run was refused; the turn was failed", "turn_id", res.TurnID,
 			"reason", string(stream.ReasonOf(perr)), "code", string(contracts.CodeOf(perr)))

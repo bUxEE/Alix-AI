@@ -61,10 +61,11 @@ type PrincipalLLMService interface {
 
 // PrincipalLLMBindingInput is the body of PUT /v1/me/llm/{role}.
 type PrincipalLLMBindingInput struct {
-	ProfileID pv.ProfileID        `json:"profile_id"`
-	ModelID   pv.ModelID          `json:"model_id,omitzero"`
-	Voice     *pv.ProviderVoiceID `json:"voice,omitzero"`
-	Language  *pv.SpeechLanguage  `json:"language,omitzero"`
+	ProfileID         pv.ProfileID         `json:"profile_id,omitzero"`
+	PrivateEndpointID pv.PrivateEndpointID `json:"private_endpoint_id,omitzero"`
+	ModelID           pv.ModelID           `json:"model_id,omitzero"`
+	Voice             *pv.ProviderVoiceID  `json:"voice,omitzero"`
+	Language          *pv.SpeechLanguage   `json:"language,omitzero"`
 }
 
 // PrincipalCredentialInput is the write-only credential body.

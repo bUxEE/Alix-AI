@@ -15,17 +15,17 @@ import type { ClarificationChoicesBlock, RichBlock } from "./rich-block.js";
  *
  * One event of a streamed turn (master plan 14.1, 14.2), discriminated by type: token, directive,
  * clarification, prepared_action, receipt, citation, progress, error, done, plus block for rich
- * blocks. Every event carries turn_id and seq, a per-turn counter that starts at 0 and rises by
- * one, which is also the resume cursor. Events are emitted only by the core. The model's only
- * contribution is the verified text in token events and in model-authority members of blocks;
- * structured payloads (directive, prepared_action, receipt, citation) are core or host data and
- * are never taken from model output. Each variant repeats the envelope members instead of
- * composing them with allOf so that additionalProperties false holds and generated types stay
- * flat.
+ * blocks and text_replaced when verified incremental streaming supersedes shown text (ADR 0046).
+ * Every event carries turn_id and seq, a per-turn counter that starts at 0 and rises by one, which
+ * is also the resume cursor. Events are emitted only by the core. The model's only contribution is
+ * the verified text in token events and in model-authority members of blocks; structured payloads
+ * (directive, prepared_action, receipt, citation) are core or host data and are never taken from
+ * model output. Each variant repeats the envelope members instead of composing them with allOf so
+ * that additionalProperties false holds and generated types stay flat.
  *
  * It is a union discriminated by the "type" property: exactly one of TokenEvent, DirectiveEvent,
  * ClarificationEvent, PreparedActionEvent, ReceiptEvent, CitationEvent, ProgressEvent, ErrorEvent,
- * DoneEvent, BlockEvent, MemoryProposalEvent.
+ * DoneEvent, BlockEvent, MemoryProposalEvent, TextReplacedEvent.
  */
 export type TurnEvent =
   | TokenEvent
@@ -38,7 +38,8 @@ export type TurnEvent =
   | ErrorEvent
   | DoneEvent
   | BlockEvent
-  | MemoryProposalEvent;
+  | MemoryProposalEvent
+  | TextReplacedEvent;
 
 /**
  * BlockEvent mirrors urn:alixai:schema:conversation:turn-event:v1#/$defs/blockEvent.
@@ -432,6 +433,37 @@ export interface ReceiptEvent {
  * 4294967295.
  */
 export type Seq = number;
+
+/**
+ * TextReplacedEvent mirrors urn:alixai:schema:conversation:turn-event:v1#/$defs/textReplacedEvent.
+ *
+ * Verified token text already shown for this turn is superseded because a later segment failed
+ * verification (ADR 0046). Clients discard the superseded assistant text; the deterministic
+ * template follows as token events. Mapped to AG-UI CUSTOM event alixai.text_replaced.
+ */
+export interface TextReplacedEvent {
+  /**
+   * @authority alixai
+   */
+  type: "text_replaced";
+
+  /**
+   * @authority alixai
+   */
+  turn_id: TurnID;
+
+  /**
+   * @authority alixai
+   */
+  seq: Seq;
+
+  /**
+   * Why shown text is superseded. Only verification_failed today.
+   *
+   * @authority alixai
+   */
+  reason: "verification_failed";
+}
 
 /**
  * TokenEvent mirrors urn:alixai:schema:conversation:turn-event:v1#/$defs/tokenEvent.

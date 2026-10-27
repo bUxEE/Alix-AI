@@ -75,6 +75,8 @@ identity:
   audience: alixai
 server:
   listen: 127.0.0.1:7470
+dialogue:
+  stream_verified: true             # ADR 0046; default false keeps 1.3 whole-reply behaviour
 localai:
   endpoint: http://127.0.0.1:8080   # STT runtime; no controller model required
 voice:
@@ -115,6 +117,8 @@ identity:
   audience: alixai
 server:
   listen: 127.0.0.1:7470
+dialogue:
+  stream_verified: true             # ADR 0046; default false keeps 1.3 whole-reply behaviour
 # no localai: section
 dictation:
   max_seconds: 60
@@ -177,6 +181,7 @@ Everything that applies in a full local or External deployment still applies her
 
 - [Integrate as a chat assistant with external AI](../../integration/guides/light-integration.md) — package, host architecture, **per-tenant onboarding checklist** (mode External + egress `user_message`/`internal` + budget), whole-text replies on the event stream, STT choices and the error table.
 - [Operating External and Hybrid mode](../external-mode.md)
+- [Hardware and pricing](../hardware-and-pricing.md) — when a dedicated or shared private LLM (GPU) is cheaper or required versus light External; segments, rent, break-even.
 - [Readiness](../readiness.md)
 - [Operator commands](operator-commands.md)
 - STT-only LocalAI compose: [`deploy/container/localai/compose.stt-only.yaml`](../../../deploy/container/localai/compose.stt-only.yaml)

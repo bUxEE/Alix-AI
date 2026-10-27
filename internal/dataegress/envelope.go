@@ -513,8 +513,17 @@ func classRank(c providers.DataClassification) int {
 // only with the approval recorded on that level) and the provider profile to allow it;
 // confidential data is a per-source decision: it needs a source policy that lists it
 // with an approval, and the profile to allow it. Anything else is not allowed.
+// ADR 0045: self_hosted profiles may send public, internal and confidential when the
+// profile lists them; internal does not require chain approval (restricted never leaves).
 func (r *run) classAllowed(cls providers.EgressEligibleClass, src *providers.EgressPolicy) bool {
 	if !cls.Valid() || !containsClass(r.prof.AllowedDataClasses, cls) {
+		return false
+	}
+	if IsSelfHosted(r.prof) {
+		switch cls {
+		case providers.EgressEligibleClassPublic, providers.EgressEligibleClassInternal, providers.EgressEligibleClassConfidential:
+			return true
+		}
 		return false
 	}
 	if cls != providers.EgressEligibleClassConfidential {

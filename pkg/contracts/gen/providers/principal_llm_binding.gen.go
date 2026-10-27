@@ -12,15 +12,21 @@ import (
 
 // PrincipalLlmBinding mirrors urn:alixai:schema:providers:principal-llm-binding:v1.
 //
-// One role binding of a principal's LLM account (ADR 0041): catalog profile, optional model
-// override, credential status. Optional voice and language for speech roles (ADR 0043). Never a
-// secret.
+// One role binding of a principal's LLM account (ADR 0041 / 0045): catalog or private endpoint
+// profile, optional model override, credential status, effective source and private lifecycle.
+// Optional voice and language for speech roles (ADR 0043). Never a secret. profile_id is always
+// present (for a private bind it is the endpoint's synthetic profile id).
 type PrincipalLlmBinding struct {
 	// Authority: alixai.
 	Role PrincipalLlmRole `json:"role" alixai:"alixai"`
 
 	// Authority: alixai.
 	ProfileID ProfileID `json:"profile_id" alixai:"alixai"`
+
+	// Present for a private-endpoint binding (ADR 0045).
+	//
+	// Authority: alixai.
+	PrivateEndpointID *PrivateEndpointID `json:"private_endpoint_id,omitzero" alixai:"alixai"`
 
 	// Authority: alixai.
 	ProviderID ProviderID `json:"provider_id" alixai:"alixai"`
@@ -39,13 +45,23 @@ type PrincipalLlmBinding struct {
 	Language *SpeechLanguage `json:"language,omitzero" alixai:"alixai"`
 
 	// Whether the principal has an usable credential for this provider. Never a ref id the
-	// client can resolve to a secret.
+	// client can resolve to a secret. For self_hosted without a cred_ref, status is active.
 	//
 	// Authority: alixai.
 	AccountStatus PrincipalLlmBindingAccountStatus `json:"account_status" alixai:"alixai"`
 
 	// Authority: alixai.
 	BillingNoticeAcked bool `json:"billing_notice_acked" alixai:"alixai"`
+
+	// Effective binding source for this role in the caller's current tenant (ADR 0045).
+	//
+	// Authority: alixai.
+	Source *PrincipalLlmBindingSource `json:"source,omitzero" alixai:"alixai"`
+
+	// Lifecycle of the private endpoint when source is tenant_pin or principal_private.
+	//
+	// Authority: alixai.
+	Lifecycle *PrivateLlmLifecycle `json:"lifecycle,omitzero" alixai:"alixai"`
 
 	// Authority: alixai.
 	UpdatedAt common.Timestamp `json:"updated_at" alixai:"alixai"`
@@ -55,7 +71,7 @@ type PrincipalLlmBinding struct {
 // urn:alixai:schema:providers:principal-llm-binding:v1#/properties/account_status.
 //
 // Whether the principal has an usable credential for this provider. Never a ref id the client can
-// resolve to a secret.
+// resolve to a secret. For self_hosted without a cred_ref, status is active.
 //
 // Only the values listed in the schema are valid.
 type PrincipalLlmBindingAccountStatus string
@@ -104,5 +120,57 @@ func (v *PrincipalLlmBindingAccountStatus) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("PrincipalLlmBindingAccountStatus: %v is not a valid value", raw)
 	}
 	*v = PrincipalLlmBindingAccountStatus(raw)
+	return nil
+}
+
+// PrincipalLlmBindingSource mirrors
+// urn:alixai:schema:providers:principal-llm-binding:v1#/properties/source.
+//
+// Effective binding source for this role in the caller's current tenant (ADR 0045).
+//
+// Only the values listed in the schema are valid.
+type PrincipalLlmBindingSource string
+
+// The valid values of PrincipalLlmBindingSource.
+const (
+	PrincipalLlmBindingSourceTenantPin         PrincipalLlmBindingSource = "tenant_pin"
+	PrincipalLlmBindingSourcePrincipalPrivate  PrincipalLlmBindingSource = "principal_private"
+	PrincipalLlmBindingSourcePrincipalExternal PrincipalLlmBindingSource = "principal_external"
+	PrincipalLlmBindingSourceDeploymentDefault PrincipalLlmBindingSource = "deployment_default"
+	PrincipalLlmBindingSourceNone              PrincipalLlmBindingSource = "none"
+)
+
+// Valid reports whether v is one of the values the schema lists.
+func (v PrincipalLlmBindingSource) Valid() bool {
+	switch v {
+	case PrincipalLlmBindingSourceTenantPin, PrincipalLlmBindingSourcePrincipalPrivate, PrincipalLlmBindingSourcePrincipalExternal, PrincipalLlmBindingSourceDeploymentDefault, PrincipalLlmBindingSourceNone:
+		return true
+	}
+	return false
+}
+
+// MarshalJSON refuses to encode a value outside the enum, so an unset or
+// corrupt value fails instead of producing a document the schema rejects.
+func (v PrincipalLlmBindingSource) MarshalJSON() ([]byte, error) {
+	if !v.Valid() {
+		return nil, fmt.Errorf("PrincipalLlmBindingSource: %v is not a valid value", string(v))
+	}
+	return json.Marshal(string(v))
+}
+
+// UnmarshalJSON accepts only the values the schema lists; null and anything
+// else is an error.
+func (v *PrincipalLlmBindingSource) UnmarshalJSON(data []byte) error {
+	if bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
+		return fmt.Errorf("PrincipalLlmBindingSource: null is not a valid value")
+	}
+	var raw string
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return fmt.Errorf("PrincipalLlmBindingSource: %w", err)
+	}
+	if !PrincipalLlmBindingSource(raw).Valid() {
+		return fmt.Errorf("PrincipalLlmBindingSource: %v is not a valid value", raw)
+	}
+	*v = PrincipalLlmBindingSource(raw)
 	return nil
 }

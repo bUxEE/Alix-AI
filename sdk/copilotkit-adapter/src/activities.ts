@@ -16,6 +16,8 @@ export const ALIXAI_ACTIVITY = Object.freeze({
 export const ALIXAI_CUSTOM_EVENT = Object.freeze({
   directive: "alixai.directive",
   suggestions: "alixai.suggestions",
+  /** ADR 0046: verified streamed text is superseded; kits discard the assistant message. */
+  textReplaced: "alixai.text_replaced",
 } as const);
 
 export const ALIXAI_BLOCK_TYPES = [

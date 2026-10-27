@@ -33,8 +33,20 @@ describe("the SDK's operation table matches schemas/api/openapi.yaml", () => {
   });
 
   it("has a row for every operation of the document whose area is implemented, and for nothing the document lacks", () => {
-    // Partial ops surface (1.3.0): startErasure / getErasureJob only.
-    const partialOps = new Set(["startErasure", "getErasureJob"]);
+    // Partial ops surface: erasure (1.3.0) and private LLM (1.4.0, ADR 0045).
+    const partialOps = new Set([
+      "startErasure",
+      "getErasureJob",
+      "putPrivateLlmEndpoint",
+      "getPrivateLlmEndpoint",
+      "deletePrivateLlmEndpoint",
+      "putTenantPrivateLlm",
+      "getTenantPrivateLlm",
+      "deleteTenantPrivateLlm",
+      "putPrincipalPrivateLlm",
+      "getPrincipalPrivateLlm",
+      "deletePrincipalPrivateLlm",
+    ]);
     const documented = spec.operations.filter(
       (o) =>
         ["root", "sessions", "actions", "apps", "files", "history", "settings", "me", "memory", "exports"].includes(o.area) ||
@@ -274,6 +286,24 @@ describe("every answer of the fake server conforms to the OpenAPI document", () 
     await client.me.oauth.cancel("oaf_01J0000000000000000000000A");
     await client.ops.erasure.start({ level: "principal", principal_id: "usr_alice", reason: "gdpr" });
     await client.ops.erasure.status("erj_01J0000000000000000000000A");
+    await client.ops.privateLlm.putEndpoint("ple_01J0000000000000000000000A", {
+      origin: "http://127.0.0.1:8080",
+      api_dialect: "openai-compatible",
+      model_ids: ["local-model"],
+      roles: ["conversational_controller"],
+      owner_kind: "shared",
+    });
+    await client.ops.privateLlm.getEndpoint("ple_01J0000000000000000000000A");
+    await client.ops.privateLlm.deleteEndpoint("ple_01J0000000000000000000000A");
+    await client.ops.privateLlm.putTenantPin("ten-1", { endpoint_id: "ple_01J0000000000000000000000A" });
+    await client.ops.privateLlm.getTenantPin("ten-1");
+    await client.ops.privateLlm.deleteTenantPin("ten-1");
+    await client.ops.privateLlm.putPrincipalBinding("usr_alice", {
+      endpoint_id: "ple_01J0000000000000000000000A",
+      roles: ["conversational_controller"],
+    });
+    await client.ops.privateLlm.getPrincipalBinding("usr_alice");
+    await client.ops.privateLlm.deletePrincipalBinding("usr_alice");
     await client.me.usage();
     await client.me.budget();
     await client.memory.list();

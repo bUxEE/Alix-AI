@@ -27,6 +27,7 @@ import (
 	"github.com/buxee/alix-ai/adapters/external/moonshot"
 	"github.com/buxee/alix-ai/adapters/external/openai"
 	"github.com/buxee/alix-ai/adapters/external/openrouter"
+	"github.com/buxee/alix-ai/adapters/external/selfhosted"
 	"github.com/buxee/alix-ai/adapters/external/xai"
 	"github.com/buxee/alix-ai/internal/audit"
 	"github.com/buxee/alix-ai/internal/clock"
@@ -98,6 +99,7 @@ type ExternalProviderSpec struct {
 	XAI        xai.Config
 	Moonshot   moonshot.Config
 	Mistral    mistral.Config
+	SelfHosted selfhosted.Config
 	// GeminiTokens resolves the OAuth access token of a Gemini connection per call (extFinalEngineTokens over the
 	// shared OAuth engine). Only a Gemini.Auth of gemini.AuthOAuth uses it.
 	GeminiTokens gemini.TokenSource
@@ -128,6 +130,7 @@ func init() {
 		ExternalProviderXAI:        externalProviderBuildXAI,
 		ExternalProviderMoonshot:   externalProviderBuildMoonshot,
 		ExternalProviderMistral:    externalProviderBuildMistral,
+		ExternalProviderSelfHosted: externalProviderBuildSelfHosted,
 	}
 	extWireEngineSeams = extWireSeams
 	registerServeProvider(extWireProviderName, extWireProvide)
@@ -153,6 +156,7 @@ const (
 	ExternalProviderXAI        = xai.ProviderName
 	ExternalProviderMoonshot   = moonshot.ProviderName
 	ExternalProviderMistral    = mistral.ProviderName
+	ExternalProviderSelfHosted = selfhosted.ProviderName
 )
 
 // NewExternalProvider builds the adapter for spec.Provider. It sends nothing.
@@ -179,6 +183,28 @@ func extWireAllowOrigin(reg *egress.ProviderRegistry, provider, base string) err
 		return err
 	}
 	return reg.Set(provider, al)
+}
+
+func externalProviderBuildSelfHosted(spec ExternalProviderSpec) (ExternalProvider, error) {
+	if spec.Egress == nil {
+		return nil, contracts.New(contracts.ErrValidationFailed, "cli: external providers need a destination registry")
+	}
+	if err := extWireAllowOrigin(spec.Egress, selfhosted.ProviderName, spec.SelfHosted.BaseURL); err != nil {
+		return nil, err
+	}
+	var opts []selfhosted.Option
+	if spec.Logger != nil {
+		opts = append(opts, selfhosted.WithLogger(spec.Logger))
+	}
+	keys := spec.Keys
+	if keys == nil {
+		keys = selfhosted.OpenKeys{}
+	}
+	c, err := selfhosted.New(spec.SelfHosted, spec.Egress.Dialer(selfhosted.ProviderName), keys, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("cli: %w", err)
+	}
+	return c, nil
 }
 
 func externalProviderBuildOpenAI(spec ExternalProviderSpec) (ExternalProvider, error) {
@@ -666,6 +692,9 @@ func externalServeProvider(_ context.Context, d serveDeps) error {
 		return err
 	}
 	if err := principalLLMProvide(d.Services, svc); err != nil {
+		return err
+	}
+	if err := privateLLMProvide(d.Services, svc); err != nil {
 		return err
 	}
 	if err := bindConfiguredCredentialRefs(context.Background(), svc, sec); err != nil {
@@ -1501,8 +1530,9 @@ func extWireCompose(d extWireDeps) (*extWireStack, error) {
 	st := &extWireStack{admin: a, policy: policy, sender: sender, text: extWireTextEgress{guard: a.egress}, deployment: a.deployment, log: d.Log}
 	// Always bind to this admin — never the package holder from another serve/test.
 	pll := newPrincipalLLM(a)
-	routePolicy := principalLLMPolicy(hybrid.ControllerLocalPolicy(policy, a.resolver), a.resolver, pll)
-	profiles := principalLLMProfiles(a.reg, pll)
+	basePolicy := principalLLMPolicy(hybrid.ControllerLocalPolicy(policy, a.resolver), a.resolver, pll)
+	routePolicy := privateLLMPolicy(basePolicy, a.resolver, a.reg)
+	profiles := privateLLMProfiles(principalLLMProfiles(a.reg, pll), pll)
 	rt, err := extmode.New(extmode.Config{
 		Local: d.Delegate.local, Modes: a.modes, KillSwitch: a.egress, Policy: routePolicy,
 		LocalProviders: d.Local, Profiles: profiles, Egress: a.egress, Budgets: a.budget, Packages: d.Delegate.packages,
@@ -1516,7 +1546,7 @@ func extWireCompose(d extWireDeps) (*extWireStack, error) {
 	// than Hybrid's default of 512 tokens).
 	maxOut := min(512, d.Delegate.budget.MaxOutputTokens)
 	hy, err := hybrid.New(hybrid.Config{
-		Modes: a.modes, KillSwitch: a.egress, Policy: principalLLMPolicy(policy, a.resolver, pll), LocalProviders: d.Local, Profiles: profiles, Egress: a.egress,
+		Modes: a.modes, KillSwitch: a.egress, Policy: privateLLMPolicy(principalLLMPolicy(policy, a.resolver, pll), a.resolver, a.reg), LocalProviders: d.Local, Profiles: profiles, Egress: a.egress,
 		Budgets: a.budget, Sender: gs, Budget: d.Delegate.budget, MaxOutputToks: maxOut,
 		Local: extGapLocalGen{sel: d.Delegate.local}, FactClass: pv.DataClassification(d.Section.HybridFactClass), Audit: d.Audit, Usage: a.budget, Clock: d.Clock,
 	})
@@ -1601,11 +1631,13 @@ type extWireSender struct {
 }
 
 func (s *extWireSender) generatorFor(p pv.ProviderProfile) (providers.MultimodalGenerator, error) {
-	if p.CredRef == nil {
+	ref := ""
+	if p.CredRef != nil {
+		ref = string(*p.CredRef)
+	} else if p.ProviderID != providerreg.ProviderIDSelfHosted {
 		return nil, contracts.New(contracts.ErrUnauthenticated, "the provider profile has no credential")
 	}
-	ref := string(*p.CredRef)
-	key := strings.Join([]string{string(p.ProfileID), string(p.ProviderID), string(p.ModelID), string(p.ModelVersion), ref}, "|")
+	key := strings.Join([]string{string(p.ProfileID), string(p.ProviderID), string(p.ModelID), string(p.ModelVersion), ref, p.Endpoint}, "|")
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if c, ok := s.cache[key]; ok {
@@ -1662,6 +1694,11 @@ func (s *extWireSender) generatorFor(p pv.ProviderProfile) (providers.Multimodal
 		}
 		spec.Mistral = mistral.Config{BaseURL: s.sec.MistralBaseURL, CredentialRef: ref, Model: wire, ReplyModel: reply}
 		spec.Keys = bearer
+	case string(providerreg.ProviderIDSelfHosted):
+		spec.SelfHosted = selfhosted.Config{BaseURL: p.Endpoint, CredentialRef: ref, Model: string(p.ModelID)}
+		if ref != "" {
+			spec.Keys = extFinalBearerKeys{provider: string(p.ProviderID), service: s.admin.creds, engine: s.admin.oauth}
+		}
 	default:
 		return nil, contracts.New(contracts.ErrUnavailable, "no external adapter is built for this provider")
 	}

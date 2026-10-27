@@ -315,6 +315,27 @@ def test_every_answer_of_the_fake_server_conforms_to_the_document_across_all_ope
     client.me.oauth_cancel("oaf_01J0000000000000000000000A")
     client.ops.start_erasure({"level": "principal", "principal_id": "usr_alice", "reason": "gdpr"})
     client.ops.erasure_status("erj_01J0000000000000000000000A")
+    client.ops.put_private_llm_endpoint(
+        "ple_01J0000000000000000000000A",
+        {
+            "origin": "http://127.0.0.1:8080",
+            "api_dialect": "openai-compatible",
+            "model_ids": ["local-model"],
+            "roles": ["conversational_controller"],
+            "owner_kind": "shared",
+        },
+    )
+    client.ops.get_private_llm_endpoint("ple_01J0000000000000000000000A")
+    client.ops.delete_private_llm_endpoint("ple_01J0000000000000000000000A")
+    client.ops.put_tenant_private_llm("ten-1", {"endpoint_id": "ple_01J0000000000000000000000A"})
+    client.ops.get_tenant_private_llm("ten-1")
+    client.ops.delete_tenant_private_llm("ten-1")
+    client.ops.put_principal_private_llm(
+        "usr_alice",
+        {"endpoint_id": "ple_01J0000000000000000000000A", "roles": ["conversational_controller"]},
+    )
+    client.ops.get_principal_private_llm("usr_alice")
+    client.ops.delete_principal_private_llm("usr_alice")
     client.me.usage()
     client.me.budget()
     client.memory.list()

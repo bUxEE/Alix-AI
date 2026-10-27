@@ -124,6 +124,37 @@ export const createFakeMeMemory = (ctx: FakeContext) => {
           counts: { audit_events_erased: 1, sessions_removed: 1 },
           finished_at: ctx.iso(ctx.nowMs()),
         });
+      case "putPrivateLlmEndpoint":
+      case "getPrivateLlmEndpoint":
+        return ctx.json(200, {
+          endpoint_id: params["endpoint_id"] ?? "ple_01J0000000000000000000000A",
+          origin: "http://127.0.0.1:8080",
+          api_dialect: "openai-compatible",
+          model_ids: ["local-model"],
+          roles: ["conversational_controller"],
+          owner_kind: "shared",
+          lifecycle: "ready",
+          updated_at: ctx.iso(ctx.nowMs()),
+        });
+      case "deletePrivateLlmEndpoint":
+      case "deleteTenantPrivateLlm":
+      case "deletePrincipalPrivateLlm":
+        return new Response(null, { status: 204, headers: { "Cache-Control": "no-store", "X-Request-ID": "req_fake" } });
+      case "putTenantPrivateLlm":
+      case "getTenantPrivateLlm":
+        return ctx.json(200, {
+          tenant_id: params["tenant_id"] ?? scope.tenant_id,
+          endpoint_id: "ple_01J0000000000000000000000A",
+          updated_at: ctx.iso(ctx.nowMs()),
+        });
+      case "putPrincipalPrivateLlm":
+      case "getPrincipalPrivateLlm":
+        return ctx.json(200, {
+          principal_id: params["principal_id"] ?? scope.principal_id,
+          endpoint_id: "ple_01J0000000000000000000000A",
+          roles: ["conversational_controller"],
+          updated_at: ctx.iso(ctx.nowMs()),
+        });
       case "getMeUsage":
         return ctx.json(200, { groups: [], next_cursor: null });
       case "getMeBudget":

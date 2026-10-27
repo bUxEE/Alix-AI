@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:providers:private-llm-endpoint-update:v1",
+  "title": "Private LLM endpoint update",
+  "description": "Body of PUT /v1/ops/private-llm/endpoints/{endpoint_id} (ADR 0045). The endpoint_id is the path. Lifecycle may be set by the host provisioner; AlixAI health checks may later move ready↔failed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["origin", "api_dialect", "model_ids", "roles", "owner_kind"],
+  "properties": {
+    "origin": {
+      "description": "https origin, or http on loopback for a local mock. No credentials, query or fragment.",
+      "x-alixai-authority": "host",
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 512,
+      "pattern": "^https?://[^\\s?#]+$"
+    },
+    "api_dialect": {
+      "x-alixai-authority": "host",
+      "type": "string",
+      "const": "openai-compatible"
+    },
+    "model_ids": {
+      "x-alixai-authority": "host",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/modelId" }
+    },
+    "roles": {
+      "x-alixai-authority": "host",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4,
+      "items": { "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/principalLlmRole" }
+    },
+    "cred_ref": {
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/credentialRefId"
+    },
+    "owner_kind": {
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/privateEndpointOwnerKind"
+    },
+    "owner_principal_id": {
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+    },
+    "owner_tenant_id": {
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/identifier"
+    },
+    "health_url": {
+      "x-alixai-authority": "host",
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 512,
+      "pattern": "^https?://[^\\s?#]+$"
+    },
+    "lifecycle": {
+      "description": "Optional. Defaults to provisioning on create; host provisioner updates it.",
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/privateLlmLifecycle"
+    },
+    "internal_price_micro_per_mtok_in": {
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/microUnits"
+    },
+    "internal_price_micro_per_mtok_out": {
+      "x-alixai-authority": "host",
+      "$ref": "urn:alixai:schema:providers:shared:v1#/$defs/microUnits"
+    }
+  }
+}

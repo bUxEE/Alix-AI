@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"io"
 	"strings"
 	"sync"
 	"time"
@@ -125,8 +126,11 @@ func (g routed) Chat(ctx context.Context, scope contracts.Scope, req providers.C
 	return g.r.chat(ctx, scope, req)
 }
 
-func (routed) ChatStream(context.Context, contracts.Scope, providers.ChatRequest) (providers.ChatStream, error) {
-	return nil, contracts.New(contracts.ErrUnavailable, "extmode: the external route does not stream")
+// ChatStream realises ADR 0046 through Runtime.chatStream: local ChatStream when staged
+// local-only, else a leased external stream (egress + budget before the first byte) when the
+// Sender implements StreamSender; otherwise a one-shot Chat fallback.
+func (g routed) ChatStream(ctx context.Context, scope contracts.Scope, req providers.ChatRequest) (providers.ChatStream, error) {
+	return g.r.chatStream(ctx, scope, req)
 }
 
 func (r *Runtime) chat(ctx context.Context, scope contracts.Scope, req providers.ChatRequest) (providers.ChatResult, error) {
@@ -138,6 +142,30 @@ func (r *Runtime) chat(ctx context.Context, scope contracts.Scope, req providers
 		return providers.ChatResult{}, deny("not_released_by_guard")
 	}
 	return r.run(ctx, scope, st)
+}
+
+// oneShotStream yields prepared chunks then io.EOF (fallback when the provider cannot stream).
+type oneShotStream struct {
+	chunks []providers.ChatChunk
+	i      int
+	closed bool
+}
+
+func (s *oneShotStream) Recv() (providers.ChatChunk, error) {
+	if s.closed {
+		return providers.ChatChunk{}, providers.ErrStreamClosed
+	}
+	if s.i >= len(s.chunks) {
+		return providers.ChatChunk{}, io.EOF
+	}
+	c := s.chunks[s.i]
+	s.i++
+	return c, nil
+}
+
+func (s *oneShotStream) Close() error {
+	s.closed = true
+	return nil
 }
 
 // run routes one released request: kill switch, profile gate, egress guard, budget, send.

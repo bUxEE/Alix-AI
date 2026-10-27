@@ -39,6 +39,10 @@ type Config struct {
 	StreamTimeout    time.Duration
 	MaxResponseBytes int64
 	Retry            external.RetryPolicy
+
+	// CacheSaltFromScope, when set, adds vLLM cache_salt on every chat/completions
+	// request (prefix-cache isolation). Nil skips the field (dedicated single-tenant).
+	CacheSaltFromScope func(contracts.Scope) string
 }
 
 var (

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from typing import Optional
-from alixai.gen.providers.shared import ModelId, ProfileId, ProviderVoiceId, SpeechLanguage
+from alixai.gen.providers.shared import ModelId, PrivateEndpointId, ProfileId, ProviderVoiceId, SpeechLanguage
 from pydantic import BaseModel, ConfigDict
 
 __all__ = ['PrincipalLLMBindingUpdate']
@@ -11,11 +11,15 @@ __all__ = ['PrincipalLLMBindingUpdate']
 
 class PrincipalLLMBindingUpdate(BaseModel):
     """
-    Body of PUT /v1/me/llm/{role}: choose a catalog profile and optional model (ADR 0041).
-    Optional voice and language for speech roles (ADR 0043). The role is the path.
+    Body of PUT /v1/me/llm/{role}: choose a catalog profile (ADR 0041) or a private endpoint
+    (ADR 0045). profile_id is always required. For a private bind, set private_endpoint_id and
+    set profile_id to that endpoint's profile_id (from GET endpoint). For a catalog bind, omit
+    private_endpoint_id. Optional voice and language for speech roles (ADR 0043). The role is
+    the path.
     """
     model_config = ConfigDict(extra="forbid", protected_namespaces=())
     profile_id: ProfileId
+    private_endpoint_id: Optional[PrivateEndpointId] = None
     model_id: Optional[ModelId] = None
     voice: Optional[ProviderVoiceId] = None
     language: Optional[SpeechLanguage] = None

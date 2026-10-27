@@ -11,6 +11,10 @@ and reviewed. See [Project status](../README.md#project-status) and
   `whisper-turbo-stt` (Balanced), plus `whisper-large-v3-stt` (Performance). Lite keeps Whisper tiny (`en-stt`).
   All run on CPU; GPU is optional.
 
+## Shipped in 1.4.0
+
+- **Private self-hosted LLM endpoints** ([ADR 0045](decisions/0045-private-self-hosted-llm-endpoints.md)): per-principal private bindings and per-tenant pins; OpenAI-compatible `self_hosted` adapter; lifecycle with typed `private_llm_starting` / `private_llm_unavailable` (no third-party fallback); ops routes under `/v1/ops/private-llm/…` and `/v1/me/llm/{role}` `private_endpoint_id`. See [operations/private-llm.md](operations/private-llm.md).
+
 ## Shipped in 1.3.0
 
 - **External TTS and per-role provider choice** ([ADR 0043](decisions/0043-external-tts-and-per-role-provider-choice.md)):
@@ -47,6 +51,16 @@ and reviewed. See [Project status](../README.md#project-status) and
   already verified rich blocks (`exports.create`); durable turn-block store; SDK clients and demo-mock route.
 - **UI kit fullscreen and downloads**: Vue/React chat panel fullscreen overlay; opt-in export menu on tables, charts and
   answers (host exporter; kits never call AlixAI).
+
+## Performance / private LLM (1.4.0 in progress)
+
+- **GPU Performance profile** (`deploy/container/performance`): vLLM (pinned) + LocalAI CUDA alternative;
+  OpenAI-compatible API, bearer auth, prefix caching with per-tenant `cache_salt` notes.
+- **Private-LLM kit** (`deploy/private-llm`): cloud-init, Scaleway Terraform (L4/L40S/H100), Hetzner Robot
+  install path + firewall module; activate/deactivate sequence for hosts.
+- **Candidates** `gpt-oss-20b`, `qwen3-30b-a3b`, `gpt-oss-120b` in `models/registry/` (status candidate).
+- **llmbench** (`tools/llmbench`) and [hardware-and-pricing](operations/hardware-and-pricing.md): replace
+  latency/capacity estimates with measured reports before recommending defaults.
 
 ## Verification still owed (from the 1.0 "not done" list)
 

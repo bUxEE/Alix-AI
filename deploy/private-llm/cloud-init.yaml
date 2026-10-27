@@ -1,0 +1,101 @@
+#cloud-config
+# Provider-neutral cloud-init for an AlixAI private-LLM GPU host.
+# Installs NVIDIA driver + container toolkit, pulls the pinned vLLM image,
+# starts deploy/container/performance, exposes a health URL, reports readiness.
+#
+# Wire secrets via the cloud provider's secret/user-data mechanism — never commit keys.
+# Replace the ##ALIXAI_*## placeholders (or pass equivalent env) before launch.
+
+package_update: true
+package_upgrade: false
+
+packages:
+  - curl
+  - ca-certificates
+  - gnupg
+  - jq
+  - git
+
+write_files:
+  - path: /etc/alixai/private-llm.env
+    permissions: "0600"
+    content: |
+      VLLM_API_KEY=##ALIXAI_VLLM_API_KEY##
+      ALIXAI_MODEL_ID=##ALIXAI_MODEL_ID##
+      VLLM_MAX_MODEL_LEN=##ALIXAI_MAX_MODEL_LEN##
+      VLLM_MAX_NUM_SEQS=##ALIXAI_MAX_NUM_SEQS##
+      VLLM_GPU_MEMORY_UTILIZATION=0.90
+      VLLM_PORT=8000
+  - path: /usr/local/bin/alixai-private-llm-ready.sh
+    permissions: "0755"
+    content: |
+      #!/bin/bash
+      set -euo pipefail
+      # Reports readiness to the host (stdout + optional webhook). Exit 0 when /health is OK.
+      for i in $(seq 1 120); do
+        if curl -fsS -m 3 "http://127.0.0.1:8000/health" >/dev/null 2>&1; then
+          echo "alixai-private-llm: healthy"
+          if [[ -n "${ALIXAI_READY_WEBHOOK:-}" ]]; then
+            curl -fsS -X POST -H "Content-Type: application/json" \
+              -d "{\"status\":\"healthy\",\"model\":\"${ALIXAI_MODEL_ID:-}\"}" \
+              "$ALIXAI_READY_WEBHOOK" || true
+          fi
+          exit 0
+        fi
+        sleep 30
+      done
+      echo "alixai-private-llm: not healthy after wait" >&2
+      exit 1
+
+runcmd:
+  # --- NVIDIA driver + container toolkit (Ubuntu/Debian) ---
+  - |
+    set -euo pipefail
+    export DEBIAN_FRONTEND=noninteractive
+    if ! command -v nvidia-smi >/dev/null 2>&1; then
+      apt-get install -y linux-headers-$(uname -r) build-essential
+      # Distribution-specific: operators may replace with the vendor CUDA repo pin they trust.
+      apt-get install -y nvidia-driver-550 || apt-get install -y nvidia-driver || true
+    fi
+  - |
+    set -euo pipefail
+    if ! command -v docker >/dev/null 2>&1; then
+      curl -fsSL https://get.docker.com | sh
+      systemctl enable --now docker
+    fi
+  - |
+    set -euo pipefail
+    if ! dpkg -l | grep -q nvidia-container-toolkit; then
+      curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+      curl -fsSL https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list \
+        | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' \
+        > /etc/apt/sources.list.d/nvidia-container-toolkit.list
+      apt-get update
+      apt-get install -y nvidia-container-toolkit
+      nvidia-ctk runtime configure --runtime=docker
+      systemctl restart docker
+    fi
+  # --- Fetch AlixAI performance compose from the release tree the operator trusts ---
+  - |
+    set -euo pipefail
+    mkdir -p /opt/alixai
+    # Operator replaces this with: git clone / rsync of the release tag that contains deploy/container/performance
+    if [[ ! -d /opt/alixai/deploy/container/performance ]]; then
+      echo "Place AlixAI deploy/container/performance under /opt/alixai before cloud-init finishes" >&2
+    fi
+    cp /etc/alixai/private-llm.env /opt/alixai/deploy/container/performance/.env || true
+  - |
+    set -euo pipefail
+    cd /opt/alixai/deploy/container/performance
+    # Pull pinned image (digest in compose.yaml)
+    docker compose --env-file .env -f compose.yaml pull || true
+    docker compose --env-file .env -f compose.yaml up -d || true
+  - |
+    set -euo pipefail
+    export ALIXAI_MODEL_ID="##ALIXAI_MODEL_ID##"
+    export ALIXAI_READY_WEBHOOK="##ALIXAI_READY_WEBHOOK##"
+    /usr/local/bin/alixai-private-llm-ready.sh || true
+
+final_message: |
+  AlixAI private-LLM cloud-init finished. Health: http://127.0.0.1:8000/health
+  (loopback). Put a TLS reverse proxy in front before exposing beyond the host.

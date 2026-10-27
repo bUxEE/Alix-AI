@@ -1,0 +1,62 @@
+# AlixAI Performance GPU profile: one vLLM OpenAI-compatible server for a pinned
+# registry model (gpt-oss-20b | qwen3-30b-a3b | gpt-oss-120b).
+#
+#   - image pinned by digest (README.md "Pinned versions")
+#   - published on 127.0.0.1 only; every request needs VLLM_API_KEY (bearer)
+#   - prefix caching on; per-tenant isolation is via request cache_salt (hardening.md)
+#   - NVIDIA GPU required (NVIDIA Container Toolkit)
+#   - data lives in bind mounts, never named or anonymous volumes
+#
+# Plain `docker compose` / `podman compose` syntax only.
+# Validate: docker compose --env-file .env -f compose.yaml config -q
+
+name: alixai-performance
+
+services:
+  vllm:
+    # tag is informational; the digest is what is pulled. Multi-arch index (amd64 + arm64).
+    # Resolved 2026-10-27 from Docker Hub tag v0.11.2: index sha256:2c908d5a…fe9331
+    # (amd64 sha256:47a9896f…6f680a, arm64 sha256:a6acb18b…2189d6).
+    image: docker.io/vllm/vllm-openai:v0.11.2@sha256:2c908d5a84ed251b6a17d179f42d06df1aff353007779ac5eecd8a0ea3fe9331
+    container_name: alixai-perf-vllm
+    entrypoint: ["/bin/bash", "/alixai/entrypoint.sh"]
+    ports:
+      - "127.0.0.1:${VLLM_PORT:-8000}:8000"
+    environment:
+      VLLM_API_KEY: ${VLLM_API_KEY:?set VLLM_API_KEY in .env (cp .env.example .env, then openssl rand -hex 32)}
+      ALIXAI_MODEL_ID: ${ALIXAI_MODEL_ID:-gpt-oss-20b}
+      VLLM_MAX_MODEL_LEN: ${VLLM_MAX_MODEL_LEN:-32768}
+      VLLM_MAX_NUM_SEQS: ${VLLM_MAX_NUM_SEQS:-64}
+      VLLM_GPU_MEMORY_UTILIZATION: ${VLLM_GPU_MEMORY_UTILIZATION:-0.90}
+      VLLM_NO_USAGE_STATS: "1"
+      VLLM_DO_NOT_TRACK: "1"
+      DO_NOT_TRACK: "1"
+      HF_HUB_OFFLINE: "1"
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      TRANSFORMERS_OFFLINE: "1"
+      HOME: /tmp/home
+      VLLM_CACHE_ROOT: /tmp/vllm-cache
+    volumes:
+      - ./data/models:/models:ro
+      - ../../../models/registry:/registry:ro
+      - ./config/pins.txt:/alixai/pins.txt:ro
+      - ./entrypoint.sh:/alixai/entrypoint.sh:ro
+    tmpfs:
+      - /tmp:size=4g
+    # Compose GPU short form; needs NVIDIA Container Toolkit on the host.
+    gpus: all
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60m
+    restart: unless-stopped
+    stop_grace_period: 60s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    labels:
+      ai.alixai.component: performance-vllm
+      ai.alixai.profile: performance

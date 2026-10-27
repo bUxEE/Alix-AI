@@ -68,3 +68,96 @@ func (o *OpsClient) ErasureStatus(ctx context.Context, jobID string, options ...
 	req := request{op: opGetErasureJob, params: map[string]string{"job_id": jobID}, accept: "application/json"}
 	return doJSON(ctx, o.c.t, req, applyOptions(options).deadline(o.c.timeout), func(*ErasureJobStatus) error { return nil })
 }
+
+// PutPrivateLlmEndpoint registers or updates a private self-hosted endpoint (ADR 0045).
+func (o *OpsClient) PutPrivateLlmEndpoint(ctx context.Context, endpointID string, body map[string]any, options ...CallOption) (*map[string]any, error) {
+	if endpointID == "" {
+		return nil, invalidArgument("endpointID", "it is required")
+	}
+	raw, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	req := request{op: opPutPrivateLlmEndpoint, params: map[string]string{"endpoint_id": endpointID}, accept: "application/json", contentType: "application/json", body: raw}
+	return doJSON(ctx, o.c.t, req, applyOptions(options).deadline(o.c.timeout), func(*map[string]any) error { return nil })
+}
+
+// GetPrivateLlmEndpoint reads a private endpoint.
+func (o *OpsClient) GetPrivateLlmEndpoint(ctx context.Context, endpointID string, options ...CallOption) (*map[string]any, error) {
+	if endpointID == "" {
+		return nil, invalidArgument("endpointID", "it is required")
+	}
+	req := request{op: opGetPrivateLlmEndpoint, params: map[string]string{"endpoint_id": endpointID}, accept: "application/json"}
+	return doJSON(ctx, o.c.t, req, applyOptions(options).deadline(o.c.timeout), func(*map[string]any) error { return nil })
+}
+
+// DeletePrivateLlmEndpoint removes a private endpoint.
+func (o *OpsClient) DeletePrivateLlmEndpoint(ctx context.Context, endpointID string, options ...CallOption) error {
+	if endpointID == "" {
+		return invalidArgument("endpointID", "it is required")
+	}
+	req := request{op: opDeletePrivateLlmEndpoint, params: map[string]string{"endpoint_id": endpointID}}
+	return doEmpty(ctx, o.c.t, req, applyOptions(options).deadline(o.c.timeout))
+}
+
+// PutTenantPrivateLlm pins a tenant to a private endpoint.
+func (o *OpsClient) PutTenantPrivateLlm(ctx context.Context, tenantID string, body map[string]any, options ...CallOption) (*map[string]any, error) {
+	if tenantID == "" {
+		return nil, invalidArgument("tenantID", "it is required")
+	}
+	raw, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	req := request{op: opPutTenantPrivateLlm, params: map[string]string{"tenant_id": tenantID}, accept: "application/json", contentType: "application/json", body: raw}
+	return doJSON(ctx, o.c.t, req, applyOptions(options).deadline(o.c.timeout), func(*map[string]any) error { return nil })
+}
+
+// GetTenantPrivateLlm reads a tenant pin.
+func (o *OpsClient) GetTenantPrivateLlm(ctx context.Context, tenantID string, options ...CallOption) (*map[string]any, error) {
+	if tenantID == "" {
+		return nil, invalidArgument("tenantID", "it is required")
+	}
+	req := request{op: opGetTenantPrivateLlm, params: map[string]string{"tenant_id": tenantID}, accept: "application/json"}
+	return doJSON(ctx, o.c.t, req, applyOptions(options).deadline(o.c.timeout), func(*map[string]any) error { return nil })
+}
+
+// DeleteTenantPrivateLlm clears a tenant pin.
+func (o *OpsClient) DeleteTenantPrivateLlm(ctx context.Context, tenantID string, options ...CallOption) error {
+	if tenantID == "" {
+		return invalidArgument("tenantID", "it is required")
+	}
+	req := request{op: opDeleteTenantPrivateLlm, params: map[string]string{"tenant_id": tenantID}}
+	return doEmpty(ctx, o.c.t, req, applyOptions(options).deadline(o.c.timeout))
+}
+
+// PutPrincipalPrivateLlm activates a principal's private LLM binding.
+func (o *OpsClient) PutPrincipalPrivateLlm(ctx context.Context, principalID string, body map[string]any, options ...CallOption) (*map[string]any, error) {
+	if principalID == "" {
+		return nil, invalidArgument("principalID", "it is required")
+	}
+	raw, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	req := request{op: opPutPrincipalPrivateLlm, params: map[string]string{"principal_id": principalID}, accept: "application/json", contentType: "application/json", body: raw}
+	return doJSON(ctx, o.c.t, req, applyOptions(options).deadline(o.c.timeout), func(*map[string]any) error { return nil })
+}
+
+// GetPrincipalPrivateLlm reads a principal's operator private LLM binding.
+func (o *OpsClient) GetPrincipalPrivateLlm(ctx context.Context, principalID string, options ...CallOption) (*map[string]any, error) {
+	if principalID == "" {
+		return nil, invalidArgument("principalID", "it is required")
+	}
+	req := request{op: opGetPrincipalPrivateLlm, params: map[string]string{"principal_id": principalID}, accept: "application/json"}
+	return doJSON(ctx, o.c.t, req, applyOptions(options).deadline(o.c.timeout), func(*map[string]any) error { return nil })
+}
+
+// DeletePrincipalPrivateLlm clears a principal's operator private LLM binding.
+func (o *OpsClient) DeletePrincipalPrivateLlm(ctx context.Context, principalID string, options ...CallOption) error {
+	if principalID == "" {
+		return invalidArgument("principalID", "it is required")
+	}
+	req := request{op: opDeletePrincipalPrivateLlm, params: map[string]string{"principal_id": principalID}}
+	return doEmpty(ctx, o.c.t, req, applyOptions(options).deadline(o.c.timeout))
+}

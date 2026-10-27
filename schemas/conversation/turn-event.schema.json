@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:alixai:schema:conversation:turn-event:v1",
   "title": "TurnEvent",
-  "description": "One event of a streamed turn (master plan 14.1, 14.2), discriminated by type: token, directive, clarification, prepared_action, receipt, citation, progress, error, done, plus block for rich blocks. Every event carries turn_id and seq, a per-turn counter that starts at 0 and rises by one, which is also the resume cursor. Events are emitted only by the core. The model's only contribution is the verified text in token events and in model-authority members of blocks; structured payloads (directive, prepared_action, receipt, citation) are core or host data and are never taken from model output. Each variant repeats the envelope members instead of composing them with allOf so that additionalProperties false holds and generated types stay flat.",
+  "description": "One event of a streamed turn (master plan 14.1, 14.2), discriminated by type: token, directive, clarification, prepared_action, receipt, citation, progress, error, done, plus block for rich blocks and text_replaced when verified incremental streaming supersedes shown text (ADR 0046). Every event carries turn_id and seq, a per-turn counter that starts at 0 and rises by one, which is also the resume cursor. Events are emitted only by the core. The model's only contribution is the verified text in token events and in model-authority members of blocks; structured payloads (directive, prepared_action, receipt, citation) are core or host data and are never taken from model output. Each variant repeats the envelope members instead of composing them with allOf so that additionalProperties false holds and generated types stay flat.",
   "oneOf": [
     { "$ref": "#/$defs/tokenEvent" },
     { "$ref": "#/$defs/directiveEvent" },
@@ -14,7 +14,8 @@
     { "$ref": "#/$defs/errorEvent" },
     { "$ref": "#/$defs/doneEvent" },
     { "$ref": "#/$defs/blockEvent" },
-    { "$ref": "#/$defs/memoryProposalEvent" }
+    { "$ref": "#/$defs/memoryProposalEvent" },
+    { "$ref": "#/$defs/textReplacedEvent" }
   ],
   "$defs": {
     "seq": {
@@ -326,6 +327,32 @@
           "description": "The proposed item (status proposed). Never instructions.",
           "x-alixai-authority": "alixai",
           "$ref": "urn:alixai:schema:memory:memory-item:v1"
+        }
+      }
+    },
+    "textReplacedEvent": {
+      "description": "Verified token text already shown for this turn is superseded because a later segment failed verification (ADR 0046). Clients discard the superseded assistant text; the deterministic template follows as token events. Mapped to AG-UI CUSTOM event alixai.text_replaced.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "turn_id", "seq", "reason"],
+      "properties": {
+        "type": {
+          "x-alixai-authority": "alixai",
+          "const": "text_replaced"
+        },
+        "turn_id": {
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:actions:shared:v1#/$defs/turnId"
+        },
+        "seq": {
+          "x-alixai-authority": "alixai",
+          "$ref": "#/$defs/seq"
+        },
+        "reason": {
+          "description": "Why shown text is superseded. Only verification_failed today.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "const": "verification_failed"
         }
       }
     }

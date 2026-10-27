@@ -3,6 +3,17 @@
 All notable changes to this package. The format follows [Keep a Changelog](https://keepachangelog.com/); versions follow semantic versioning once 1.0.0
 ships, with the rules of [compatibility.md](../../docs/policies/compatibility.md).
 
+## 1.4.0 — 2026-10-27
+
+### Added
+
+- Ops private LLM routes (ADR 0045): endpoint CRUD, tenant pin, principal private binding under `/v1/ops/…`.
+- `me.llm.put_role` accepts optional `private_endpoint_id` (mutually exclusive with `profile_id`).
+
+### Notes (core)
+
+- Private self-hosted OpenAI-compatible endpoints (`self_hosted`); tenant pin overrides personal external bindings inside that tenant; typed `private_llm_starting` / `private_llm_unavailable` with no third-party fallback.
+
 ## 1.3.0 — 2026-10-27
 
 ### Added

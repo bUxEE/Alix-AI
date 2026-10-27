@@ -16,21 +16,22 @@ import (
 //
 // One event of a streamed turn (master plan 14.1, 14.2), discriminated by type: token, directive,
 // clarification, prepared_action, receipt, citation, progress, error, done, plus block for rich
-// blocks. Every event carries turn_id and seq, a per-turn counter that starts at 0 and rises by
-// one, which is also the resume cursor. Events are emitted only by the core. The model's only
-// contribution is the verified text in token events and in model-authority members of blocks;
-// structured payloads (directive, prepared_action, receipt, citation) are core or host data and
-// are never taken from model output. Each variant repeats the envelope members instead of
-// composing them with allOf so that additionalProperties false holds and generated types stay
-// flat.
+// blocks and text_replaced when verified incremental streaming supersedes shown text (ADR 0046).
+// Every event carries turn_id and seq, a per-turn counter that starts at 0 and rises by one, which
+// is also the resume cursor. Events are emitted only by the core. The model's only contribution is
+// the verified text in token events and in model-authority members of blocks; structured payloads
+// (directive, prepared_action, receipt, citation) are core or host data and are never taken from
+// model output. Each variant repeats the envelope members instead of composing them with allOf so
+// that additionalProperties false holds and generated types stay flat.
 //
 // It is a union discriminated by the "type" property: exactly one of TokenEvent, DirectiveEvent,
 // ClarificationEvent, PreparedActionEvent, ReceiptEvent, CitationEvent, ProgressEvent, ErrorEvent,
-// DoneEvent, BlockEvent, MemoryProposalEvent.
+// DoneEvent, BlockEvent, MemoryProposalEvent, TextReplacedEvent.
 type TurnEvent struct {
 	// Value holds the variant: one of TokenEvent, DirectiveEvent, ClarificationEvent,
 	// PreparedActionEvent, ReceiptEvent, CitationEvent, ProgressEvent, ErrorEvent, DoneEvent,
-	// BlockEvent, MemoryProposalEvent. The zero value holds none and cannot be encoded.
+	// BlockEvent, MemoryProposalEvent, TextReplacedEvent. The zero value holds none and cannot
+	// be encoded.
 	Value TurnEventValue
 }
 
@@ -50,6 +51,7 @@ func (ErrorEvent) isTurnEvent()          {}
 func (DoneEvent) isTurnEvent()           {}
 func (BlockEvent) isTurnEvent()          {}
 func (MemoryProposalEvent) isTurnEvent() {}
+func (TextReplacedEvent) isTurnEvent()   {}
 
 // MarshalJSON encodes the variant that is set. The discriminator is written by
 // the variant itself, so it can never disagree with the variant's type.
@@ -143,6 +145,12 @@ func (u *TurnEvent) UnmarshalJSON(data []byte) error {
 		u.Value = v
 	case "memory_proposal":
 		v, err := decodeStrict[MemoryProposalEvent](data)
+		if err != nil {
+			return fmt.Errorf("TurnEvent: %w", err)
+		}
+		u.Value = v
+	case "text_replaced":
+		v, err := decodeStrict[TextReplacedEvent](data)
 		if err != nil {
 			return fmt.Errorf("TurnEvent: %w", err)
 		}
@@ -634,6 +642,37 @@ func (v ReceiptEvent) MarshalJSON() ([]byte, error) {
 // JSON Schema constraints (enforced by schema validation, not by this type): minimum 0, maximum
 // 4294967295.
 type Seq int64
+
+// TextReplacedEvent mirrors urn:alixai:schema:conversation:turn-event:v1#/$defs/textReplacedEvent.
+//
+// Verified token text already shown for this turn is superseded because a later segment failed
+// verification (ADR 0046). Clients discard the superseded assistant text; the deterministic
+// template follows as token events. Mapped to AG-UI CUSTOM event alixai.text_replaced.
+type TextReplacedEvent struct {
+	// Authority: alixai.
+	Type string `json:"type" alixai:"alixai"`
+
+	// Authority: alixai.
+	TurnID actions.TurnID `json:"turn_id" alixai:"alixai"`
+
+	// Authority: alixai.
+	Seq Seq `json:"seq" alixai:"alixai"`
+
+	// Why shown text is superseded. Only verification_failed today.
+	//
+	// Authority: alixai.
+	Reason string `json:"reason" alixai:"alixai"`
+}
+
+// MarshalJSON encodes the value with its const members forced to the value the
+// schema fixes and with required arrays and maps never null.
+func (v TextReplacedEvent) MarshalJSON() ([]byte, error) {
+	type plain TextReplacedEvent
+	a := plain(v)
+	a.Type = "text_replaced"
+	a.Reason = "verification_failed"
+	return json.Marshal(a)
+}
 
 // TokenEvent mirrors urn:alixai:schema:conversation:turn-event:v1#/$defs/tokenEvent.
 //

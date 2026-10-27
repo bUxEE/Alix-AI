@@ -36,6 +36,9 @@ in 1.0 ([ADR 0010](../decisions/0010-lite-model-selection.md)).
 | Qwen3.5-2B (`qwen3.5-2b-q4_k_m`) | rejected | `Qwen/Qwen3.5-2B` at `15852e8c` | Q4_K_M by **unsloth** at `f6d5376b` | Apache-2.0 | as above | as above |
 | MiniCPM5-1B (`minicpm5-1b-q4_k_m`) | rejected | `openbmb/MiniCPM5-1B` at `87179e5c` | Q4_K_M by openbmb (first party) at `3d55fac8` | Apache-2.0 | card metadata and text ("released under the Apache-2.0 License"); the project's GitHub LICENSE is Apache-2.0; no LICENSE file in the model repositories | earlier MiniCPM releases had a separate model licence with commercial registration; no such licence or registration requirement was found for MiniCPM5 |
 | EmbeddingGemma 2, text part (`egemma2-text-q8_0`) | candidate; **cannot load** on the pinned LocalAI | `google/embeddinggemma-2` at `914f7f89` | Q8_0 by **ggml-org** (third party) at `bfcd2987` | Apache-2.0, **with a use policy on the card** | card metadata; no LICENSE file; the card's licence link resolves to the Apache-2.0 text | see flag 1 below. Not gated. Not used by any profile |
+| OpenAI gpt-oss-20b (`gpt-oss-20b`) | candidate (Performance / private-LLM) | `openai/gpt-oss-20b` at `6cee5e81` | first-party MXFP4 safetensors (shard 00000 sha256 `16d0f997…312427`; full set in `deploy/container/performance/config/pins.txt`) | Apache-2.0 | LICENSE at the pinned commit (fetched 2026-10-27) | MoE; ~16 GB VRAM claim is publisher estimate; not gated |
+| Qwen3-30B-A3B-Instruct-2507 (`qwen3-30b-a3b`) | candidate (Performance) | `Qwen/Qwen3-30B-A3B-Instruct-2507` at `0d7cf239` | first-party BF16 safetensors (shard 1 sha256 `afe775cb…67c325`; 16 shards pinned) | Apache-2.0 | LICENSE at the pinned commit (fetched 2026-10-27) | latest instruct revision as of check date; not gated |
+| OpenAI gpt-oss-120b (`gpt-oss-120b`) | candidate (Performance / shared) | `openai/gpt-oss-120b` at `b5c939de` | first-party MXFP4 safetensors (shard 00000 sha256 `69521888…45969b7`; full set pinned) | Apache-2.0 | LICENSE at the pinned commit (fetched 2026-10-27) | ≥60 GB VRAM class; not gated |
 
 All model repositories above were checked at the pinned revision. None is gated.
 
@@ -63,6 +66,8 @@ All model repositories above were checked at the pinned revision. None is gated.
 | --- | --- | --- | --- |
 | LocalAI (`docker.io/localai/localai:v4.10.0`) | digest `sha256:0632c21d…705b` | **MIT** ("Copyright (c) 2023-2025 Ettore Di Giacinto"), LICENSE file at the `v4.10.0` tag | the image is a small core; inference backends are separate OCI images pulled on demand. No NOTICE or third-party licence file at the repository root, only an acknowledgements list in its README |
 | LocalAI llama.cpp backend (`v4.10.0-cpu-llama-cpp`) | digest `sha256:d7b0d9c6…2579` | llama.cpp and ggml are **MIT** | llama.cpp vendors some code under its own licences (a `licenses/` directory). The GGUF format is specified in the MIT-licensed ggml repository |
+| LocalAI CUDA 12 (`v4.10.0-gpu-nvidia-cuda-12`) | digest `sha256:9f999a8c…c48d65` (Docker Hub, 2026-10-27) | **MIT** (same LocalAI project) | Performance alternative runtime; image OS/CUDA stack not file-scanned here |
+| vLLM OpenAI CUDA (`vllm/vllm-openai:v0.11.2`) | index digest `sha256:2c908d5a…fe9331` (Docker Hub, 2026-10-27) | Apache-2.0 (vLLM project) | Performance primary runtime; third-party packages inside the image not re-reviewed |
 
 What was **not** reviewed: the operating-system packages and libraries inside the LocalAI and backend images. They are pinned
 through the image digests only; their licences and advisories are the image publisher's. The image SBOM AlixAI produces

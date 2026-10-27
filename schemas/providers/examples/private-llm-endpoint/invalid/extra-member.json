@@ -1,0 +1,11 @@
+{
+  "endpoint_id": "ple_01J0000000000000000000000A",
+  "origin": "https://llm.example.internal",
+  "api_dialect": "openai-compatible",
+  "model_ids": ["llama-3.1-8b"],
+  "roles": ["conversational_controller"],
+  "owner_kind": "shared",
+  "lifecycle": "ready",
+  "updated_at": "2026-10-26T12:00:00.000Z",
+  "extra": true
+}
