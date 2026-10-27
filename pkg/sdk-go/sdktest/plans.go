@@ -45,12 +45,15 @@ const (
 	planPrepare
 	planFail
 	planReject
+	planVerifiedReplace
 )
 
-// TurnPlan is what the assistant does in one turn. Build one with Reply, PrepareAction, FailTurn or RejectTurn.
+// TurnPlan is what the assistant does in one turn. Build one with Reply, PrepareAction, FailTurn,
+// RejectTurn or VerifiedReplace.
 type TurnPlan struct {
 	kind    planKind
 	text    string
+	shown   []string
 	prepare PrepareInput
 	code    contracts.ErrCode
 	message string
@@ -73,4 +76,11 @@ func FailTurn(code contracts.ErrCode, message string) TurnPlan {
 // stream.
 func RejectTurn(status int, code contracts.ErrCode, message string) TurnPlan {
 	return TurnPlan{kind: planReject, status: status, code: code, message: message}
+}
+
+// VerifiedReplace is a plan for ADR 0046 verified streaming: one token event per shown fragment,
+// then text_replaced, then the template as token events, then done. Each shown fragment must be
+// non-empty and at most 48 characters (one token each).
+func VerifiedReplace(shown []string, template string) TurnPlan {
+	return TurnPlan{kind: planVerifiedReplace, shown: append([]string(nil), shown...), text: template}
 }

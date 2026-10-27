@@ -189,6 +189,69 @@ func TestSessionLifecycle(t *testing.T) {
 	}
 }
 
+func TestTextReplacedStreaming(t *testing.T) {
+	// ADR 0046: token, token, text_replaced, token(template), done — joined text is the template only.
+	const template = "I cannot verify that."
+	ctx := context.Background()
+	plan := func(h *harness) {
+		h.fake.OnTurn(func(sdktest.Turn) sdktest.TurnPlan {
+			return sdktest.VerifiedReplace([]string{"Shown A.", "Shown B."}, template)
+		})
+	}
+	assertReplace := func(t *testing.T, result *sdkgo.TurnResult) {
+		t.Helper()
+		assertContiguous(t, result.Events)
+		if n := len(result.Events); n != 5 {
+			t.Fatalf("token, token, text_replaced, token, done: got %d events %v", n, seqs(t, result.Events))
+		}
+		if _, ok := result.Events[2].Value.(conversation.TextReplacedEvent); !ok {
+			t.Fatalf("seq 2 is text_replaced, got %+v", result.Events[2].Value)
+		}
+		if got := sdkgo.TurnText(result.Events); got != template {
+			t.Fatalf("joined text is the template only: %q", got)
+		}
+	}
+
+	t.Run("SSE", func(t *testing.T) {
+		h := newHarness(t)
+		plan(h)
+		result := must[*sdkgo.TurnResult](t, "result")(must[*sdkgo.TurnStream](t, "send")(h.client.SendTurn(ctx, "ses-1", sdkgo.TextTurn("go"))).Result())
+		assertReplace(t, result)
+	})
+
+	t.Run("WebSocket", func(t *testing.T) {
+		h := newHarness(t)
+		plan(h)
+		result := must[*sdkgo.TurnResult](t, "result")(must[*sdkgo.TurnStream](t, "send")(h.client.SendTurn(ctx, "ses-1", sdkgo.TextTurn("go"), sdkgo.WithWebSocket())).Result())
+		assertReplace(t, result)
+	})
+
+	t.Run("resume after text_replaced over SSE and WebSocket", func(t *testing.T) {
+		for name, opts := range map[string][]sdkgo.CallOption{
+			"sse": {}, "websocket": {sdkgo.WithWebSocket()},
+		} {
+			t.Run(name, func(t *testing.T) {
+				h := newHarness(t)
+				plan(h)
+				h.fake.DropNext(3) // after seq 2 (text_replaced)
+				result := must[*sdkgo.TurnResult](t, "result")(must[*sdkgo.TurnStream](t, "send")(h.client.SendTurn(ctx, "ses-1", sdkgo.TextTurn("go"), opts...)).Result())
+				assertReplace(t, result)
+				resumes := h.fake.RequestsOf("streamTurnEvents")
+				if len(resumes) != 1 {
+					t.Fatalf("one resume after text_replaced: %+v", resumes)
+				}
+				if name == "websocket" {
+					if !resumes[0].WebSocket || !strings.Contains(resumes[0].RawQuery, "cursor=2") {
+						t.Fatalf("WebSocket resume after seq 2: %+v", resumes[0])
+					}
+				} else if resumes[0].WebSocket || resumes[0].LastEventID != "2" {
+					t.Fatalf("SSE resume after seq 2: %+v", resumes[0])
+				}
+			})
+		}
+	})
+}
+
 func TestStreamReconnect(t *testing.T) {
 	ctx := context.Background()
 	long := func(h *harness) {

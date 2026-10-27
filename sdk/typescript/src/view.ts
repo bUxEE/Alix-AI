@@ -23,9 +23,12 @@ export interface TurnView {
   turnId: string | undefined;
   /**
    * The model's text, the `token` events joined in order. It is Markdown sanitised as a whole by the core and then cut into
-   * fragments, so render this joined text and never a fragment alone.
+   * fragments, so render this joined text and never a fragment alone. A `text_replaced` event discards every token shown so
+   * far (ADR 0046); only tokens after the last replacement count.
    */
   text: string;
+  /** True when at least one `text_replaced` event was seen (verified streaming superseded shown text). */
+  textReplaced: boolean;
   /** The typed blocks, in order (every `block` event, and the clarification as a block too). */
   blocks: RichBlock[];
   /** The citations of the answer, in order, from `citation` events: one source each, with the claims it supports. */
@@ -55,6 +58,7 @@ export const viewTurn = (events: readonly TurnEvent[]): TurnView => {
   const view: TurnView = {
     turnId: undefined,
     text: "",
+    textReplaced: false,
     blocks: [],
     citations: [],
     clarification: undefined,
@@ -73,6 +77,10 @@ export const viewTurn = (events: readonly TurnEvent[]): TurnView => {
     switch (event.type) {
       case "token":
         view.text += event.text;
+        break;
+      case "text_replaced":
+        view.text = "";
+        view.textReplaced = true;
         break;
       case "block":
         view.blocks.push(event.block);

@@ -4,8 +4,8 @@ Sync and async clients for the AlixAI public API (`schemas/api/openapi.yaml`), t
 for CopilotKit and AG-UI frontends, and a fake server for the tests of a host application. Python 3.11 and later; runtime dependencies are `httpx` and
 `pydantic` only.
 
-**Status: 1.1.0.** The contracts this SDK speaks are frozen for v1 (`schemas/_frozen/v1`, checked by `tools/compat`).
-`pyproject.toml` reads `1.1.0` with a Production/Stable classifier. Compatibility and support rules are in
+**Status: 1.4.1.** The contracts this SDK speaks are frozen for v1 (`schemas/_frozen/v1`, checked by `tools/compat`).
+`pyproject.toml` reads `1.4.1` with a Production/Stable classifier. Compatibility and support rules are in
 [compatibility](../../docs/policies/compatibility.md) and [migration and support](../../docs/policies/migration-and-support.md).
 The version this SDK is tested against is the core in the same repository commit. See [CHANGELOG.md](CHANGELOG.md).
 
@@ -69,6 +69,8 @@ async with fake.async_client("ses-1") as client:
   retries with a token, and never puts one in an error. A host that caches its token fails with `replayed`.
 - **Streams.** A stream that ends before `done`, a gap in `seq`, a changed `turn_id` or an unknown event type raises; it is never a quiet end. `with` / `close()`
   releases the connection.
+- **Verified streaming.** With `dialogue.stream_verified: true` the core may emit `text_replaced` (ADR 0046). Read turns over **SSE** from your backend (this SDK's only
+  stream transport); on `text_replaced`, discard the assistant text already shown for that turn (`turn_text` resets) and render only the tokens that follow.
 - **Errors.** Every failure is an `AlixAIError` with a closed `code` (`ERROR_CODES`), `retryable`, `status`, `details` and `request_id`. A commit the host refused or
   left uncertain carries the `receipt` and `preparation`. A request that may have been processed but whose answer was lost is `uncertain_outcome` (never
   retryable): read the state first. **The SDK retries nothing.**

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "alixai"
-version = "1.4.0"
+version = "1.4.1"
 description = "AlixAI Python SDK: sync and async clients over httpx, typed models generated from the JSON Schemas, SSE turn streaming and a fake server for host tests"
 readme = "README.md"
 requires-python = ">=3.11"

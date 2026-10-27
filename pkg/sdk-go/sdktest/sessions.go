@@ -384,6 +384,15 @@ func (c *call) planEvents(b *eventBuilder, s *session, plan TurnPlan) (secret st
 		b.add("prepared_action", conversation.PreparedActionEvent{TurnID: b.tid(), Seq: b.seq(), PreparedAction: p.action})
 		b.done(conversation.DoneEventFinishReasonAwaitingConfirmation, string(p.action.PreparationID))
 		return p.secret, true
+	case planVerifiedReplace:
+		for _, frag := range plan.shown {
+			b.add("token", conversation.TokenEvent{TurnID: b.tid(), Seq: b.seq(), Text: frag})
+		}
+		b.add("text_replaced", conversation.TextReplacedEvent{
+			TurnID: b.tid(), Seq: b.seq(), Reason: "verification_failed",
+		})
+		b.text(plan.text)
+		b.done(conversation.DoneEventFinishReasonCompleted, "")
 	default:
 		b.text(plan.text)
 		b.done(conversation.DoneEventFinishReasonCompleted, "")

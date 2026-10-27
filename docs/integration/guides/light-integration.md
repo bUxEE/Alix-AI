@@ -76,8 +76,8 @@ The turn **event stream** works in External mode (`Accept: text/event-stream`, A
 Recommended host pattern (about **total latency**, not about avoiding the stream):
 
 1. Accept the user turn on your backend.
-2. Run the AlixAI turn in the background (JSON turn or event stream).
-3. Push progress and the verified result to the UI (websocket, SSE from *your* backend, or poll). Handle `alixai.text_replaced` by discarding the superseded assistant message.
+2. Read the AlixAI turn from your backend over **SSE** (the stable server-to-server option; WebSocket is server-to-client only and adds nothing there). Resume uses the cursor / `Last-Event-ID`.
+3. Relay progress and segments to the browser over the host's own channel (for example its WebSocket), in order, including the replace instruction. On `text_replaced` / AG-UI `alixai.text_replaced`, discard the superseded assistant text for that turn; the deterministic template follows as new tokens.
 
 Set timeouts on the host call above the provider's own limits; a slow or dead provider surfaces as `unavailable` or `timeout` ([external-mode.md](../external-mode.md) §4).
 

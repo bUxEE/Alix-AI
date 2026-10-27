@@ -5,8 +5,8 @@ AlixAI public API (`schemas/api/openapi.yaml`). Documents that have a JSON Schem
 library and one small WebSocket library (`github.com/coder/websocket`). A fake AlixAI server for the tests of a host application is in `pkg/sdk-go/sdktest`, and an
 AG-UI proxy for CopilotKit and AG-UI frontends is in `pkg/sdk-go/agui`.
 
-**Status: 1.3.0.** The contracts this SDK speaks are frozen for v1 (`schemas/_frozen/v1`, checked by `tools/compat`).
-`Version` in this package is `"1.3.0"`. Compatibility and support rules are in
+**Status: 1.4.1.** The contracts this SDK speaks are frozen for v1 (`schemas/_frozen/v1`, checked by `tools/compat`).
+`Version` in this package is `"1.4.1"`. Compatibility and support rules are in
 [compatibility](../../docs/policies/compatibility.md) and [migration and support](../../docs/policies/migration-and-support.md). The version this SDK is tested against
 is the core in the same repository commit. The changelog is the last section of this file.
 
@@ -76,6 +76,10 @@ for name, opts := range map[string][]sdkgo.CallOption{
 
 The resume only reads: the turn is never run again (the test counts one `sendTurn`) and the confirmation secret is never part of it. `MaxResumes` below zero turns the
 automatic resume off.
+
+### Verified streaming
+
+With `dialogue.stream_verified: true` the core may emit a `text_replaced` TurnEvent when a later sentence fails verification (ADR 0046). Read turn events over **SSE** (the default) from your backend; WebSocket is server-to-client only and gives nothing extra on a server-to-server path. Resume is automatic via the cursor / `Last-Event-ID`. On `text_replaced`, discard the assistant text already shown for that turn (`TurnText` does this) and render only the tokens that follow (the deterministic template).
 
 File ids go on a turn with `WithAttachments`, checked before a token is spent (`attachments_test.go`, `TestSendTurnWithAttachments`):
 
@@ -183,11 +187,15 @@ r.front = httptest.NewServer(http.StripPrefix("/agui", p.Handler()))
 `sdktest.New()` is a fake AlixAI over `httptest`. It speaks the operations of `sdkgo.Operations()` as the OpenAPI document defines them and enforces what a host cares about: single-use
 tokens (`replayed`), `scope_violation` for a path that names another session, preparation or application than the token, a confirmation secret used up by its first presentation, an
 application that is not active serving nothing, and turn events readable again from a cursor. Script a turn with `OnTurn` and the plans `Reply`, `PrepareAction`, `FailTurn`,
-`RejectTurn`; inject faults with `FailNext`, `DropNext`, `SetReady`, `SetApplicationStatus`; read what happened with `Requests`/`RequestsOf`. It runs no model, keeps no key and
+`RejectTurn`, `VerifiedReplace`; inject faults with `FailNext`, `DropNext`, `SetReady`, `SetApplicationStatus`; read what happened with `Requests`/`RequestsOf`. It runs no model, keeps no key and
 reaches no application; none of the controller models is activatable yet, so a live conversation needs a model the operator has qualified. `go test ./pkg/sdk-go/...` runs the SDK
 suite; `contract_test.go` and `spec_test.go` hold it to the OpenAPI document.
 
 ## Changelog
+
+### 1.4.1 — 2026-10-27
+
+**Fixed.** `text_replaced` TurnEvent (ADR 0046): `Envelope` accepts it (and `memory_proposal`); `TurnText` resets on replacement so joined text is the template only. Streams with a replace complete over SSE and WebSocket, including resume after `text_replaced`.
 
 ### 1.3.0 — 2026-10-27
 

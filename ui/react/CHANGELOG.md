@@ -3,6 +3,12 @@
 All notable changes to this package. Versions follow semantic versioning with the rules of
 [compatibility.md](../../docs/policies/compatibility.md).
 
+## 1.4.1 — 2026-10-27
+
+### Fixed
+
+- Version aligns with core/SDK 1.4.1 (`text_replaced` handling in the SDKs). No React kit API change.
+
 ## 1.4.0 — 2026-10-27
 
 ### Added

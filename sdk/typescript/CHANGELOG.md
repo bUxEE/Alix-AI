@@ -3,6 +3,12 @@
 All notable changes to this package. The format follows [Keep a Changelog](https://keepachangelog.com/); versions follow semantic versioning once 1.0.0
 ships, with the rules of [compatibility.md](../../docs/policies/compatibility.md).
 
+## 1.4.1 — 2026-10-27
+
+### Fixed
+
+- `text_replaced` (ADR 0046): `viewTurn` / `turnText` discard superseded token text; `TurnView.textReplaced` is set when a replacement happened.
+
 ## 1.4.0 — 2026-10-27
 
 ### Added

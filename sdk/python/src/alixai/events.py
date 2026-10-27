@@ -16,7 +16,21 @@ from alixai.gen.conversation.turn_event import DoneEvent, TurnEvent
 
 _EVENT = TypeAdapter(TurnEvent)
 
-TURN_EVENT_TYPES = ("token", "directive", "clarification", "prepared_action", "receipt", "citation", "progress", "error", "done", "block")
+# Every TurnEvent discriminant, in schemas/conversation/turn-event order. A test checks this against the schema.
+TURN_EVENT_TYPES = (
+    "token",
+    "directive",
+    "clarification",
+    "prepared_action",
+    "receipt",
+    "citation",
+    "progress",
+    "error",
+    "done",
+    "block",
+    "memory_proposal",
+    "text_replaced",
+)
 
 
 def malformed(reason: str, **extra: Any) -> AlixAIError:
@@ -30,6 +44,8 @@ def parse_turn_event(value: Any) -> TurnEvent:
     kind = value.get("type")
     if kind not in TURN_EVENT_TYPES:
         raise malformed("unknown event type", event_type=kind[:64] if isinstance(kind, str) else type(kind).__name__)
+    if kind == "text_replaced" and value.get("reason") != "verification_failed":
+        raise malformed("text_replaced.reason must be verification_failed", event_type=kind)
     try:
         return _EVENT.validate_python(value)
     except ValidationError as exc:
@@ -94,8 +110,18 @@ class TurnSequence:
 
 
 def turn_text(events: Sequence[TurnEvent]) -> str:
-    """The text of a turn: its token events, joined in order."""
-    return "".join(event.text for event in events if event.type == "token")
+    """The text of a turn: its token events, joined in order.
+
+    A ``text_replaced`` event (ADR 0046) discards every token shown so far; only tokens after the last
+    replacement count.
+    """
+    parts: list[str] = []
+    for event in events:
+        if event.type == "token":
+            parts.append(event.text)
+        elif event.type == "text_replaced":
+            parts.clear()
+    return "".join(parts)
 
 
 def done_event(events: Sequence[TurnEvent]) -> Optional[DoneEvent]:

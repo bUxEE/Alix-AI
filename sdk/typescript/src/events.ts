@@ -143,9 +143,18 @@ export const createTurnSequence = (expectedTurnId?: string, nextSeq = 0): TurnSe
   return { accept, finish, done: () => done, turnId: () => turnId, cursor: () => (nextSeq === 0 ? undefined : nextSeq - 1) };
 };
 
-/** The text of a turn: its token events, joined in order. */
-export const turnText = (events: readonly TurnEvent[]): string =>
-  events.map((event) => (event.type === "token" ? event.text : "")).join("");
+/**
+ * The text of a turn: its token events, joined in order. A `text_replaced` event (ADR 0046) discards every
+ * token shown so far; only tokens after the last replacement count.
+ */
+export const turnText = (events: readonly TurnEvent[]): string => {
+  let text = "";
+  for (const event of events) {
+    if (event.type === "token") text += event.text;
+    else if (event.type === "text_replaced") text = "";
+  }
+  return text;
+};
 
 /** The `done` event of a finished turn. */
 export const doneEvent = (events: readonly TurnEvent[]): DoneEvent | undefined => {

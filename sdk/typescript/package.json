@@ -1,6 +1,6 @@
 {
   "name": "@alixai/sdk",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "TypeScript SDK for the AlixAI public API: sessions, streamed turns, confirmations, health. Zero runtime dependencies.",
   "license": "Apache-2.0",
   "type": "module",

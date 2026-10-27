@@ -1,6 +1,6 @@
 {
   "name": "@alixai/demo-mock",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "private": true,
   "description": "A scripted, offline stand-in for the AlixAI gateway that the demo apps of the Vue and React kits run against: AG-UI over SSE, files, settings, source health, integration audit, the voice WebSocket and dictation HTTP, as a Vite dev-server plugin. No model, no network, no telemetry.",
   "license": "Apache-2.0",

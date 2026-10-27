@@ -4,8 +4,8 @@ The TypeScript SDK for the AlixAI public API (`/v1`). ESM, strict TypeScript, **
 server-sent-events reader over `ReadableStream`), so it runs in Node 20 and later and in browsers. An in-process fake of the service for your own
 tests ships as `@alixai/sdk/testing`.
 
-**Status: 1.1.0.** The contracts this SDK speaks are frozen for v1 (`schemas/_frozen/v1`, checked by `tools/compat`).
-`package.json` reads `1.1.0`. Compatibility and support rules are in
+**Status: 1.4.1.** The contracts this SDK speaks are frozen for v1 (`schemas/_frozen/v1`, checked by `tools/compat`).
+`package.json` reads `1.4.1`. Compatibility and support rules are in
 [compatibility](../../docs/policies/compatibility.md) and [migration and support](../../docs/policies/migration-and-support.md).
 The version this SDK is tested against is the core in the same repository commit. See [CHANGELOG.md](CHANGELOG.md).
 
@@ -85,7 +85,7 @@ await client.endSession("ses-1");
 ## Turns
 
 `sendTurn(sessionId, input)` sends the request immediately and returns a `TurnStream`: an async iterable of typed `TurnEvent`s (`token`, `directive`,
-`clarification`, `prepared_action`, `receipt`, `citation`, `progress`, `error`, `done`, `block`). Turns are POST requests, so the stream is read with
+`clarification`, `prepared_action`, `receipt`, `citation`, `progress`, `error`, `done`, `block`, `memory_proposal`, `text_replaced`). Turns are POST requests, so the stream is read with
 `fetch`, not `EventSource`. `input` is exactly one of `{ text }`, `{ choice_id }`, `{ confirmation: { preparation_id, token } }` and
 `{ reject: { preparation_id } }`; `text` can also carry `language` and `attachments` (file ids). A confirmation is a structured input from your UI: text can never
 confirm anything. `sendTurnJson` returns the same as one JSON document, without streaming.
@@ -95,6 +95,10 @@ event it carries. A stream that ends before `done` throws `uncertain_outcome` (w
 anything again); a gap, a malformed event or an unknown event type throws `internal`. A turn that ended in a typed failure or a refusal is **delivered as
 events** (an `error` event, then `done` with `finish_reason: "failed"`), not thrown. A turn that could not be run at all (no valid scope, a rate limit,
 an ended session) throws before any event.
+
+### Verified streaming
+
+With `dialogue.stream_verified: true` the core may emit `text_replaced` when a later sentence fails verification (ADR 0046). Prefer **SSE** for server-to-server reads (the default); WebSocket is server-to-client only and adds nothing on that path. Resume uses the cursor / `Last-Event-ID`. On `text_replaced`, discard the assistant text already shown for that turn (`viewTurn` / `turnText` reset; `view.textReplaced` is true) and render only the tokens that follow.
 
 ### Reconnecting: cursors, SSE and WebSocket
 

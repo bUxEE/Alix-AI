@@ -413,7 +413,7 @@ version matrix in M3-28; nothing below is claimed from memory of a CopilotKit re
 | Raw provider events | `RAW` | not emitted | not claimed |
 | Voice | transcripts as messages | text and transcripts; full duplex not claimed | not claimed |
 | Copilot Cloud, telemetry, public API key | - | not required, not used, never sent; the adapter documents and tests the switches that keep CopilotKit's own telemetry off | adapter |
-| Transports | SSE, WebSocket | both, same events | gateway |
+| Transports | SSE, WebSocket | both, same events; prefer SSE for server-to-server (WebSocket is server-to-client only) | gateway |
 
 ## 13. Notes for the tasks that build on this
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { AlixAIError, blocksOfType, citationLink, createClient, isAlixAIError, viewTurn } from "../src/index.js";
+import { AlixAIError, blocksOfType, citationLink, createClient, isAlixAIError, turnText, viewTurn } from "../src/index.js";
 import type { Citation, TurnEvent } from "../src/index.js";
 import { askChoice, prepareAction, reply } from "../src/testing/index.js";
 import { collect, createHost } from "./helpers/host.js";
@@ -359,8 +359,23 @@ describe("viewTurn: what a UI renders from", () => {
       event(5, { type: "done", finish_reason: "completed" }),
     ]);
     expect(view.text).toBe("See [1].");
+    expect(view.textReplaced).toBe(false);
     expect(view.citations.map((c) => c.display_name)).toEqual(["Handbook"]);
     expect(blocksOfType(view.blocks, "code").map((b) => b.code)).toEqual(["1"]);
     expect(view.blocks.map((b) => b.type)).toEqual(["table", "code"]);
+  });
+
+  it("resets text on text_replaced and sets textReplaced", () => {
+    const event = (seq: number, body: Record<string, unknown>): TurnEvent => ({ turn_id: "trn_x", seq, ...body }) as unknown as TurnEvent;
+    const events = [
+      event(0, { type: "token", text: "shown " }),
+      event(1, { type: "token", text: "text" }),
+      event(2, { type: "text_replaced", reason: "verification_failed" }),
+      event(3, { type: "token", text: "template" }),
+      event(4, { type: "done", finish_reason: "completed" }),
+    ];
+    const view = viewTurn(events);
+    expect(view).toMatchObject({ text: "template", textReplaced: true, finishReason: "completed" });
+    expect(turnText(events)).toBe("template");
   });
 });

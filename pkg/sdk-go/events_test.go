@@ -1,13 +1,65 @@
 package sdkgo
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/buxee/alix-ai/pkg/contracts"
+	"github.com/buxee/alix-ai/pkg/contracts/gen/actions"
+	"github.com/buxee/alix-ai/pkg/contracts/gen/conversation"
 )
+
+func TestTurnTextResetsOnTextReplaced(t *testing.T) {
+	tid := actions.TurnID("trn_01J0000000000000000000000A")
+	events := []conversation.TurnEvent{
+		{Value: conversation.TokenEvent{TurnID: tid, Seq: 0, Text: "shown "}},
+		{Value: conversation.TokenEvent{TurnID: tid, Seq: 1, Text: "text"}},
+		{Value: conversation.TextReplacedEvent{TurnID: tid, Seq: 2, Reason: "verification_failed"}},
+		{Value: conversation.TokenEvent{TurnID: tid, Seq: 3, Text: "template"}},
+		{Value: conversation.DoneEvent{TurnID: tid, Seq: 4, FinishReason: conversation.DoneEventFinishReasonCompleted}},
+	}
+	if got := TurnText(events); got != "template" {
+		t.Fatalf("TurnText = %q, want template only", got)
+	}
+}
+
+func TestTurnEventTypesMatchSchema(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "schemas", "conversation", "turn-event.schema.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var schema struct {
+		OneOf []struct {
+			Ref string `json:"$ref"`
+		} `json:"oneOf"`
+		Defs map[string]struct {
+			Properties struct {
+				Type struct {
+					Const string `json:"const"`
+				} `json:"type"`
+			} `json:"properties"`
+		} `json:"$defs"`
+	}
+	if err := json.Unmarshal(raw, &schema); err != nil {
+		t.Fatal(err)
+	}
+	var want []string
+	for _, item := range schema.OneOf {
+		name := strings.TrimPrefix(item.Ref, "#/$defs/")
+		def, ok := schema.Defs[name]
+		if !ok || def.Properties.Type.Const == "" {
+			t.Fatalf("oneOf ref %q has no type const", item.Ref)
+		}
+		want = append(want, def.Properties.Type.Const)
+	}
+	if !slices.Equal(TurnEventTypes, want) {
+		t.Fatalf("TurnEventTypes = %v, schema = %v", TurnEventTypes, want)
+	}
+}
 
 // SEC-097: parseTurnEvent refuses what schemas/conversation/turn-event refuses.
 // Each reject case is an input the typed decoder alone delivers as an event.

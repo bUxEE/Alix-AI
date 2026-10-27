@@ -1,6 +1,6 @@
 {
   "name": "@alixai/react",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "AlixAI UI kit for React: the AlixAI parts of a CopilotKit chat (confirmation sheet, citations, attachments, chart, table and form blocks, source health, settings) with design tokens, English and Italian text, and no cloud or telemetry.",
   "license": "Apache-2.0",
   "type": "module",

@@ -118,6 +118,10 @@ func turnEventRules(ev conversation.TurnEvent) string {
 		return preparedActionRules(v.PreparedAction)
 	case conversation.ReceiptEvent:
 		return receiptRules(v.Receipt)
+	case conversation.TextReplacedEvent:
+		if v.Reason != "verification_failed" {
+			return "text_replaced.reason must be verification_failed"
+		}
 	}
 	return ""
 }
@@ -186,6 +190,13 @@ type EventEnvelope struct {
 	Seq    int64
 }
 
+// TurnEventTypes is every TurnEvent discriminant the SDK accepts, in schemas/conversation/turn-event order.
+// A test checks this list against the schema so a new event type cannot be forgotten.
+var TurnEventTypes = []string{
+	"token", "directive", "clarification", "prepared_action", "receipt", "citation",
+	"progress", "error", "done", "block", "memory_proposal", "text_replaced",
+}
+
 // Envelope returns the type, turn_id and seq of an event. ok is false for the zero TurnEvent.
 func Envelope(ev conversation.TurnEvent) (e EventEnvelope, ok bool) {
 	switch v := ev.Value.(type) {
@@ -209,6 +220,10 @@ func Envelope(ev conversation.TurnEvent) (e EventEnvelope, ok bool) {
 		return EventEnvelope{"done", string(v.TurnID), int64(v.Seq)}, true
 	case conversation.BlockEvent:
 		return EventEnvelope{"block", string(v.TurnID), int64(v.Seq)}, true
+	case conversation.MemoryProposalEvent:
+		return EventEnvelope{"memory_proposal", string(v.TurnID), int64(v.Seq)}, true
+	case conversation.TextReplacedEvent:
+		return EventEnvelope{"text_replaced", string(v.TurnID), int64(v.Seq)}, true
 	}
 	return EventEnvelope{}, false
 }
@@ -267,12 +282,16 @@ func (s *turnSequence) finish() error {
 		"reason", "stream_ended_early", "received", s.nextSeq)
 }
 
-// TurnText is the text of a turn: its token events, joined in order.
+// TurnText is the text of a turn: its token events, joined in order. A text_replaced event
+// (ADR 0046) discards every token shown so far; only tokens after the last replacement count.
 func TurnText(events []conversation.TurnEvent) string {
 	var b strings.Builder
 	for _, ev := range events {
-		if t, ok := ev.Value.(conversation.TokenEvent); ok {
-			b.WriteString(t.Text)
+		switch v := ev.Value.(type) {
+		case conversation.TokenEvent:
+			b.WriteString(v.Text)
+		case conversation.TextReplacedEvent:
+			b.Reset()
 		}
 	}
 	return b.String()
