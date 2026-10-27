@@ -22,8 +22,21 @@
 
 export { AlixConfirmationInterrupt, AlixConfirmationSheet, AlixEffectList, AlixRiskMeter } from "./components/Confirmation.js";
 export type { AlixConfirmationInterruptProps, AlixConfirmationSheetProps } from "./components/Confirmation.js";
-export { AlixActionCard, AlixChartBlock, AlixClarificationForm, AlixDiagramBlock, AlixProgressLine, AlixTableBlock } from "./components/Blocks.js";
+export {
+  AlixActionCard,
+  AlixChartBlock,
+  AlixClarificationForm,
+  AlixDiagramBlock,
+  AlixDraftBlock,
+  AlixKpiBlock,
+  AlixProgressLine,
+  AlixProvenanceBlock,
+  AlixRecordCardBlock,
+  AlixTableBlock,
+  AlixTimelineBlock,
+} from "./components/Blocks.js";
 export type { AlixActionCardProps, AlixChartBlockProps, AlixClarificationFormProps, AlixDiagramBlockProps, AlixTableBlockProps } from "./components/Blocks.js";
+export { KIT_CLIENT_CAPABILITIES } from "./capabilities.js";
 export { AlixExportMenu } from "./components/ExportMenu.js";
 export type { AlixExportMenuProps } from "./components/ExportMenu.js";
 export { runExport, saveExportBlob } from "./export.js";

@@ -41,18 +41,18 @@ describe("sendTurn with attachments", () => {
     const second = await host.client.files.upload(png("two.png"));
     const result = await host.client.sendTurn("ses-1", { text: "read these", language: "en", attachments: [second.file_id, first.file_id] }).result();
     expect(result.events.at(-1)).toMatchObject({ type: "done", finish_reason: "completed" });
-    expect(host.fake.requests.at(-1)?.body).toEqual({ text: "read these", language: "en", attachments: [second.file_id, first.file_id] });
+    expect(host.fake.requests.at(-1)?.body).toMatchObject({ text: "read these", language: "en", attachments: [second.file_id, first.file_id], client_capabilities: expect.objectContaining({ contract: "1.5" }) });
     expect(seen).toEqual([{ text: "read these", attachments: [second.file_id, first.file_id] }]);
   });
 
   it("an empty list is left out of the request, and sendTurnJson takes the same member", async () => {
     const host = createHost();
     await host.client.sendTurn("ses-1", { text: "hi", attachments: [] }).result();
-    expect(host.fake.requests.at(-1)?.body).toEqual({ text: "hi" });
+    expect(host.fake.requests.at(-1)?.body).toMatchObject({ text: "hi", client_capabilities: expect.objectContaining({ contract: "1.5" }) });
     const ref = await host.client.files.upload(png());
     const turn = await host.client.sendTurnJson("ses-1", { text: "hi", attachments: [ref.file_id] });
     expect(turn.events.at(-1)?.type).toBe("done");
-    expect(host.fake.requests.at(-1)?.body).toEqual({ text: "hi", attachments: [ref.file_id] });
+    expect(host.fake.requests.at(-1)?.body).toMatchObject({ text: "hi", attachments: [ref.file_id], client_capabilities: expect.objectContaining({ contract: "1.5" }) });
   });
 
   it("checks the list before a context token is spent", async () => {

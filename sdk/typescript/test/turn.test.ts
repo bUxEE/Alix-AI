@@ -50,7 +50,7 @@ describe("sendTurn streams typed events", () => {
     await client.sendTurn("ses-1", { text: "hello", language: "it" }).result();
     const request = fake.requests.find((r) => r.operation === "sendTurn");
     expect(request?.accept).toBe("text/event-stream");
-    expect(request?.body).toEqual({ text: "hello", language: "it" });
+    expect(request?.body).toMatchObject({ text: "hello", language: "it", client_capabilities: expect.objectContaining({ contract: "1.5" }) });
   });
 
   it("reads a byte-by-byte stream (the reader copes with any chunking)", async () => {

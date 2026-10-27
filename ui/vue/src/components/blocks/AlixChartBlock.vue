@@ -17,7 +17,15 @@ const { t, formatNumber } = useAlix();
 const model = computed(() => buildChart(props.block));
 const fields = computed(() => {
   const { encoding } = props.block;
-  return [encoding.x, encoding.y, encoding.color, encoding.theta].filter((channel) => channel !== undefined);
+  return [encoding.x, encoding.y, encoding.y2, encoding.color, encoding.size, encoding.theta].filter(
+    (channel) => channel !== undefined,
+  );
+});
+const isPie = computed(() => props.block.mark === "pie");
+const isHeat = computed(() => props.block.mark === "heatmap");
+const showPoints = computed(() => {
+  const m = props.block.mark;
+  return m === "point" || m === "scatter" || m === "combo_bar_line" || m === "line" || m === "area";
 });
 const records = computed(() => props.block.data.slice(0, 200));
 
@@ -43,7 +51,7 @@ const percent = (share: number): string => `${formatNumber(Math.round(share * 10
         role="img"
         preserveAspectRatio="xMidYMid meet"
       >
-        <template v-if="model.mark !== 'pie'">
+        <template v-if="!isPie && !isHeat">
           <g
             fill="none"
             stroke="var(--alix-border)"
@@ -115,14 +123,27 @@ const percent = (share: number): string => `${formatNumber(Math.round(share * 10
               stroke="none"
             />
             <circle
-              v-for="(point, index) in model.mark === 'bar' ? [] : shape.points"
+              v-for="(point, index) in showPoints ? shape.points : []"
               :key="`p${index}`"
               :cx="point.x"
               :cy="point.y"
-              :r="model.mark === 'point' ? 4 : 2.5"
+              :r="model.mark === 'point' || model.mark === 'scatter' ? 4 : 2.5"
               stroke="none"
             />
           </g>
+        </template>
+        <template v-else-if="isHeat">
+          <rect
+            v-for="(cell, index) in model.heat"
+            :key="index"
+            :x="cell.x"
+            :y="cell.y"
+            :width="cell.width"
+            :height="cell.height"
+            :fill="colorOf(cell.color)"
+          >
+            <title>{{ cell.label }}</title>
+          </rect>
         </template>
         <template v-else>
           <path

@@ -8,8 +8,13 @@ export {
   AlixAIChoices,
   AlixAICitationList,
   AlixAIDiagram,
+  AlixAIDraft,
+  AlixAIKpi,
   AlixAIProgressLine,
+  AlixAIProvenance,
+  AlixAIRecordCard,
   AlixAITable,
+  AlixAITimeline,
 } from "./blocks.js";
 export type { AlixAIAttachmentPreviewProps, AlixAIChoicesProps } from "./blocks.js";
 export { alixaiProviderProps, createAlixAIActivityRenderers, useAlixAIConfirmation, useAlixAISuggestions } from "./hooks.js";

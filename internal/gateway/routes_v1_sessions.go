@@ -22,6 +22,7 @@ import (
 	"github.com/buxee/alix-ai/internal/stream"
 	"github.com/buxee/alix-ai/pkg/contracts"
 	act "github.com/buxee/alix-ai/pkg/contracts/gen/actions"
+	"github.com/buxee/alix-ai/pkg/contracts/gen/analyst"
 	"github.com/buxee/alix-ai/pkg/contracts/gen/common"
 	"github.com/buxee/alix-ai/pkg/contracts/gen/conversation"
 )
@@ -444,6 +445,11 @@ type TurnRequest struct {
 	// Attachments are the ids of files the user uploaded (POST /v1/files) for this message: at
 	// most dialogue.AttachmentMaxCount, with Text only. Each is resolved under the turn's scope.
 	Attachments []string `json:"attachments,omitempty"`
+	// ClientCapabilities announces what this client can parse of the 1.5 analyst /
+	// rich-block surface (ADR 0047). Absent means 1.4: the stream maps every event
+	// to the frozen form before emit. The dialogue loop also persists this on the
+	// turn; the gateway records it on the hub turn before publishing events.
+	ClientCapabilities *analyst.ClientCapabilities `json:"client_capabilities,omitempty"`
 }
 
 // TurnConfirmation is Confirmation{PreparationID, Token} on the wire.
@@ -567,6 +573,9 @@ func (h *sessionsHandler) turn(w http.ResponseWriter, r *http.Request) {
 			"reason", string(stream.ReasonOf(err)), "code", string(contracts.CodeOf(err)))
 		WriteError(w, r, err)
 		return
+	}
+	if req.ClientCapabilities != nil {
+		turn.SetClientCapabilities(*req.ClientCapabilities)
 	}
 	plan := buildTurnEvents(res, terr)
 	perr := plan.publish(turn, res.Response.Streamed)

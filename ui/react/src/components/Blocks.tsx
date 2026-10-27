@@ -407,6 +407,124 @@ export const AlixClarificationForm = ({ block, onChoose, onFreeText }: AlixClari
   );
 };
 
+// ---- analyst blocks (ADR 0047) ----
+
+const SourceChrome = ({ source }: { source?: string }): ReactElement | null => {
+  if (!source) return null;
+  const text = useAlixText().source;
+  const label = source === "app" ? text.app : source === "computed" ? text.computed : source === "web" ? text.web : text.knowledge;
+  return (
+    <span className="alix-source-label" data-source={source}>
+      {label}
+    </span>
+  );
+};
+
+export const AlixKpiBlock = ({ block }: { block: AlixAIBlock<"kpi"> }): ReactElement => {
+  const intl = useAlixIntl();
+  const value = typeof block.value === "number" ? formatNumber(intl, block.value) : String(block.value);
+  return (
+    <div className="alix-kpi" data-alixai="kpi">
+      <div className="alix-kpi__head">
+        <span className="alix-kpi__label">{block.label}</span>
+        <SourceChrome {...(block.source !== undefined && { source: block.source })} />
+      </div>
+      <p className="alix-kpi__value">
+        {value}
+        {block.unit !== undefined && <span className="alix-kpi__unit"> {block.unit}</span>}
+      </p>
+    </div>
+  );
+};
+
+export const AlixTimelineBlock = ({ block }: { block: AlixAIBlock<"timeline"> }): ReactElement => (
+  <div className="alix-timeline" data-alixai="timeline">
+    {block.title !== undefined && <h3 className="alix-timeline__title">{block.title}</h3>}
+    <ol className="alix-timeline__list">
+      {block.events.map((event, index) => (
+        <li key={`${event.at}-${index}`}>
+          <time dateTime={event.at}>{event.at}</time>
+          <span>{event.label}</span>
+          {event.detail !== undefined && <span className="alix-muted">{event.detail}</span>}
+        </li>
+      ))}
+    </ol>
+  </div>
+);
+
+export const AlixRecordCardBlock = ({ block }: { block: AlixAIBlock<"record_card"> }): ReactElement => {
+  const intl = useAlixIntl();
+  const text = useAlixText().table;
+  const show = (value: string | number | boolean | null): string => {
+    if (value === null) return text.empty;
+    if (typeof value === "boolean") return value ? text.yes : text.no;
+    if (typeof value === "number") return formatNumber(intl, value);
+    return String(value);
+  };
+  return (
+    <div className="alix-record-card" data-alixai="record_card">
+      <h3>{block.title}</h3>
+      <dl>
+        {block.fields.map((field) => (
+          <div key={field.key}>
+            <dt>{field.label}</dt>
+            <dd>{show(field.value)}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+};
+
+export const AlixProvenanceBlock = ({ block }: { block: AlixAIBlock<"provenance"> }): ReactElement => {
+  const fallback = useAlixText().provenance.title;
+  return (
+    <details className="alix-provenance" data-alixai="provenance">
+      <summary>{block.title ?? fallback}</summary>
+      <ol>
+        {block.steps.map((step, index) => (
+          <li key={index}>
+            <span className="alix-muted">{step.kind}</span> — {step.summary}
+          </li>
+        ))}
+      </ol>
+    </details>
+  );
+};
+
+export const AlixDraftBlock = ({ block }: { block: AlixAIBlock<"draft"> }): ReactElement => {
+  const text = useAlixText().draft;
+  const copy = (): void => {
+    void navigator.clipboard?.writeText(block.body);
+  };
+  const download = (): void => {
+    const blob = new Blob([block.body], { type: block.format === "markdown" ? "text/markdown" : "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${block.title || "draft"}.${block.format === "markdown" ? "md" : "txt"}`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  return (
+    <div className="alix-draft" data-alixai="draft">
+      <div className="alix-draft__head">
+        <h3>{block.title}</h3>
+        <SourceChrome {...(block.source !== undefined && { source: block.source })} />
+      </div>
+      <div className="alix-draft__actions">
+        <button type="button" onClick={copy}>
+          {text.copy}
+        </button>
+        <button type="button" onClick={download}>
+          {text.download}
+        </button>
+      </div>
+      <pre className="alix-draft__body">{block.body}</pre>
+    </div>
+  );
+};
+
 // ---- progress ----
 
 export const AlixProgressLine = ({ progress }: { progress: AlixAIProgress }): ReactElement => {

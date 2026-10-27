@@ -8,6 +8,7 @@ ships, with the rules of [compatibility.md](../../docs/policies/compatibility.md
 ### Added
 
 - Analyst contracts (ADR 0047): generated types under `gen/analyst/*`; rich-block types `kpi`, `timeline`, `record_card`, `provenance`, `draft` and extended chart marks; progress stages `analyst_*`; egress category `web_query`; ErrCodes for domain/ability/web/forecast refusals.
+- `DEFAULT_CLIENT_CAPABILITIES` and optional `client_capabilities` on turn inputs: the SDK announces exactly what it parses; pass a subset to announce less, or `null` to omit (server treats absent as 1.4).
 
 ## 1.4.1 — 2026-10-27
 

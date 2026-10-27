@@ -28,6 +28,11 @@ export const ALIXAI_BLOCK_TYPES = [
   "action_card",
   "clarification_choices",
   "confirmation_panel",
+  "kpi",
+  "timeline",
+  "record_card",
+  "provenance",
+  "draft",
 ] as const;
 
 export type AlixAIBlockType = (typeof ALIXAI_BLOCK_TYPES)[number];

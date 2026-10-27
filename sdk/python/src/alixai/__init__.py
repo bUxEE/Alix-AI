@@ -36,6 +36,7 @@ from alixai.gen.decision import DecisionStatus
 from alixai.gen.readiness import ReadinessFinding, ReadinessReport, ReadinessRequirement, ReadinessStatusView
 from alixai.operations import OPERATIONS
 from alixai.providers import AsyncProvidersApi, ProvidersApi, Secret, is_manual_fallback
+from alixai.capabilities import DEFAULT_CLIENT_CAPABILITIES
 from alixai.turn import CONFIRMATION_TOKEN_HEADER, MAX_TURN_ATTACHMENTS, AsyncTurnStream, ConfirmationGrant, TurnInput, TurnResult, TurnStream
 from alixai.types import Liveness
 
@@ -60,6 +61,7 @@ __all__ = [
     "ConfirmationGrant",
     "ContextTokenProvider",
     "ContextTokenRequest",
+    "DEFAULT_CLIENT_CAPABILITIES",
     "DecisionStatus",
     "ERROR_CODES",
     "Error",

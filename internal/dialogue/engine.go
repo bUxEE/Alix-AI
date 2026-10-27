@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/buxee/alix-ai/internal/actions"
+	"github.com/buxee/alix-ai/internal/analyst/loop"
 	"github.com/buxee/alix-ai/internal/audit"
 	"github.com/buxee/alix-ai/internal/capabilities"
 	"github.com/buxee/alix-ai/internal/clock"
@@ -19,6 +20,7 @@ import (
 	"github.com/buxee/alix-ai/internal/sessions"
 	"github.com/buxee/alix-ai/internal/verify"
 	"github.com/buxee/alix-ai/pkg/contracts"
+	an "github.com/buxee/alix-ai/pkg/contracts/gen/analyst"
 	"github.com/buxee/alix-ai/pkg/contracts/gen/conversation"
 	mem "github.com/buxee/alix-ai/pkg/contracts/gen/memory"
 )
@@ -172,6 +174,9 @@ type Deps struct {
 	// replace+template step) during realisation (ADR 0046). Nil: segments are still verified but not
 	// pushed mid-turn; Outcome.Streamed is still set when streaming ran.
 	OnVerifiedSegment VerifiedSegmentHook
+	// Analyst wires the ADR 0047 step loop. Nil Runner (the default) keeps the
+	// single-capability path only — Local mode / analyst off stay 1.4-identical.
+	Analyst AnalystDeps
 }
 
 // Engine is the dialogue engine: the turn pipeline of master plan 11.1. It is safe
@@ -210,6 +215,9 @@ type Engine struct {
 	knowledge atomic.Pointer[knowledgeSlot]
 	// memory is long-term memory (ADR 0042); nil when disabled. Set via SetMemory.
 	memory atomic.Pointer[MemoryStore]
+
+	analyst        *loop.Runner
+	analystCapable func(ctx context.Context, scope contracts.Scope) bool
 
 	locks keyedLocks
 }
@@ -270,6 +278,7 @@ func New(d Deps) (*Engine, error) {
 		cfg: cfg, log: lg,
 		builder: builder, budget: builder.Budget(), respBudget: cfg.Profile.ResponseBudget(),
 		decision: d.Decision, guard: d.Guard, limiter: d.Limiter, resolver: d.Resolver, detect: d.Detectors.withDefaults(), uiTools: d.UITools, onReply: d.OnReply, onSegment: d.OnVerifiedSegment,
+		analyst: d.Analyst.Runner, analystCapable: d.Analyst.AnalystCapable,
 		locks: keyedLocks{m: map[string]*lockEntry{}},
 	}
 	e.SetKnowledge(d.Knowledge)
@@ -370,6 +379,11 @@ type TurnInput struct {
 	// choice, a confirmation or a rejection, is validation_failed. Their text is cut as
 	// BoundAttachments says.
 	Attachments []Attachment
+	// ClientCapabilities announces what the client can parse of the 1.5 analyst /
+	// rich-block surface (ADR 0047). Absent (HasClientCapabilities false) means 1.4.
+	// Stored for the emit layer via ClientCapabilitiesForTurn / loop.ClientCapabilitiesFor.
+	ClientCapabilities    an.ClientCapabilities
+	HasClientCapabilities bool
 }
 
 // Confirmation is a presented confirmation.
@@ -398,6 +412,8 @@ const (
 	StageVerify     = "verify"
 	StagePersist    = "persist"
 	StageNoModelUse = "no_model"
+	// StageAnalyst marks that the ADR 0047 step loop handled the turn.
+	StageAnalyst = "analyst"
 )
 
 // ModelCall records one model call: what it was for and how big it was. It holds
@@ -452,6 +468,9 @@ type Trace struct {
 	// UIAction says what became of the UI tools of the turn (the UIAction* statuses and "refused:" with a UIReason*):
 	// empty when none were declared. A status, never a name, an argument or a result.
 	UIAction string
+	// AnalystReason records why the analyst path was skipped or how it ended
+	// (e.g. model_not_analyst_capable, answer, act_handoff). Empty when unused.
+	AnalystReason string
 }
 
 // Result is the outcome of one turn.

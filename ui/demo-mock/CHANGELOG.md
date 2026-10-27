@@ -3,6 +3,12 @@
 All notable changes to this package. Versions follow semantic versioning with the rules of
 [compatibility.md](../../docs/policies/compatibility.md).
 
+## Unreleased / 1.5.0
+
+### Added
+
+- `analyst` scenario: scripted conversation with KPI, timeline, record card, provenance, draft, scatter/heatmap/combo/donut charts and source labels (ADR 0047).
+
 ## 1.4.1 — 2026-10-27
 
 ### Notes

@@ -434,10 +434,30 @@ type Turn struct {
 	subs     map[*Subscription]struct{}
 
 	facts *blocks.FactSet
+	// caps is what the client announced for this turn (ADR 0047). Zero = 1.4.
+	// Set with SetClientCapabilities before the first Publish.
+	caps ClientCapabilities
 
 	size       atomic.Int64 // bytes held, for the hub's accounting
 	finishedAt atomic.Int64 // unix nanos, 0 while open
 	lastEvent  atomic.Int64 // unix nanos
+}
+
+// SetClientCapabilities records what the client of this turn can parse (ADR 0047).
+// Call before the first Publish. Absent / zero maps every event to the frozen 1.4
+// form. The dialogue loop (or gateway) persists the announcement from the turn
+// body / AG-UI forwardedProps onto the hub turn via this method.
+func (t *Turn) SetClientCapabilities(caps ClientCapabilities) {
+	t.pub.Lock()
+	defer t.pub.Unlock()
+	t.caps = caps
+}
+
+// ClientCapabilities returns the announcement recorded for this turn.
+func (t *Turn) ClientCapabilities() ClientCapabilities {
+	t.pub.Lock()
+	defer t.pub.Unlock()
+	return t.caps
 }
 
 // ID returns the turn id.
@@ -511,7 +531,11 @@ func (t *Turn) Publish(ev conversation.TurnEvent) error {
 	if err != nil {
 		return refuse(err, "the event was refused by block validation")
 	}
-	data, head, tree, err := encodeEvent(clean)
+	// Map 1.5-only members to the frozen 1.4 form when the client did not announce them
+	// (ADR 0047). Facts are learned from the pre-map directive/receipt so verification
+	// still sees the authoritative payload.
+	mapped := MapEvent(clean, t.caps)
+	data, head, tree, err := encodeEvent(mapped)
 	if err != nil {
 		return refuse(err, "the event could not be encoded")
 	}
@@ -532,14 +556,14 @@ func (t *Turn) Publish(ev conversation.TurnEvent) error {
 	if err := t.hub.reserve(t, int64(len(data))); err != nil {
 		return err
 	}
-	// From here the event is accepted.
+	// From here the event is accepted. Learn facts from the validated (pre-map) event.
 	switch e := clean.Value.(type) {
 	case conversation.DirectiveEvent:
 		t.facts.AddFacts(e.Directive.Facts)
 	case conversation.ReceiptEvent:
 		t.facts.AddFacts(e.Receipt.Facts)
 	}
-	_, isDone := clean.Value.(conversation.DoneEvent)
+	_, isDone := mapped.Value.(conversation.DoneEvent)
 
 	t.mu.Lock()
 	t.frames = append(t.frames, Frame{Seq: head.seq, Type: head.typ, Data: data})

@@ -5,9 +5,11 @@ All notable changes to this package. Versions follow semantic versioning with th
 
 ## Unreleased / 1.5.0
 
-### Notes
+### Added
 
-- Core/SDK add analyst rich blocks and source labels (ADR 0047). Kit renderers for new block types land with the implementation tasks; until then unknown block types keep the text alternative.
+- Analyst rich blocks (ADR 0047): `AlixKpiBlock`, `AlixTimelineBlock`, `AlixRecordCardBlock`, `AlixProvenanceBlock` (collapsible), `AlixDraftBlock` (copy/download), `AlixSourceLabel`.
+- Chart marks `scatter`, `heatmap`, `combo_bar_line`; `bar_layout` grouped/stacked/horizontal; `pie_style` donut — still dependency-free SVG with text alternative and `chart` slot.
+- `KIT_CLIENT_CAPABILITIES` announces exactly what the kit renders (sent on turns / AG-UI forwardedProps).
 
 ## 1.4.1 — 2026-10-27
 

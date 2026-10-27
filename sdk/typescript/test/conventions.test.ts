@@ -193,6 +193,7 @@ describe("the public surface", () => {
       [
         "AlixAIError",
         "CONFIRMATION_TOKEN_HEADER",
+        "DEFAULT_CLIENT_CAPABILITIES",
         "ERROR_CODES",
         "OPERATIONS",
         "TURN_EVENT_TYPES",

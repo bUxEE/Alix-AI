@@ -122,6 +122,12 @@ type TurnInput struct {
 	Language string `json:"language,omitempty"`
 	// Attachments are the ids of the uploaded files that belong to a text turn, at most MaxTurnAttachments.
 	Attachments []string `json:"attachments,omitempty"`
+	// ClientCapabilities announces what this client can parse (ADR 0047). Nil
+	// means the SDK fills DefaultClientCapabilities on send; set explicitly
+	// (including an empty value via WithoutClientCapabilities) to override.
+	ClientCapabilities *ClientCapabilities `json:"client_capabilities,omitempty"`
+	// capsSet is true when the caller set ClientCapabilities (including nil via Without).
+	capsSet bool `json:"-"`
 }
 
 // ConfirmationInput presents the single-use confirmation secret of one preparation.
@@ -160,6 +166,22 @@ func (t TurnInput) WithLanguage(tag string) TurnInput {
 // WithAttachments returns the input with the ids of the uploaded files that belong to it (a text turn only).
 func (t TurnInput) WithAttachments(fileIDs ...string) TurnInput {
 	t.Attachments = append([]string(nil), fileIDs...)
+	return t
+}
+
+// WithClientCapabilities overrides the ADR 0047 announcement sent with the turn.
+// Pass a subset to announce less than DefaultClientCapabilities.
+func (t TurnInput) WithClientCapabilities(caps ClientCapabilities) TurnInput {
+	c := caps
+	t.ClientCapabilities = &c
+	t.capsSet = true
+	return t
+}
+
+// WithoutClientCapabilities omits client_capabilities (absent = 1.4 on the server).
+func (t TurnInput) WithoutClientCapabilities() TurnInput {
+	t.ClientCapabilities = nil
+	t.capsSet = true
 	return t
 }
 

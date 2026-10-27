@@ -181,6 +181,8 @@ type turnRequest struct {
 		PreparationID string `json:"preparation_id"`
 	} `json:"reject"`
 	Attachments []string `json:"attachments"`
+	// ClientCapabilities is accepted and ignored by the fake (ADR 0047 announcement).
+	ClientCapabilities json.RawMessage `json:"client_capabilities"`
 }
 
 var (

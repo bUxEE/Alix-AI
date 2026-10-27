@@ -5,9 +5,10 @@ All notable changes to this package. Versions follow semantic versioning with th
 
 ## Unreleased / 1.5.0
 
-### Notes
+### Added
 
-- Core/SDK add analyst rich blocks and source labels (ADR 0047). Kit renderers for new block types land with the implementation tasks; until then unknown block types keep the text alternative.
+- Analyst rich blocks (ADR 0047): `AlixKpiBlock`, `AlixTimelineBlock`, `AlixRecordCardBlock`, `AlixProvenanceBlock`, `AlixDraftBlock`, source-label chrome.
+- Registered as AG-UI activities via `alixKitComponents`; `KIT_CLIENT_CAPABILITIES` announces what the kit renders.
 
 ## 1.4.1 — 2026-10-27
 

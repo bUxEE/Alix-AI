@@ -24,8 +24,13 @@ import {
   AlixAICitationList,
   AlixAIChoices,
   AlixAIDiagram,
+  AlixAIDraft,
+  AlixAIKpi,
   AlixAIProgressLine,
+  AlixAIProvenance,
+  AlixAIRecordCard,
   AlixAITable,
+  AlixAITimeline,
 } from "./blocks.js";
 import type { AlixAIAttachmentPreviewProps } from "./blocks.js";
 import { AlixAIConfirmationCard } from "./confirmation.js";
@@ -167,6 +172,11 @@ export const createAlixAIActivityRenderers = (options: AlixAIRendererOptions = {
     clarification_choices: ({ content, agent }) => <ChoicesActivity block={content} agent={agent} />,
     citation_list: ({ content }) => <AlixAICitationList citations={content.citations} {...(options.onOpenCitation !== undefined && { onOpen: options.onOpenCitation })} />,
     confirmation_panel: () => null,
+    kpi: ({ content }) => <AlixAIKpi block={content} />,
+    timeline: ({ content }) => <AlixAITimeline block={content} />,
+    record_card: ({ content }) => <AlixAIRecordCard block={content} />,
+    provenance: ({ content }) => <AlixAIProvenance block={content} />,
+    draft: ({ content }) => <AlixAIDraft block={content} />,
   };
   for (const type of ALIXAI_BLOCK_TYPES) {
     add(blockActivityType(type), (value) => parseBlock(type, value), `${type} block`, blockDefaults[type] as ComponentType<ActivityComponentProps<AlixAIBlock>>);

@@ -17,6 +17,7 @@ from typing import Any, AsyncIterator, Deque, Iterator, Mapping, Optional
 import httpx
 from pydantic import ValidationError
 
+from alixai.capabilities import DEFAULT_CLIENT_CAPABILITIES
 from alixai.errors import AlixAIError, sdk_error
 from alixai.events import TurnSequence, done_event, parse_turn_event, turn_text
 from alixai.gen.api import TurnResponse
@@ -40,6 +41,9 @@ CONFIRMATION_TOKEN_HEADER = "X-AlixAI-Confirmation-Token"
 #: and one that never existed all fail the whole turn with the same ``scope_violation``; no model is called and no turn is
 #: recorded.
 TurnInput = Mapping[str, Any]
+
+# Sentinel: client_capabilities key absent → fill DEFAULT_CLIENT_CAPABILITIES.
+_CAPS_DEFAULT = object()
 
 
 @dataclass(frozen=True)
@@ -88,7 +92,7 @@ def turn_body(value: Any) -> bytes:
     if not isinstance(value, Mapping):
         raise bad("it must be a mapping")
     for key in value:
-        if key not in ("text", "choice_id", "confirmation", "reject", "language", "attachments"):
+        if key not in ("text", "choice_id", "confirmation", "reject", "language", "attachments", "client_capabilities"):
             raise bad(f'unknown member "{key}"')
     kinds = [key for key in ("text", "choice_id", "confirmation", "reject") if value.get(key) is not None]
     if len(kinds) != 1:
@@ -107,6 +111,9 @@ def turn_body(value: Any) -> bytes:
             raise bad(f"attachments must be a list of at most {MAX_TURN_ATTACHMENTS} file ids")
         if not all(is_file_id(file_id) for file_id in attachments):
             raise bad("an attachment is not a file id")
+    caps = value.get("client_capabilities", _CAPS_DEFAULT)
+    if caps is not _CAPS_DEFAULT and caps is not None and not isinstance(caps, Mapping):
+        raise bad("client_capabilities must be a mapping")
     body: dict[str, Any]
     if kind in ("text", "choice_id"):
         content = value[kind]
@@ -134,6 +141,11 @@ def turn_body(value: Any) -> bytes:
         if not isinstance(rejection, Mapping):
             raise bad("reject must be a mapping")
         body = {"reject": {"preparation_id": path_id("reject.preparation_id", rejection.get("preparation_id"))}}
+    # Absent key → announce what this SDK parses. Explicit None omits (server = 1.4).
+    if caps is _CAPS_DEFAULT:
+        body["client_capabilities"] = dict(DEFAULT_CLIENT_CAPABILITIES)
+    elif caps is not None:
+        body["client_capabilities"] = dict(caps)
     return json.dumps(body, separators=(",", ":")).encode("utf-8")
 
 

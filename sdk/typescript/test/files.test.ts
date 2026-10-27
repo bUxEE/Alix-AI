@@ -237,7 +237,7 @@ describe("sendMessage: a message with attachments", () => {
     expect(turnText(result.events)).toBe("fake: what is in these?");
     expect(host.fake.files().map((f) => f.file_id)).toEqual(refs.map((r) => r.file_id));
     // The turn names the uploaded files, in the order given.
-    expect(host.fake.requests.at(-1)?.body).toEqual({ text: "what is in these?", attachments: refs.map((r) => r.file_id) });
+    expect(host.fake.requests.at(-1)?.body).toMatchObject({ text: "what is in these?", attachments: refs.map((r) => r.file_id), client_capabilities: expect.objectContaining({ contract: "1.5" }) });
     // Every upload told the token provider which session it was for.
     expect(host.tokenRequests.filter((t) => t.operation === "uploadFile").map((t) => t.sessionId)).toEqual(["ses-1", "ses-1", "ses-1"]);
   });
@@ -248,7 +248,7 @@ describe("sendMessage: a message with attachments", () => {
     expect(await collect(stream)).toHaveLength(4);
     expect(await stream.attachments).toEqual([]);
     expect(host.fake.requests.map((r) => r.operation)).toEqual(["sendTurn"]);
-    expect(host.fake.requests[0]?.body).toEqual({ text: "hi", language: "it" });
+    expect(host.fake.requests[0]?.body).toMatchObject({ text: "hi", language: "it", client_capabilities: expect.objectContaining({ contract: "1.5" }) });
   });
 
   it("checks the whole message before anything is uploaded: no token, no stored file", async () => {

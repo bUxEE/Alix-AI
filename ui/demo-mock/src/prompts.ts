@@ -26,7 +26,8 @@ export type DemoScenarioId =
   | "refusal"
   | "long"
   | "reconnect"
-  | "memory_proposal";
+  | "memory_proposal"
+  | "analyst";
 
 export interface DemoPrompt {
   readonly id: DemoScenarioId;
@@ -169,6 +170,16 @@ export const demoPrompts: readonly DemoPrompt[] = [
     },
     keywords: { en: ["remember that", "prefer concise", "memory proposal"], it: ["ricorda che", "preferisco risposte", "proposta memoria"] },
   },
+  {
+    id: "analyst",
+    title: { en: "Analyst blocks", it: "Blocchi analyst" },
+    prompt: { en: "Show me an analyst summary with every new block", it: "Mostrami un riepilogo analyst con tutti i nuovi blocchi" },
+    shows: {
+      en: "KPI, timeline, record card, provenance, draft, scatter/heatmap/combo charts and source labels.",
+      it: "KPI, timeline, scheda record, provenance, bozza, grafici scatter/heatmap/combo e etichette di fonte.",
+    },
+    keywords: { en: ["analyst", "kpi", "provenance", "every new block"], it: ["analyst", "kpi", "provenance", "tutti i nuovi blocchi"] },
+  },
 ];
 
 // The order in which scenarios claim a message: the more specific first.
@@ -176,6 +187,7 @@ const MATCH_ORDER: readonly DemoScenarioId[] = [
   "help",
   "reconnect",
   "memory_proposal",
+  "analyst",
   "refusal",
   "unavailable",
   "step_up",

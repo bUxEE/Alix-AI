@@ -195,7 +195,7 @@ suite; `contract_test.go` and `spec_test.go` hold it to the OpenAPI document.
 
 ### Unreleased / 1.5.0
 
-**Added.** Generated analyst contracts (ADR 0047) under `pkg/contracts/gen/analyst`; rich-block and turn-event extensions; `web_query` send category; new `contracts.ErrCode` values for analyst refusals.
+**Added.** Generated analyst contracts (ADR 0047) under `pkg/contracts/gen/analyst`; rich-block and turn-event extensions; `web_query` send category; new `contracts.ErrCode` values for analyst refusals. `DefaultClientCapabilities` is sent on every turn unless overridden with `WithClientCapabilities` / `WithoutClientCapabilities`.
 
 ### 1.4.1 — 2026-10-27
 

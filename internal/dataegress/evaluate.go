@@ -554,7 +554,7 @@ var sendOrder = []providers.SendCategory{
 	providers.SendCategoryUserMessage, providers.SendCategoryConversationHistory, providers.SendCategoryStructuredState,
 	providers.SendCategoryDeterministicFact, providers.SendCategoryDialogueDirective, providers.SendCategoryActionReceipt,
 	providers.SendCategoryRAGExcerpt, providers.SendCategoryRAGMetadata, providers.SendCategoryFileContent,
-	providers.SendCategoryImageContent, providers.SendCategoryAudioContent,
+	providers.SendCategoryImageContent, providers.SendCategoryAudioContent, providers.SendCategoryWebQuery,
 }
 
 var blockedOrder = []providers.BlockedCategory{

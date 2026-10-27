@@ -87,5 +87,16 @@
 // amount, and a fingerprint, so a result can be logged without echoing a secret the model
 // repeated.
 //
+// # Analyst answers (ADR 0047)
+//
+// VerifyAnalyst / RealiseAnalyst check a model answer against an AnalystFactSet
+// (datasets, derived facts, web citations with fetched text) and optional source
+// spans / block plans. Numbers and named entities must trace to app or computed
+// facts (with the usual format variants); web numbers must appear in the cited
+// fetch; knowledge must not restate tenant-looking figures; forecasts need an
+// estimate label and method. Failure yields the analyst template: a table of the
+// final dataset plus a provenance block. NewAnalystStream verifies
+// segment-by-segment (ADR 0046); a later failure replaces with that template.
+//
 // The package imports only pkg/contracts and its generated subpackages (docs/architecture/module-map.md).
 package verify

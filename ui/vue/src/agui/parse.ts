@@ -43,6 +43,11 @@ export const BLOCK_TYPES: readonly AlixBlockType[] = [
   "action_card",
   "clarification_choices",
   "confirmation_panel",
+  "kpi",
+  "timeline",
+  "record_card",
+  "provenance",
+  "draft",
 ];
 
 export const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
@@ -139,6 +144,16 @@ export const parseBlock = <T extends AlixBlockType>(type: T, content: unknown): 
         return arrayOf(content["choices"]) && isString(content["field"]);
       case "confirmation_panel":
         return isString(content["preparation_id"]) && isString(content["summary"]) && arrayOf(content["effects"]);
+      case "kpi":
+        return isString(content["label"]) && content["value"] !== undefined;
+      case "timeline":
+        return arrayOf(content["events"]);
+      case "record_card":
+        return isString(content["title"]) && arrayOf(content["fields"]);
+      case "provenance":
+        return arrayOf(content["steps"]);
+      case "draft":
+        return isString(content["title"]) && isString(content["format"]) && isString(content["body"]);
       default:
         return false;
     }

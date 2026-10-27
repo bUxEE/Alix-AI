@@ -37,4 +37,12 @@
 //
 // HOSTS.md in this directory is the note for host applications: which renderers
 // to enable and the content-security policy to serve them under.
+//
+// # Analyst blocks (ADR 0047)
+//
+// Additive block types kpi, timeline, record_card, provenance and draft, and
+// chart marks scatter / heatmap / combo_bar_line with optional bar_layout,
+// pie_style, y2 and size channels, validate against the live rich-block schema.
+// Emitting them to a client that did not announce support is the stream layer's
+// job (internal/stream.MapEvent): this package only validates and sanitises.
 package blocks

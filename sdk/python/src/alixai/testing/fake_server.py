@@ -958,13 +958,16 @@ class FakeAlixAIServer:
 
         if not isinstance(body, dict):
             return bad("the request body must be a JSON object")
-        if any(key not in ("text", "language", "choice_id", "confirmation", "reject", "attachments") for key in body):
+        if any(key not in ("text", "language", "choice_id", "confirmation", "reject", "attachments", "client_capabilities") for key in body):
             return bad("the request body has an unknown member")
         kinds = [key for key in ("text", "choice_id", "confirmation", "reject") if body.get(key) is not None]
         if len(kinds) != 1:
             return bad("exactly one of text, choice_id, confirmation and reject is required")
         if body.get("language") is not None and not isinstance(body["language"], str):
             return bad("language must be a string")
+        caps = body.get("client_capabilities")
+        if caps is not None and not isinstance(caps, dict):
+            return bad("client_capabilities must be an object")
         kind = kinds[0]
         attachments = body.get("attachments")
         if attachments is not None:
@@ -977,6 +980,7 @@ class FakeAlixAIServer:
         if kind in ("text", "choice_id"):
             if not isinstance(body[kind], str) or not body[kind]:
                 return bad(f"{kind} must be a non-empty string")
+            # client_capabilities is accepted (ADR 0047) and ignored by the fake.
             return {kind: body[kind], **({"attachments": list(attachments)} if attachments else {})}
         value = body[kind]
         if kind == "confirmation":

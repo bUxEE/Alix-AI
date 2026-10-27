@@ -8,6 +8,7 @@ ships, with the rules of [compatibility.md](../../docs/policies/compatibility.md
 ### Added
 
 - Analyst contracts (ADR 0047): generated models under `alixai.gen.analyst`; rich-block and turn-event extensions; `web_query` egress category; new error codes for analyst refusals.
+- `DEFAULT_CLIENT_CAPABILITIES` and optional `client_capabilities` on turn inputs: the SDK announces what it parses; pass a subset to announce less, or `None` to omit (server = 1.4).
 
 ## 1.4.1 — 2026-10-27
 

@@ -38,6 +38,9 @@ type outcome struct {
 	// deterministic template can emit a validated table (and optional chart) of those rows.
 	resultIDs    []act.RecordRef
 	resultValues []act.Fact
+	// analystReply is a verifier-accepted analyst answer (ADR 0047). When set, respond
+	// uses it instead of a second model call.
+	analystReply string
 }
 
 // newDirective returns an empty directive for an act, with every required array

@@ -10,8 +10,13 @@ import type {
   ClarificationChoicesBlock,
   ConfirmationPanelBlock,
   DiagramBlock,
+  DraftBlock,
+  KpiBlock,
   PermittedAction,
+  ProvenanceBlock,
+  RecordCardBlock,
   TableBlock,
+  TimelineBlock,
 } from "../sdk-types";
 import AlixActionCard from "./AlixActionCard.vue";
 import AlixCitationList from "./AlixCitationList.vue";
@@ -23,8 +28,13 @@ import type { AlixDownload, AlixExporter } from "../export";
 import AlixChartBlock from "./blocks/AlixChartBlock.vue";
 import AlixClarificationChoices from "./blocks/AlixClarificationChoices.vue";
 import AlixDiagramBlock from "./blocks/AlixDiagramBlock.vue";
+import AlixDraftBlock from "./blocks/AlixDraftBlock.vue";
+import AlixKpiBlock from "./blocks/AlixKpiBlock.vue";
 import AlixMarkdown from "./blocks/AlixMarkdown.vue";
+import AlixProvenanceBlock from "./blocks/AlixProvenanceBlock.vue";
+import AlixRecordCardBlock from "./blocks/AlixRecordCardBlock.vue";
 import AlixTableBlock from "./blocks/AlixTableBlock.vue";
+import AlixTimelineBlock from "./blocks/AlixTimelineBlock.vue";
 import AlixExportMenu from "./AlixExportMenu.vue";
 import AlixIcon from "./common/AlixIcon.vue";
 import { RUN_IN_FLIGHT } from "./run-state";
@@ -386,6 +396,31 @@ defineExpose({ toBottom: (): void => toBottom(true) });
               :citations="(item.block as { citations: Citation[] }).citations"
               :display="citationDisplay"
               @open-citation="emit('open-citation', $event)"
+            />
+            <AlixKpiBlock
+              v-else-if="item.blockType === 'kpi'"
+              :block="item.block as KpiBlock"
+            />
+            <AlixTimelineBlock
+              v-else-if="item.blockType === 'timeline'"
+              :block="item.block as TimelineBlock"
+            />
+            <AlixRecordCardBlock
+              v-else-if="item.blockType === 'record_card'"
+              :block="item.block as RecordCardBlock"
+            />
+            <AlixProvenanceBlock
+              v-else-if="item.blockType === 'provenance'"
+              :block="item.block as ProvenanceBlock"
+            />
+            <AlixDraftBlock
+              v-else-if="item.blockType === 'draft'"
+              :block="item.block as DraftBlock"
+              :block-id="item.id"
+              :session-id="sessionId"
+              :turn-id="item.turnId ?? item.id"
+              :exporter="exporter"
+              :download="download"
             />
             <template
               v-for="view in item.blockType === 'confirmation_panel' ? [panelView(item.id, item.block as ConfirmationPanelBlock)] : []"

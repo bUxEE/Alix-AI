@@ -264,6 +264,12 @@ func (v *Validator) checkBlock(val conversation.RichBlockValue, ctx Context, raw
 			}
 		}
 		checkHostStrings(raw, col)
+	case conversation.KpiBlock, conversation.TimelineBlock, conversation.RecordCardBlock,
+		conversation.ProvenanceBlock, conversation.DraftBlock:
+		// Analyst blocks (ADR 0047): schema + host/plain-text hygiene. Numbers on kpi /
+		// timeline / record_card are core-filled; draft body is model Markdown (schema
+		// bounds only — sanitised at emit when mapped to markdown).
+		checkHostStrings(raw, col)
 	default:
 		// citation_list, action_card, confirmation_panel: assembled by the core
 		// from host and core data. Their strings are host text, never model text.

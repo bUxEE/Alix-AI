@@ -89,4 +89,16 @@
 // mounts them under its /v1 turn routes with a Scope function that calls
 // identity.RequireScope and its own error writer; this package does not import
 // the gateway.
+//
+// # Client capabilities (ADR 0047)
+//
+// Before the first Publish, the opener of a turn must call
+// Turn.SetClientCapabilities with the announcement from the turn body
+// (client_capabilities) or AG-UI forwardedProps.alixai.clientCapabilities.
+// MapEvent (applied inside Publish) then emits only what the client announced;
+// absent announcement maps every 1.5-only stage, block, mark, layout and member
+// to the frozen 1.4 form so a 1.4.x client never sees an unknown member.
+// CapsV15 is the full announcement the 1.5 SDKs and kits send. The dialogue loop
+// owns persistence of the announcement across mid-turn Begin; this package only
+// reads it from the Turn.
 package stream

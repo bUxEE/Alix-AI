@@ -30,6 +30,7 @@ import { createConversation } from "./conversation.js";
 import type { Conversation, ConversationOptions } from "./conversation.js";
 import { MAX_ATTACHMENTS, createMessageStream, withAttachments } from "./compose.js";
 import type { MessageStream, OutgoingMessage } from "./compose.js";
+import { DEFAULT_CLIENT_CAPABILITIES } from "./capabilities.js";
 import { isAlixAIError, sdkError } from "./errors.js";
 import { createTurnSequence, parseTurnEvent } from "./events.js";
 import type { ActionReceipt, PreparedAction } from "./gen/actions/index.js";
@@ -231,7 +232,7 @@ const turnBody = (input: unknown): string => {
   const bad = (reason: string) => sdkError("validation_failed", `invalid turn input: ${reason}`, { details: { argument: "input" } });
   if (typeof input !== "object" || input === null || Array.isArray(input)) throw bad("it must be an object");
   const record = input as Record<string, unknown>;
-  const known = ["text", "choice_id", "confirmation", "reject", "language", "attachments"];
+  const known = ["text", "choice_id", "confirmation", "reject", "language", "attachments", "client_capabilities"];
   for (const key of Object.keys(record)) if (!known.includes(key)) throw bad(`unknown member "${key}"`);
   const kinds = ["text", "choice_id", "confirmation", "reject"].filter((key) => record[key] !== undefined);
   if (kinds.length !== 1) throw bad("exactly one of text, choice_id, confirmation and reject is required");
@@ -244,6 +245,13 @@ const turnBody = (input: unknown): string => {
     if (!Array.isArray(attachments) || attachments.length > MAX_ATTACHMENTS) throw bad(`attachments must be a list of at most ${MAX_ATTACHMENTS} file ids`);
     for (const id of attachments) if (typeof id !== "string" || !FILE_ID.test(id)) throw bad("an attachment is not a file id");
   }
+  const caps = record["client_capabilities"];
+  if (caps !== undefined && (typeof caps !== "object" || caps === null || Array.isArray(caps))) {
+    throw bad("client_capabilities must be an object");
+  }
+  // Absent key → announce what this SDK parses. Explicit null omits (server treats as 1.4).
+  const capsMember =
+    caps === null ? {} : { client_capabilities: caps === undefined ? DEFAULT_CLIENT_CAPABILITIES : caps };
 
   switch (kinds[0]) {
     case "text": {
@@ -253,12 +261,17 @@ const turnBody = (input: unknown): string => {
         text,
         ...(language !== undefined && { language }),
         ...(Array.isArray(attachments) && attachments.length > 0 && { attachments }),
+        ...capsMember,
       });
     }
     case "choice_id": {
       const choice = record["choice_id"];
       if (typeof choice !== "string" || choice === "") throw bad("choice_id must be a non-empty string");
-      return JSON.stringify(language === undefined ? { choice_id: choice } : { choice_id: choice, language });
+      return JSON.stringify({
+        choice_id: choice,
+        ...(language !== undefined && { language }),
+        ...capsMember,
+      });
     }
     case "confirmation": {
       if (language !== undefined) throw bad("language does not apply to a confirmation");
@@ -266,13 +279,16 @@ const turnBody = (input: unknown): string => {
       if (typeof c !== "object" || c === null) throw bad("confirmation must be an object");
       const preparationId = pathId("confirmation.preparation_id", c.preparation_id);
       if (!isConfirmationToken(c.token)) throw bad("confirmation.token is malformed");
-      return JSON.stringify({ confirmation: { preparation_id: preparationId, token: c.token } });
+      return JSON.stringify({ confirmation: { preparation_id: preparationId, token: c.token }, ...capsMember });
     }
     default: {
       if (language !== undefined) throw bad("language does not apply to a rejection");
       const r = record["reject"] as { preparation_id?: unknown } | null;
       if (typeof r !== "object" || r === null) throw bad("reject must be an object");
-      return JSON.stringify({ reject: { preparation_id: pathId("reject.preparation_id", r.preparation_id) } });
+      return JSON.stringify({
+        reject: { preparation_id: pathId("reject.preparation_id", r.preparation_id) },
+        ...capsMember,
+      });
     }
   }
 };

@@ -163,7 +163,10 @@ def test_a_text_turn_streams_its_events_in_order_and_ends_with_done(client: Alix
     assert [e.seq for e in events] == list(range(len(events)))
     assert events[-1].type == "done" and events[-1].finish_reason == "completed"
     assert turn_text(events) == "Hello there"
-    assert fake.requests[-1].accept == "text/event-stream" and fake.requests[-1].body == {"text": "hi", "language": "en"}
+    assert fake.requests[-1].accept == "text/event-stream"
+    body = fake.requests[-1].body
+    assert isinstance(body, dict) and body["text"] == "hi" and body["language"] == "en"
+    assert body.get("client_capabilities", {}).get("contract") == "1.5"
 
 
 def test_json_and_stream_forms_carry_the_same_events(client: AlixAIClient, fake: FakeAlixAIServer) -> None:

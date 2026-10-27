@@ -17,21 +17,25 @@ import (
 // from the record and from nothing else. A channel the chart does not encode
 // is nil. There is no aggregation, no scale and no expression between the
 // data and the mark, which is what makes a chart reproducible from the data
-// and the encoding it declares.
+// and the encoding it declares. Y2 (combo) and Size (scatter) are additive in 1.5.
 type Mark struct {
 	X     any `json:"x,omitempty"`
 	Y     any `json:"y,omitempty"`
+	Y2    any `json:"y2,omitempty"`
 	Color any `json:"color,omitempty"`
+	Size  any `json:"size,omitempty"`
 	Theta any `json:"theta,omitempty"`
 }
 
 // channelOrder is the fixed order channels are checked and written in.
-var channelOrder = []string{"x", "y", "color", "theta"}
+var channelOrder = []string{"x", "y", "y2", "color", "size", "theta"}
 
 // channels returns the encoded channels by name.
 func chartChannels(e conversation.ChartEncoding) map[string]*conversation.ChartChannel {
 	out := map[string]*conversation.ChartChannel{}
-	for name, ch := range map[string]*conversation.ChartChannel{"x": e.X, "y": e.Y, "color": e.Color, "theta": e.Theta} {
+	for name, ch := range map[string]*conversation.ChartChannel{
+		"x": e.X, "y": e.Y, "y2": e.Y2, "color": e.Color, "size": e.Size, "theta": e.Theta,
+	} {
 		if ch != nil {
 			out[name] = ch
 		}
@@ -66,8 +70,12 @@ func ChartMarks(c conversation.ChartBlock) ([]Mark, error) {
 				m.X = val
 			case "y":
 				m.Y = val
+			case "y2":
+				m.Y2 = val
 			case "color":
 				m.Color = val
+			case "size":
+				m.Size = val
 			case "theta":
 				m.Theta = val
 			}
@@ -100,7 +108,10 @@ func ChartDigest(c conversation.ChartBlock) (string, error) {
 	}
 	norm := make([]Mark, len(marks))
 	for i, m := range marks {
-		norm[i] = Mark{X: canonicalScalar(m.X), Y: canonicalScalar(m.Y), Color: canonicalScalar(m.Color), Theta: canonicalScalar(m.Theta)}
+		norm[i] = Mark{
+			X: canonicalScalar(m.X), Y: canonicalScalar(m.Y), Y2: canonicalScalar(m.Y2),
+			Color: canonicalScalar(m.Color), Size: canonicalScalar(m.Size), Theta: canonicalScalar(m.Theta),
+		}
 	}
 	doc, err := json.Marshal(struct {
 		Mark     string  `json:"mark"`

@@ -6,7 +6,19 @@ import type { ActivityComponentProps, AlixAIRendererOptions } from "@alixai/copi
 import { ALIXAI_ACTIVITY, CONFIRM_TOOL_NAME, blockActivityType } from "@alixai/copilotkit-adapter";
 import type { AlixAIAttachment, AlixAIBlock, AlixAIInterrupt, AlixAIProgress } from "@alixai/copilotkit-adapter";
 import type { ActionReceipt, Citation } from "@alixai/sdk";
-import { AlixActionCard, AlixChartBlock, AlixClarificationForm, AlixDiagramBlock, AlixProgressLine, AlixTableBlock } from "./components/Blocks.js";
+import {
+  AlixActionCard,
+  AlixChartBlock,
+  AlixClarificationForm,
+  AlixDiagramBlock,
+  AlixDraftBlock,
+  AlixKpiBlock,
+  AlixProgressLine,
+  AlixProvenanceBlock,
+  AlixRecordCardBlock,
+  AlixTableBlock,
+  AlixTimelineBlock,
+} from "./components/Blocks.js";
 import { AlixCitationList } from "./components/Citations.js";
 import { AlixConfirmationInterrupt } from "./components/Confirmation.js";
 import { AlixFileList } from "./components/Files.js";
@@ -103,6 +115,11 @@ export const alixKitComponents = (options: AlixKitOptions = {}): Record<string, 
     <AlixCitationList citations={content.citations} {...(options.onOpenCitation !== undefined && { onOpenCitation: options.onOpenCitation })} />
   );
   const panel: Renderer<AlixAIBlock<"confirmation_panel">> = ({ content }) => <AlixConfirmationPanel block={content} />;
+  const kpi: Renderer<AlixAIBlock<"kpi">> = ({ content }) => <AlixKpiBlock block={content} />;
+  const timeline: Renderer<AlixAIBlock<"timeline">> = ({ content }) => <AlixTimelineBlock block={content} />;
+  const recordCard: Renderer<AlixAIBlock<"record_card">> = ({ content }) => <AlixRecordCardBlock block={content} />;
+  const provenance: Renderer<AlixAIBlock<"provenance">> = ({ content }) => <AlixProvenanceBlock block={content} />;
+  const draft: Renderer<AlixAIBlock<"draft">> = ({ content }) => <AlixDraftBlock block={content} />;
   const citations: Renderer<Citation[]> = ({ content }) => (
     <AlixCitationList citations={content} {...(options.onOpenCitation !== undefined && { onOpenCitation: options.onOpenCitation })} />
   );
@@ -117,6 +134,11 @@ export const alixKitComponents = (options: AlixKitOptions = {}): Record<string, 
     [blockActivityType("clarification_choices")]: choices,
     [blockActivityType("citation_list")]: citationBlock,
     [blockActivityType("confirmation_panel")]: panel,
+    [blockActivityType("kpi")]: kpi,
+    [blockActivityType("timeline")]: timeline,
+    [blockActivityType("record_card")]: recordCard,
+    [blockActivityType("provenance")]: provenance,
+    [blockActivityType("draft")]: draft,
     [ALIXAI_ACTIVITY.citations]: citations,
     [ALIXAI_ACTIVITY.attachments]: attachments,
     [ALIXAI_ACTIVITY.progress]: progress,

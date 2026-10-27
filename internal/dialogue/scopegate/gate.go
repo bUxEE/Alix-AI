@@ -41,6 +41,17 @@ type Capability struct {
 	Terms       map[string][]string
 }
 
+// DomainVocab is the application-package assistant.domain wording the gate may
+// use when the analyst path is active (ADR 0047). It is a local projection: the
+// gate stays stdlib-only and never imports the analyst contracts.
+type DomainVocab struct {
+	Description string
+	InScope     []string
+	OutOfScope  []string
+	// Examples are flattened in-/out-of-domain example utterances (any language).
+	Examples []string
+}
+
 // Request is one gate question: is this utterance about anything the caller may do.
 type Request struct {
 	// Utterance is the user's text for this turn.
@@ -52,6 +63,12 @@ type Request struct {
 	// utterance may be the answer to it ("tomorrow at 8", "John Smith") and says nothing
 	// about the catalogue by itself, so it is not judged.
 	Engaged bool
+	// AnalystActive is true when the effective analyst loop is on and a domain is
+	// declared. Then vocabulary also includes Domain, so an in-domain question that
+	// matches no capability is not refused here (the domain classifier decides).
+	AnalystActive bool
+	// Domain is the package domain wording used only when AnalystActive is true.
+	Domain DomainVocab
 }
 
 // Verdict is the gate's answer.
@@ -166,10 +183,20 @@ func Decide(req Request) Decision {
 	}
 	lang := detectLanguage(toks)
 	covered := catalogueLanguages(req.Catalogue)
+	if req.AnalystActive && domainDeclared(req.Domain) {
+		for l := range domainLanguages(req.Domain) {
+			covered[l] = true
+		}
+	}
 	if lang == "" || !covered[lang] {
 		return Decision{Verdict: VerdictAbstain, Reason: ReasonUnreadableLanguage, Language: lang}
 	}
 	vocab := vocabulary(req.Catalogue, lang)
+	if req.AnalystActive && domainDeclared(req.Domain) {
+		for _, w := range domainVocabulary(req.Domain) {
+			vocab = append(vocab, w)
+		}
+	}
 	var matches []Match
 	seen := map[Match]bool{}
 	for _, w := range content {
@@ -214,6 +241,53 @@ func catalogueLanguages(cat []Capability) map[string]bool {
 		}
 	}
 	return out
+}
+
+func domainDeclared(d DomainVocab) bool {
+	return strings.TrimSpace(d.Description) != "" || len(d.InScope) > 0 || len(d.OutOfScope) > 0 || len(d.Examples) > 0
+}
+
+// domainLanguages are languages detectable from domain examples (and English when
+// description/in_scope/out_of_scope carry English function words).
+func domainLanguages(d DomainVocab) map[string]bool {
+	out := map[string]bool{}
+	add := func(s string) {
+		if l := detectLanguage(tokenize(s, maxLabelToks)); l != "" {
+			out[l] = true
+		}
+	}
+	add(d.Description)
+	for _, s := range d.InScope {
+		add(s)
+	}
+	for _, s := range d.OutOfScope {
+		add(s)
+	}
+	for _, s := range d.Examples {
+		add(s)
+	}
+	return out
+}
+
+// domainVocabulary is content words of the declared domain.
+func domainVocabulary(d DomainVocab) []string {
+	set := map[string]bool{}
+	add := func(s string) {
+		for _, w := range contentWords(s, maxLabelToks) {
+			set[w] = true
+		}
+	}
+	add(d.Description)
+	for _, s := range d.InScope {
+		add(s)
+	}
+	for _, s := range d.OutOfScope {
+		add(s)
+	}
+	for _, s := range d.Examples {
+		add(s)
+	}
+	return sortedKeys(set)
 }
 
 // vocabulary is the distinct words of the catalogue that an utterance in lang can match:

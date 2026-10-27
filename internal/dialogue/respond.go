@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/buxee/alix-ai/internal/analyst/loop"
 	"github.com/buxee/alix-ai/internal/audit"
 	"github.com/buxee/alix-ai/internal/providers"
 	"github.com/buxee/alix-ai/internal/sessions"
@@ -51,6 +52,7 @@ const persistTimeout = 15 * time.Second
 // complete is the last two steps of the pipeline: the verified natural response,
 // and the state the next turn starts from.
 func (t *turn) complete(ctx context.Context, out outcome) (Result, error) {
+	defer loop.ForgetClientCapabilities(t.id)
 	d := out.dir
 	opts := verify.Options{Language: t.lang, FieldLabels: t.labelsFor(out.capID)}
 	if d.Act == conversation.DialogueDirectiveActPresentResult {
@@ -135,6 +137,9 @@ func (t *turn) complete(ctx context.Context, out outcome) (Result, error) {
 // used only when it passes. Unverified model text is never returned.
 func (t *turn) respond(ctx context.Context, out outcome, opts verify.Options) (verify.Outcome, error) {
 	d := out.dir
+	if out.analystReply != "" {
+		return verify.Outcome{Text: out.analystReply, Source: verify.SourceModel, Reason: verify.ReasonVerified}, nil
+	}
 	if t.modelDown || t.templateOnly(d.Act) {
 		return verify.Degraded(d, out.receipt, opts)
 	}

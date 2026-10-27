@@ -171,7 +171,8 @@ func (b *builder) one(p Part) (*keptPart, string) {
 	case PartText:
 		switch cat {
 		case providers.SendCategoryUserMessage, providers.SendCategoryConversationHistory, providers.SendCategoryStructuredState,
-			providers.SendCategoryDeterministicFact, providers.SendCategoryDialogueDirective, providers.SendCategoryActionReceipt:
+			providers.SendCategoryDeterministicFact, providers.SendCategoryDialogueDirective, providers.SendCategoryActionReceipt,
+			providers.SendCategoryWebQuery:
 			return b.text(p.Text, cat, el, nil, nil)
 		}
 		b.failEnvelope("category_kind_mismatch")

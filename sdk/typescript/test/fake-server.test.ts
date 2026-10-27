@@ -179,7 +179,7 @@ describe("the fake keeps a record the host can assert on, without keeping secret
     const grant = (await client.sendTurn("ses-1", { text: "book" }).result()).confirmation!;
     await client.sendTurn("ses-1", { confirmation: grant }).result();
     const turn = fake.requests.filter((r) => r.operation === "sendTurn");
-    expect(turn[1]?.body).toEqual({ confirmation: { preparation_id: grant.preparation_id, token: "[redacted]" } });
+    expect(turn[1]?.body).toMatchObject({ confirmation: { preparation_id: grant.preparation_id, token: "[redacted]" } });
     expect(JSON.stringify(fake.requests)).not.toContain(grant.token);
     expect(fake.requests.every((r) => r.tokenId !== undefined)).toBe(true);
     expect(fake.requests.map((r) => r.status)).toEqual([200, 200]);

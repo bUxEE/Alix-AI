@@ -1075,6 +1075,131 @@ export const memoryProposal = (ctx: ScenarioContext): ScenarioResult => {
   };
 };
 
+export const analyst = (ctx: ScenarioContext): ScenarioResult => {
+  for (const stage of ["analyst_read", "analyst_compute", "analyst_answer"] as const) {
+    ctx.turn.step(stage, STEP_DELAY[stage] ?? 200);
+  }
+  directive(ctx, { capabilityId: "work_orders.list", act: "present_result" });
+  block(ctx, 1, {
+    type: "kpi",
+    label: tr(ctx, { en: "Open work orders", it: "Ordini aperti" }),
+    value: 17,
+    delta: -2,
+    period: "QoQ",
+    unit: "orders",
+    source: "computed",
+  });
+  block(ctx, 2, {
+    type: "timeline",
+    title: tr(ctx, { en: "Milestones", it: "Traguardi" }),
+    events: [
+      { at: "2026-04-01", label: tr(ctx, { en: "Q2 start", it: "Inizio Q2" }), detail: tr(ctx, { en: "Baseline locked", it: "Baseline fissata" }) },
+      { at: "2026-07-01", label: tr(ctx, { en: "Peak season", it: "Alta stagione" }) },
+    ],
+    source: "app",
+  });
+  block(ctx, 3, {
+    type: "record_card",
+    title: "Harbor Point",
+    fields: [
+      { key: "site", label: tr(ctx, { en: "Site", it: "Sede" }), value: "Harbor Point" },
+      { key: "open", label: tr(ctx, { en: "Open", it: "Aperti" }), value: 5 },
+    ],
+    source: "app",
+  });
+  block(ctx, 4, {
+    type: "provenance",
+    title: tr(ctx, { en: "How this was calculated", it: "Come è stato calcolato" }),
+    steps: [
+      { kind: "read", summary: tr(ctx, { en: "Read open work orders", it: "Lettura ordini aperti" }) },
+      { kind: "compute", summary: tr(ctx, { en: "Count by site", it: "Conteggio per sede" }), op: "aggregate" },
+    ],
+  });
+  block(ctx, 5, {
+    type: "draft",
+    title: tr(ctx, { en: "Status email", it: "Email di stato" }),
+    format: "markdown",
+    body: tr(ctx, {
+      en: "## Status\n\nOpen work orders are down 2 vs last quarter.",
+      it: "## Stato\n\nGli ordini aperti sono -2 rispetto al trimestre scorso.",
+    }),
+    source: "computed",
+  });
+  block(ctx, 6, {
+    type: "chart",
+    title: tr(ctx, { en: "Scatter of spend vs energy", it: "Scatter spesa vs energia" }),
+    description: tr(ctx, { en: "Scatter of site spend against energy use.", it: "Scatter della spesa di sede rispetto al consumo energetico." }),
+    mark: "scatter",
+    data: [
+      { spend: 120, mwh: 412, site: "Harbor" },
+      { spend: 98, mwh: 388, site: "Riverside" },
+      { spend: 210, mwh: 702, site: "Westfield" },
+    ],
+    encoding: {
+      x: { field: "spend", type: "quantitative" },
+      y: { field: "mwh", type: "quantitative" },
+      color: { field: "site", type: "nominal" },
+    },
+    source: "computed",
+  });
+  block(ctx, 7, {
+    type: "chart",
+    title: tr(ctx, { en: "Heatmap of open orders", it: "Heatmap ordini aperti" }),
+    description: tr(ctx, { en: "Heatmap of open orders by site and priority.", it: "Heatmap degli ordini aperti per sede e priorità." }),
+    mark: "heatmap",
+    data: [
+      { site: "Harbor", priority: "P1", open: 1 },
+      { site: "Harbor", priority: "P2", open: 4 },
+      { site: "Westfield", priority: "P1", open: 3 },
+      { site: "Westfield", priority: "P2", open: 2 },
+    ],
+    encoding: {
+      x: { field: "site", type: "nominal" },
+      y: { field: "priority", type: "nominal" },
+      color: { field: "open", type: "quantitative" },
+    },
+  });
+  block(ctx, 8, {
+    type: "chart",
+    title: tr(ctx, { en: "Combo spend", it: "Combo spesa" }),
+    description: tr(ctx, { en: "Bars of spend with a line of the running total.", it: "Barre di spesa con linea del totale progressivo." }),
+    mark: "combo_bar_line",
+    data: [
+      { month: "Apr", spend: 40, total: 40 },
+      { month: "May", spend: 55, total: 95 },
+      { month: "Jun", spend: 48, total: 143 },
+    ],
+    encoding: {
+      x: { field: "month", type: "ordinal" },
+      y: { field: "spend", type: "quantitative" },
+      y2: { field: "total", type: "quantitative" },
+    },
+  });
+  block(ctx, 9, {
+    type: "chart",
+    title: tr(ctx, { en: "Share of open orders", it: "Quota ordini aperti" }),
+    description: tr(ctx, { en: "Donut of open orders by site.", it: "Donut degli ordini aperti per sede." }),
+    mark: "pie",
+    pie_style: "donut",
+    data: OPEN_BY_SITE.map((row) => ({ site: row.site, open: row.urgent + row.planned })),
+    encoding: {
+      theta: { field: "open", type: "quantitative" },
+      color: { field: "site", type: "nominal" },
+    },
+  });
+  ctx.turn.text(
+    msgId(ctx, 1),
+    tr(ctx, {
+      en: "Here is an **analyst** view: KPIs from computed facts, a timeline, a record card, provenance, a draft you can copy, and the new chart marks. Source labels mark app vs calculated figures.",
+      it: "Ecco una vista **analyst**: KPI da fatti calcolati, una timeline, una scheda record, la provenance, una bozza da copiare e i nuovi tipi di grafico. Le etichette di fonte distinguono app e calcoli.",
+    }),
+  );
+  return {
+    outcome: { type: "success", finishReason: "completed", suggestions: suggestionsFor(ctx.locale, ["table", "chart_bar", "citations"]) },
+    pending: goal(ctx, "work_orders.list", ["status"]),
+  };
+};
+
 export const SCENARIOS: Record<Exclude<DemoScenarioId, "help">, (ctx: ScenarioContext) => ScenarioResult> = {
   markdown,
   chart_bar: chartBar,
@@ -1092,4 +1217,5 @@ export const SCENARIOS: Record<Exclude<DemoScenarioId, "help">, (ctx: ScenarioCo
   long,
   reconnect,
   memory_proposal: memoryProposal,
+  analyst,
 };

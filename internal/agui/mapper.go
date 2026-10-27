@@ -567,6 +567,16 @@ func blockTypeName(v conversation.RichBlockValue) string {
 		return "clarification_choices"
 	case conversation.ConfirmationPanelBlock:
 		return "confirmation_panel"
+	case conversation.KpiBlock:
+		return "kpi"
+	case conversation.TimelineBlock:
+		return "timeline"
+	case conversation.RecordCardBlock:
+		return "record_card"
+	case conversation.ProvenanceBlock:
+		return "provenance"
+	case conversation.DraftBlock:
+		return "draft"
 	}
 	return ""
 }

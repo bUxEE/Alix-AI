@@ -493,6 +493,7 @@ func (h *aguiHandler) run(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, r, err)
 		return
 	}
+	turn.SetClientCapabilities(req.ClientCapabilities)
 	plan := buildTurnEvents(res, terr)
 	perr := plan.publish(turn, res.Response.Streamed)
 	if perr != nil {

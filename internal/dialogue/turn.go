@@ -291,10 +291,16 @@ func (t *turn) defaultLanguage(pkg capabilities.Package) {
 // ---- free text ----
 
 // text runs the pipeline for a user message: rules, shortlist, decision stage,
-// context, proposal, validation, resolution, host.
+// context, proposal, validation, resolution, host. When the analyst step loop is
+// wired and effective abilities include loop + analyst_capable, that path runs
+// instead of the single-capability path (ADR 0047).
 func (t *turn) text(ctx context.Context) (outcome, error) {
 	t.stage(StageRules)
 	if out, done, err := t.rules(ctx); done || err != nil {
+		return out, err
+	}
+
+	if out, handled, err := t.tryAnalyst(ctx); handled || err != nil {
 		return out, err
 	}
 

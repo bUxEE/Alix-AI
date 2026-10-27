@@ -64,10 +64,10 @@ export interface SessionEnded {
  * with one `scope_violation`. `client.sendMessage` uploads and names them for you.
  */
 export type TurnInput =
-  | { text: string; language?: string; attachments?: string[] }
-  | { choice_id: string; language?: string }
-  | { confirmation: { preparation_id: string; token: string } }
-  | { reject: { preparation_id: string } };
+  | { text: string; language?: string; attachments?: string[]; client_capabilities?: import("./gen/analyst/client-capabilities.js").ClientCapabilities | null }
+  | { choice_id: string; language?: string; client_capabilities?: import("./gen/analyst/client-capabilities.js").ClientCapabilities | null }
+  | { confirmation: { preparation_id: string; token: string }; client_capabilities?: import("./gen/analyst/client-capabilities.js").ClientCapabilities | null }
+  | { reject: { preparation_id: string }; client_capabilities?: import("./gen/analyst/client-capabilities.js").ClientCapabilities | null };
 
 /**
  * The single-use secret that lets the user's client confirm one prepared action. It is not a

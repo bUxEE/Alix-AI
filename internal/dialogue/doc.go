@@ -9,6 +9,7 @@
 //	scope and rate checks
 //	  -> active goal and state lookup               (internal/sessions)
 //	  -> deterministic rules for exact cases        (help; cancel; restart; resume; reject; confirm; relative references; a zero-field read; choices)
+//	  -> optional analyst step loop (ADR 0047)      (internal/analyst/loop; only when abilities.loop and analyst_capable)
 //	  -> capability shortlist                       (internal/capabilities, policy-exposed only)
 //	  -> optional decision stage                    (DecisionStage seam, advisory)
 //	  -> bounded context assembly                   (internal/dialogue/context, profile token budget)

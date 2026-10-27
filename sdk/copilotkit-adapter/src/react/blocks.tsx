@@ -199,6 +199,65 @@ export const AlixAIAttachmentPreview = ({ files, renderPreview }: AlixAIAttachme
   </ul>
 );
 
+export const AlixAIKpi = ({ block }: { block: AlixAIBlock<"kpi"> }): ReactElement => (
+  <div className="alixai-kpi" data-alixai="kpi">
+    <p>{block.label}</p>
+    <p>
+      {String(block.value)}
+      {block.unit !== undefined && ` ${block.unit}`}
+    </p>
+    {block.source !== undefined && <span data-alixai="source">{block.source}</span>}
+  </div>
+);
+
+export const AlixAITimeline = ({ block }: { block: AlixAIBlock<"timeline"> }): ReactElement => (
+  <div className="alixai-timeline" data-alixai="timeline">
+    {block.title !== undefined && <h3>{block.title}</h3>}
+    <ol>
+      {block.events.map((event, index) => (
+        <li key={`${event.at}-${index}`}>
+          <time dateTime={event.at}>{event.at}</time> {event.label}
+          {event.detail !== undefined && ` — ${event.detail}`}
+        </li>
+      ))}
+    </ol>
+  </div>
+);
+
+export const AlixAIRecordCard = ({ block }: { block: AlixAIBlock<"record_card"> }): ReactElement => (
+  <div className="alixai-record-card" data-alixai="record_card">
+    <h3>{block.title}</h3>
+    <dl>
+      {block.fields.map((field) => (
+        <div key={field.key}>
+          <dt>{field.label}</dt>
+          <dd>{field.value === null ? "" : String(field.value)}</dd>
+        </div>
+      ))}
+    </dl>
+  </div>
+);
+
+export const AlixAIProvenance = ({ block }: { block: AlixAIBlock<"provenance"> }): ReactElement => (
+  <details className="alixai-provenance" data-alixai="provenance">
+    <summary>{block.title ?? "How this was calculated"}</summary>
+    <ol>
+      {block.steps.map((step, index) => (
+        <li key={index}>
+          {step.kind}: {step.summary}
+        </li>
+      ))}
+    </ol>
+  </details>
+);
+
+export const AlixAIDraft = ({ block }: { block: AlixAIBlock<"draft"> }): ReactElement => (
+  <div className="alixai-draft" data-alixai="draft">
+    <h3>{block.title}</h3>
+    <pre>{block.body}</pre>
+  </div>
+);
+
 export const AlixAIProgressLine = ({ progress }: { progress: AlixAIProgress }): ReactElement => (
   <p className="alixai-progress" data-alixai="progress" data-state={progress.state}>
     {progress.stage}

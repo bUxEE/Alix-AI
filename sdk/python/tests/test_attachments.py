@@ -49,7 +49,9 @@ def test_the_file_ids_travel_with_the_text_and_the_handler_sees_them_in_order(fa
     first, second = fake.add_file("ses-1"), fake.add_file("ses-1")
     result = client.send_turn("ses-1", {"text": "read these", "language": "en", "attachments": [second, first]}).result()
     assert result.done is not None and result.done.finish_reason == "completed"
-    assert fake.requests[-1].body == {"text": "read these", "language": "en", "attachments": [second, first]}
+    body = fake.requests[-1].body
+    assert isinstance(body, dict) and body["text"] == "read these" and body["language"] == "en" and body["attachments"] == [second, first]
+    assert body.get("client_capabilities", {}).get("contract") == "1.5"
     assert ran == [{"text": "read these", "attachments": [second, first]}]
     client.send_turn_json("ses-1", {"text": "again", "attachments": (first,)})  # a tuple is a list too
     assert ran[-1] == {"text": "again", "attachments": [first]}
@@ -57,7 +59,9 @@ def test_the_file_ids_travel_with_the_text_and_the_handler_sees_them_in_order(fa
 
 def test_an_empty_list_is_left_out_and_four_files_and_a_repeated_file_are_accepted(fake: FakeAlixAIServer, client: AlixAIClient) -> None:
     client.send_turn_json("ses-1", {"text": "hi", "attachments": []})
-    assert fake.requests[-1].body == {"text": "hi"}
+    body = fake.requests[-1].body
+    assert isinstance(body, dict) and body["text"] == "hi" and "attachments" not in body
+    assert body.get("client_capabilities", {}).get("contract") == "1.5"
     ids = [fake.add_file("ses-1") for _ in range(MAX_TURN_ATTACHMENTS)]
     client.send_turn_json("ses-1", {"text": "all", "attachments": ids})
     client.send_turn_json("ses-1", {"text": "twice", "attachments": [ids[0], ids[0]]})

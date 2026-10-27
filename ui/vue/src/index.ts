@@ -31,6 +31,13 @@ export { default as AlixTableBlock } from "./components/blocks/AlixTableBlock.vu
 export { default as AlixDiagramBlock } from "./components/blocks/AlixDiagramBlock.vue";
 export { default as AlixClarificationChoices } from "./components/blocks/AlixClarificationChoices.vue";
 export { default as AlixMarkdown } from "./components/blocks/AlixMarkdown.vue";
+export { default as AlixKpiBlock } from "./components/blocks/AlixKpiBlock.vue";
+export { default as AlixTimelineBlock } from "./components/blocks/AlixTimelineBlock.vue";
+export { default as AlixRecordCardBlock } from "./components/blocks/AlixRecordCardBlock.vue";
+export { default as AlixProvenanceBlock } from "./components/blocks/AlixProvenanceBlock.vue";
+export { default as AlixDraftBlock } from "./components/blocks/AlixDraftBlock.vue";
+export { default as AlixSourceLabel } from "./components/blocks/AlixSourceLabel.vue";
+export { KIT_CLIENT_CAPABILITIES } from "./capabilities";
 export { default as AlixExportMenu } from "./components/AlixExportMenu.vue";
 export { default as AlixLoadable } from "./components/common/AlixLoadable.vue";
 export { default as AlixSectionLoader } from "./components/common/AlixSectionLoader.vue";

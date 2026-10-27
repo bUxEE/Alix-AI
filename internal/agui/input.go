@@ -13,6 +13,7 @@ import (
 	"github.com/buxee/alix-ai/internal/identity"
 	"github.com/buxee/alix-ai/pkg/contracts"
 	act "github.com/buxee/alix-ai/pkg/contracts/gen/actions"
+	"github.com/buxee/alix-ai/pkg/contracts/gen/analyst"
 )
 
 // Bounds of a RunAgentInput. A request over a bound is refused whole (validation_failed): nothing is cut silently
@@ -139,6 +140,10 @@ type Request struct {
 	// Context is the client's state, readable context, earlier messages and system messages, as bounded, fenced,
 	// untrusted data. It is not part of Input.
 	Context ClientContext
+	// ClientCapabilities is what the client announced it can parse of the 1.5 surface
+	// (forwardedProps.alixai.clientCapabilities, ADR 0047). Zero means 1.4: the stream
+	// hub maps every event to the frozen form before emit.
+	ClientCapabilities analyst.ClientCapabilities
 }
 
 // errNotResolved is the one refusal for everything that does not resolve for the caller: a thread that is not the
@@ -182,7 +187,10 @@ func Intake(ctx context.Context, in RunAgentInput, confirmation string, env Env)
 	if err != nil {
 		return Request{}, err
 	}
-	req := Request{ThreadID: in.ThreadID, RunID: in.RunID, ClientTools: tools, UITools: decls, StateMode: StateSnapshotMode}
+	req := Request{
+		ThreadID: in.ThreadID, RunID: in.RunID, ClientTools: tools, UITools: decls, StateMode: StateSnapshotMode,
+		ClientCapabilities: props.ClientCapabilities,
+	}
 	if trimmed := bytes.TrimSpace(in.State); len(trimmed) > 0 && trimmed[0] == '{' {
 		req.StateMode = StatePatchMode
 	}
@@ -253,8 +261,9 @@ func (r Request) EngineContext(ctx context.Context) context.Context {
 
 // props are the members of forwardedProps.alixai that AlixAI reads. Anything else in forwardedProps is ignored.
 type props struct {
-	ChoiceID string
-	Language string
+	ChoiceID           string
+	Language           string
+	ClientCapabilities analyst.ClientCapabilities
 }
 
 var languageRE = regexp.MustCompile(`^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8}){0,3}$`)
@@ -266,8 +275,9 @@ func readProps(raw json.RawMessage) (props, error) {
 	}
 	var outer struct {
 		AlixAI *struct {
-			ChoiceID string `json:"choiceId"`
-			Language string `json:"language"`
+			ChoiceID           string          `json:"choiceId"`
+			Language           string          `json:"language"`
+			ClientCapabilities json.RawMessage `json:"clientCapabilities"`
 		} `json:"alixai"`
 	}
 	if json.Unmarshal(raw, &outer) != nil || outer.AlixAI == nil {
@@ -284,6 +294,13 @@ func readProps(raw json.RawMessage) (props, error) {
 			return p, invalid("language", "the language is not a BCP 47 tag")
 		}
 		p.Language = l
+	}
+	if caps := bytes.TrimSpace(outer.AlixAI.ClientCapabilities); len(caps) > 0 && string(caps) != "null" {
+		var cc analyst.ClientCapabilities
+		if err := json.Unmarshal(caps, &cc); err != nil {
+			return p, invalid("client_capabilities", "clientCapabilities is not a valid ClientCapabilities")
+		}
+		p.ClientCapabilities = cc
 	}
 	return p, nil
 }

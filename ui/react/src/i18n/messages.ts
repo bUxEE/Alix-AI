@@ -40,6 +40,9 @@ export interface AlixMessages {
   table: { empty: string; yes: string; no: string };
   diagram: { source: string };
   choices: { send: string; freeText: string };
+  source: { app: string; computed: string; web: string; knowledge: string };
+  provenance: { title: string };
+  draft: { copy: string; download: string };
   /** `stages`: the words for the pipeline stages the turn-event schema names; another stage is shown as it is. */
   progress: { running: string; stages: Record<string, string> };
   sourceHealth: {
@@ -240,9 +243,28 @@ export const en: AlixMessages = {
   table: { empty: "No rows", yes: "Yes", no: "No" },
   diagram: { source: "Diagram source" },
   choices: { send: "Send", freeText: "Or write your own answer" },
+  source: { app: "App", computed: "Calculated", web: "Web", knowledge: "General information" },
+  provenance: { title: "How this was calculated" },
+  draft: { copy: "Copy", download: "Download" },
   progress: {
     running: "Working",
-    stages: { interpreting: "Understanding the request", retrieving: "Searching the knowledge sources", sources: "Reading the sources", validating: "Checking with the application", preparing: "Preparing the action", committing: "Applying the change", tool_call: "Asking the application", queued: "Queued", generating: "Writing the answer", verifying: "Verifying the answer" },
+    stages: {
+      interpreting: "Understanding the request",
+      retrieving: "Searching the knowledge sources",
+      sources: "Reading the sources",
+      validating: "Checking with the application",
+      preparing: "Preparing the action",
+      committing: "Applying the change",
+      tool_call: "Asking the application",
+      queued: "Queued",
+      generating: "Writing the answer",
+      verifying: "Verifying the answer",
+      analyst_read: "Reading application data",
+      analyst_compute: "Calculating",
+      analyst_search: "Searching the web",
+      analyst_fetch: "Fetching a page",
+      analyst_answer: "Preparing the answer",
+    },
   },
   sourceHealth: {
     title: "Sources",
@@ -451,9 +473,28 @@ export const it: AlixMessages = {
   table: { empty: "Nessuna riga", yes: "Sì", no: "No" },
   diagram: { source: "Sorgente del diagramma" },
   choices: { send: "Invia", freeText: "Oppure scrivi la tua risposta" },
+  source: { app: "App", computed: "Calcolato", web: "Web", knowledge: "Informazione generale" },
+  provenance: { title: "Come è stato calcolato" },
+  draft: { copy: "Copia", download: "Scarica" },
   progress: {
     running: "In corso",
-    stages: { interpreting: "Comprensione della richiesta", retrieving: "Ricerca nelle fonti", sources: "Lettura delle fonti", validating: "Verifica con l'applicazione", preparing: "Preparazione dell'azione", committing: "Applicazione della modifica", tool_call: "Interrogazione dell'applicazione", queued: "In coda", generating: "Scrittura della risposta", verifying: "Verifica della risposta" },
+    stages: {
+      interpreting: "Comprensione della richiesta",
+      retrieving: "Ricerca nelle fonti",
+      sources: "Lettura delle fonti",
+      validating: "Verifica con l'applicazione",
+      preparing: "Preparazione dell'azione",
+      committing: "Applicazione della modifica",
+      tool_call: "Interrogazione dell'applicazione",
+      queued: "In coda",
+      generating: "Scrittura della risposta",
+      verifying: "Verifica della risposta",
+      analyst_read: "Lettura dei dati dell'applicazione",
+      analyst_compute: "Calcolo",
+      analyst_search: "Ricerca sul web",
+      analyst_fetch: "Recupero di una pagina",
+      analyst_answer: "Preparazione della risposta",
+    },
   },
   sourceHealth: {
     title: "Fonti",

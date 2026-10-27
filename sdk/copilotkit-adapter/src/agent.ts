@@ -191,15 +191,16 @@ export const answerOf = (input: Pick<RunAgentInput, "resume" | "messages">): Run
 };
 
 /**
- * What the browser may steer in forwardedProps: the choice that answers a clarification and the language. Everything
- * else is dropped (the gateway ignores it anyway, and a browser-supplied object has no business reaching it).
+ * What the browser may steer in forwardedProps: the choice that answers a clarification, the language, and
+ * clientCapabilities (ADR 0047). Everything else is dropped.
  */
 const forwardedPropsFor = (value: unknown): Record<string, unknown> => {
   if (!isRecord(value) || !isRecord(value["alixai"])) return {};
   const alixai: Record<string, unknown> = {};
-  const { choiceId, language } = value["alixai"];
+  const { choiceId, language, clientCapabilities } = value["alixai"];
   if (typeof choiceId === "string") alixai["choiceId"] = choiceId;
   if (typeof language === "string") alixai["language"] = language;
+  if (isRecord(clientCapabilities)) alixai["clientCapabilities"] = clientCapabilities;
   return Object.keys(alixai).length === 0 ? {} : { alixai };
 };
 

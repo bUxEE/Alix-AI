@@ -29,4 +29,9 @@
 // restart, resume, reject, confirm, ordinal, reference), before the controller model call,
 // and only when the session is not engaged. The bench puts it in front of the controller
 // with `bench run --gate`.
+//
+// Analyst path (ADR 0047): when Request.AnalystActive is set and Domain is declared, the
+// vocabulary also includes the package domain wording so an in-domain question that matches
+// no capability is not refused here; the model-judged domain classifier decides. Clearly
+// unrelated utterances (no overlap with catalogue or domain) are still refused.
 package scopegate

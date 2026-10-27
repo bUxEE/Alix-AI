@@ -38,6 +38,15 @@ export interface SliceShape {
   readonly path: string;
 }
 
+export interface HeatCell {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+  readonly color: number;
+  readonly label: string;
+}
+
 export interface ChartModel {
   readonly valid: boolean;
   readonly mark: ChartBlock["mark"];
@@ -48,6 +57,8 @@ export interface ChartModel {
   readonly yTicks: readonly Tick[];
   readonly series: readonly SeriesShape[];
   readonly slices: readonly SliceShape[];
+  readonly heat: readonly HeatCell[];
+  readonly donut: boolean;
   readonly truncated: boolean;
 }
 
@@ -58,6 +69,8 @@ const EMPTY: Omit<ChartModel, "mark" | "width" | "height"> = {
   yTicks: [],
   series: [],
   slices: [],
+  heat: [],
+  donut: false,
   truncated: false,
 };
 
@@ -101,6 +114,11 @@ export const buildChart = (block: ChartBlock, width = 560, height = 300): ChartM
   const { encoding } = block;
   const present = (channel: ChartChannel | undefined): channel is ChartChannel =>
     channel !== undefined && data.every((record) => Object.prototype.hasOwnProperty.call(record, channel.field));
+  const donut = block.mark === "pie" && block.pie_style === "donut";
+  // scatter draws like point; combo draws bars + line; heatmap is a cell grid.
+  const drawMark = block.mark === "scatter" ? "point" : block.mark === "combo_bar_line" ? "combo" : block.mark;
+  const horizontal = block.mark === "bar" && block.bar_layout === "horizontal";
+  const stacked = block.mark === "bar" && block.bar_layout === "stacked";
 
   if (block.mark === "pie") {
     const { theta, color } = encoding;
@@ -117,6 +135,7 @@ export const buildChart = (block: ChartBlock, width = 560, height = 300): ChartM
     const cx = width / 2;
     const cy = height / 2;
     const radius = Math.min(width, height) / 2 - 12;
+    const inner = donut ? radius * 0.55 : 0;
     let angle = 0;
     const slices: SliceShape[] = [];
     let colorIndex = 0;
@@ -125,17 +144,74 @@ export const buildChart = (block: ChartBlock, width = 560, height = 300): ChartM
       const next = angle + share * Math.PI * 2;
       let path: string;
       if (share >= 0.9999) {
-        path = `M${fmt(cx)} ${fmt(cy - radius)} A${fmt(radius)} ${fmt(radius)} 0 1 1 ${fmt(cx - 0.01)} ${fmt(cy - radius)} Z`;
+        path = `M${fmt(cx)} ${fmt(cy - radius)} A${fmt(radius)} ${fmt(radius)} 0 1 1 ${fmt(cx - 0.01)} ${fmt(cy - radius)}`;
+        if (donut) {
+          path += ` L${fmt(cx - 0.01)} ${fmt(cy - inner)} A${fmt(inner)} ${fmt(inner)} 0 1 0 ${fmt(cx)} ${fmt(cy - inner)} Z`;
+        } else {
+          path += " Z";
+        }
       } else {
         const [x1, y1] = polar(cx, cy, radius, angle);
         const [x2, y2] = polar(cx, cy, radius, next);
-        path = `M${fmt(cx)} ${fmt(cy)} L${fmt(x1)} ${fmt(y1)} A${fmt(radius)} ${fmt(radius)} 0 ${share > 0.5 ? 1 : 0} 1 ${fmt(x2)} ${fmt(y2)} Z`;
+        if (donut) {
+          const [ix1, iy1] = polar(cx, cy, inner, next);
+          const [ix2, iy2] = polar(cx, cy, inner, angle);
+          path = `M${fmt(x1)} ${fmt(y1)} A${fmt(radius)} ${fmt(radius)} 0 ${share > 0.5 ? 1 : 0} 1 ${fmt(x2)} ${fmt(y2)} L${fmt(ix1)} ${fmt(iy1)} A${fmt(inner)} ${fmt(inner)} 0 ${share > 0.5 ? 1 : 0} 0 ${fmt(ix2)} ${fmt(iy2)} Z`;
+        } else {
+          path = `M${fmt(cx)} ${fmt(cy)} L${fmt(x1)} ${fmt(y1)} A${fmt(radius)} ${fmt(radius)} 0 ${share > 0.5 ? 1 : 0} 1 ${fmt(x2)} ${fmt(y2)} Z`;
+        }
       }
       slices.push({ label: name, value, share, color: colorIndex % SERIES_COLORS, path });
       colorIndex += 1;
       angle = next;
     }
-    return { ...base, valid: true, plot: { left: 0, top: 0, right: width, bottom: height }, xTicks: [], yTicks: [], series: [], slices, truncated };
+    return { ...base, valid: true, plot: { left: 0, top: 0, right: width, bottom: height }, xTicks: [], yTicks: [], series: [], slices, heat: [], donut, truncated };
+  }
+
+  if (block.mark === "heatmap") {
+    const { x, y, color } = encoding;
+    if (!present(x) || !present(y) || !present(color)) return { ...base, ...EMPTY, truncated };
+    const xs: string[] = [];
+    const ys: string[] = [];
+    const cells: { xKey: string; yKey: string; value: number }[] = [];
+    for (const record of data) {
+      const xv = label(record[x.field]);
+      const yv = label(record[y.field]);
+      const cv = toNumber(record[color.field], color);
+      if (cv === undefined) return { ...base, ...EMPTY, truncated };
+      if (!xs.includes(xv)) xs.push(xv);
+      if (!ys.includes(yv)) ys.push(yv);
+      cells.push({ xKey: xv, yKey: yv, value: cv });
+    }
+    const plot = { left: 52, top: 12, right: width - 12, bottom: height - 36 };
+    const cw = (plot.right - plot.left) / Math.max(1, xs.length);
+    const ch = (plot.bottom - plot.top) / Math.max(1, ys.length);
+    const vals = cells.map((c) => c.value);
+    const lo = Math.min(...vals);
+    const hi = Math.max(...vals);
+    const heat: HeatCell[] = cells.map((c) => {
+      const t = hi === lo ? 0.5 : (c.value - lo) / (hi - lo);
+      return {
+        x: plot.left + xs.indexOf(c.xKey) * cw,
+        y: plot.top + ys.indexOf(c.yKey) * ch,
+        width: Math.max(1, cw - 1),
+        height: Math.max(1, ch - 1),
+        color: Math.min(SERIES_COLORS - 1, Math.floor(t * SERIES_COLORS)),
+        label: `${c.xKey}, ${c.yKey}: ${c.value}`,
+      };
+    });
+    return {
+      ...base,
+      valid: true,
+      plot,
+      xTicks: xs.map((name, i) => ({ pos: plot.left + cw * (i + 0.5), label: name })),
+      yTicks: ys.map((name, i) => ({ pos: plot.top + ch * (i + 0.5), label: name })),
+      series: [],
+      slices: [],
+      heat,
+      donut: false,
+      truncated,
+    };
   }
 
   const { x, y, color } = encoding;
@@ -145,7 +221,7 @@ export const buildChart = (block: ChartBlock, width = 560, height = 300): ChartM
   const plotWidth = plot.right - plot.left;
   const plotHeight = plot.bottom - plot.top;
 
-  const categorical = x.type === "nominal" || x.type === "ordinal" || block.mark === "bar";
+  const categorical = x.type === "nominal" || x.type === "ordinal" || block.mark === "bar" || drawMark === "combo";
   const categories: string[] = [];
   const xNumbers: number[] = [];
   const rows: { series: string; xKey: string; xNum: number | undefined; y: number }[] = [];
@@ -167,16 +243,23 @@ export const buildChart = (block: ChartBlock, width = 560, height = 300): ChartM
   const yTickValues = niceTicks(yMin, yMax === yMin ? yMin + 1 : yMax);
   const lo = Math.min(yMin, yTickValues[0] ?? yMin);
   const hi = Math.max(yMax, yTickValues[yTickValues.length - 1] ?? yMax);
-  const scaleY = (value: number): number => plot.bottom - ((value - lo) / (hi - lo || 1)) * plotHeight;
+  const scaleY = (value: number): number =>
+    horizontal ? plot.left + ((value - lo) / (hi - lo || 1)) * plotWidth : plot.bottom - ((value - lo) / (hi - lo || 1)) * plotHeight;
   const yTicks: Tick[] = yTickValues.map((value) => ({ pos: scaleY(value), label: String(value) }));
 
   let xTicks: Tick[];
   let scaleX: (row: { xKey: string; xNum: number | undefined }) => number;
   let band = 0;
   if (categorical) {
-    band = plotWidth / Math.max(1, categories.length);
-    scaleX = (row) => plot.left + band * (categories.indexOf(row.xKey) + 0.5);
-    xTicks = categories.map((name, index) => ({ pos: plot.left + band * (index + 0.5), label: name }));
+    band = (horizontal ? plotHeight : plotWidth) / Math.max(1, categories.length);
+    scaleX = (row) =>
+      horizontal
+        ? plot.top + band * (categories.indexOf(row.xKey) + 0.5)
+        : plot.left + band * (categories.indexOf(row.xKey) + 0.5);
+    xTicks = categories.map((name, index) => ({
+      pos: (horizontal ? plot.top : plot.left) + band * (index + 0.5),
+      label: name,
+    }));
   } else {
     const xMin = Math.min(...xNumbers);
     const xMax = Math.max(...xNumbers);
@@ -192,30 +275,50 @@ export const buildChart = (block: ChartBlock, width = 560, height = 300): ChartM
 
   const series: SeriesShape[] = seriesNames.map((name, index) => {
     const mine = rows.filter((row) => row.series === name);
-    const points = mine.map((row) => ({ x: scaleX(row), y: scaleY(row.y), label: `${row.xKey}: ${row.y}` }));
+    const points = mine.map((row) =>
+      horizontal
+        ? { x: scaleY(row.y), y: scaleX(row), label: `${row.xKey}: ${row.y}` }
+        : { x: scaleX(row), y: scaleY(row.y), label: `${row.xKey}: ${row.y}` },
+    );
     const sorted = categorical ? points : [...points].sort((a, b) => a.x - b.x);
     const zero = scaleY(0);
     const groupWidth = band * 0.7;
-    const barWidth = groupWidth / Math.max(1, seriesNames.length);
-    const bars: BarShape[] =
-      block.mark === "bar"
-        ? mine.map((row) => {
-            const cx = scaleX(row);
-            const top = scaleY(row.y);
+    const barWidth = stacked ? groupWidth : groupWidth / Math.max(1, seriesNames.length);
+    const wantBars = block.mark === "bar" || drawMark === "combo";
+    const bars: BarShape[] = wantBars
+      ? mine.map((row) => {
+          const cx = scaleX(row);
+          const tip = scaleY(row.y);
+          if (horizontal) {
             return {
-              x: cx - groupWidth / 2 + barWidth * index,
-              y: Math.min(top, zero),
-              width: Math.max(1, barWidth - 2),
-              height: Math.abs(zero - top),
+              x: Math.min(tip, zero),
+              y: cx - groupWidth / 2 + (stacked ? 0 : barWidth * index),
+              width: Math.abs(zero - tip),
+              height: Math.max(1, barWidth - 2),
             };
-          })
-        : [];
-    const line = sorted.length > 1 && (block.mark === "line" || block.mark === "area") ? sorted.map((p, i) => `${i === 0 ? "M" : "L"}${fmt(p.x)} ${fmt(p.y)}`).join(" ") : "";
+          }
+          return {
+            x: cx - groupWidth / 2 + (stacked ? 0 : barWidth * index),
+            y: Math.min(tip, zero),
+            width: Math.max(1, barWidth - 2),
+            height: Math.abs(zero - tip),
+          };
+        })
+      : [];
+    const wantLine = drawMark === "line" || drawMark === "area" || drawMark === "combo" || drawMark === "point";
+    const line =
+      sorted.length > 1 && (drawMark === "line" || drawMark === "area" || drawMark === "combo")
+        ? sorted.map((p, i) => `${i === 0 ? "M" : "L"}${fmt(p.x)} ${fmt(p.y)}`).join(" ")
+        : "";
     const first = sorted[0];
     const last = sorted[sorted.length - 1];
-    const area = block.mark === "area" && first !== undefined && last !== undefined && sorted.length > 1 ? `${line} L${fmt(last.x)} ${fmt(zero)} L${fmt(first.x)} ${fmt(zero)} Z` : "";
-    return { name, color: index % SERIES_COLORS, points, bars, line, area };
+    const area =
+      drawMark === "area" && first !== undefined && last !== undefined && sorted.length > 1
+        ? `${line} L${fmt(last.x)} ${fmt(zero)} L${fmt(first.x)} ${fmt(zero)} Z`
+        : "";
+    void wantLine;
+    return { name, color: index % SERIES_COLORS, points: drawMark === "point" || drawMark === "combo" || drawMark === "line" || drawMark === "area" ? points : [], bars, line, area };
   });
 
-  return { ...base, valid: true, plot, xTicks, yTicks, series, slices: [], truncated };
+  return { ...base, valid: true, plot, xTicks, yTicks, series, slices: [], heat: [], donut: false, truncated };
 };

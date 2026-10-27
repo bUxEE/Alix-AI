@@ -51,7 +51,12 @@ export type AlixBlockType =
   | "citation_list"
   | "action_card"
   | "clarification_choices"
-  | "confirmation_panel";
+  | "confirmation_panel"
+  | "kpi"
+  | "timeline"
+  | "record_card"
+  | "provenance"
+  | "draft";
 
 export type AlixBlock<T extends AlixBlockType = AlixBlockType> = Extract<RichBlock, { type: T }>;
 

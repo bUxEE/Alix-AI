@@ -264,6 +264,53 @@ func TestGateIsDeterministicAndNeedsNoModel(t *testing.T) {
 	}
 }
 
+func meetingsDomain() DomainVocab {
+	return DomainVocab{
+		Description: "Meetings, minutes, companies and Italian company governance.",
+		InScope:     []string{"company meetings and minutes", "corporate incentives and filings", "governance"},
+		OutOfScope:  []string{"general chatbot use", "unrelated consumer topics"},
+		Examples: []string{
+			"Should we apply for incentive XX?",
+			"Is a Persian cat big?",
+			"Should my company have applied for the Italian 2026 company discount XX?",
+		},
+	}
+}
+
+func TestAnalystActiveDoesNotRefuseInDomainWithoutCapability(t *testing.T) {
+	// Catalogue wording deliberately avoids "company"/"incentive"/"discount" so the
+	// utterance has no capability overlap; with analyst+domain it still passes.
+	cat := []Capability{
+		{ID: "rooms.book", Description: "Book a conference room for the team", Fields: []Field{{Name: "date"}},
+			Terms: map[string][]string{"en": {"room", "booking", "schedule"}}},
+	}
+	utt := "Should my company have applied for the Italian 2026 company discount XX?"
+	if d := Decide(Request{Utterance: utt, Catalogue: cat}); d.Verdict != VerdictRefuse {
+		t.Fatalf("without analyst the gate should refuse (no capability overlap): %+v", d)
+	}
+	d := Decide(Request{Utterance: utt, Catalogue: cat, AnalystActive: true, Domain: meetingsDomain()})
+	if d.Refused() {
+		t.Fatalf("analyst+domain must not refuse an in-domain / no-capability utterance: %+v", d)
+	}
+	if d.Verdict != VerdictPass {
+		t.Fatalf("want pass, got %+v", d)
+	}
+}
+
+func TestAnalystActiveStillRefusesClearlyUnrelated(t *testing.T) {
+	cat := []Capability{
+		{ID: "rooms.book", Description: "Book a conference room", Fields: []Field{{Name: "date"}}},
+	}
+	// "Persian cat" shares no content word with the meetings domain once "big"/"is" are stopwords;
+	// "cat"/"Persian" are not in domain vocab (examples include the full out-of-domain sentence,
+	// so "Persian"/"cat"/"big" ARE in domain examples — that would pass). Use geography instead.
+	utt := "What is the tallest mountain in Europe?"
+	d := Decide(Request{Utterance: utt, Catalogue: cat, AnalystActive: true, Domain: meetingsDomain()})
+	if d.Verdict != VerdictRefuse || d.Reason != ReasonNoOverlap {
+		t.Fatalf("clearly unrelated under analyst+domain: %+v", d)
+	}
+}
+
 func TestDigestPinsTheRules(t *testing.T) {
 	d := Digest()
 	if len(d) != 64 || d != Digest() {

@@ -12,6 +12,8 @@ export type { CallOptions, ContextTokenProvider, ContextTokenRequest } from "./t
 export { CONFIRMATION_TOKEN_HEADER } from "./turn.js";
 export type { TurnStream, TurnTransport } from "./turn.js";
 export { TURN_EVENT_TYPES, doneEvent, turnText } from "./events.js";
+export { DEFAULT_CLIENT_CAPABILITIES } from "./capabilities.js";
+export type { ClientCapabilities } from "./gen/analyst/client-capabilities.js";
 // The WebSocket transport is opt-in through a host-supplied factory (a browser WebSocket cannot send the Authorization header).
 export type { StreamTransport, WebSocketFactory, WebSocketInit, WebSocketLike } from "./ws.js";
 

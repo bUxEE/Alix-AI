@@ -161,6 +161,10 @@ func (c *Client) turnBody(input TurnInput) ([]byte, error) {
 	if err := input.validate(); err != nil {
 		return nil, err
 	}
+	if !input.capsSet {
+		caps := DefaultClientCapabilities()
+		input.ClientCapabilities = &caps
+	}
 	return jsonBody(input), nil
 }
 

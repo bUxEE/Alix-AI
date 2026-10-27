@@ -824,7 +824,7 @@ export const createFakeServer = (options: FakeServerOptions = {}): FakeAlixAISer
   const validateTurnBody = (body: unknown): TurnInput | Response => {
     const bad = (message: string) => problem("validation_failed", message);
     if (!isRecord(body)) return bad("the request body must be a JSON object");
-    const known = ["text", "language", "choice_id", "confirmation", "reject", "attachments"];
+    const known = ["text", "language", "choice_id", "confirmation", "reject", "attachments", "client_capabilities"];
     if (Object.keys(body).some((k) => !known.includes(k))) return bad("the request body has an unknown member");
     const kinds = ["text", "choice_id", "confirmation", "reject"].filter((k) => body[k] !== undefined);
     if (kinds.length !== 1) return bad("exactly one of text, choice_id, confirmation and reject is required");

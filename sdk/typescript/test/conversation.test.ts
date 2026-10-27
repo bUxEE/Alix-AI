@@ -147,9 +147,9 @@ describe("regenerate and edit-and-resubmit", () => {
     await stream.result();
     expect(conversation.turns.map((t) => [t.index, t.supersededBy])).toEqual([[0, 1], [1, undefined]]);
     expect(conversation.transcript.map((t) => conversation.view(t).text)).toEqual(["answer 2 to what is the warranty?"]);
-    expect(host.fake.requests.filter((r) => r.operation === "sendTurn").map((r) => r.body)).toEqual([
-      { text: "what is the warranty?", language: "it" },
-      { text: "what is the warranty?", language: "it" },
+    expect(host.fake.requests.filter((r) => r.operation === "sendTurn").map((r) => r.body)).toMatchObject([
+      { text: "what is the warranty?", language: "it", client_capabilities: { contract: "1.5" } },
+      { text: "what is the warranty?", language: "it", client_capabilities: { contract: "1.5" } },
     ]);
     expect(host.fake.session("ses-1")?.turn_count).toBe(2); // the session is append-only
   });
@@ -162,7 +162,7 @@ describe("regenerate and edit-and-resubmit", () => {
     await (await conversation.editAndResubmit("second")).result();
     expect(conversation.transcript.map((t) => (t.input.kind === "text" ? t.input.text : ""))).toEqual(["first", "second"]);
     expect(conversation.turns.map((t) => t.supersededBy)).toEqual([undefined, 2, undefined]);
-    expect(host.fake.requests.filter((r) => r.operation === "sendTurn").at(-1)?.body).toEqual({ text: "second", language: "en" });
+    expect(host.fake.requests.filter((r) => r.operation === "sendTurn").at(-1)?.body).toMatchObject({ text: "second", language: "en", client_capabilities: expect.objectContaining({ contract: "1.5" }) });
   });
 
   it("is refused after an action was committed: sending its text again could run it again, and nothing is sent", async () => {
