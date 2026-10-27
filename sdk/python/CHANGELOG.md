@@ -3,6 +3,18 @@
 All notable changes to this package. The format follows [Keep a Changelog](https://keepachangelog.com/); versions follow semantic versioning once 1.0.0
 ships, with the rules of [compatibility.md](../../docs/policies/compatibility.md).
 
+## 1.5.1 — 2026-10-27
+
+### Added
+
+- Generated provider models: optional egress-policy `web_query`; catalog/profile `native_web_search`; meter/budget/price/usage `web_searches`; analyst config `web.fallback`; ErrCode `web_search_unavailable`.
+- Step-proposal / analyst shared generated descriptions for reference tokens and native search (ADR 0049 / 0050).
+
+### Notes
+
+- **Upgrade (operators):** web search requires the egress `web_query` setting at every level. The 1.5.0 Disclose heuristic is removed; set `web_query` to keep search on after upgrading.
+- Core: provider-native web search (OpenAI, Anthropic; Gemini/xAI/Mistral not offered); `web.fallback`; reference tokens (ADR 0049); AG-UI assistant-hint drop; dual assistant bodies; `web.origin` http(s).
+
 ## 1.5.0 — 2026-10-27
 
 ### Added

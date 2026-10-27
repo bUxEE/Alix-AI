@@ -27,6 +27,7 @@ ability_disabled retryable=false
 model_not_analyst_capable retryable=false
 insufficient_data retryable=false
 web_query_refused retryable=false
+web_search_unavailable retryable=false
 analyst_cap_exceeded retryable=false
 unit_mismatch retryable=false
 forecast_unavailable retryable=false

@@ -220,6 +220,12 @@ type UsageRecordMetering struct {
 	// Authority: alixai.
 	CharactersIn *Counter `json:"characters_in,omitzero" alixai:"alixai"`
 
+	// Units of web_searches consumed (optional additive meter, ADR 0050). Provider-reported
+	// native search tool calls. Absent or 0 when unused.
+	//
+	// Authority: alixai.
+	WebSearches *Counter `json:"web_searches,omitzero" alixai:"alixai"`
+
 	// Units of toks_in consumed.
 	//
 	// Authority: alixai.

@@ -99,8 +99,13 @@ export interface StepProposalActStep {
  */
 export interface StepProposalAnswerStep {
   /**
-   * Outline of the natural-language answer. Numbers in the final text must still verify
-   * against facts; this plan is not shown as-is.
+   * Outline of the natural-language answer (prose only). Numbers in the final text must
+   * still verify against facts; this plan is not shown as-is.
+   * Withheld/confidential/restricted cells the model must not invent: write a reference
+   * token {{ref:<dataset_id>:<row>:<field>}} (example {{ref:ds_example:0:attendee_name}});
+   * row is the 0-based row index visible from non-withheld columns. Tokens are forbidden in
+   * titles and block plans (blocks already bind by dataset_id). Core validates tokens, then
+   * resolves them server-side after verification (ADR 0049).
    *
    * @authority model
    */

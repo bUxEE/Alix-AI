@@ -1167,7 +1167,7 @@ func (a *externalAdmin) PutEgressPolicy(ctx context.Context, scope contracts.Sco
 	pin := dataegress.PolicyInput{
 		Level: in.Level, SourceID: in.SourceID, ExpectedRevision: in.ExpectedRevision, Enabled: in.Enabled, SourceMode: in.SourceMode,
 		SourceClass: in.SourceClass, AllowedProviders: in.AllowedProviders, AllowedModels: in.AllowedModels,
-		AllowedClasses: in.AllowedClasses, AllowedRegions: in.AllowedRegions, Files: in.Files, Audio: in.Audio,
+		AllowedClasses: in.AllowedClasses, AllowedRegions: in.AllowedRegions, Files: in.Files, Audio: in.Audio, WebQuery: in.WebQuery,
 	}
 	if in.Level == pv.EgressLevelDeployment {
 		return a.egress.PutDeploymentPolicy(ctx, a.operator(scope), pin)
@@ -1478,20 +1478,22 @@ func (d *extWireDelegate) Select(ctx context.Context, scope contracts.Scope, rol
 	return d.local.Select(ctx, scope, role)
 }
 
-// ResolvedControllerProfile returns the first routed controller profile for the scope.
+// ResolvedControllerProfile returns the controller profile the turn's Select/Guard path would use
+// for this scope (principal LLM bindings, private pins, then deployment default), including the
+// principal credential overlay when a binding applies. Not the first deployment-policy profile alone.
 func (d *extWireDelegate) ResolvedControllerProfile(ctx context.Context, scope contracts.Scope) (pv.ProviderProfile, bool) {
-	a := analystExternalAdmin.Load()
-	if d == nil || a == nil || d.rt.Load() == nil {
+	if d == nil {
 		return pv.ProviderProfile{}, false
 	}
-	rp := externalSection.extWirePolicy()[modes.RoleController]
-	for _, id := range rp.Profiles {
-		p, err := a.reg.Get(ctx, scope, id)
-		if err == nil && p.Lifecycle != pv.ProfileLifecycleRetired {
-			return p, true
-		}
+	rt := d.rt.Load()
+	if rt == nil {
+		return pv.ProviderProfile{}, false
 	}
-	return pv.ProviderProfile{}, false
+	p, err := rt.ControllerProfile(ctx, scope)
+	if err != nil {
+		return pv.ProviderProfile{}, false
+	}
+	return p, true
 }
 
 // ControllerAnalystCapable reports whether the resolved controller profile is analyst_capable.
@@ -1554,6 +1556,7 @@ func extWireCompose(d extWireDeps) (*extWireStack, error) {
 		return nil, err
 	}
 	sender := &extWireSender{admin: a, sec: d.Section, reg: extFinalProviderRegistry(), log: d.Log, cache: map[string]ExternalProvider{}}
+	serveExternalSender.Store(sender)
 	gs := extmode.GeneratorSender{For: sender.generatorFor}
 	st := &extWireStack{admin: a, policy: policy, sender: sender, text: extWireTextEgress{guard: a.egress}, deployment: a.deployment, log: d.Log}
 	// Always bind to this admin — never the package holder from another serve/test.
@@ -1918,6 +1921,7 @@ func extWireProvide(_ context.Context, d serveDeps) error {
 			return func() {
 				stopRev()
 				analystExternalAdmin.Store(nil)
+				serveExternalSender.Store(nil)
 				serveExternalEgress = func() dataegress.Guard { return nil }
 				serveExternalControllerProfile = func(context.Context, contracts.Scope) (pv.ProviderProfile, bool) {
 					return pv.ProviderProfile{}, false

@@ -121,6 +121,11 @@
           "x-alixai-authority": "host",
           "$ref": "#/$defs/quota"
         },
+        "web_searches": {
+          "description": "Quota of web_searches (ADR 0050).",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/quota"
+        },
         "requests": {
           "description": "Quota of requests.",
           "x-alixai-authority": "host",

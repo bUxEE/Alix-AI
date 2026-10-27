@@ -69,6 +69,7 @@ const (
 	ErrorCodeModelNotAnalystCapable     ErrorCode = "model_not_analyst_capable"
 	ErrorCodeInsufficientData           ErrorCode = "insufficient_data"
 	ErrorCodeWebQueryRefused            ErrorCode = "web_query_refused"
+	ErrorCodeWebSearchUnavailable       ErrorCode = "web_search_unavailable"
 	ErrorCodeAnalystCapExceeded         ErrorCode = "analyst_cap_exceeded"
 	ErrorCodeUnitMismatch               ErrorCode = "unit_mismatch"
 	ErrorCodeForecastUnavailable        ErrorCode = "forecast_unavailable"
@@ -79,7 +80,7 @@ const (
 // Valid reports whether v is one of the values the schema lists.
 func (v ErrorCode) Valid() bool {
 	switch v {
-	case ErrorCodeScopeMissing, ErrorCodeUnauthenticated, ErrorCodePermissionDenied, ErrorCodeScopeViolation, ErrorCodeSchemaInvalid, ErrorCodeUnknownCapability, ErrorCodeAmbiguous, ErrorCodeMissingFields, ErrorCodeValidationFailed, ErrorCodeStale, ErrorCodeExpired, ErrorCodeReplayed, ErrorCodeConfirmationRequired, ErrorCodeStepUpRequired, ErrorCodeConflict, ErrorCodeUnavailable, ErrorCodeDegraded, ErrorCodeTimeout, ErrorCodeRateLimited, ErrorCodeResourceExhausted, ErrorCodeNoSupportedEvidence, ErrorCodeUncertainOutcome, ErrorCodePartialFailure, ErrorCodeQuarantined, ErrorCodeOutOfDomain, ErrorCodeAbilityDisabled, ErrorCodeModelNotAnalystCapable, ErrorCodeInsufficientData, ErrorCodeWebQueryRefused, ErrorCodeAnalystCapExceeded, ErrorCodeUnitMismatch, ErrorCodeForecastUnavailable, ErrorCodeDomainClassificationFailed, ErrorCodeInternal:
+	case ErrorCodeScopeMissing, ErrorCodeUnauthenticated, ErrorCodePermissionDenied, ErrorCodeScopeViolation, ErrorCodeSchemaInvalid, ErrorCodeUnknownCapability, ErrorCodeAmbiguous, ErrorCodeMissingFields, ErrorCodeValidationFailed, ErrorCodeStale, ErrorCodeExpired, ErrorCodeReplayed, ErrorCodeConfirmationRequired, ErrorCodeStepUpRequired, ErrorCodeConflict, ErrorCodeUnavailable, ErrorCodeDegraded, ErrorCodeTimeout, ErrorCodeRateLimited, ErrorCodeResourceExhausted, ErrorCodeNoSupportedEvidence, ErrorCodeUncertainOutcome, ErrorCodePartialFailure, ErrorCodeQuarantined, ErrorCodeOutOfDomain, ErrorCodeAbilityDisabled, ErrorCodeModelNotAnalystCapable, ErrorCodeInsufficientData, ErrorCodeWebQueryRefused, ErrorCodeWebSearchUnavailable, ErrorCodeAnalystCapExceeded, ErrorCodeUnitMismatch, ErrorCodeForecastUnavailable, ErrorCodeDomainClassificationFailed, ErrorCodeInternal:
 		return true
 	}
 	return false

@@ -160,6 +160,11 @@ type BudgetQuotas struct {
 	// Authority: host.
 	CharactersIn *BudgetQuota `json:"characters_in,omitzero" alixai:"host"`
 
+	// Quota of web_searches (ADR 0050).
+	//
+	// Authority: host.
+	WebSearches *BudgetQuota `json:"web_searches,omitzero" alixai:"host"`
+
 	// Quota of requests.
 	//
 	// Authority: host.

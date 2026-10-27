@@ -56,8 +56,8 @@ func (s *Store) appendTranscript(ctx context.Context, tx *store.Tx, scope contra
 			return err
 		}
 	}
-	if rec.Assistant != "" {
-		return put("assistant", rec.Act, rec.Assistant)
+	if text := rec.DisplayAssistant(); text != "" {
+		return put("assistant", rec.Act, text)
 	}
 	return nil
 }

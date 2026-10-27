@@ -101,11 +101,17 @@
           "pattern": "^cred_[0-9A-HJKMNP-TV-Z]{26}$"
         },
         "origin": {
-          "description": "https origin for a self-hosted SearXNG (or similar). No credentials, query or fragment. Required when provider is searxng.",
+          "description": "http(s) origin for a self-hosted SearXNG (or similar). Operator-configured endpoint; internal http is fine. No credentials, query or fragment. Required when provider or fallback is searxng.",
           "type": "string",
           "minLength": 8,
           "maxLength": 512,
           "pattern": "^https?://[^\\s?#]+$"
+        },
+        "fallback": {
+          "description": "Optional search backend used when provider is provider_native but the routed profile lacks native_web_search or egress does not allow provider_native. Empty = no fallback (typed web_search_unavailable). cred_ref and origin apply to the fallback the same way they apply when that backend is the primary provider.",
+          "type": "string",
+          "enum": ["", "searxng", "brave", "tavily"],
+          "default": ""
         },
         "max_searches": {
           "type": "integer",

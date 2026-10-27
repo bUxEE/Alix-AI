@@ -3,6 +3,12 @@
 All notable changes to this package. Versions follow semantic versioning with the rules of
 [compatibility.md](../../docs/policies/compatibility.md).
 
+## 1.5.1 — 2026-10-27
+
+### Notes
+
+- Version aligns with core/SDK 1.5.1. Adapter behaviour unchanged; core AG-UI no longer feeds client-resent assistant messages into prompts (ADR 0049 dual bodies / hint drop).
+
 ## 1.5.0 — 2026-10-27
 
 ### Added

@@ -18,10 +18,10 @@ and reviewed. See [Project status](../README.md#project-status) and
 - **Workspace-scoped principal erasure** and the fix that workspace-level erase no longer removes other workspaces' conversation history.
 - **llmbench quality mode**; SSRF hardening on analyst fetch.
 
-## Planned for 1.5.1
+## Shipped in 1.5.1
 
-- **Model-native web search**: the routed model's own search tool as a `search` step with only the vetted query; AlixAI fetches cited pages itself to verify; `native_web_search` catalog flag; `web_searches` meter; fallback native → SearXNG-compatible endpoint → off.
-- **Post-verification reference tokens** in analyst prose: values the model never saw filled in after verification.
+- **Model-native web search** ([ADR 0050](decisions/0050-native-web-search.md)): routed model's own search tool as a `search` step with only the vetted query; AlixAI fetches cited pages itself; `web_query` egress setting (replaces the 1.5.0 heuristic); `native_web_search` catalog flag; `web_searches` meter; fallback native → SearXNG-compatible / Brave / Tavily → off. OpenAI and Anthropic offered; Gemini / xAI / Mistral not offered.
+- **Reference tokens** ([ADR 0049](decisions/0049-reference-tokens.md)): post-verification tokens in analyst prose; AG-UI assistant-hint drop; dual assistant bodies (history shows resolved values).
 
 ## Shipped in 1.4.0
 

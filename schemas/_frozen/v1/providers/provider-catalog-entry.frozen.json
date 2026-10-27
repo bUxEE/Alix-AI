@@ -95,6 +95,11 @@
       "x-alixai-authority": "alixai",
       "type": "boolean"
     },
+    "native_web_search": {
+      "description": "Optional, default false. Copied from the profile: whether provider_native web search is available for this catalog entry (ADR 0050).",
+      "x-alixai-authority": "alixai",
+      "type": "boolean"
+    },
     "oauth_available": {
       "description": "True when the provider officially offers third-party OAuth the principal may start under /v1/me/oauth.",
       "x-alixai-authority": "alixai",

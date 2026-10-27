@@ -67,6 +67,11 @@ type MeUsageGroup struct {
 	// Authority: alixai.
 	CharactersIn Counter `json:"characters_in" alixai:"alixai"`
 
+	// Native web search tool calls (ADR 0050).
+	//
+	// Authority: alixai.
+	WebSearches *Counter `json:"web_searches,omitzero" alixai:"alixai"`
+
 	// Authority: alixai.
 	Requests Counter `json:"requests" alixai:"alixai"`
 

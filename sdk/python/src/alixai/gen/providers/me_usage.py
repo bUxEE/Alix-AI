@@ -20,6 +20,7 @@ class Group(BaseModel):
     toks_out: Counter
     audio_seconds_in: Counter
     characters_in: Counter
+    web_searches: Optional[Counter] = None
     requests: Counter
     currency: Currency
     charged_micro_units: MicroUnits

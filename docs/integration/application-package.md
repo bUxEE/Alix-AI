@@ -1384,10 +1384,20 @@ Both designs are accepted for applying the effect: the interface applies it itse
 the adapter then stays refused, and Status never has a record), or it records an approval and the
 commit that follows applies the effect once, like any other commit.
 
-**Reporting the outcome to AlixAI (1.5.0, ADR 0048).** `POST /v1/events` only invalidates. To tell
-the assistant the step-up finished, the host **backend** calls
-`POST /v1/sessions/{session_id}/preparations/{preparation_id}/step-up-outcome` with a context token
-of the same principal and session and body `{outcome: completed|declined|failed, reference?}`.
+**Reporting the outcome to AlixAI (1.5.0, ADR 0048).** `POST /v1/events` only invalidates. The
+AG-UI `alixai_continue_in_app` view strips the idempotency key on purpose (the browser sees the
+call). The host **backend** recovers the key and closes the loop:
+
+1. `GET /v1/actions/{preparation_id}` with a context token of the same principal and session →
+   `PreparedAction` with `idempotency_key` and effects.
+2. Apply the effect in the host's own UI under that key. The host may link its own staged payload
+   via a data version it returned from Prepare — data versions round-trip exactly.
+3. Status answers `ok` | `queued` | `partial` with identifiers inside the prepared effects when
+   done, or `rejected` with exactly one `validation_failed` error on field `idempotency_key` and
+   no identifiers when there is no such effect.
+4. Then `POST /v1/sessions/{session_id}/preparations/{preparation_id}/step-up-outcome` with body
+   `{outcome: completed|declined|failed, reference?}`.
+
 AlixAI always asks the adapter's Status for the preparation's key: `completed` is accepted only
 when Status shows the effect; `declined` / `failed` are refused with `step_up_effect_present` when
 Status shows the effect (report `completed` instead). A durable `ActionReceipt` is recorded
@@ -1399,8 +1409,10 @@ so the **next turn sees the outcome** and must not re-propose that action. The r
 route (the stream hub needs a turn id). Sequence:
 
 ```text
-user confirms in host UI
-  → host applies effect (or records decline/failure)
+AG-UI alixai_continue_in_app (idempotency_key stripped for the browser)
+  → host backend GET /v1/actions/{preparation_id}  (context token → PreparedAction)
+  → host UI applies effect under idempotency_key (optional staged payload ↔ data version)
+  → host Status: ok|queued|partial + identifiers  OR  rejected / validation_failed on idempotency_key
   → host backend POST …/step-up-outcome {outcome}
   → AlixAI Status-checks → ActionReceipt → goal completed / cancelled → next turn sees it
 ```

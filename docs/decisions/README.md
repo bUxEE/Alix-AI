@@ -22,7 +22,7 @@ per-principal LLM accounts and long-term memory (1.2.0), 0043 is external TTS wi
 choice (1.3.0), 0044 is opt-in external realisation of live facts with verified tables and charts
 (1.3.0), 0045 is private self-hosted LLM endpoints (1.4.0), 0046 is verified incremental
 streaming (1.4.0), 0047 is analyst turns (1.5.0), and 0048 is host step-up outcome
-into the session (1.5.0). The next free number is 0049.
+into the session (1.5.0). The next free number is 0051.
 
 ## Index
 
@@ -97,5 +97,8 @@ changes Local mode. The architecture they sit in is [external-provider-mode.md](
 | [0046](0046-verified-incremental-streaming.md) | Verified incremental streaming | accepted | — | Opt-in `dialogue.stream_verified` (default off); sentence segments verified before emit; TurnEvent `text_replaced` → AG-UI `alixai.text_replaced` | 1.4.0 |
 | [0047](0047-analyst-turns.md) | Analyst turns: multi-step reads, core compute, domain scope | accepted | — | Opt-in `dialogue.analyst.*` abilities (all off); constrained-JSON step loop; core compute; source labels; web_query egress | 1.5.0 |
 | [0048](0048-step-up-outcome.md) | Host reports step-up outcome into the session | accepted | — | `POST …/step-up-outcome`; Status-verified `completed`; declined/failed rejected receipts; AI path stays refused | 1.5.0 |
+| [0049](0049-reference-tokens.md) | Reference tokens for cited spans | accepted | — | Stable reference tokens for analyst / verified citations | 1.5.1 |
+| [0050](0050-native-web-search.md) | Model-native web search and `web_query` egress setting | accepted | — | `web_query` policy member; `native_web_search`; `web_searches` meter; native → fallback → off | 1.5.1 |
 
 Related: [architecture overview](../architecture/overview.md), [external provider mode](../architecture/external-provider-mode.md) and [module map](../architecture/module-map.md).
+

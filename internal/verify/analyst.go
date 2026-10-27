@@ -42,7 +42,11 @@ type AnalystOptions struct {
 
 // AnalystOutcome is the verified reply or the analyst template replacement.
 type AnalystOutcome struct {
-	Text       string
+	Text string
+	// ModelText is the verified answer still carrying {{ref:…}} tokens (ADR 0049).
+	// Empty when Text has no refs or when Source is the template. Persist ModelText
+	// (or Text when empty) into the model window; show Text (resolved) to the client.
+	ModelText  string
 	Source     Source
 	Reason     Reason
 	Violations []Violation
@@ -69,12 +73,34 @@ func markCoreMaterialised(n int) []bool {
 // the turn fact set. Qualitative text without numbers passes. On failure it returns
 // the analyst template (final dataset table + provenance) with ReasonVerificationFailed.
 //
+// Reference tokens (ADR 0049) in text_plan are validated against datasets then left in
+// Text (ModelText is set equal to Text when tokens are present). Call ResolveAnalystRefs
+// before anything reaches the client; keep the token form for the model window.
+//
 // Integrator: call VerifyAnalyst / RealiseAnalyst for a finished answer; use
 // NewAnalystStream for verified streaming (ADR 0046) — a later failing segment
 // yields Replace with the template.
 func VerifyAnalyst(answer AnalystAnswer, facts AnalystFactSet, opts AnalystOptions) (AnalystOutcome, error) {
 	if opts.Language != LangEN && opts.Language != LangIT {
 		return AnalystOutcome{}, failure(contracts.ErrValidationFailed, ErrUnsupportedLanguage, "language %q is not supported", string(opts.Language))
+	}
+	if res := CheckBlockPlansForRefs(answer.Blocks); !res.OK {
+		out, err := analystTemplate(facts, answer.FinalDatasetID, opts.Language)
+		if err != nil {
+			return AnalystOutcome{}, err
+		}
+		out.Reason = ReasonVerificationFailed
+		out.Violations = res.Violations
+		return out, nil
+	}
+	if res := CheckAnalystRefs(answer.Text, facts); !res.OK {
+		out, err := analystTemplate(facts, answer.FinalDatasetID, opts.Language)
+		if err != nil {
+			return AnalystOutcome{}, err
+		}
+		out.Reason = ReasonVerificationFailed
+		out.Violations = res.Violations
+		return out, nil
 	}
 	res := checkAnalyst(answer.Text, answer.SourceSpans, facts, opts.Language)
 	if res.OK {
@@ -88,10 +114,15 @@ func VerifyAnalyst(answer AnalystAnswer, facts AnalystFactSet, opts AnalystOptio
 			out.Violations = []Violation{{Kind: ViolationUnknownNumber, Got: "block"}}
 			return out, nil
 		}
-		return AnalystOutcome{
-			Text: strings.TrimSpace(answer.Text), Source: SourceModel, Reason: ReasonVerified,
+		text := strings.TrimSpace(answer.Text)
+		out := AnalystOutcome{
+			Text: text, Source: SourceModel, Reason: ReasonVerified,
 			Blocks: blocks, CoreMaterialised: markCoreMaterialised(len(blocks)),
-		}, nil
+		}
+		if len(ParseRefTokens(text)) > 0 {
+			out.ModelText = text
+		}
+		return out, nil
 	}
 	out, err := analystTemplate(facts, answer.FinalDatasetID, opts.Language)
 	if err != nil {
@@ -115,7 +146,11 @@ func checkAnalyst(text string, spans []analyst.SourceSpan, facts AnalystFactSet,
 	if hasInvisible(text) {
 		return Result{Violations: []Violation{{Kind: ViolationInvisibleCharacters}}}
 	}
+	// Mask reference tokens so their syntax is not mistaken for invented identifiers;
+	// values stay local until ResolveAnalystRefs (ADR 0049).
+	text = MaskRefTokens(text)
 	allowed := buildAnalystAllowed(facts, lang)
+	allowed.addString(refPlaceholder)
 	tenantNums := map[string]bool{}
 	for n := range allowed.numbers {
 		tenantNums[n] = true

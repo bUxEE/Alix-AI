@@ -231,6 +231,14 @@ export interface UsageRecordMetering {
   characters_in?: Counter;
 
   /**
+   * Units of web_searches consumed (optional additive meter, ADR 0050). Provider-reported
+   * native search tool calls. Absent or 0 when unused.
+   *
+   * @authority alixai
+   */
+  web_searches?: Counter;
+
+  /**
    * Units of toks_in consumed.
    *
    * @authority alixai

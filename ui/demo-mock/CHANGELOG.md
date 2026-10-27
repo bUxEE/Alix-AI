@@ -3,6 +3,12 @@
 All notable changes to this package. Versions follow semantic versioning with the rules of
 [compatibility.md](../../docs/policies/compatibility.md).
 
+## 1.5.1 — 2026-10-27
+
+### Notes
+
+- Version aligns with core/SDK 1.5.1. No demo-mock API change.
+
 ## 1.5.0 — 2026-10-27
 
 ### Added

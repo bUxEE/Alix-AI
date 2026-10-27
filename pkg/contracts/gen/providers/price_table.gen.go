@@ -101,6 +101,12 @@ type PriceTablePrices struct {
 	// Authority: host.
 	CharactersIn *PriceTablePrice `json:"characters_in,omitzero" alixai:"host"`
 
+	// Price of web_searches (provider-native search tool calls, ADR 0050). Absent means
+	// count-only (no money).
+	//
+	// Authority: host.
+	WebSearches *PriceTablePrice `json:"web_searches,omitzero" alixai:"host"`
+
 	// Price of requests.
 	//
 	// Authority: host.

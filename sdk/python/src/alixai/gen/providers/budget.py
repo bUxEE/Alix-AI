@@ -37,6 +37,7 @@ class ProviderBudgetQuotas(BaseModel):
     audio_seconds_out: Optional[Quota] = None
     file_bytes_in: Optional[Quota] = None
     characters_in: Optional[Quota] = None
+    web_searches: Optional[Quota] = None
     requests: Optional[Quota] = None
 
 

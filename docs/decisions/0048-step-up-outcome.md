@@ -83,6 +83,38 @@ with a fresh context token. Packages that apply the effect only in-app (no
 Status record) cannot use `outcome: completed`; they keep the invalidate-or-
 approve-then-commit designs already documented for step-up capabilities.
 
+## Host linkage after `alixai_continue_in_app` (1.5.0 behaviour)
+
+The AG-UI `alixai_continue_in_app` view **strips the idempotency key on purpose**
+(the browser must not see it; see [agui.md](../integration/agui.md) §7). The host
+backend recovers the full `PreparedAction` and closes the loop as follows:
+
+1. With a context token of the **same principal and session**, call
+   `GET /v1/actions/{preparation_id}` → `PreparedAction` including
+   `idempotency_key` and effects.
+2. Apply the effect in the host's own authenticated UI under that
+   `idempotency_key`. The host may link its own staged payload via a **data
+   version** it returned from Prepare — data versions round-trip exactly.
+3. Its Status operation answers:
+   - `ok` | `queued` | `partial` with identifiers inside the prepared effects
+     when the effect is done; or
+   - `rejected` with exactly one `validation_failed` error on field
+     `idempotency_key` and **no** identifiers when there is no such effect.
+4. Then `POST /v1/sessions/{session_id}/preparations/{preparation_id}/step-up-outcome`
+   with `{outcome: completed|declined|failed, reference?}` (this ADR).
+
+Sequence:
+
+```text
+AG-UI alixai_continue_in_app (no idempotency_key in the browser)
+  → host backend GET /v1/actions/{preparation_id}  (context token)
+  → PreparedAction { idempotency_key, effects, data_versions… }
+  → host UI applies effect under that key (optional staged payload ↔ data version)
+  → host Status: ok|queued|partial + identifiers  OR  rejected / validation_failed on idempotency_key
+  → host backend POST …/step-up-outcome {outcome}
+  → AlixAI Status-checks → ActionReceipt → goal completed / cancelled → next turn sees it
+```
+
 ## Reversal plan
 
 Remove the route and `RecordStepUpOutcome` / `ApplyStepUpReceipt`; leave

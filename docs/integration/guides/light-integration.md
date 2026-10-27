@@ -1,6 +1,6 @@
 # Integrate AlixAI as a chat assistant with external AI (no local LLM)
 
-Status: written for the **1.5.0** additive wave (kept current with ADRs 0041–0048). Companion to [light External deployments](../../operations/guides/light-external.md) and [External mode for integrators](../external-mode.md).
+Status: written for the **1.5.1** additive wave (kept current with ADRs 0041–0050). Companion to [light External deployments](../../operations/guides/light-external.md) and [External mode for integrators](../external-mode.md).
 
 This guide is for a host application that wants a **signed help / FAQ chat assistant** on AlixAI in light External mode (hosted chat provider, no local controller model). Every claim below points at code or a doc that proves it.
 
@@ -11,7 +11,8 @@ This guide is for a host application that wants a **signed help / FAQ chat assis
 | 1.2 | Per-principal LLM accounts; long-term memory; downloadable exports | [0041](../../decisions/0041-per-principal-llm-accounts.md), [0042](../../decisions/0042-long-term-memory.md) |
 | 1.3 | External TTS / per-role providers; principal usage & budgets; browser OAuth callback; verified tables/charts; ops erasure (tenant vs application) | [0043](../../decisions/0043-external-tts-and-per-role-provider-choice.md), [0044](../../decisions/0044-external-directive-class-and-result-blocks.md) |
 | 1.4 | Private self-hosted LLM endpoints; verified incremental streaming | [0045](../../decisions/0045-private-self-hosted-llm-endpoints.md), [0046](../../decisions/0046-verified-incremental-streaming.md) |
-| 1.5 | Analyst turns; host step-up outcome into the session; principal erasure scoped to one workspace | [0047](../../decisions/0047-analyst-turns.md), [0048](../../decisions/0048-step-up-outcome.md) |
+| 1.5.0 | Analyst turns; host step-up outcome into the session; principal erasure scoped to one workspace | [0047](../../decisions/0047-analyst-turns.md), [0048](../../decisions/0048-step-up-outcome.md) |
+| 1.5.1 | Egress `web_query` setting (required for search); provider-native web search + fallback; reference tokens; AG-UI assistant-hint drop | [0049](../../decisions/0049-reference-tokens.md), [0050](../../decisions/0050-native-web-search.md) |
 
 ## What AlixAI is not
 

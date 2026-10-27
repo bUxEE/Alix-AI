@@ -99,10 +99,19 @@ export interface ConfigWebConfig {
   cred_ref?: string;
 
   /**
-   * https origin for a self-hosted SearXNG (or similar). No credentials, query or fragment.
-   * Required when provider is searxng.
+   * http(s) origin for a self-hosted SearXNG (or similar). Operator-configured endpoint;
+   * internal http is fine. No credentials, query or fragment. Required when provider or
+   * fallback is searxng.
    */
   origin?: string;
+
+  /**
+   * Optional search backend used when provider is provider_native but the routed profile
+   * lacks native_web_search or egress does not allow provider_native. Empty = no fallback
+   * (typed web_search_unavailable). cred_ref and origin apply to the fallback the same way
+   * they apply when that backend is the primary provider.
+   */
+  fallback?: ConfigWebConfigFallback;
 
   max_searches?: number;
 
@@ -121,6 +130,23 @@ export interface ConfigWebConfig {
    */
   deny_hosts?: string[];
 }
+
+/**
+ * ConfigWebConfigFallback mirrors
+ * urn:alixai:schema:analyst:config:v1#/$defs/webConfig/properties/fallback.
+ *
+ * Optional search backend used when provider is provider_native but the routed profile lacks
+ * native_web_search or egress does not allow provider_native. Empty = no fallback (typed
+ * web_search_unavailable). cred_ref and origin apply to the fallback the same way they apply when
+ * that backend is the primary provider.
+ *
+ * Only the values listed in the schema are valid.
+ */
+export type ConfigWebConfigFallback =
+  | ""
+  | "searxng"
+  | "brave"
+  | "tavily";
 
 /**
  * ConfigWebConfigProvider mirrors

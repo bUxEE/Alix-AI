@@ -192,7 +192,8 @@ func quotaList(b providers.Budget) []unitQuota {
 		{providers.MeterUnitToksInCached, q.ToksInCached}, {providers.MeterUnitImagesIn, q.ImagesIn},
 		{providers.MeterUnitImagesOut, q.ImagesOut}, {providers.MeterUnitAudioSecondsIn, q.AudioSecondsIn},
 		{providers.MeterUnitAudioSecondsOut, q.AudioSecondsOut}, {providers.MeterUnitFileBytesIn, q.FileBytesIn},
-		{providers.MeterUnitCharactersIn, q.CharactersIn}, {providers.MeterUnitRequests, q.Requests},
+		{providers.MeterUnitCharactersIn, q.CharactersIn}, {providers.MeterUnitWebSearches, q.WebSearches},
+		{providers.MeterUnitRequests, q.Requests},
 	} {
 		if e.q != nil {
 			out = append(out, unitQuota{e.u, *e.q})

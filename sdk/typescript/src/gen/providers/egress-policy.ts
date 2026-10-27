@@ -146,6 +146,20 @@ export interface EgressPolicy {
   audio?: EgressPolicyContentEgress;
 
   /**
+   * Web search queries (category web_query, ADR 0047 / 0050): whether a vetted search string
+   * may leave under this level, and to which search backends. Absent, or enabled false,
+   * refuses every web search: this is the default, and a policy that lets text leave does
+   * not let web queries leave. Queries never carry confidential or restricted application
+   * values (enforced separately by CheckQuery), so enabling web_query does not need
+   * confidential-class approval. Effective = every level along deployment → application
+   * → tenant → workspace enables it, and allowed_providers is the intersection. Not at
+   * source level.
+   *
+   * @authority host
+   */
+  web_query?: EgressPolicyWebQueryEgress;
+
+  /**
    * The authorised operator who approved the allowance. Required wherever the policy lets
    * internal or confidential data leave.
    *
@@ -259,3 +273,44 @@ export interface EgressPolicyTarget {
    */
   source_id?: SourceID;
 }
+
+/**
+ * EgressPolicyWebQueryEgress mirrors
+ * urn:alixai:schema:providers:egress-policy:v1#/$defs/webQueryEgress.
+ *
+ * Whether a vetted web search query may leave under this level, and which search backends may
+ * receive it. Every level of the chain must enable it; the effective allowed_providers is the
+ * intersection along the chain.
+ */
+export interface EgressPolicyWebQueryEgress {
+  /**
+   * Whether web search queries may leave under this level. false refuses every search
+   * whatever the other levels say.
+   *
+   * @authority host
+   */
+  enabled: boolean;
+
+  /**
+   * Search backends that may receive the query under this level. Empty allows none.
+   * Intersection along the chain is effective. provider_native means the routed controller's
+   * own search tool.
+   *
+   * @authority host
+   */
+  allowed_providers: EgressPolicyWebQueryProvider[];
+}
+
+/**
+ * EgressPolicyWebQueryProvider mirrors
+ * urn:alixai:schema:providers:egress-policy:v1#/$defs/webQueryProvider.
+ *
+ * A search backend that may receive a web_query.
+ *
+ * Only the values listed in the schema are valid.
+ */
+export type EgressPolicyWebQueryProvider =
+  | "provider_native"
+  | "searxng"
+  | "brave"
+  | "tavily";

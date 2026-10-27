@@ -486,17 +486,23 @@ docs/                  architecture, ADRs, integration guides, operations, secur
 
 ## Project status
 
-### 1.5.0 (2026-10-27)
+### 1.5.1 (2026-10-27)
 
-- **Analyst companion** ([ADR 0047](docs/decisions/0047-analyst-turns.md)): multi-step reads, core compute, domain classifier, web search/fetch (SearXNG-compatible / Brave / Tavily), verified presentation blocks (kpi, timeline, record_card, provenance, draft; extended chart marks). All abilities **off by default**. Client `client_capabilities` announcement; empty announcement maps emit to the 1.4 freeze.
-- **Host step-up outcome** ([ADR 0048](docs/decisions/0048-step-up-outcome.md)): `POST …/step-up-outcome`.
-- **Workspace-scoped principal erasure**; workspace-level erase no longer removes other workspaces' conversation history.
-- SDKs/kits: typed private-LLM ops (1.4 map methods deprecated/compat), `reportStepUpOutcome` / `report_step_up_outcome`, erasure `scope: workspace`, analyst generated types and kit blocks.
-- **llmbench quality mode**; SSRF hardening on analyst fetch.
+- **Provider-native web search** ([ADR 0050](docs/decisions/0050-native-web-search.md)): optional `web.provider: provider_native` with OpenAI Responses / Anthropic Messages search tools (Gemini / xAI / Mistral not offered); `web.fallback`; catalog `native_web_search`; meter `web_searches`.
+- **Egress `web_query` setting** (replaces the 1.5.0 Disclose heuristic): operators must enable `web_query` at every level to keep web search on after upgrading.
+- **Reference tokens** in verified analyst prose ([ADR 0049](docs/decisions/0049-reference-tokens.md)); AG-UI client-resent assistant messages no longer enter prompts; history shows resolved values; `web.origin` accepts `http://` and `https://`.
 
-**Not verified in 1.5.0:** no live provider or live web-search runs in CI (recorded fixtures and fakes only); Italian quality of private models not measured (measure with `tools/llmbench` quality mode); `-race` runs in CI on Linux only. Answer times and capacity in [hardware-and-pricing](docs/operations/hardware-and-pricing.md) remain estimates until llmbench runs on real GPUs.
+**Upgrade note:** set egress `web_query` (and optionally `native_web_search` / `web.fallback`) or search stays refused.
+
+**Not verified in 1.5.1:** no live provider-native search calls in CI (recorded fixtures and fakes only); Italian quality of private models still unmeasured; `-race` runs in CI on Linux only.
 
 ### Earlier releases
+
+#### 1.5.0 (additive)
+
+- **Analyst companion** ([ADR 0047](docs/decisions/0047-analyst-turns.md)): multi-step reads, core compute, domain classifier, web search/fetch (SearXNG-compatible / Brave / Tavily), verified presentation blocks. All abilities **off by default**.
+- **Host step-up outcome** ([ADR 0048](docs/decisions/0048-step-up-outcome.md)): `POST …/step-up-outcome`.
+- **Workspace-scoped principal erasure**; llmbench quality mode; SSRF hardening.
 
 #### 1.4.1 (patch)
 
@@ -506,7 +512,7 @@ docs/                  architecture, ADRs, integration guides, operations, secur
 
 - Private self-hosted LLM endpoints (ADR 0045); verified incremental streaming (ADR 0046); GPU Performance profile; private-LLM deployment kit; llmbench; hardware-and-pricing estimates.
 
-**1.5.0 is in tree.** Source builds report `1.5.0-dev`; packages declaring `[1.0.0, 2.0.0)` still validate. Contract changes are additive and frozen into `schemas/_frozen/v1`. What 1.3.0 added: external TTS and per-role provider choice ([ADR 0043](docs/decisions/0043-external-tts-and-per-role-provider-choice.md)); **1.2.0**: per-principal LLM accounts ([ADR 0041](docs/decisions/0041-per-principal-llm-accounts.md)), long-term memory ([ADR 0042](docs/decisions/0042-long-term-memory.md)), downloadable exports. Not verified earlier: live provider runs, voicebench on real hardware, real 8 GB certification, independent security review. Summary:
+**1.5.1 is in tree.** Source builds report `1.5.1-dev`; packages declaring `[1.0.0, 2.0.0)` still validate. Contract changes are additive and frozen into `schemas/_frozen/v1`. **1.5.0** remains: analyst companion (ADR 0047), step-up outcome (ADR 0048), workspace-scoped erasure. What 1.3.0 added: external TTS and per-role provider choice ([ADR 0043](docs/decisions/0043-external-tts-and-per-role-provider-choice.md)); **1.2.0**: per-principal LLM accounts ([ADR 0041](docs/decisions/0041-per-principal-llm-accounts.md)), long-term memory ([ADR 0042](docs/decisions/0042-long-term-memory.md)), downloadable exports. Not verified earlier: live provider runs, voicebench on real hardware, real 8 GB certification, independent security review. Summary:
 
 | Status | Areas |
 | --- | --- |

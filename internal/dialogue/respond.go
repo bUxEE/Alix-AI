@@ -97,7 +97,16 @@ func (t *turn) complete(ctx context.Context, out outcome) (Result, error) {
 
 	t.stage(StagePersist)
 	t.finishState(d)
-	rec := &sessions.TurnRecord{TurnID: t.id, Act: string(d.Act), Assistant: resp.Text}
+	// Dual form (ADR 0049): session_turns get the model-window body (tokens);
+	// transcript_turns get the resolved client text via AssistantDisplay.
+	assist := resp.Text
+	if out.analystModelText != "" {
+		assist = out.analystModelText
+	}
+	rec := &sessions.TurnRecord{TurnID: t.id, Act: string(d.Act), Assistant: assist}
+	if assist != resp.Text {
+		rec.AssistantDisplay = resp.Text
+	}
 	if t.in.Text != "" {
 		rec.User = t.userText
 	}

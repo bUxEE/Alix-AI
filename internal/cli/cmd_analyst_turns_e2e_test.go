@@ -27,6 +27,7 @@ import (
 	"github.com/buxee/alix-ai/internal/apppkg"
 	"github.com/buxee/alix-ai/internal/audit"
 	"github.com/buxee/alix-ai/internal/clock"
+	"github.com/buxee/alix-ai/internal/credentials"
 	"github.com/buxee/alix-ai/internal/dataegress"
 	"github.com/buxee/alix-ai/internal/gateway"
 	"github.com/buxee/alix-ai/internal/identity"
@@ -57,11 +58,12 @@ const (
 // ---- scripted OpenAI ------------------------------------------------------------------
 
 type analystScriptedOA struct {
-	srv    *httptest.Server
-	mu     sync.Mutex
-	queue  []string
-	bodies [][]byte
-	calls  int
+	srv         *httptest.Server
+	mu          sync.Mutex
+	queue       []string
+	bodies      [][]byte
+	searchAuths []string // Authorization headers of web_search Responses calls
+	calls       int
 }
 
 func newAnalystScriptedOA(t *testing.T) *analystScriptedOA {
@@ -74,6 +76,19 @@ func newAnalystScriptedOA(t *testing.T) *analystScriptedOA {
 		s.calls++
 		text := `{"kind":"answer","answer":{"text_plan":"Done.","blocks":[]}}`
 		switch {
+		case bytes.Contains(body, []byte(`"type":"web_search"`)) || bytes.Contains(body, []byte(`"type": "web_search"`)):
+			s.searchAuths = append(s.searchAuths, r.Header.Get("Authorization"))
+			s.mu.Unlock()
+			model := rdyExtModelA + "-" + rdyExtVersionA
+			out := fmt.Sprintf(`{"id":"resp_ws","object":"response","status":"completed","model":%q,`+
+				`"output":[{"type":"web_search_call","id":"ws_1","status":"completed","action":{"type":"search","query":"q"}},`+
+				`{"type":"message","id":"msg_1","role":"assistant","status":"completed","content":[{"type":"output_text","text":"Found page.",`+
+				`"annotations":[{"type":"url_citation","url":%q,"title":"Holidays"},{"type":"url_citation","url":"https://evil.example/x","title":"Evil"}]}]}],`+
+				`"usage":{"input_tokens":12,"output_tokens":8,"total_tokens":20}}`,
+				model, analystE2EPageURL)
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = io.WriteString(w, out)
+			return
 		case bytes.Contains(body, []byte(`"enum":["in_domain","out_of_domain"]`)):
 			// Match the utterance only — domain examples also mention "Persian cat".
 			// Request bodies are JSON, so the prompt's newline is the two bytes '\' 'n'.
@@ -142,6 +157,18 @@ func (s *analystScriptedOA) bodiesSnapshot() [][]byte {
 		out[i] = append([]byte(nil), b...)
 	}
 	return out
+}
+
+func (s *analystScriptedOA) searchAuthSnapshot() []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]string(nil), s.searchAuths...)
+}
+
+func (s *analystScriptedOA) searchCallCount() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return len(s.searchAuths)
 }
 
 func truncateOA(b []byte, n int) string {
@@ -443,12 +470,13 @@ assistant:
 // ---- harness ---------------------------------------------------------------------------
 
 type analystTurnRig struct {
-	t    *testing.T
-	srv  *running
-	iss  *identitytest.Issuer
-	oa   *analystScriptedOA
-	sx   *recordingSearx
-	host *companyHost
+	t       *testing.T
+	srv     *running
+	iss     *identitytest.Issuer
+	oa      *analystScriptedOA
+	sx      *recordingSearx
+	host    *companyHost
+	dataDir string
 }
 
 type stubPubResolver map[string][]netip.Addr
@@ -460,11 +488,35 @@ func (s stubPubResolver) LookupNetIP(_ context.Context, _, host string) ([]netip
 	return nil, fmt.Errorf("no such host")
 }
 
+type analystTurnRigOpts struct {
+	maxTurnTokens   int
+	webYAML         string // under dialogue.analyst.web; empty → searxng default
+	nativeWebSearch bool
+	// webQuery nil → enable all backends; non-nil empty → omit web_query; else exact list.
+	webQuery *[]pv.EgressPolicyWebQueryProvider
+	// workspaceWebOff disables web_query only at workspace after enabling the chain.
+	workspaceWebOff bool
+	// principalOwnKey binds usr_alice's controller to the profile with this API key (non-empty).
+	principalOwnKey string
+	// egressProviders overrides AllowedProviders on every egress level (default openai).
+	egressProviders []pv.ProviderID
+	// webSearchQuota0 sets a web_searches daily quota of 0 on the openai budget.
+	webSearchQuota0 bool
+}
+
 func startAnalystTurnRig(t *testing.T, maxTurnTokens int) *analystTurnRig {
+	t.Helper()
+	return startAnalystTurnRigOpts(t, analystTurnRigOpts{maxTurnTokens: maxTurnTokens})
+}
+
+func startAnalystTurnRigOpts(t *testing.T, opt analystTurnRigOpts) *analystTurnRig {
 	t.Helper()
 	extWireSaveSection(t)
 	f := newFixture(t)
 	t.Setenv("ALIXAI_TEST_LOCALAI_KEY", testKey(t))
+	if opt.maxTurnTokens <= 0 {
+		opt.maxTurnTokens = 32000
+	}
 
 	oa := newAnalystScriptedOA(t)
 	sx := newRecordingSearx(t, []map[string]string{{
@@ -503,6 +555,16 @@ func startAnalystTurnRig(t *testing.T, maxTurnTokens int) *analystTurnRig {
 	})
 
 	pkgDir := analystE2EPackage(t)
+	webBlock := opt.webYAML
+	if webBlock == "" {
+		webBlock = fmt.Sprintf(`provider: searxng
+      origin: %q
+      max_searches: 3
+      max_fetches: 3
+      allow_hosts: [gov.it]`, sx.srv.URL)
+	} else {
+		webBlock = strings.ReplaceAll(webBlock, "{{searx}}", sx.srv.URL)
+	}
 	// serveEnv does not register external_providers YAML; mutate process-wide
 	// externalSection (same pattern as TestLightExternalServeReadyWithoutLocalAI).
 	// performance (8192 prompt) — lite's 2048 cannot fit analyst CompactSchema steps.
@@ -522,12 +584,8 @@ dialogue:
       web_search: true
       web_fetch: true
     web:
-      provider: searxng
-      origin: %q
-      max_searches: 3
-      max_fetches: 3
-      allow_hosts: [gov.it]
-`, maxTurnTokens, sx.srv.URL)
+      %s
+`, opt.maxTurnTokens, webBlock)
 
 	cfg, dataDir := serveConfig(t, f, extra)
 	iss := newHostIssuer(t)
@@ -580,12 +638,22 @@ dialogue:
 		t.Fatal(err)
 	}
 
-	prof := qualifyAnalystCapableProfile(t, admin, ops, clk)
+	prof := qualifyAnalystCapableProfile(t, admin, ops, clk, opt.nativeWebSearch)
 	sec.Routing = map[string]externalRoute{"controller": {Profiles: []string{string(prof.ProfileID)}}}
 	externalSection = sec
 	lightExtEgress(t, admin, ops, "dep_cli")
+	if opt.webQuery != nil || opt.workspaceWebOff {
+		analystApplyWebQueryEgress(t, admin, ops, "dep_cli", opt.webQuery, opt.workspaceWebOff)
+	}
+	// After web_query apply (which resets providers to openai): optional allowlist override.
+	if len(opt.egressProviders) > 0 {
+		analystOverrideEgressProviders(t, admin, ops, "dep_cli", opt.egressProviders)
+	}
+	if opt.principalOwnKey != "" {
+		analystBindPrincipalOwnKey(t, admin, ops, prof, opt.principalOwnKey)
+	}
 
-	// Tenant B: disable egress so web_query Disclose fails closed.
+	// Tenant B: disable egress so web_query fails closed.
 	adminB := opsB.Clone()
 	adminB.PrincipalID, adminB.SessionID = "usr_egress_admin", "ses_egress_b"
 	adminB.CapabilityScopes = []string{dataegress.CapabilityRead, dataegress.CapabilityApprove}
@@ -596,7 +664,12 @@ dialogue:
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := admin.PutBudget(ctx, ops, rdyExtProviderBudget("openai", 5_000_000, 50_000_000)); err != nil {
+	bgt := rdyExtProviderBudget("openai", 5_000_000, 50_000_000)
+	if opt.webSearchQuota0 {
+		zero := pv.Counter(0)
+		bgt.Quotas = &pv.BudgetQuotas{WebSearches: &pv.BudgetQuota{Daily: &zero}}
+	}
+	if _, err := admin.PutBudget(ctx, ops, bgt); err != nil {
 		t.Fatal(err)
 	}
 
@@ -629,10 +702,85 @@ dialogue:
 		t.Fatal(err)
 	}
 
-	return &analystTurnRig{t: t, srv: startServe(t, cfg), iss: iss, oa: oa, sx: sx, host: host}
+	return &analystTurnRig{t: t, srv: startServe(t, cfg), iss: iss, oa: oa, sx: sx, host: host, dataDir: dataDir}
 }
 
-func qualifyAnalystCapableProfile(t *testing.T, a *externalAdmin, scope contracts.Scope, clk *clock.Fake) pv.ProviderProfile {
+func analystOverrideEgressProviders(t *testing.T, a *externalAdmin, scope contracts.Scope, deployment string, providers []pv.ProviderID) {
+	t.Helper()
+	ctx := context.Background()
+	admin := scope.Clone()
+	admin.PrincipalID, admin.SessionID = "usr_egress_admin", "ses_egress_prov"
+	admin.CapabilityScopes = []string{dataegress.CapabilityRead, dataegress.CapabilityApprove}
+	for _, lv := range []pv.EgressLevel{pv.EgressLevelApplication, pv.EgressLevelTenant, pv.EgressLevelWorkspace} {
+		c, _ := dataegress.WriteCapability(lv)
+		admin.CapabilityScopes = append(admin.CapabilityScopes, c)
+	}
+	models := make([]pv.ModelRef, 0, len(providers))
+	for _, p := range providers {
+		models = append(models, pv.ModelRef{ProviderID: p, ModelID: rdyExtModelA})
+	}
+	for _, level := range []pv.EgressLevel{pv.EgressLevelDeployment, pv.EgressLevelApplication, pv.EgressLevelTenant, pv.EgressLevelWorkspace} {
+		cur, found, err := a.egress.GetPolicy(ctx, admin, level, "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		in := dataegress.PolicyInput{
+			Level: level, Enabled: true, SourceMode: pv.EgressModeAllowExcerpt,
+			AllowedProviders: providers, AllowedModels: models,
+			AllowedClasses: []pv.EgressEligibleClass{pv.EgressEligibleClassPublic, pv.EgressEligibleClassInternal},
+			AllowedRegions: []pv.RegionCode{"us", "eu"},
+			WebQuery:       cur.WebQuery,
+		}
+		if found {
+			in.ExpectedRevision = cur.Revision
+			if cur.WebQuery == nil {
+				in.WebQuery = &pv.EgressPolicyWebQueryEgress{
+					Enabled: true,
+					AllowedProviders: []pv.EgressPolicyWebQueryProvider{
+						pv.EgressPolicyWebQueryProviderProviderNative,
+						pv.EgressPolicyWebQueryProviderSearxng,
+					},
+				}
+			}
+		}
+		if level == pv.EgressLevelDeployment {
+			if _, err := a.egress.PutDeploymentPolicy(ctx, dataegress.Operator{DeploymentID: deployment, PrincipalID: "opr_root"}, in); err != nil {
+				t.Fatal(err)
+			}
+			continue
+		}
+		if _, err := a.egress.PutPolicy(ctx, admin, in); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func analystBindPrincipalOwnKey(t *testing.T, a *externalAdmin, ops contracts.Scope, prof pv.ProviderProfile, key string) {
+	t.Helper()
+	ctx := context.Background()
+	user := ops.Clone()
+	user.PrincipalID = identitytest.DefaultPrincipal
+	user.SessionID = "ses_alice_bind"
+	user.Roles = []string{"user"}
+	user.CapabilityScopes = []string{"providers.manage", "credentials.resolve"}
+	ref, err := a.creds.AddPrincipalAPIKey(ctx, user, credentials.AddAPIKeyRequest{
+		ProviderID: prof.ProviderID, Label: "alice-own", Key: credentials.Secret(key),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ref.Status != pv.CredentialRefStatusActive {
+		t.Fatalf("principal cred status=%s", ref.Status)
+	}
+	if err := a.reg.PutPrincipalBinding(ctx, user, providerreg.PrincipalBinding{
+		Role: pv.PrincipalLlmRoleConversationalController, ProfileID: prof.ProfileID,
+		ProviderID: prof.ProviderID, ModelID: prof.ModelID,
+	}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func qualifyAnalystCapableProfile(t *testing.T, a *externalAdmin, scope contracts.Scope, clk *clock.Fake, nativeWeb ...bool) pv.ProviderProfile {
 	t.Helper()
 	ctx := context.Background()
 	raw, err := os.ReadFile("../../schemas/providers/examples/provider-profile/valid/qualified-text-only.json")
@@ -649,6 +797,9 @@ func qualifyAnalystCapableProfile(t *testing.T, a *externalAdmin, scope contract
 	p.PermittedScopes = []pv.ProviderProfileScopeGrant{{ApplicationID: "demo-library"}}
 	yes := true
 	p.AnalystCapable = &yes
+	if len(nativeWeb) > 0 && nativeWeb[0] {
+		p.NativeWebSearch = &yes
+	}
 	day := clk.Now().Format("2006-01-02")
 	p.Terms.RecordedOn, p.LastPolicyReview = day, day
 	p, err = a.reg.Register(ctx, scope, p)
@@ -1086,6 +1237,323 @@ func TestAnalystTurnE2E_BudgetExhaustedMidLoop(t *testing.T) {
 func mustJSON(v any) string {
 	b, _ := json.Marshal(v)
 	return string(b)
+}
+
+func analystApplyWebQueryEgress(t *testing.T, a *externalAdmin, scope contracts.Scope, deployment string, provs *[]pv.EgressPolicyWebQueryProvider, workspaceOff bool) {
+	t.Helper()
+	ctx := context.Background()
+	admin := scope.Clone()
+	admin.PrincipalID, admin.SessionID = "usr_egress_admin", "ses_egress_admin"
+	admin.CapabilityScopes = []string{dataegress.CapabilityRead, dataegress.CapabilityApprove}
+	for _, lv := range []pv.EgressLevel{pv.EgressLevelApplication, pv.EgressLevelTenant, pv.EgressLevelWorkspace} {
+		c, _ := dataegress.WriteCapability(lv)
+		admin.CapabilityScopes = append(admin.CapabilityScopes, c)
+	}
+	put := func(level pv.EgressLevel, wq *pv.EgressPolicyWebQueryEgress) {
+		t.Helper()
+		cur, found, err := a.egress.GetPolicy(ctx, admin, level, "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		in := dataegress.PolicyInput{
+			Level: level, Enabled: true, SourceMode: pv.EgressModeAllowExcerpt,
+			AllowedProviders: []pv.ProviderID{"openai"},
+			AllowedModels:    []pv.ModelRef{{ProviderID: "openai", ModelID: rdyExtModelA}},
+			AllowedClasses:   []pv.EgressEligibleClass{pv.EgressEligibleClassPublic, pv.EgressEligibleClassInternal},
+			AllowedRegions:   []pv.RegionCode{"us", "eu"},
+			WebQuery:         wq,
+		}
+		if found {
+			in.ExpectedRevision = cur.Revision
+		}
+		if level == pv.EgressLevelDeployment {
+			if _, err := a.egress.PutDeploymentPolicy(ctx, dataegress.Operator{DeploymentID: deployment, PrincipalID: "opr_root"}, in); err != nil {
+				t.Fatal(err)
+			}
+			return
+		}
+		if _, err := a.egress.PutPolicy(ctx, admin, in); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var wq *pv.EgressPolicyWebQueryEgress
+	if provs != nil && len(*provs) > 0 {
+		wq = &pv.EgressPolicyWebQueryEgress{Enabled: true, AllowedProviders: append([]pv.EgressPolicyWebQueryProvider{}, (*provs)...)}
+	}
+	for _, lv := range []pv.EgressLevel{pv.EgressLevelDeployment, pv.EgressLevelApplication, pv.EgressLevelTenant, pv.EgressLevelWorkspace} {
+		put(lv, wq)
+	}
+	if workspaceOff {
+		put(pv.EgressLevelWorkspace, &pv.EgressPolicyWebQueryEgress{Enabled: false, AllowedProviders: []pv.EgressPolicyWebQueryProvider{pv.EgressPolicyWebQueryProviderSearxng}})
+	}
+}
+
+func TestAnalystTurnE2E_WebQueryEgressGate(t *testing.T) {
+	// a: absent → no search
+	empty := []pv.EgressPolicyWebQueryProvider{}
+	r := startAnalystTurnRigOpts(t, analystTurnRigOpts{webQuery: &empty})
+	r.oa.enqueue(
+		analystE2EStep("search", map[string]any{"search": map[string]any{"query": "Italian 2026 company discount XX"}}),
+		analystE2EStep("answer", map[string]any{"answer": map[string]any{"text_plan": "No.", "blocks": []any{}}}),
+	)
+	r.openSession("ten_a", "ses_wq_absent")
+	_, body := r.turn("ten_a", "ses_wq_absent", "Should we apply for the Italian 2026 company discount XX?", nil)
+	if len(r.sx.recorded()) != 0 {
+		t.Fatalf("absent web_query must not search: %v body=%s", r.sx.recorded(), mustJSON(body))
+	}
+
+	// a: enabled all four with searxng only → search
+	onlySX := []pv.EgressPolicyWebQueryProvider{pv.EgressPolicyWebQueryProviderSearxng}
+	r2 := startAnalystTurnRigOpts(t, analystTurnRigOpts{webQuery: &onlySX})
+	r2.oa.enqueue(
+		analystE2EStep("search", map[string]any{"search": map[string]any{"query": "Italian 2026 company discount XX"}}),
+		analystE2EStep("answer", map[string]any{"answer": map[string]any{"text_plan": "Yes.", "blocks": []any{}}}),
+	)
+	r2.openSession("ten_a", "ses_wq_on")
+	_, _ = r2.turn("ten_a", "ses_wq_on", "Should we apply for the Italian 2026 company discount XX?", nil)
+	if len(r2.sx.recorded()) == 0 {
+		t.Fatal("enabled web_query+searxng must search")
+	}
+
+	// a: workspace off → none
+	r3 := startAnalystTurnRigOpts(t, analystTurnRigOpts{workspaceWebOff: true})
+	r3.oa.enqueue(
+		analystE2EStep("search", map[string]any{"search": map[string]any{"query": "Italian 2026 company discount XX"}}),
+		analystE2EStep("answer", map[string]any{"answer": map[string]any{"text_plan": "No.", "blocks": []any{}}}),
+	)
+	r3.openSession("ten_a", "ses_wq_wsp")
+	_, _ = r3.turn("ten_a", "ses_wq_wsp", "Should we apply for the Italian 2026 company discount XX?", nil)
+	if len(r3.sx.recorded()) != 0 {
+		t.Fatalf("workspace web_query off must not search: %v", r3.sx.recorded())
+	}
+}
+
+func TestAnalystTurnE2E_ProviderNativeSearch(t *testing.T) {
+	provs := []pv.EgressPolicyWebQueryProvider{pv.EgressPolicyWebQueryProviderProviderNative}
+	r := startAnalystTurnRigOpts(t, analystTurnRigOpts{
+		nativeWebSearch: true,
+		webQuery:        &provs,
+		webYAML: `provider: provider_native
+      max_searches: 3
+      max_fetches: 3
+      allow_hosts: [gov.it]`,
+	})
+	r.oa.enqueue(
+		analystE2EStep("search", map[string]any{"search": map[string]any{"query": "Italian 2026 company discount XX eligibility"}}),
+		analystE2EStep("fetch", map[string]any{"fetch": map[string]any{"url": analystE2EPageURL, "search_result_index": 0}}),
+		analystE2EStep("answer", map[string]any{"answer": map[string]any{
+			"text_plan": "Based on published criteria, deadline 2026-06-30.",
+			"blocks":    []any{},
+		}}),
+	)
+	r.openSession("ten_a", "ses_native")
+	code, body := r.turn("ten_a", "ses_native", "Should my company have applied for the Italian 2026 company discount XX?", nil)
+	if code != http.StatusOK {
+		t.Fatalf("turn=%d body=%s", code, mustJSON(body))
+	}
+	if len(r.sx.recorded()) != 0 {
+		t.Fatalf("native path must not hit searx: %v", r.sx.recorded())
+	}
+	foundSearch := false
+	for _, b := range r.oa.bodiesSnapshot() {
+		s := string(b)
+		if !strings.Contains(s, `"type":"web_search"`) && !strings.Contains(s, `"type": "web_search"`) {
+			continue
+		}
+		foundSearch = true
+		for _, bad := range []string{analystE2ERevenue, analystE2EVAT, analystE2EAttendeeA, "SYSTEM:", "abilities"} {
+			if strings.Contains(s, bad) {
+				t.Fatalf("native search body leaked %q: %s", bad, truncateOA(b, 400))
+			}
+		}
+		if !strings.Contains(s, "Italian 2026 company discount XX eligibility") {
+			t.Fatalf("native search missing vetted query: %s", truncateOA(b, 400))
+		}
+	}
+	if !foundSearch {
+		t.Fatalf("expected a web_search Responses call; bodies=%s", r.oa.allBodies())
+	}
+	if n := analystE2ECountAudit(t, r.dataDir, "dataegress.decision"); n < 1 {
+		t.Fatalf("want audited egress decision for native search, got %d", n)
+	}
+}
+
+func TestAnalystTurnE2E_NativeFallbackAndUnavailable(t *testing.T) {
+	// Profile without native_web_search → fallback SearXNG
+	provs := []pv.EgressPolicyWebQueryProvider{
+		pv.EgressPolicyWebQueryProviderProviderNative, pv.EgressPolicyWebQueryProviderSearxng,
+	}
+	r := startAnalystTurnRigOpts(t, analystTurnRigOpts{
+		nativeWebSearch: false,
+		webQuery:        &provs,
+		webYAML: `provider: provider_native
+      fallback: searxng
+      origin: "{{searx}}"
+      max_searches: 3
+      max_fetches: 3
+      allow_hosts: [gov.it]`,
+	})
+	r.oa.enqueue(
+		analystE2EStep("search", map[string]any{"search": map[string]any{"query": "Italian 2026 company discount XX"}}),
+		analystE2EStep("answer", map[string]any{"answer": map[string]any{"text_plan": "ok", "blocks": []any{}}}),
+	)
+	r.openSession("ten_a", "ses_fb")
+	_, _ = r.turn("ten_a", "ses_fb", "Should we apply for the Italian 2026 company discount XX?", nil)
+	if len(r.sx.recorded()) == 0 {
+		t.Fatal("fallback searxng must be used when native_web_search is false")
+	}
+
+	// No fallback → web_search_unavailable
+	onlyNative := []pv.EgressPolicyWebQueryProvider{pv.EgressPolicyWebQueryProviderProviderNative}
+	r2 := startAnalystTurnRigOpts(t, analystTurnRigOpts{
+		nativeWebSearch: false,
+		webQuery:        &onlyNative,
+		webYAML: `provider: provider_native
+      max_searches: 3
+      max_fetches: 3
+      allow_hosts: [gov.it]`,
+	})
+	r2.oa.enqueue(
+		analystE2EStep("search", map[string]any{"search": map[string]any{"query": "Italian 2026 company discount XX"}}),
+		analystE2EStep("answer", map[string]any{"answer": map[string]any{"text_plan": "no", "blocks": []any{}}}),
+	)
+	r2.openSession("ten_a", "ses_unavail")
+	_, body := r2.turn("ten_a", "ses_unavail", "Should we apply for the Italian 2026 company discount XX?", nil)
+	if len(r2.sx.recorded()) != 0 {
+		t.Fatalf("no fallback must not hit searx: %v", r2.sx.recorded())
+	}
+	got := firstErrorCode(body)
+	if got != string(contracts.ErrWebSearchUnavailable) && turnCode(body) != string(contracts.ErrWebSearchUnavailable) {
+		// Loop may continue with prior_steps noting the refusal.
+		if !strings.Contains(r2.oa.allBodies(), "web_search_unavailable") {
+			t.Fatalf("want web_search_unavailable (event or prior_steps), got %q body=%s", got, mustJSON(body))
+		}
+	}
+}
+
+func TestAnalystTurnE2E_NativeUsesPrincipalBindingKey(t *testing.T) {
+	const ownKey = "principal-own-key-web-0002"
+	provs := []pv.EgressPolicyWebQueryProvider{pv.EgressPolicyWebQueryProviderProviderNative}
+	r := startAnalystTurnRigOpts(t, analystTurnRigOpts{
+		nativeWebSearch: true,
+		webQuery:        &provs,
+		principalOwnKey: ownKey,
+		webYAML: `provider: provider_native
+      max_searches: 3
+      max_fetches: 3
+      allow_hosts: [gov.it]`,
+	})
+	r.oa.enqueue(
+		analystE2EStep("search", map[string]any{"search": map[string]any{"query": "Italian 2026 company discount XX"}}),
+		analystE2EStep("answer", map[string]any{"answer": map[string]any{"text_plan": "ok", "blocks": []any{}}}),
+	)
+	r.openSession("ten_a", "ses_ownkey")
+	_, body := r.turn("ten_a", "ses_ownkey", "Should we apply for the Italian 2026 company discount XX?", nil)
+	auths := r.oa.searchAuthSnapshot()
+	if len(auths) == 0 {
+		t.Fatalf("expected native search call; body=%s", mustJSON(body))
+	}
+	want := "Bearer " + ownKey
+	for _, a := range auths {
+		if a != want {
+			t.Fatalf("native search Authorization=%q, want %q (not deployment default)", a, want)
+		}
+	}
+}
+
+func TestAnalystTurnE2E_NativeEgressAllowlistDenies(t *testing.T) {
+	provs := []pv.EgressPolicyWebQueryProvider{pv.EgressPolicyWebQueryProviderProviderNative}
+	r := startAnalystTurnRigOpts(t, analystTurnRigOpts{
+		nativeWebSearch: true,
+		webQuery:        &provs,
+		egressProviders: []pv.ProviderID{"anthropic"}, // routed openai is excluded
+		webYAML: `provider: provider_native
+      max_searches: 3
+      max_fetches: 3
+      allow_hosts: [gov.it]`,
+	})
+	r.oa.enqueue(
+		analystE2EStep("search", map[string]any{"search": map[string]any{"query": "Italian 2026 company discount XX"}}),
+		analystE2EStep("answer", map[string]any{"answer": map[string]any{"text_plan": "no", "blocks": []any{}}}),
+	)
+	r.openSession("ten_a", "ses_denyprov")
+	_, _ = r.turn("ten_a", "ses_denyprov", "Should we apply for the Italian 2026 company discount XX?", nil)
+	if r.oa.searchCallCount() != 0 {
+		t.Fatalf("allowlist exclude must not call SearchWeb; auths=%v", r.oa.searchAuthSnapshot())
+	}
+	if n := analystE2ECountAudit(t, r.dataDir, "dataegress.decision"); n < 1 {
+		t.Fatalf("want egress decision recorded for denied native search, got %d", n)
+	}
+}
+
+func TestAnalystTurnE2E_NativeBudgetQuotaBlocksSearch(t *testing.T) {
+	provs := []pv.EgressPolicyWebQueryProvider{pv.EgressPolicyWebQueryProviderProviderNative}
+	r := startAnalystTurnRigOpts(t, analystTurnRigOpts{
+		nativeWebSearch: true,
+		webQuery:        &provs,
+		webSearchQuota0: true,
+		webYAML: `provider: provider_native
+      max_searches: 3
+      max_fetches: 3
+      allow_hosts: [gov.it]`,
+	})
+	r.oa.enqueue(
+		analystE2EStep("search", map[string]any{"search": map[string]any{"query": "Italian 2026 company discount XX"}}),
+		analystE2EStep("answer", map[string]any{"answer": map[string]any{"text_plan": "no", "blocks": []any{}}}),
+	)
+	r.openSession("ten_a", "ses_bgtweb")
+	_, _ = r.turn("ten_a", "ses_bgtweb", "Should we apply for the Italian 2026 company discount XX?", nil)
+	if r.oa.searchCallCount() != 0 {
+		t.Fatalf("web_searches quota 0 must not call SearchWeb; auths=%v", r.oa.searchAuthSnapshot())
+	}
+}
+
+func TestAnalystTurnE2E_GeminiNativeFallsBack(t *testing.T) {
+	// Gemini never offers native search (ADR 0050). A controller without native_web_search
+	// uses fallback; with no fallback, typed unavailable — never a Gemini SearchWeb HTTP call.
+	provs := []pv.EgressPolicyWebQueryProvider{
+		pv.EgressPolicyWebQueryProviderProviderNative, pv.EgressPolicyWebQueryProviderSearxng,
+	}
+	r := startAnalystTurnRigOpts(t, analystTurnRigOpts{
+		nativeWebSearch: false, // same outcome as a Gemini profile (flag stays false)
+		webQuery:        &provs,
+		webYAML: `provider: provider_native
+      fallback: searxng
+      origin: "{{searx}}"
+      max_searches: 3
+      max_fetches: 3
+      allow_hosts: [gov.it]`,
+	})
+	r.oa.enqueue(
+		analystE2EStep("search", map[string]any{"search": map[string]any{"query": "Italian 2026 company discount XX"}}),
+		analystE2EStep("answer", map[string]any{"answer": map[string]any{"text_plan": "ok", "blocks": []any{}}}),
+	)
+	r.openSession("ten_a", "ses_gem")
+	_, _ = r.turn("ten_a", "ses_gem", "Should we apply for the Italian 2026 company discount XX?", nil)
+	if len(r.sx.recorded()) == 0 {
+		t.Fatal("Gemini-style native_web_search=false must use fallback searxng")
+	}
+	if r.oa.searchCallCount() != 0 {
+		t.Fatalf("must never issue a provider-native web_search call: %v", r.oa.searchAuthSnapshot())
+	}
+}
+
+func analystE2ECountAudit(t *testing.T, dataDir, eventType string) int {
+	t.Helper()
+	ctx := context.Background()
+	db, err := store.Open(ctx, store.Options{Path: filepath.Join(dataDir, store.DefaultFileName)})
+	if err != nil {
+		t.Fatalf("open serve store: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	var n int
+	err = db.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM audit_events WHERE application_id = ? AND tenant_id = ? AND event_type = ?`,
+		"demo-library", "ten_a", eventType).Scan(&n)
+	if err != nil {
+		t.Fatalf("count audit: %v", err)
+	}
+	return n
 }
 
 func analystFrozenTurnEventSchema(t *testing.T) *jsonschema.Schema {

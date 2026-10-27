@@ -195,6 +195,19 @@ func (r *Runtime) Guard(ctx context.Context, in dialogue.GuardInput) (dialogue.P
 	return out, nil
 }
 
+// ControllerProfile returns the registry profile the controller route would use for this scope
+// (principal bindings / private pins / deployment default), with the principal credential overlay
+// when the binding applies. Same selection path as a normal controller Guard.
+func (r *Runtime) ControllerProfile(ctx context.Context, scope contracts.Scope) (pv.ProviderProfile, error) {
+	if err := scope.Validate(); err != nil {
+		return pv.ProviderProfile{}, err
+	}
+	return r.profileFor(ctx, scope, modes.RoleController, providerreg.Requirement{
+		Role: pv.RoleConversationalController, DataClass: pv.DataClassificationInternal,
+		ContextToks: 256, OutputToks: 512,
+	})
+}
+
 // profileFor picks the registry profile the request is evaluated against: the first of the role's
 // policy profiles the registry admits. A profile that cannot serve the request is skipped, any
 // other refusal ends it. The profile always comes from the registry, never from the request.

@@ -38,4 +38,5 @@ class ProviderCatalogEntry(BaseModel):
     billing_notice_version: Annotated[str, Field(min_length=1, max_length=64, pattern='^[^\\x00-\\x1f\\x7f]+$')]
     price_hint: Optional[ProviderCatalogEntryPriceHint] = None
     qualified: bool
+    native_web_search: Optional[bool] = None
     oauth_available: Optional[bool] = None

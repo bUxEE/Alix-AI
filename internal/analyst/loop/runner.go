@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/buxee/alix-ai/internal/verify"
 	"github.com/buxee/alix-ai/pkg/contracts"
 	an "github.com/buxee/alix-ai/pkg/contracts/gen/analyst"
 	"github.com/buxee/alix-ai/pkg/contracts/gen/common"
@@ -388,16 +389,18 @@ func (s *state) doAnswer(ctx context.Context, sp an.StepProposal) (Outcome, bool
 			Spans: sp.Answer.SourceSpans,
 		}, true, nil
 	}
+	facts := s.factSet()
 	vres, err := s.r.d.Verifier.VerifyAnswer(ctx, VerifyAnswerInput{
 		Scope: s.scope, TextPlan: sp.Answer.TextPlan, Blocks: sp.Answer.Blocks,
-		SourceSpans: sp.Answer.SourceSpans, Facts: s.factSet(), Stream: s.in.StreamVerified,
+		SourceSpans: sp.Answer.SourceSpans, Facts: facts, Stream: s.in.StreamVerified,
 		Language: s.in.Language,
 	})
 	if err != nil {
 		return Outcome{}, false, err
 	}
+	text, modelText := realiseRefs(vres, facts, s.in.Language)
 	return Outcome{
-		Kind: OutcomeAnswer, Text: vres.Text, Blocks: vres.Blocks,
+		Kind: OutcomeAnswer, Text: text, ModelText: modelText, Blocks: vres.Blocks,
 		CoreMaterialised: vres.CoreMaterialised, Spans: sp.Answer.SourceSpans,
 	}, true, nil
 }
@@ -410,16 +413,49 @@ func (s *state) tryAnswerFromSoFar(ctx context.Context) (Outcome, bool) {
 		return Outcome{}, false
 	}
 	plan := "Summary of verified data gathered so far."
+	facts := s.factSet()
 	vres, err := s.r.d.Verifier.VerifyAnswer(ctx, VerifyAnswerInput{
-		Scope: s.scope, TextPlan: plan, Facts: s.factSet(), Language: s.in.Language,
+		Scope: s.scope, TextPlan: plan, Facts: facts, Language: s.in.Language,
 	})
 	if err != nil || !vres.Verified {
 		return Outcome{}, false
 	}
+	text, modelText := realiseRefs(vres, facts, s.in.Language)
 	return Outcome{
-		Kind: OutcomeAnswer, Text: vres.Text, Blocks: vres.Blocks,
-		CoreMaterialised: vres.CoreMaterialised, Facts: s.factSet(), Prior: s.prior,
+		Kind: OutcomeAnswer, Text: text, ModelText: modelText, Blocks: vres.Blocks,
+		CoreMaterialised: vres.CoreMaterialised, Facts: facts, Prior: s.prior,
 	}, true
+}
+
+// realiseRefs resolves {{ref:…}} for the client while keeping the token form for
+// the model window (ADR 0049). Template / non-verified answers pass through.
+func realiseRefs(vres VerifyAnswerResult, facts FactSet, language string) (text, modelText string) {
+	text = vres.Text
+	modelText = vres.ModelText
+	if modelText == "" && len(verify.ParseRefTokens(text)) > 0 {
+		modelText = text
+	}
+	if modelText == "" || !vres.Verified {
+		return text, modelText
+	}
+	lang := verify.LangEN
+	if language != "" {
+		if l, err := verify.ParseLanguage(language); err == nil {
+			lang = l
+		}
+	}
+	af := verify.AnalystFactSet{Derived: facts.Facts}
+	for _, ds := range facts.Datasets {
+		af.Datasets = append(af.Datasets, ds)
+	}
+	for _, c := range facts.Citations {
+		af.Citations = append(af.Citations, verify.AnalystCitation{Meta: c, FetchedText: facts.Fetched[c.ID]})
+	}
+	resolved, err := verify.ResolveAnalystRefs(modelText, af, lang)
+	if err != nil {
+		return text, modelText
+	}
+	return resolved, modelText
 }
 
 func (s *state) factSet() FactSet {

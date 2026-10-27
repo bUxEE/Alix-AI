@@ -52,6 +52,7 @@ type AnalystWebConfig struct {
 	Provider    string   `yaml:"provider"`
 	CredRef     string   `yaml:"cred_ref"`
 	Origin      string   `yaml:"origin"`
+	Fallback    string   `yaml:"fallback"` // searxng|brave|tavily; used when provider is provider_native
 	MaxSearches int      `yaml:"max_searches"`
 	MaxFetches  int      `yaml:"max_fetches"`
 	AllowHosts  []string `yaml:"allow_hosts"`

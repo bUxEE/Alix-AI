@@ -2,14 +2,14 @@
 # Regenerate with `python tools/gen_models.py`; tests/test_gen_drift.py fails when this file is out of date.
 from __future__ import annotations
 
-from typing import Annotated, Optional
+from typing import Annotated, Literal, Optional
 from alixai.gen.common.ids import Identifier
 from alixai.gen.common.timestamps import Timestamp
 from alixai.gen.providers.data_classification import DataClassification, EgressEligibleClass
 from alixai.gen.providers.shared import EgressLevel, EgressMode, EgressPolicyId, ModelRef, ProviderId, RegionCode, SourceId
 from pydantic import BaseModel, ConfigDict, Field
 
-__all__ = ['ContentEgress', 'DataEgressPolicyTarget', 'DataEgressPolicyApproval', 'DataEgressPolicy']
+__all__ = ['ContentEgress', 'WebQueryProvider', 'WebQueryEgress', 'DataEgressPolicyTarget', 'DataEgressPolicyApproval', 'DataEgressPolicy']
 
 
 class ContentEgress(BaseModel):
@@ -21,6 +21,20 @@ class ContentEgress(BaseModel):
     model_config = ConfigDict(extra="forbid", protected_namespaces=())
     enabled: bool
     max_class: EgressEligibleClass
+
+
+WebQueryProvider = Literal["provider_native", "searxng", "brave", "tavily"]
+
+
+class WebQueryEgress(BaseModel):
+    """
+    Whether a vetted web search query may leave under this level, and which search backends may
+    receive it. Every level of the chain must enable it; the effective allowed_providers is the
+    intersection along the chain.
+    """
+    model_config = ConfigDict(extra="forbid", protected_namespaces=())
+    enabled: bool
+    allowed_providers: Annotated[list[WebQueryProvider], Field(max_length=4)]
 
 
 class DataEgressPolicyTarget(BaseModel):
@@ -78,6 +92,7 @@ class DataEgressPolicy(BaseModel):
     allowed_regions: Annotated[list[RegionCode], Field(max_length=32)]
     files: Optional[ContentEgress] = None
     audio: Optional[ContentEgress] = None
+    web_query: Optional[WebQueryEgress] = None
     approval: Optional[DataEgressPolicyApproval] = None
     updated_at: Timestamp
     updated_by: Identifier

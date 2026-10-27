@@ -128,6 +128,11 @@
       "x-alixai-authority": "host",
       "$ref": "#/$defs/contentEgress"
     },
+    "web_query": {
+      "description": "Web search queries (category web_query, ADR 0047 / 0050): whether a vetted search string may leave under this level, and to which search backends. Absent, or enabled false, refuses every web search: this is the default, and a policy that lets text leave does not let web queries leave. Queries never carry confidential or restricted application values (enforced separately by CheckQuery), so enabling web_query does not need confidential-class approval. Effective = every level along deployment → application → tenant → workspace enables it, and allowed_providers is the intersection. Not at source level.",
+      "x-alixai-authority": "host",
+      "$ref": "#/$defs/webQueryEgress"
+    },
     "approval": {
       "description": "The authorised operator who approved the allowance. Required wherever the policy lets internal or confidential data leave.",
       "x-alixai-authority": "alixai",
@@ -254,7 +259,7 @@
       }
     },
     {
-      "description": "A source policy states the source classification; the other levels have no source class. Uploaded files and raw audio have no source, so a source policy has no files or audio setting.",
+      "description": "A source policy states the source classification; the other levels have no source class. Uploaded files, raw audio and web queries have no source, so a source policy has no files, audio or web_query setting.",
       "if": {
         "required": ["level"],
         "properties": {
@@ -263,7 +268,7 @@
       },
       "then": {
         "required": ["source_class"],
-        "properties": { "files": false, "audio": false }
+        "properties": { "files": false, "audio": false, "web_query": false }
       },
       "else": {
         "properties": { "source_class": false }
@@ -354,6 +359,32 @@
           "$ref": "urn:alixai:schema:providers:data-classification:v1#/$defs/egressEligibleClass"
         }
       }
+    },
+    "webQueryEgress": {
+      "description": "Whether a vetted web search query may leave under this level, and which search backends may receive it. Every level of the chain must enable it; the effective allowed_providers is the intersection along the chain.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "allowed_providers"],
+      "properties": {
+        "enabled": {
+          "description": "Whether web search queries may leave under this level. false refuses every search whatever the other levels say.",
+          "x-alixai-authority": "host",
+          "type": "boolean"
+        },
+        "allowed_providers": {
+          "description": "Search backends that may receive the query under this level. Empty allows none. Intersection along the chain is effective. provider_native means the routed controller's own search tool.",
+          "x-alixai-authority": "host",
+          "type": "array",
+          "items": { "$ref": "#/$defs/webQueryProvider" },
+          "maxItems": 4,
+          "uniqueItems": true
+        }
+      }
+    },
+    "webQueryProvider": {
+      "description": "A search backend that may receive a web_query.",
+      "type": "string",
+      "enum": ["provider_native", "searxng", "brave", "tavily"]
     }
   }
 }

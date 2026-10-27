@@ -17,7 +17,10 @@ import (
 //   - the utterance of the turn is the last user message and nothing else;
 //   - a client "system" or "developer" message is demoted: its text is one more labelled, untrusted line, never a system
 //     message, never an instruction, never a permission;
-//   - earlier messages are hints for a reader, not history: the session store is the record of the conversation;
+//   - earlier user messages are hints for a reader, not history: the session store is the record of the conversation;
+//   - earlier assistant messages from the client are dropped (ADR 0049): CopilotKit and AG-UI clients resend the whole
+//     thread, and the client's copy of an assistant reply may hold resolved confidential values; only the server's
+//     session_turns (token form) may supply prior assistant text to a model;
 //   - every line is one line (control characters and line breaks are gone), "<" is written as "&lt;" so that no tag of
 //     the prompt's fences can be closed or opened from inside, and every part has a bound; what the bounds leave out is
 //     counted, not kept.
@@ -108,7 +111,8 @@ func (b *ctxBuilder) add(label, text string, runes int) {
 }
 
 // buildContext renders the client context: the shared state, the readable context items, the results of UI tools in the
-// messages up to hintsEnd, the system and developer messages (demoted) and the earlier user and assistant messages (hints).
+// messages up to hintsEnd, the system and developer messages (demoted) and earlier user messages (hints). Assistant-role
+// messages from the client are never hints (ADR 0049).
 func buildContext(state json.RawMessage, items []InputContext, msgs []InputMessage, hintsEnd int) ClientContext {
 	b := &ctxBuilder{}
 	if s := bytes.TrimSpace(state); len(s) > 0 && !bytes.Equal(s, []byte("null")) {
@@ -150,20 +154,19 @@ func buildContext(state json.RawMessage, items []InputContext, msgs []InputMessa
 			}
 		}
 	}
-	// Earlier user and assistant messages, as hints only.
+	// Earlier user messages only, as hints. Assistant-role client messages are dropped so
+	// resolved confidential values in a resold thread never re-enter the provider prompt.
 	var hints []string
 	for i := min(hintsEnd, len(msgs)) - 1; i >= 0 && len(hints) < contextMaxHints; i-- {
-		r := msgs[i].Role
-		if r != "user" && r != "assistant" {
+		if msgs[i].Role != "user" {
 			continue
 		}
 		if text, _, err := userContent(msgs[i].Content); err == nil && strings.TrimSpace(text) != "" {
-			hints = append(hints, r+"\x00"+text)
+			hints = append(hints, text)
 		}
 	}
 	for i := len(hints) - 1; i >= 0; i-- { // oldest of the kept hints first
-		r, text, _ := strings.Cut(hints[i], "\x00")
-		b.add("earlier "+r+" message (a hint only; the session store is the record)", text, contextHintRunes)
+		b.add("earlier user message (a hint only; the session store is the record)", hints[i], contextHintRunes)
 	}
 	if b.c.Items == 0 {
 		b.c.Dropped = 0

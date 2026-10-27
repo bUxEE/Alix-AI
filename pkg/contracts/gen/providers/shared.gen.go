@@ -667,8 +667,9 @@ type FileID string
 // What usage, quotas and prices are counted in. toks_in and toks_out are the model input and
 // output counters (named toks, never tokens: the log redactor matches the substring token in key
 // names). toks_in_cached is the part of toks_in served from a provider cache. characters_in counts
-// input characters for character-priced speech (ADR 0043). audio_seconds_* are seconds of audio;
-// file_bytes_in is bytes of file content; requests counts calls.
+// input characters for character-priced speech (ADR 0043). web_searches counts provider-reported
+// native web search tool calls (ADR 0050). audio_seconds_* are seconds of audio; file_bytes_in is
+// bytes of file content; requests counts calls.
 //
 // Only the values listed in the schema are valid.
 type MeterUnit string
@@ -684,13 +685,14 @@ const (
 	MeterUnitAudioSecondsOut MeterUnit = "audio_seconds_out"
 	MeterUnitFileBytesIn     MeterUnit = "file_bytes_in"
 	MeterUnitCharactersIn    MeterUnit = "characters_in"
+	MeterUnitWebSearches     MeterUnit = "web_searches"
 	MeterUnitRequests        MeterUnit = "requests"
 )
 
 // Valid reports whether v is one of the values the schema lists.
 func (v MeterUnit) Valid() bool {
 	switch v {
-	case MeterUnitToksIn, MeterUnitToksOut, MeterUnitToksInCached, MeterUnitImagesIn, MeterUnitImagesOut, MeterUnitAudioSecondsIn, MeterUnitAudioSecondsOut, MeterUnitFileBytesIn, MeterUnitCharactersIn, MeterUnitRequests:
+	case MeterUnitToksIn, MeterUnitToksOut, MeterUnitToksInCached, MeterUnitImagesIn, MeterUnitImagesOut, MeterUnitAudioSecondsIn, MeterUnitAudioSecondsOut, MeterUnitFileBytesIn, MeterUnitCharactersIn, MeterUnitWebSearches, MeterUnitRequests:
 		return true
 	}
 	return false

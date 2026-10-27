@@ -41,9 +41,12 @@ type outcome struct {
 	resultIDs    []act.RecordRef
 	resultValues []act.Fact
 	// analystReply is a verifier-accepted analyst answer (ADR 0047). When set, respond
-	// uses it instead of a second model call.
-	analystReply  string
-	analystBlocks []conversation.RichBlock
+	// uses it instead of a second model call. It is the client-facing (resolved) form.
+	analystReply string
+	// analystModelText is the same answer with {{ref:…}} tokens kept for the model
+	// window (ADR 0049). Empty means analystReply has no refs / use analystReply.
+	analystModelText string
+	analystBlocks    []conversation.RichBlock
 	// analystCore is parallel to analystBlocks: true only for materialiser-built blocks.
 	analystCore []bool
 }

@@ -210,6 +210,7 @@ class ProviderProfile(BaseModel):
     modalities: ProviderProfileModalities
     streaming: bool
     analyst_capable: Optional[bool] = None
+    native_web_search: Optional[bool] = None
     structured_output: Literal["none", "json_mode", "schema_best_effort", "strict_schema"]
     tool_calling: ProviderProfileToolCalling
     remote_mcp: ProviderProfileRemoteMcp

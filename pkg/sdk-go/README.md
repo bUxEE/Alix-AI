@@ -5,8 +5,8 @@ AlixAI public API (`schemas/api/openapi.yaml`). Documents that have a JSON Schem
 library and one small WebSocket library (`github.com/coder/websocket`). A fake AlixAI server for the tests of a host application is in `pkg/sdk-go/sdktest`, and an
 AG-UI proxy for CopilotKit and AG-UI frontends is in `pkg/sdk-go/agui`.
 
-**Status: 1.5.0.** The contracts this SDK speaks are frozen for v1 (`schemas/_frozen/v1`, checked by `tools/compat`).
-`Version` in this package is `"1.5.0"`. Compatibility and support rules are in
+**Status: 1.5.1.** The contracts this SDK speaks are frozen for v1 (`schemas/_frozen/v1`, checked by `tools/compat`).
+`Version` in this package is `"1.5.1"`. Compatibility and support rules are in
 [compatibility](../../docs/policies/compatibility.md) and [migration and support](../../docs/policies/migration-and-support.md). The version this SDK is tested against
 is the core in the same repository commit. The changelog is the last section of this file.
 
@@ -192,6 +192,14 @@ reaches no application; none of the controller models is activatable yet, so a l
 suite; `contract_test.go` and `spec_test.go` hold it to the OpenAPI document.
 
 ## Changelog
+
+### 1.5.1 — 2026-10-27
+
+**Added.** Generated provider types: optional egress-policy `web_query`; catalog/profile `native_web_search`; meter/budget/price/usage `web_searches`; analyst config `web.fallback`; `contracts.ErrWebSearchUnavailable`. Step-proposal / analyst shared descriptions for reference tokens (ADR 0049) and native search (ADR 0050).
+
+**Upgrade (operators).** Web search requires the egress `web_query` setting at every level (deployment → application → tenant → workspace). The 1.5.0 Disclose/internal-class heuristic is gone — set `web_query` to keep search on after upgrading.
+
+**Notes (core).** Provider-native web search (OpenAI Responses, Anthropic Messages; Gemini grounding and xAI/Mistral not offered — ADR 0050); `web.fallback`; reference tokens in verified analyst prose; AG-UI client-resent assistant messages no longer enter prompts; history shows resolved values; `web.origin` accepts `http://` and `https://`.
 
 ### 1.5.0 — 2026-10-27
 

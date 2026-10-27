@@ -17,6 +17,7 @@ class UsageRecordMetering(BaseModel):
     """
     model_config = ConfigDict(extra="forbid", protected_namespaces=())
     characters_in: Optional[Counter] = None
+    web_searches: Optional[Counter] = None
     toks_in: Counter
     toks_out: Counter
     toks_in_cached: Counter

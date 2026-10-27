@@ -148,7 +148,8 @@ func (t *turn) tryAnalyst(ctx context.Context) (outcome, bool, error) {
 	case loop.OutcomeAnswer:
 		d := t.newDirective(conversation.DialogueDirectiveActPresentResult, "")
 		return outcome{
-			dir: d, analystReply: res.Text, analystBlocks: res.Blocks, analystCore: res.CoreMaterialised,
+			dir: d, analystReply: res.Text, analystModelText: res.ModelText,
+			analystBlocks: res.Blocks, analystCore: res.CoreMaterialised,
 		}, true, nil
 	case loop.OutcomeClarify:
 		d := t.newDirective(conversation.DialogueDirectiveActAskMissing, "")

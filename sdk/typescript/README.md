@@ -4,8 +4,8 @@ The TypeScript SDK for the AlixAI public API (`/v1`). ESM, strict TypeScript, **
 server-sent-events reader over `ReadableStream`), so it runs in Node 20 and later and in browsers. An in-process fake of the service for your own
 tests ships as `@alixai/sdk/testing`.
 
-**Status: 1.5.0.** The contracts this SDK speaks are frozen for v1 (`schemas/_frozen/v1`, checked by `tools/compat`).
-`package.json` reads `1.5.0`. Compatibility and support rules are in
+**Status: 1.5.1.** The contracts this SDK speaks are frozen for v1 (`schemas/_frozen/v1`, checked by `tools/compat`).
+`package.json` reads `1.5.1`. Compatibility and support rules are in
 [compatibility](../../docs/policies/compatibility.md) and [migration and support](../../docs/policies/migration-and-support.md).
 The version this SDK is tested against is the core in the same repository commit. See [CHANGELOG.md](CHANGELOG.md).
 

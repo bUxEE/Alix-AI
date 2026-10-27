@@ -138,6 +138,14 @@ export interface PriceTablePrices {
   characters_in?: PriceTablePrice;
 
   /**
+   * Price of web_searches (provider-native search tool calls, ADR 0050). Absent means
+   * count-only (no money).
+   *
+   * @authority host
+   */
+  web_searches?: PriceTablePrice;
+
+  /**
    * Price of requests.
    *
    * @authority host

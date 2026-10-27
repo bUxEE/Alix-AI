@@ -322,8 +322,9 @@ export type FileID = string;
  * What usage, quotas and prices are counted in. toks_in and toks_out are the model input and
  * output counters (named toks, never tokens: the log redactor matches the substring token in key
  * names). toks_in_cached is the part of toks_in served from a provider cache. characters_in counts
- * input characters for character-priced speech (ADR 0043). audio_seconds_* are seconds of audio;
- * file_bytes_in is bytes of file content; requests counts calls.
+ * input characters for character-priced speech (ADR 0043). web_searches counts provider-reported
+ * native web search tool calls (ADR 0050). audio_seconds_* are seconds of audio; file_bytes_in is
+ * bytes of file content; requests counts calls.
  *
  * Only the values listed in the schema are valid.
  */
@@ -337,6 +338,7 @@ export type MeterUnit =
   | "audio_seconds_out"
   | "file_bytes_in"
   | "characters_in"
+  | "web_searches"
   | "requests";
 
 /**

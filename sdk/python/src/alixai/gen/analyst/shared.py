@@ -23,7 +23,7 @@ DataClass = Literal["public", "internal", "confidential", "restricted"]
 FieldType = Literal["string", "number", "boolean", "date", "datetime", "null"]
 
 
-ReasonCode = Literal["out_of_domain", "ability_disabled", "model_not_analyst_capable", "insufficient_data", "web_query_refused", "analyst_cap_exceeded", "unit_mismatch", "forecast_unavailable", "domain_classification_failed"]
+ReasonCode = Literal["out_of_domain", "ability_disabled", "model_not_analyst_capable", "insufficient_data", "web_query_refused", "web_search_unavailable", "analyst_cap_exceeded", "unit_mismatch", "forecast_unavailable", "domain_classification_failed"]
 
 
 ProgressStage = Literal["analyst_read", "analyst_compute", "analyst_search", "analyst_fetch", "analyst_answer"]

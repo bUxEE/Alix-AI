@@ -160,7 +160,7 @@ class Issue(BaseModel):
     from its code by the core (pkg/contracts), not stated here.
     """
     model_config = ConfigDict(extra="forbid", protected_namespaces=())
-    code: Literal["scope_missing", "unauthenticated", "permission_denied", "scope_violation", "schema_invalid", "unknown_capability", "ambiguous", "missing_fields", "validation_failed", "stale", "expired", "replayed", "confirmation_required", "step_up_required", "conflict", "unavailable", "degraded", "timeout", "rate_limited", "resource_exhausted", "no_supported_evidence", "uncertain_outcome", "partial_failure", "quarantined", "out_of_domain", "ability_disabled", "model_not_analyst_capable", "insufficient_data", "web_query_refused", "analyst_cap_exceeded", "unit_mismatch", "forecast_unavailable", "domain_classification_failed", "internal"]
+    code: Literal["scope_missing", "unauthenticated", "permission_denied", "scope_violation", "schema_invalid", "unknown_capability", "ambiguous", "missing_fields", "validation_failed", "stale", "expired", "replayed", "confirmation_required", "step_up_required", "conflict", "unavailable", "degraded", "timeout", "rate_limited", "resource_exhausted", "no_supported_evidence", "uncertain_outcome", "partial_failure", "quarantined", "out_of_domain", "ability_disabled", "model_not_analyst_capable", "insufficient_data", "web_query_refused", "web_search_unavailable", "analyst_cap_exceeded", "unit_mismatch", "forecast_unavailable", "domain_classification_failed", "internal"]
     field: Optional[FieldName] = None
     message: Annotated[str, Field(min_length=1, max_length=512)]
 

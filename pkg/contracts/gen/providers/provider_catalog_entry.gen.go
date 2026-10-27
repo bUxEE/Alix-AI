@@ -60,6 +60,12 @@ type ProviderCatalogEntry struct {
 	// Authority: alixai.
 	Qualified bool `json:"qualified" alixai:"alixai"`
 
+	// Optional, default false. Copied from the profile: whether provider_native web search is
+	// available for this catalog entry (ADR 0050).
+	//
+	// Authority: alixai.
+	NativeWebSearch *bool `json:"native_web_search,omitzero" alixai:"alixai"`
+
 	// True when the provider officially offers third-party OAuth the principal may start under
 	// /v1/me/oauth.
 	//

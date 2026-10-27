@@ -136,7 +136,11 @@ type VerifiedSegment struct {
 
 // VerifyAnswerResult is a verified answer (or template fallback).
 type VerifyAnswerResult struct {
-	Text             string
+	Text string
+	// ModelText carries {{ref:…}} tokens when the verifier left them in Text
+	// (ADR 0049). The loop resolves Text for the client and keeps ModelText for
+	// the model window. Empty when unused.
+	ModelText        string
 	Verified         bool
 	Blocks           []conversation.RichBlock
 	CoreMaterialised []bool // parallel to Blocks; set only by the analyst materialiser

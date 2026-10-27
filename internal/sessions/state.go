@@ -367,9 +367,24 @@ type TurnRecord struct {
 	// User is the user's text; empty for a turn that carried none (a
 	// confirmation or a choice selection).
 	User string
-	// Act and Assistant are the directive act and the verified response text.
-	Act       string
+	// Act is the directive act of the assistant reply.
+	Act string
+	// Assistant is the model-window form of the verified response (ADR 0049:
+	// may still carry {{ref:…}} tokens). Written to session_turns for the next
+	// prompt. Never put resolved confidential values here when a token form exists.
 	Assistant string
+	// AssistantDisplay is the user-facing form (resolved). Written to
+	// transcript_turns for the history API, session view and exports. Empty
+	// means use Assistant (turns with no reference tokens).
+	AssistantDisplay string
+}
+
+// DisplayAssistant returns the body for user-facing transcript rows.
+func (r TurnRecord) DisplayAssistant() string {
+	if r.AssistantDisplay != "" {
+		return r.AssistantDisplay
+	}
+	return r.Assistant
 }
 
 // clip shortens s to at most n runes, marking the cut.

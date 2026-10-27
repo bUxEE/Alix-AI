@@ -42,6 +42,10 @@ type PolicyInput struct {
 	// Audio is the audio setting: whether raw audio may leave (to an external speech
 	// recogniser), and up to which class. Nil keeps it local (the default). Not at source level.
 	Audio *providers.EgressPolicyContentEgress
+	// WebQuery is the web_query setting: whether vetted search strings may leave, and to
+	// which backends. Nil keeps web search refused (the default). Not at source level.
+	// Enabling it does not need confidential-class approval.
+	WebQuery *providers.EgressPolicyWebQueryEgress
 }
 
 // PutPolicy creates or replaces the policy of one level of the caller's own
@@ -244,7 +248,7 @@ func buildPolicy(k policyKey, in PolicyInput, id providers.EgressPolicyID, revis
 	} else if in.SourceClass != nil {
 		return providers.EgressPolicy{}, bad("source_class", "only a source policy has a source class")
 	}
-	// The files and audio settings govern content no RAG source covers, so a source policy has neither.
+	// The files, audio and web_query settings govern content no RAG source covers, so a source policy has none.
 	content := func(field string, c *providers.EgressPolicyContentEgress) (*providers.EgressPolicyContentEgress, error) {
 		switch {
 		case c == nil:
@@ -265,6 +269,10 @@ func buildPolicy(k policyKey, in PolicyInput, id providers.EgressPolicyID, revis
 	if err != nil {
 		return providers.EgressPolicy{}, err
 	}
+	webQuery, err := buildWebQuery(in.Level, in.WebQuery, bad)
+	if err != nil {
+		return providers.EgressPolicy{}, err
+	}
 	allowsAbovePublic := func(c *providers.EgressPolicyContentEgress) bool {
 		return c != nil && c.Enabled && c.MaxClass != providers.EgressEligibleClassPublic
 	}
@@ -274,6 +282,7 @@ func buildPolicy(k policyKey, in PolicyInput, id providers.EgressPolicyID, revis
 		(in.Level == providers.EgressLevelSource && containsClass(classes, providers.EgressEligibleClassConfidential)) ||
 		(in.SourceClass != nil && (*in.SourceClass == providers.DataClassificationInternal || *in.SourceClass == providers.DataClassificationConfidential) &&
 			(in.SourceMode == providers.EgressModeAllowExcerpt || in.SourceMode == providers.EgressModeAllowMetadata))
+	// web_query never needs confidential-class approval: queries cannot carry confidential values.
 	var approval *providers.EgressPolicyApproval
 	if needsApproval {
 		if !canApprove {
@@ -285,8 +294,36 @@ func buildPolicy(k policyKey, in PolicyInput, id providers.EgressPolicyID, revis
 	return providers.EgressPolicy{
 		PolicyID: id, Revision: revision, Level: in.Level, Target: k.target(), Enabled: in.Enabled, SourceMode: in.SourceMode,
 		SourceClass: in.SourceClass, AllowedProviders: provs, AllowedModels: models, AllowedClasses: classes, AllowedRegions: regions,
-		Files: files, Audio: audio, Approval: approval, UpdatedAt: timestamp(now), UpdatedBy: common.Identifier(by),
+		Files: files, Audio: audio, WebQuery: webQuery, Approval: approval, UpdatedAt: timestamp(now), UpdatedBy: common.Identifier(by),
 	}, nil
+}
+
+func buildWebQuery(level providers.EgressLevel, in *providers.EgressPolicyWebQueryEgress, bad func(string, string) error) (*providers.EgressPolicyWebQueryEgress, error) {
+	if in == nil {
+		return nil, nil
+	}
+	if level == providers.EgressLevelSource {
+		return nil, bad("web_query", "web queries have no source, so a source policy has no web_query setting")
+	}
+	if len(in.AllowedProviders) > 4 {
+		return nil, bad("web_query", "allowed_providers is longer than the schema allows")
+	}
+	seen := map[providers.EgressPolicyWebQueryProvider]bool{}
+	out := make([]providers.EgressPolicyWebQueryProvider, 0, len(in.AllowedProviders))
+	for _, p := range in.AllowedProviders {
+		if !p.Valid() {
+			return nil, bad("web_query", "an allowed search provider is not known")
+		}
+		if seen[p] {
+			continue
+		}
+		seen[p] = true
+		out = append(out, p)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i] < out[j] })
+	v := *in
+	v.AllowedProviders = out
+	return &v, nil
 }
 
 func timestamp(t time.Time) common.Timestamp {

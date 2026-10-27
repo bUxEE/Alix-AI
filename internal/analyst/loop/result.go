@@ -25,7 +25,11 @@ type Outcome struct {
 	Details map[string]any
 
 	// Answer fields (KindAnswer).
-	Text             string
+	Text string
+	// ModelText is the verified answer with {{ref:…}} tokens still present (ADR 0049).
+	// Empty means Text has no refs (or was the template). Persist ModelText into the
+	// model window; Text is the resolved form for the client / transcript.
+	ModelText        string
 	Blocks           []conversation.RichBlock
 	CoreMaterialised []bool // parallel to Blocks; set only by the analyst materialiser
 	Spans            []an.SourceSpan

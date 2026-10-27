@@ -39,8 +39,9 @@ nested keys):
 | `max_turn_wall_ms` | 60000 | Wall clock |
 | `max_turn_cost` | null | Optional micro-unit ceiling |
 | `web.provider` | `""` | `brave` \| `tavily` \| `searxng` \| `provider_native` |
-| `web.cred_ref` | — | Opaque credentials-service ref (never a secret in YAML) |
-| `web.origin` | — | SearXNG https origin when provider is `searxng` |
+| `web.fallback` | `""` | `searxng` \| `brave` \| `tavily` when primary is `provider_native` |
+| `web.cred_ref` | — | Opaque credentials-service ref (never a secret in YAML); applies to brave/tavily and to the fallback |
+| `web.origin` | — | SearXNG `http://` or `https://` origin when provider or fallback is `searxng` (operator endpoint; internal http is fine) |
 | `web.max_searches` / `max_fetches` | 3 | Caps |
 | `web.allow_hosts` / `deny_hosts` | [] | Deployment host policy (intersected with tenant allow/deny and package `preferred_web_hosts` when set) |
 
@@ -59,19 +60,30 @@ from computed-so-far when possible; otherwise typed `resource_exhausted` /
 ## 4. Profiles
 
 Set `analyst_capable: true` only on profiles you trust for multi-step constrained JSON and
-careful citation. Lite / weak controllers should stay false.
+careful citation. Lite / weak controllers should stay false. Set `native_web_search: true`
+only when the profile’s provider exposes an official search tool AlixAI has wired
+(OpenAI Responses `web_search`, Anthropic Messages server web search). Gemini grounding
+is not offered (redirector URIs + Search Suggestions display terms; ADR 0050).
+Private/self-hosted endpoints stay false. See [ADR 0050](../decisions/0050-native-web-search.md).
 
-## 5. Egress
+## 5. Egress (`web_query` setting)
 
-Web search (`abilities.web_search` / `web_fetch`) requires **External mode** and an egress
-policy chain that permits category `web_query` (the query’s data class must be allowed on
-every level). Local-only deployments get no web search: the serve composition fails closed
-(`analystWebQueryAllows` / “web search requires External mode” under `-tags noexternal`).
-The serve gate probes with egress `Disclose` (no audit send record) before any real
-`web_query`; restricted dataset fields still refuse at search time via `QueryLeaksRestricted`.
+Web search requires **External mode** and the egress policy **`web_query`** setting enabled
+at every level of deployment → application → tenant → workspace, with the search backend in
+the intersection of `allowed_providers` (`provider_native` \| `searxng` \| `brave` \| `tavily`).
+Absent or `enabled: false` refuses every search. Enabling `web_query` does **not** need
+confidential-class approval (queries never carry confidential values; `CheckQuery` still
+refuses confidential/restricted dataset substrings). Local-only / `-tags noexternal` stays
+refused. See [external-mode.md](external-mode.md).
 
-Example (SearXNG self-host; `cred_ref` optional for searxng, required for brave/tavily;
-`allow_hosts` required whenever `web_fetch` is on):
+Order per search step: try `provider_native` when the routed profile has `native_web_search`
+and egress allows it → else the configured `web.fallback` when allowed → else typed
+`web_search_unavailable`. Native search is a **separate, minimal** provider call (fixed
+instruction + vetted query only). Provider-reported search calls meter as `web_searches`.
+Fetch is unchanged: AlixAI’s SSRF-safe fetcher, allowlisted hosts only, URLs from this turn’s
+hits; citations outside the allowlist are dropped.
+
+Example (native with SearXNG fallback; `allow_hosts` required whenever `web_fetch` is on):
 
 ```yaml
 dialogue:
@@ -87,15 +99,14 @@ dialogue:
       web_search: true
       web_fetch: true
     web:
-      provider: searxng
-      origin: "https://searx.example.internal"
-      cred_ref: "cred_01ARZ3NDEKTSV4RRFFQ69G5FAV"
+      provider: provider_native
+      fallback: searxng
+      origin: "http://searx.example.internal"
       max_searches: 3
       max_fetches: 3
       allow_hosts: [gov.it]
 ```
 
-Operators then enable External mode and PUT egress policies that allow `internal` (or
-narrower) for the tenant that may search. See [external-mode.md](external-mode.md) for
-category `web_query` and dataset field-class propagation. Restricted fields stay local for
-compute; permitted aggregates may leave at `directive_class`.
+Operators then enable External mode and PUT egress policies with `web_query` enabled and the
+wanted backends listed at every level. Restricted fields stay local for compute; permitted
+aggregates may leave at `directive_class`.

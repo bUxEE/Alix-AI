@@ -335,6 +335,9 @@ type ProvidersEgressPolicyInput struct {
 	// Audio is the audio setting (whether raw audio may leave for an external speech recogniser, and up to which
 	// class); absent keeps it local.
 	Audio *pv.EgressPolicyContentEgress `json:"audio,omitempty"`
+	// WebQuery is the web_query setting (whether vetted search strings may leave, and to which backends); absent
+	// refuses every web search. Enabling it does not need confidential-class approval.
+	WebQuery *pv.EgressPolicyWebQueryEgress `json:"web_query,omitempty"`
 }
 
 // ProvidersBudgetsView is the budgets of a scope with their states.
@@ -803,6 +806,14 @@ func (h *providersHandler) putEgressPolicy(w http.ResponseWriter, r *http.Reques
 	if (in.Files != nil && !in.Files.MaxClass.Valid()) || (in.Audio != nil && !in.Audio.MaxClass.Valid()) {
 		WriteError(w, r, contracts.New(contracts.ErrValidationFailed, "files and audio need enabled and a max_class of public, internal or confidential"))
 		return
+	}
+	if in.WebQuery != nil {
+		for _, p := range in.WebQuery.AllowedProviders {
+			if !p.Valid() {
+				WriteError(w, r, contracts.New(contracts.ErrValidationFailed, "web_query.allowed_providers must be provider_native, searxng, brave or tavily"))
+				return
+			}
+		}
 	}
 	if need := providersPolicyOperator(in.Level); need == ProvidersOperatorDeployment {
 		if err := providersAuthorize(r.Context(), h.svc, scope, need); err != nil {

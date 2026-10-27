@@ -31,6 +31,10 @@ func unitList(u Units) []unitAmount {
 	if u.CharactersIn != nil {
 		chars = int64(*u.CharactersIn)
 	}
+	searches := int64(0)
+	if u.WebSearches != nil {
+		searches = int64(*u.WebSearches)
+	}
 	return []unitAmount{
 		{providers.MeterUnitToksIn, int64(u.ToksIn)},
 		{providers.MeterUnitToksOut, int64(u.ToksOut)},
@@ -41,6 +45,7 @@ func unitList(u Units) []unitAmount {
 		{providers.MeterUnitAudioSecondsOut, int64(u.AudioSecondsOut)},
 		{providers.MeterUnitFileBytesIn, int64(u.FileBytesIn)},
 		{providers.MeterUnitCharactersIn, chars},
+		{providers.MeterUnitWebSearches, searches},
 		{providers.MeterUnitRequests, int64(u.Requests)},
 	}
 }
@@ -77,6 +82,8 @@ func price(t providers.PriceTable, u providers.MeterUnit) *providers.PriceTableP
 		return p.FileBytesIn
 	case providers.MeterUnitCharactersIn:
 		return p.CharactersIn
+	case providers.MeterUnitWebSearches:
+		return p.WebSearches
 	case providers.MeterUnitRequests:
 		return p.Requests
 	}
@@ -92,7 +99,7 @@ func validatePrices(t providers.PriceTable) error {
 		providers.MeterUnitToksIn, providers.MeterUnitToksOut, providers.MeterUnitToksInCached,
 		providers.MeterUnitImagesIn, providers.MeterUnitImagesOut, providers.MeterUnitAudioSecondsIn,
 		providers.MeterUnitAudioSecondsOut, providers.MeterUnitFileBytesIn, providers.MeterUnitCharactersIn,
-		providers.MeterUnitRequests,
+		providers.MeterUnitWebSearches, providers.MeterUnitRequests,
 	} {
 		p := price(t, u)
 		if p == nil {
@@ -151,7 +158,8 @@ func Cost(t providers.PriceTable, u Units) (providers.MicroUnits, error) {
 		}
 		p := price(t, a.unit)
 		if p == nil {
-			if a.unit == providers.MeterUnitRequests {
+			// requests and web_searches may be count-only when the table has no price.
+			if a.unit == providers.MeterUnitRequests || a.unit == providers.MeterUnitWebSearches {
 				continue
 			}
 			return 0, unpriced(a.unit)

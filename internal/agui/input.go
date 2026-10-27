@@ -165,7 +165,8 @@ func errNotResolved() error {
 // The rules (docs/integration/agui.md):
 //   - the thread id must be the session id of the scope;
 //   - exactly one of resume, a choice, or a user message is answered; no messages at all is a connect run;
-//   - the utterance is the last user message's text and nothing else; earlier messages are hints;
+//   - the utterance is the last user message's text and nothing else; earlier user messages are hints;
+//     earlier assistant messages from the client are dropped (session store is the record; ADR 0049);
 //   - tools are declarations: valid names, not reserved, not a capability's name;
 //   - attachments are file references only;
 //   - a resume approves only on an explicit {"approved": true}, with the secret, for a preparation of this thread that

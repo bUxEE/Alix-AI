@@ -81,6 +81,14 @@ export interface ProviderCatalogEntry {
   qualified: boolean;
 
   /**
+   * Optional, default false. Copied from the profile: whether provider_native web search is
+   * available for this catalog entry (ADR 0050).
+   *
+   * @authority alixai
+   */
+  native_web_search?: boolean;
+
+  /**
    * True when the provider officially offers third-party OAuth the principal may start under
    * /v1/me/oauth.
    *

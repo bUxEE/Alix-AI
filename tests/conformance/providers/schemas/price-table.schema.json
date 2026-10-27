@@ -81,6 +81,11 @@
           "x-alixai-authority": "host",
           "$ref": "#/$defs/price"
         },
+        "web_searches": {
+          "description": "Price of web_searches (provider-native search tool calls, ADR 0050). Absent means count-only (no money).",
+          "x-alixai-authority": "host",
+          "$ref": "#/$defs/price"
+        },
         "requests": {
           "description": "Price of requests.",
           "x-alixai-authority": "host",

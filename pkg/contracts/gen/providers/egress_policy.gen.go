@@ -3,7 +3,9 @@
 package providers
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 
 	"github.com/buxee/alix-ai/pkg/contracts/gen/common"
 )
@@ -120,6 +122,18 @@ type EgressPolicy struct {
 	// Authority: host.
 	Audio *EgressPolicyContentEgress `json:"audio,omitzero" alixai:"host"`
 
+	// Web search queries (category web_query, ADR 0047 / 0050): whether a vetted search string
+	// may leave under this level, and to which search backends. Absent, or enabled false,
+	// refuses every web search: this is the default, and a policy that lets text leave does
+	// not let web queries leave. Queries never carry confidential or restricted application
+	// values (enforced separately by CheckQuery), so enabling web_query does not need
+	// confidential-class approval. Effective = every level along deployment → application
+	// → tenant → workspace enables it, and allowed_providers is the intersection. Not at
+	// source level.
+	//
+	// Authority: host.
+	WebQuery *EgressPolicyWebQueryEgress `json:"web_query,omitzero" alixai:"host"`
+
 	// The authorised operator who approved the allowance. Required wherever the policy lets
 	// internal or confidential data leave.
 	//
@@ -223,4 +237,87 @@ type EgressPolicyTarget struct {
 	//
 	// Authority: host.
 	SourceID *SourceID `json:"source_id,omitzero" alixai:"host"`
+}
+
+// EgressPolicyWebQueryEgress mirrors
+// urn:alixai:schema:providers:egress-policy:v1#/$defs/webQueryEgress.
+//
+// Whether a vetted web search query may leave under this level, and which search backends may
+// receive it. Every level of the chain must enable it; the effective allowed_providers is the
+// intersection along the chain.
+type EgressPolicyWebQueryEgress struct {
+	// Whether web search queries may leave under this level. false refuses every search
+	// whatever the other levels say.
+	//
+	// Authority: host.
+	Enabled bool `json:"enabled" alixai:"host"`
+
+	// Search backends that may receive the query under this level. Empty allows none.
+	// Intersection along the chain is effective. provider_native means the routed controller's
+	// own search tool.
+	//
+	// Authority: host.
+	AllowedProviders []EgressPolicyWebQueryProvider `json:"allowed_providers" alixai:"host"`
+}
+
+// MarshalJSON encodes the value with its const members forced to the value the
+// schema fixes and with required arrays and maps never null.
+func (v EgressPolicyWebQueryEgress) MarshalJSON() ([]byte, error) {
+	type plain EgressPolicyWebQueryEgress
+	a := plain(v)
+	if a.AllowedProviders == nil {
+		a.AllowedProviders = []EgressPolicyWebQueryProvider{}
+	}
+	return json.Marshal(a)
+}
+
+// EgressPolicyWebQueryProvider mirrors
+// urn:alixai:schema:providers:egress-policy:v1#/$defs/webQueryProvider.
+//
+// A search backend that may receive a web_query.
+//
+// Only the values listed in the schema are valid.
+type EgressPolicyWebQueryProvider string
+
+// The valid values of EgressPolicyWebQueryProvider.
+const (
+	EgressPolicyWebQueryProviderProviderNative EgressPolicyWebQueryProvider = "provider_native"
+	EgressPolicyWebQueryProviderSearxng        EgressPolicyWebQueryProvider = "searxng"
+	EgressPolicyWebQueryProviderBrave          EgressPolicyWebQueryProvider = "brave"
+	EgressPolicyWebQueryProviderTavily         EgressPolicyWebQueryProvider = "tavily"
+)
+
+// Valid reports whether v is one of the values the schema lists.
+func (v EgressPolicyWebQueryProvider) Valid() bool {
+	switch v {
+	case EgressPolicyWebQueryProviderProviderNative, EgressPolicyWebQueryProviderSearxng, EgressPolicyWebQueryProviderBrave, EgressPolicyWebQueryProviderTavily:
+		return true
+	}
+	return false
+}
+
+// MarshalJSON refuses to encode a value outside the enum, so an unset or
+// corrupt value fails instead of producing a document the schema rejects.
+func (v EgressPolicyWebQueryProvider) MarshalJSON() ([]byte, error) {
+	if !v.Valid() {
+		return nil, fmt.Errorf("EgressPolicyWebQueryProvider: %v is not a valid value", string(v))
+	}
+	return json.Marshal(string(v))
+}
+
+// UnmarshalJSON accepts only the values the schema lists; null and anything
+// else is an error.
+func (v *EgressPolicyWebQueryProvider) UnmarshalJSON(data []byte) error {
+	if bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
+		return fmt.Errorf("EgressPolicyWebQueryProvider: null is not a valid value")
+	}
+	var raw string
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return fmt.Errorf("EgressPolicyWebQueryProvider: %w", err)
+	}
+	if !EgressPolicyWebQueryProvider(raw).Valid() {
+		return fmt.Errorf("EgressPolicyWebQueryProvider: %v is not a valid value", raw)
+	}
+	*v = EgressPolicyWebQueryProvider(raw)
+	return nil
 }

@@ -348,6 +348,7 @@ const (
 	ReasonCodeModelNotAnalystCapable     ReasonCode = "model_not_analyst_capable"
 	ReasonCodeInsufficientData           ReasonCode = "insufficient_data"
 	ReasonCodeWebQueryRefused            ReasonCode = "web_query_refused"
+	ReasonCodeWebSearchUnavailable       ReasonCode = "web_search_unavailable"
 	ReasonCodeAnalystCapExceeded         ReasonCode = "analyst_cap_exceeded"
 	ReasonCodeUnitMismatch               ReasonCode = "unit_mismatch"
 	ReasonCodeForecastUnavailable        ReasonCode = "forecast_unavailable"
@@ -357,7 +358,7 @@ const (
 // Valid reports whether v is one of the values the schema lists.
 func (v ReasonCode) Valid() bool {
 	switch v {
-	case ReasonCodeOutOfDomain, ReasonCodeAbilityDisabled, ReasonCodeModelNotAnalystCapable, ReasonCodeInsufficientData, ReasonCodeWebQueryRefused, ReasonCodeAnalystCapExceeded, ReasonCodeUnitMismatch, ReasonCodeForecastUnavailable, ReasonCodeDomainClassificationFailed:
+	case ReasonCodeOutOfDomain, ReasonCodeAbilityDisabled, ReasonCodeModelNotAnalystCapable, ReasonCodeInsufficientData, ReasonCodeWebQueryRefused, ReasonCodeWebSearchUnavailable, ReasonCodeAnalystCapExceeded, ReasonCodeUnitMismatch, ReasonCodeForecastUnavailable, ReasonCodeDomainClassificationFailed:
 		return true
 	}
 	return false

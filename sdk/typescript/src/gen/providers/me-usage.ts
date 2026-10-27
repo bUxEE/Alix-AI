@@ -76,6 +76,13 @@ export interface MeUsageGroup {
   characters_in: Counter;
 
   /**
+   * Native web search tool calls (ADR 0050).
+   *
+   * @authority alixai
+   */
+  web_searches?: Counter;
+
+  /**
    * @authority alixai
    */
   requests: Counter;

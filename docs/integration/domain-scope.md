@@ -75,9 +75,11 @@ Verifier rules:
 
 ## 4. Web search and fetch
 
-Abilities `web_search` / `web_fetch`, off by default. Query egress category **`web_query`**:
-the core rejects queries that embed confidential/restricted values from datasets read in the
-turn (`web_query_refused`). Results are untrusted and fenced. No credentials or cookies are
+Abilities `web_search` / `web_fetch`, off by default. Search also needs the egress policy
+**`web_query` setting** enabled at every level with the backend listed (ADR 0050; replaces
+the 1.5.0 Disclose heuristic). Separately, send category **`web_query`**: the core rejects
+queries that embed confidential/restricted values from datasets read in the turn
+(`web_query_refused`). Results are untrusted and fenced. No credentials or cookies are
 sent. Host allow lists are the intersection of deployment `allow_hosts`, tenant
 `allow_hosts`, and package `assistant.domain.preferred_web_hosts` when that package
 list is non-empty (most restrictive wins; an empty/absent package list does not

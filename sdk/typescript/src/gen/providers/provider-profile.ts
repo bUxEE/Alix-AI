@@ -121,6 +121,16 @@ export interface ProviderProfile {
   analyst_capable?: boolean;
 
   /**
+   * Optional, default false. When true the operator marks this profile as supporting the
+   * provider's official web-search / grounding tool for analyst search steps (ADR 0050).
+   * Private and self-hosted endpoints stay false. Absent or false means provider_native
+   * search is unavailable for this profile (fallback or web_search_unavailable).
+   *
+   * @authority host
+   */
+  native_web_search?: boolean;
+
+  /**
    * The structured-output guarantee. none: no support. json_mode: valid JSON, no schema
    * guarantee. schema_best_effort: a schema is supplied but conformance is not guaranteed.
    * strict_schema: the provider constrains decoding so output always conforms to the

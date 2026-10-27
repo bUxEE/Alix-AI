@@ -215,6 +215,13 @@ export interface BudgetQuotas {
   characters_in?: BudgetQuota;
 
   /**
+   * Quota of web_searches (ADR 0050).
+   *
+   * @authority host
+   */
+  web_searches?: BudgetQuota;
+
+  /**
    * Quota of requests.
    *
    * @authority host

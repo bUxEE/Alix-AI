@@ -111,7 +111,7 @@ ReservedPrincipalCredentialTenant = Literal["alixai-principal-credential"]
 Modality = Literal["text", "image", "audio", "file"]
 
 
-MeterUnit = Literal["toks_in", "toks_out", "toks_in_cached", "images_in", "images_out", "audio_seconds_in", "audio_seconds_out", "file_bytes_in", "characters_in", "requests"]
+MeterUnit = Literal["toks_in", "toks_out", "toks_in_cached", "images_in", "images_out", "audio_seconds_in", "audio_seconds_out", "file_bytes_in", "characters_in", "web_searches", "requests"]
 
 
 Channel = Literal["interactive", "background"]

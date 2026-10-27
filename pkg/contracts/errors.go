@@ -103,6 +103,9 @@ const (
 	// ErrWebQueryRefused: a web_query would carry confidential or restricted
 	// application values, or the host is not allowed (ADR 0047).
 	ErrWebQueryRefused ErrCode = "web_query_refused"
+	// ErrWebSearchUnavailable: no search backend is usable for this turn
+	// (provider_native off/unsupported and no allowed fallback) (ADR 0050).
+	ErrWebSearchUnavailable ErrCode = "web_search_unavailable"
 	// ErrAnalystCapExceeded: an analyst turn hit a step, record, token, wall
 	// or cost cap (ADR 0047).
 	ErrAnalystCapExceeded ErrCode = "analyst_cap_exceeded"
@@ -154,6 +157,7 @@ var codeInfo = [...]struct {
 	{ErrModelNotAnalystCapable, false},
 	{ErrInsufficientData, false},
 	{ErrWebQueryRefused, false},
+	{ErrWebSearchUnavailable, false},
 	{ErrAnalystCapExceeded, false},
 	{ErrUnitMismatch, false},
 	{ErrForecastUnavailable, false},

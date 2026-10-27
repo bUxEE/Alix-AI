@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/buxee/alix-ai/internal/verify"
 	an "github.com/buxee/alix-ai/pkg/contracts/gen/analyst"
 )
 
@@ -13,7 +14,8 @@ import (
 // names are listed as withheld so block plans may reference them.
 const MaxEgressClass = an.DataClassInternal
 
-const withheldFieldNote = "withheld: values not shown, may be referenced in blocks"
+// withheldFieldNote teaches the model the prose reference-token syntax (ADR 0049).
+const withheldFieldNote = "withheld: reference with {{ref:<dataset_id>:<row>:<field>}} e.g. " + verify.RefTokenSyntaxExample
 
 func classRank(c an.DataClass) int {
 	switch c {

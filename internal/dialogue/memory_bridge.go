@@ -86,6 +86,11 @@ func draftFromProposal(mp *conversation.TaskProposalMemoryProposal) *MemoryPropo
 }
 
 func validateMemoryProposalDraft(text string, structured map[string]string, dataClass string) error {
+	// Memory must never capture resolved confidential values; proposals also must
+	// not store raw reference tokens (ADR 0049) — those are turn-local placeholders.
+	if strings.Contains(text, "{{ref:") {
+		return contracts.New(contracts.ErrValidationFailed, "dialogue: memory proposal must not contain reference tokens")
+	}
 	n := utf8.RuneCountInString(text)
 	if n < 1 || n > 4000 {
 		return contracts.New(contracts.ErrValidationFailed, "dialogue: memory text length is out of bounds")

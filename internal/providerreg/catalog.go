@@ -204,7 +204,7 @@ func (r *Registry) CatalogEntry(ctx context.Context, scope contracts.Scope, id p
 
 func (r *Registry) catalogEntryOf(p providers.ProviderProfile, in CatalogEntryInput) (providers.ProviderCatalogEntry, error) {
 	oauth := in.OAuthAvailable
-	return providers.ProviderCatalogEntry{
+	e := providers.ProviderCatalogEntry{
 		ProfileID:            p.ProfileID,
 		ProviderID:           p.ProviderID,
 		ModelID:              p.ModelID,
@@ -217,7 +217,12 @@ func (r *Registry) catalogEntryOf(p providers.ProviderProfile, in CatalogEntryIn
 		PriceHint:            in.PriceHint,
 		Qualified:            p.Lifecycle == providers.ProfileLifecycleQualified,
 		OauthAvailable:       &oauth,
-	}, nil
+	}
+	if p.NativeWebSearch != nil {
+		v := *p.NativeWebSearch
+		e.NativeWebSearch = &v
+	}
+	return e, nil
 }
 
 func principalRolesOf(p providers.ProviderProfile) []providers.PrincipalLlmRole {

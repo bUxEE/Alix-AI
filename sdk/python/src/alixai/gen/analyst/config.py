@@ -25,6 +25,7 @@ class WebConfig(BaseModel):
     provider: Optional[Literal["", "brave", "tavily", "searxng", "provider_native"]] = None
     cred_ref: Optional[Annotated[str, Field(min_length=1, max_length=128, pattern='^cred_[0-9A-HJKMNP-TV-Z]{26}$')]] = None
     origin: Optional[Annotated[str, Field(min_length=8, max_length=512, pattern='^https?://[^\\s?#]+$')]] = None
+    fallback: Optional[Literal["", "searxng", "brave", "tavily"]] = None
     max_searches: Optional[Annotated[int, Field(ge=0, le=16)]] = None
     max_fetches: Optional[Annotated[int, Field(ge=0, le=16)]] = None
     allow_hosts: Optional[Annotated[list[Annotated[str, Field(min_length=1, max_length=253, pattern='^[A-Za-z0-9.-]+$')]], Field(max_length=256)]] = None

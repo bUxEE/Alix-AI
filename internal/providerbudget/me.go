@@ -30,6 +30,7 @@ type MeUsageGroup struct {
 	ToksOut           providers.Counter    `json:"toks_out"`
 	AudioSecondsIn    providers.Counter    `json:"audio_seconds_in"`
 	CharactersIn      providers.Counter    `json:"characters_in"`
+	WebSearches       providers.Counter    `json:"web_searches"`
 	Requests          providers.Counter    `json:"requests"`
 	Currency          providers.Currency   `json:"currency"`
 	ChargedMicroUnits providers.MicroUnits `json:"charged_micro_units"`
@@ -108,6 +109,9 @@ func (s *Service) MeUsage(ctx context.Context, scope contracts.Scope, q MeUsageQ
 		g.AudioSecondsIn += m.AudioSecondsIn
 		if m.CharactersIn != nil {
 			g.CharactersIn += *m.CharactersIn
+		}
+		if m.WebSearches != nil {
+			g.WebSearches += *m.WebSearches
 		}
 		g.Requests += m.Requests
 		g.ChargedMicroUnits += r.ChargedMicroUnits

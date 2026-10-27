@@ -87,7 +87,7 @@
 // amount, and a fingerprint, so a result can be logged without echoing a secret the model
 // repeated.
 //
-// # Analyst answers (ADR 0047)
+// # Analyst answers (ADR 0047 / ADR 0049)
 //
 // VerifyAnalyst / RealiseAnalyst check a model answer against an AnalystFactSet
 // (datasets, derived facts, web citations with fetched text) and optional source
@@ -97,6 +97,12 @@
 // estimate label and method. Failure yields the analyst template: a table of the
 // final dataset plus a provenance block. NewAnalystStream verifies
 // segment-by-segment (ADR 0046); a later failure replaces with that template.
+//
+// Reference tokens {{ref:<dataset_id>:<row>:<field>}} name a cell of a turn
+// dataset so withheld values can appear in prose after verification. Tokens are
+// validated then left in Text/ModelText; ResolveAnalystRefs formats the cell
+// (language-aware) for the client. Incomplete tokens are held across stream
+// segments so a half-resolved token is never emitted.
 //
 // The package imports only pkg/contracts and its generated subpackages (docs/architecture/module-map.md).
 package verify

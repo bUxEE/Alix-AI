@@ -76,9 +76,16 @@ type ConfigWebConfig struct {
 	// for searxng; unused for provider_native (uses the routed model's own search).
 	CredRef *string `json:"cred_ref,omitzero"`
 
-	// https origin for a self-hosted SearXNG (or similar). No credentials, query or fragment.
-	// Required when provider is searxng.
+	// http(s) origin for a self-hosted SearXNG (or similar). Operator-configured endpoint;
+	// internal http is fine. No credentials, query or fragment. Required when provider or
+	// fallback is searxng.
 	Origin *string `json:"origin,omitzero"`
+
+	// Optional search backend used when provider is provider_native but the routed profile
+	// lacks native_web_search or egress does not allow provider_native. Empty = no fallback
+	// (typed web_search_unavailable). cred_ref and origin apply to the fallback the same way
+	// they apply when that backend is the primary provider.
+	Fallback *ConfigWebConfigFallback `json:"fallback,omitzero"`
 
 	MaxSearches *int64 `json:"max_searches,omitzero"`
 
@@ -92,6 +99,60 @@ type ConfigWebConfig struct {
 	// Deployment-level host suffixes always denied. Unioned with tenant deny_hosts; deny wins
 	// over allow.
 	DenyHosts []string `json:"deny_hosts,omitzero"`
+}
+
+// ConfigWebConfigFallback mirrors
+// urn:alixai:schema:analyst:config:v1#/$defs/webConfig/properties/fallback.
+//
+// Optional search backend used when provider is provider_native but the routed profile lacks
+// native_web_search or egress does not allow provider_native. Empty = no fallback (typed
+// web_search_unavailable). cred_ref and origin apply to the fallback the same way they apply when
+// that backend is the primary provider.
+//
+// Only the values listed in the schema are valid.
+type ConfigWebConfigFallback string
+
+// The valid values of ConfigWebConfigFallback.
+const (
+	ConfigWebConfigFallbackEmpty   ConfigWebConfigFallback = ""
+	ConfigWebConfigFallbackSearxng ConfigWebConfigFallback = "searxng"
+	ConfigWebConfigFallbackBrave   ConfigWebConfigFallback = "brave"
+	ConfigWebConfigFallbackTavily  ConfigWebConfigFallback = "tavily"
+)
+
+// Valid reports whether v is one of the values the schema lists.
+func (v ConfigWebConfigFallback) Valid() bool {
+	switch v {
+	case ConfigWebConfigFallbackEmpty, ConfigWebConfigFallbackSearxng, ConfigWebConfigFallbackBrave, ConfigWebConfigFallbackTavily:
+		return true
+	}
+	return false
+}
+
+// MarshalJSON refuses to encode a value outside the enum, so an unset or
+// corrupt value fails instead of producing a document the schema rejects.
+func (v ConfigWebConfigFallback) MarshalJSON() ([]byte, error) {
+	if !v.Valid() {
+		return nil, fmt.Errorf("ConfigWebConfigFallback: %v is not a valid value", string(v))
+	}
+	return json.Marshal(string(v))
+}
+
+// UnmarshalJSON accepts only the values the schema lists; null and anything
+// else is an error.
+func (v *ConfigWebConfigFallback) UnmarshalJSON(data []byte) error {
+	if bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
+		return fmt.Errorf("ConfigWebConfigFallback: null is not a valid value")
+	}
+	var raw string
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return fmt.Errorf("ConfigWebConfigFallback: %w", err)
+	}
+	if !ConfigWebConfigFallback(raw).Valid() {
+		return fmt.Errorf("ConfigWebConfigFallback: %v is not a valid value", raw)
+	}
+	*v = ConfigWebConfigFallback(raw)
+	return nil
 }
 
 // ConfigWebConfigProvider mirrors

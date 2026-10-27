@@ -52,9 +52,101 @@ var analystWire struct {
 	provider       providers.TextGenerator // optional; set when engine deps are known
 }
 
-// analystWebQueryAllows is the web_query gate. External build replaces it with a
-// Disclose-based probe; noexternal leaves the default (always false).
+// analystWebQueryAllows is the web_query gate. External build replaces it with the
+// dataegress.WebQuery probe; noexternal leaves the default (always false).
 var analystWebQueryAllows = func(context.Context, contracts.Scope) bool { return false }
+
+// analystNativeCaller is the provider-native search seam (nil under noexternal).
+var analystNativeCaller web.NativeCaller
+
+type nativeCallerFunc func(ctx context.Context, scope contracts.Scope, query string, allowDomains []string) (web.NativeCallResult, error)
+
+func (f nativeCallerFunc) SearchWeb(ctx context.Context, scope contracts.Scope, query string, allowDomains []string) (web.NativeCallResult, error) {
+	return f(ctx, scope, query, allowDomains)
+}
+
+// dialogueAnalystWebProvider reads dialogue.analyst.web.provider (tests may replace).
+var dialogueAnalystWebProvider = func() string {
+	return dialogue.Loaded().Analyst.Web.Provider
+}
+
+// dialogueAnalystWebFallback reads dialogue.analyst.web.fallback.
+var dialogueAnalystWebFallback = func() string {
+	return dialogue.Loaded().Analyst.Web.Fallback
+}
+
+func buildWebSearchChain(webCfg *an.ConfigWebConfig, turns *webTurnBag, allows func(context.Context, contracts.Scope) bool) (loop.WebSearcher, error) {
+	secrets := analystDynamicSecrets{}
+	primary := *webCfg.Provider
+	chain := &web.ChainSearcher{
+		AllowDomains: func(ctx context.Context, scope contracts.Scope) []string {
+			return turns.policyFor(ctx, scope).Allow
+		},
+		HostFilter: func(ctx context.Context, scope contracts.Scope) web.HostPolicy {
+			return turns.policyFor(ctx, scope)
+		},
+	}
+	if primary == an.ConfigWebConfigProviderProviderNative {
+		chain.Native = analystNativeCaller
+		chain.NativeOK = func(ctx context.Context, scope contracts.Scope) bool {
+			return allows != nil && allows(ctx, scope) &&
+				analystWebQueryProviderOK(ctx, scope, pv.EgressPolicyWebQueryProviderProviderNative) &&
+				analystNativeProfileOK(ctx, scope)
+		}
+		fb := an.ConfigWebConfigFallbackEmpty
+		if webCfg.Fallback != nil {
+			fb = *webCfg.Fallback
+		}
+		if fb != an.ConfigWebConfigFallbackEmpty {
+			fp, err := web.NewFallbackProvider(fb, webCfg, secrets)
+			if err != nil {
+				return nil, err
+			}
+			chain.Fallback = fp
+			chain.FallbackName = string(fb)
+			prov := pv.EgressPolicyWebQueryProvider(fb)
+			chain.FallbackOK = func(ctx context.Context, scope contracts.Scope) bool {
+				return allows != nil && allows(ctx, scope) && analystWebQueryProviderOK(ctx, scope, prov)
+			}
+		}
+		return webSearcherChainAdapt{inner: chain, turns: turns, allows: allows}, nil
+	}
+	prov, err := web.NewProvider(webCfg, secrets)
+	if err != nil {
+		return nil, err
+	}
+	chain.Fallback = prov
+	chain.FallbackName = string(primary)
+	wp := analystConfiguredWebProvider()
+	chain.FallbackOK = func(ctx context.Context, scope contracts.Scope) bool {
+		return allows != nil && allows(ctx, scope) && analystWebQueryProviderOK(ctx, scope, wp)
+	}
+	return webSearcherChainAdapt{inner: chain, turns: turns, allows: allows}, nil
+}
+
+// analystWebQueryProviderOK is set by the external build; default refuses.
+var analystWebQueryProviderOK = func(context.Context, contracts.Scope, pv.EgressPolicyWebQueryProvider) bool {
+	return false
+}
+
+// analystNativeProfileOK is set by the external build; true when the routed
+// controller profile has native_web_search.
+var analystNativeProfileOK = func(context.Context, contracts.Scope) bool { return false }
+
+func analystConfiguredWebProvider() pv.EgressPolicyWebQueryProvider {
+	switch dialogueAnalystWebProvider() {
+	case "provider_native":
+		return pv.EgressPolicyWebQueryProviderProviderNative
+	case "brave":
+		return pv.EgressPolicyWebQueryProviderBrave
+	case "tavily":
+		return pv.EgressPolicyWebQueryProviderTavily
+	case "searxng":
+		return pv.EgressPolicyWebQueryProviderSearxng
+	default:
+		return pv.EgressPolicyWebQueryProviderSearxng
+	}
+}
 
 // newAnalystFetcher builds the SSRF-safe fetcher. External tests may replace it
 // so a TLS fake can serve allow-listed pages under the dial policy.
@@ -140,12 +232,6 @@ func buildAnalystRunner(d dialogue.Deps, cfg dialogue.AnalystConfig) (*loop.Runn
 		if !ExternalProvidersBuilt() {
 			return nil, nil, fmt.Errorf("dialogue.analyst.web: web search requires External mode")
 		}
-		// Dynamic secrets: credentials bind after the engine (rag_external provider).
-		prov, err := web.NewProvider(webCfg, analystDynamicSecrets{})
-		if err != nil {
-			return nil, nil, fmt.Errorf("dialogue.analyst.web: %w", err)
-		}
-		ws := web.NewSearcher(prov)
 		wf := newAnalystFetcher()
 		turns = &webTurnBag{
 			deploy: web.HostPolicy{Allow: cfg.Web.AllowHosts, Deny: cfg.Web.DenyHosts},
@@ -155,7 +241,11 @@ func buildAnalystRunner(d dialogue.Deps, cfg dialogue.AnalystConfig) (*loop.Runn
 		if allows == nil {
 			allows = analystWebQueryAllows
 		}
-		searcher = webSearcherAdapt{inner: ws, turns: turns, allows: allows}
+		chain, err := buildWebSearchChain(webCfg, turns, allows)
+		if err != nil {
+			return nil, nil, fmt.Errorf("dialogue.analyst.web: %w", err)
+		}
+		searcher = chain
 		fetcher = webFetcherAdapt{inner: wf, turns: turns}
 	}
 	var domainCls loop.DomainClassifier
@@ -230,6 +320,10 @@ func mapWebConfig(w dialogue.AnalystWebConfig) *an.ConfigWebConfig {
 	if w.Origin != "" {
 		o := w.Origin
 		out.Origin = &o
+	}
+	if w.Fallback != "" {
+		f := an.ConfigWebConfigFallback(w.Fallback)
+		out.Fallback = &f
 	}
 	if w.MaxSearches > 0 {
 		v := int64(w.MaxSearches)
@@ -724,6 +818,30 @@ func (b *webTurnBag) len() int {
 	return len(b.byTurn)
 }
 
+type webSearcherChainAdapt struct {
+	inner  *web.ChainSearcher
+	turns  *webTurnBag
+	allows func(context.Context, contracts.Scope) bool
+}
+
+func (a webSearcherChainAdapt) Search(ctx context.Context, scope contracts.Scope, in loop.SearchInput) (loop.SearchResult, error) {
+	policyOK := false
+	if a.allows != nil {
+		policyOK = a.allows(ctx, scope)
+	}
+	t := a.turns.turn(ctx, scope, in.TurnID)
+	res, err := a.inner.Search(ctx, scope, t, in.Query, in.Datasets, policyOK)
+	if err != nil {
+		return loop.SearchResult{}, err
+	}
+	out := loop.SearchResult{Hits: make([]loop.SearchHit, len(res.Hits))}
+	for i, h := range res.Hits {
+		out.Hits[i] = loop.SearchHit{URL: h.URL, Title: h.Title, Snippet: h.Snippet}
+	}
+	return out, nil
+}
+
+// webSearcherAdapt wraps a single Provider-backed Searcher (unit tests).
 type webSearcherAdapt struct {
 	inner  *web.Searcher
 	turns  *webTurnBag

@@ -4,8 +4,8 @@ Sync and async clients for the AlixAI public API (`schemas/api/openapi.yaml`), t
 for CopilotKit and AG-UI frontends, and a fake server for the tests of a host application. Python 3.11 and later; runtime dependencies are `httpx` and
 `pydantic` only.
 
-**Status: 1.5.0.** The contracts this SDK speaks are frozen for v1 (`schemas/_frozen/v1`, checked by `tools/compat`).
-`pyproject.toml` reads `1.5.0` with a Production/Stable classifier. Compatibility and support rules are in
+**Status: 1.5.1.** The contracts this SDK speaks are frozen for v1 (`schemas/_frozen/v1`, checked by `tools/compat`).
+`pyproject.toml` reads `1.5.1` with a Production/Stable classifier. Compatibility and support rules are in
 [compatibility](../../docs/policies/compatibility.md) and [migration and support](../../docs/policies/migration-and-support.md).
 The version this SDK is tested against is the core in the same repository commit. See [CHANGELOG.md](CHANGELOG.md).
 

@@ -70,6 +70,7 @@ export type ErrorCode =
   | "model_not_analyst_capable"
   | "insufficient_data"
   | "web_query_refused"
+  | "web_search_unavailable"
   | "analyst_cap_exceeded"
   | "unit_mismatch"
   | "forecast_unavailable"

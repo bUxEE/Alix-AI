@@ -645,6 +645,15 @@ func lightExtEgress(t *testing.T, a *externalAdmin, scope contracts.Scope, deplo
 			AllowedModels:    []pv.ModelRef{{ProviderID: "openai", ModelID: rdyExtModelA}},
 			AllowedClasses:   []pv.EgressEligibleClass{pv.EgressEligibleClassPublic, pv.EgressEligibleClassInternal},
 			AllowedRegions:   []pv.RegionCode{"us", "eu"},
+			WebQuery: &pv.EgressPolicyWebQueryEgress{
+				Enabled: true,
+				AllowedProviders: []pv.EgressPolicyWebQueryProvider{
+					pv.EgressPolicyWebQueryProviderSearxng,
+					pv.EgressPolicyWebQueryProviderBrave,
+					pv.EgressPolicyWebQueryProviderTavily,
+					pv.EgressPolicyWebQueryProviderProviderNative,
+				},
+			},
 		}
 	}
 	if _, err := a.egress.PutDeploymentPolicy(ctx, dataegress.Operator{DeploymentID: deployment, PrincipalID: "opr_root"}, base(pv.EgressLevelDeployment)); err != nil {
