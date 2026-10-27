@@ -486,6 +486,10 @@ docs/                  architecture, ADRs, integration guides, operations, secur
 
 ## Project status
 
+### Unreleased (1.5.2)
+
+- **Fix:** xAI (and Mistral) native-search stubs return `web_search_unavailable` so a wrongly flagged `native_web_search` profile falls through to `web.fallback`, matching Gemini.
+
 ### 1.5.1 (2026-10-27)
 
 - **Provider-native web search** ([ADR 0050](docs/decisions/0050-native-web-search.md)): optional `web.provider: provider_native` with OpenAI Responses / Anthropic Messages search tools (Gemini / xAI / Mistral not offered); `web.fallback`; catalog `native_web_search`; meter `web_searches`.

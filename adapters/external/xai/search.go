@@ -11,6 +11,6 @@ import (
 // Official web_search lives on the Responses API (https://docs.x.ai/developers/tools/web-search);
 // until that route is allowlisted here, native search stays unavailable.
 func (c *Client) SearchWeb(context.Context, contracts.Scope, external.NativeSearchRequest) (external.NativeSearchResult, error) {
-	return external.NativeSearchResult{}, contracts.New(contracts.ErrUnavailable,
+	return external.NativeSearchResult{}, contracts.New(contracts.ErrWebSearchUnavailable,
 		"xai: native web search requires the Responses API; this client uses Chat Completions only")
 }

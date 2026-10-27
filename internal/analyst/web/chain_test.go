@@ -68,3 +68,23 @@ func TestChainSearcherUnavailableFallsBack(t *testing.T) {
 		t.Fatalf("fallback n=%d", fb.n)
 	}
 }
+
+func TestChainSearcherXAIStubErrorFallsBack(t *testing.T) {
+	// adapters/external/xai/search.go stub — must be web_search_unavailable (not
+	// unavailable) so a wrongly flagged native_web_search profile still uses fallback.
+	native := &stubNative{err: contracts.New(contracts.ErrWebSearchUnavailable,
+		"xai: native web search requires the Responses API; this client uses Chat Completions only")}
+	fb := &stubFallback{}
+	turn := NewTurn(HostPolicy{Allow: []string{"gov.it"}}, Budget{})
+	ch := &ChainSearcher{
+		Native: native, NativeOK: func(context.Context, contracts.Scope) bool { return true },
+		Fallback: fb, FallbackOK: func(context.Context, contracts.Scope) bool { return true },
+	}
+	res, err := ch.Search(context.Background(), testScope(), turn, "public query", nil, false)
+	if err != nil || len(res.Hits) != 1 {
+		t.Fatalf("got %+v %v", res, err)
+	}
+	if fb.n != 1 {
+		t.Fatalf("fallback n=%d", fb.n)
+	}
+}
