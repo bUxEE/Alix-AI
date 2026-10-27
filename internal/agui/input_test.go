@@ -84,7 +84,9 @@ func TestClientToolsAreNeverCapabilities(t *testing.T) {
 			fields = append(fields, rt.Field(i).Name)
 		}
 		// Attachments (M2-18) carries uploaded file ids resolved by the files service: data, never a tool or a capability.
-		if !reflect.DeepEqual(fields, []string{"Text", "Language", "ChoiceID", "Confirm", "Reject", "Attachments"}) {
+		// ClientCapabilities / HasClientCapabilities (1.5) announce what the client can render; not host tools or
+		// application capabilities.
+		if !reflect.DeepEqual(fields, []string{"Text", "Language", "ChoiceID", "Confirm", "Reject", "Attachments", "ClientCapabilities", "HasClientCapabilities"}) {
 			t.Fatalf("dialogue.TurnInput changed (%v): review how client tools are kept out of it", fields)
 		}
 	})

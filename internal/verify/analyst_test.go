@@ -1,6 +1,7 @@
 package verify
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -259,6 +260,59 @@ func TestAnalystBlockMaterialisedFromDataset(t *testing.T) {
 	}
 	if len(tb.Rows) != 1 || tb.Rows[0][1] != 12400.0 {
 		t.Fatalf("rows from dataset: %#v", tb.Rows)
+	}
+	if len(out.CoreMaterialised) != 1 || !out.CoreMaterialised[0] {
+		t.Fatalf("materialised blocks must carry CoreMaterialised: %v", out.CoreMaterialised)
+	}
+}
+
+func TestAnalystChartMaterialisedFromDataset(t *testing.T) {
+	facts := sampleFacts()
+	id := analyst.DatasetID("ds_rev_001")
+	mark := analyst.StepProposalBlockPlanMarkBar
+	out, err := VerifyAnalyst(AnalystAnswer{
+		Text: "Acme SpA revenue is 12400.",
+		Blocks: []analyst.StepProposalBlockPlan{{
+			Type: analyst.StepProposalBlockPlanTypeChart, DatasetID: &id, Mark: &mark,
+			Description: func() *string { s := "Revenue by company."; return &s }(),
+		}},
+	}, facts, AnalystOptions{Language: LangEN})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.Source != SourceModel || len(out.Blocks) != 1 {
+		t.Fatalf("got %+v", out)
+	}
+	ch, ok := out.Blocks[0].Value.(conversation.ChartBlock)
+	if !ok || ch.DatasetID == nil || *ch.DatasetID != id {
+		t.Fatalf("chart not materialised: %#v", out.Blocks[0])
+	}
+	if len(ch.Data) != 1 || ch.Data[0]["revenue"] != 12400.0 {
+		t.Fatalf("chart data from dataset: %#v", ch.Data)
+	}
+}
+
+func TestAnalystBlockPlanCannotInjectRows(t *testing.T) {
+	// Block plans have no rows member; materialisation always copies from the dataset.
+	// A plan that only names the dataset must never invent cell values.
+	facts := sampleFacts()
+	id := analyst.DatasetID("ds_rev_001")
+	blocks, err := materialiseAnalystBlocks([]analyst.StepProposalBlockPlan{{
+		Type: analyst.StepProposalBlockPlanTypeTable, DatasetID: &id,
+		Title: func() *string { s := "Injected title only"; return &s }(),
+	}}, facts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(blocks) != 1 {
+		t.Fatalf("blocks=%d", len(blocks))
+	}
+	tb := blocks[0].Value.(conversation.TableBlock)
+	if len(tb.Rows) != 1 || tb.Rows[0][0] != "Acme SpA" || tb.Rows[0][1] != 12400.0 {
+		t.Fatalf("rows must equal dataset, got %#v", tb.Rows)
+	}
+	if strings.Contains(fmt.Sprint(tb.Rows), "99999") {
+		t.Fatal("invented cell value")
 	}
 }
 

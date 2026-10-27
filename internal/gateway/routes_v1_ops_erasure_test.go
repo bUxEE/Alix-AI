@@ -13,7 +13,8 @@ import (
 
 type opsErasureFake struct {
 	mu        sync.Mutex
-	operators map[string]bool
+	operators map[string]bool // deployment operators by principal
+	tenants   map[string]bool // "tenant/principal" tenant admins
 	jobs      map[string]ErasureJobStatus
 	targets   map[string]string
 	deny      bool
@@ -22,10 +23,16 @@ type opsErasureFake struct {
 func (f *opsErasureFake) Authorize(_ context.Context, scope contracts.Scope) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	if f.deny || !f.operators[scope.PrincipalID] {
+	if f.deny {
 		return contracts.New(contracts.ErrPermissionDenied, "not an operator")
 	}
-	return nil
+	if f.operators[scope.PrincipalID] {
+		return nil
+	}
+	if f.tenants[scope.TenantID+"/"+scope.PrincipalID] {
+		return nil
+	}
+	return contracts.New(contracts.ErrPermissionDenied, "not an operator")
 }
 
 func (f *opsErasureFake) Start(_ context.Context, scope contracts.Scope, req ErasureRequest) (ErasureJobAccepted, error) {
@@ -150,4 +157,27 @@ func TestOpsErasureRequiresOperator(t *testing.T) {
 	f := opsErasureFakeOf(e)
 	f.deny = true
 	wantError(t, e.call(http.MethodPost, "/v1/ops/erasure", map[string]any{"level": "tenant"}), http.StatusForbidden, contracts.ErrPermissionDenied)
+}
+
+func TestOpsErasureWorkspaceAuthz(t *testing.T) {
+	e := newAPIEnv(t)
+	f := opsErasureFakeOf(e)
+	f.mu.Lock()
+	f.operators = map[string]bool{}
+	f.tenants = map[string]bool{
+		apiTenant + "/usr_admin_t": true,
+		"ten_other/usr_admin_u":    true,
+	}
+	f.mu.Unlock()
+
+	body := map[string]any{
+		"level": "principal", "scope": "workspace", "principal_id": "usr_alice",
+		"workspace_id": apiWsp, "reason": "left site",
+	}
+	wantStatus(t, e.call(http.MethodPost, "/v1/ops/erasure", body, withPrincipal("usr_admin_t")), http.StatusAccepted)
+	// Admin of another tenant keeps the target tenant in scope — Authorize denies.
+	wantError(t, e.call(http.MethodPost, "/v1/ops/erasure", body, withPrincipal("usr_admin_u")),
+		http.StatusForbidden, contracts.ErrPermissionDenied)
+	wantError(t, e.call(http.MethodPost, "/v1/ops/erasure", body, withPrincipal("usr_plain")),
+		http.StatusForbidden, contracts.ErrPermissionDenied)
 }

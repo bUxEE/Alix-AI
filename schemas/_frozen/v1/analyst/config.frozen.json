@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:analyst:config:v1",
+  "title": "AnalystConfig",
+  "description": "dialogue.analyst.* configuration (ADR 0047). Nested under the dialogue section. Every ability defaults false. Caps have safe defaults. Application and tenant levels may only narrow (most restrictive wins); see abilities schema.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "enabled": {
+      "description": "Master switch for the analyst path. false (default): single-capability path only. true still requires each ability and analyst_capable.",
+      "type": "boolean",
+      "default": false
+    },
+    "abilities": {
+      "description": "Per-ability toggles at this config level. Absent key = false.",
+      "$ref": "#/$defs/abilityFlags"
+    },
+    "max_steps": {
+      "description": "Max step proposals per turn including answer.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 64,
+      "default": 12
+    },
+    "max_reads": {
+      "description": "Max read steps per turn.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 32,
+      "default": 8
+    },
+    "max_records_per_dataset": {
+      "description": "Max rows kept per dataset.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5000,
+      "default": 500
+    },
+    "max_total_records": {
+      "description": "Max rows across all datasets in a turn.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20000,
+      "default": 2000
+    },
+    "max_turn_tokens": {
+      "description": "Soft cap on prompt+output tokens across model calls in the turn.",
+      "type": "integer",
+      "minimum": 1024,
+      "maximum": 2000000,
+      "default": 32000
+    },
+    "max_turn_wall_ms": {
+      "description": "Wall-clock budget for the analyst loop in milliseconds.",
+      "type": "integer",
+      "minimum": 1000,
+      "maximum": 600000,
+      "default": 60000
+    },
+    "max_turn_cost": {
+      "description": "Optional upper bound on estimated micro-units for the turn (provider budget). Null/absent: only the usual budgets apply.",
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "maximum": 1000000000000
+    },
+    "web": {
+      "description": "Web search/fetch settings. Provider off until configured.",
+      "$ref": "#/$defs/webConfig"
+    }
+  },
+  "$defs": {
+    "abilityFlags": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "loop": { "type": "boolean", "default": false },
+        "compute": { "type": "boolean", "default": false },
+        "forecasts": { "type": "boolean", "default": false },
+        "presentation": { "type": "boolean", "default": false },
+        "drafts": { "type": "boolean", "default": false },
+        "knowledge": { "type": "boolean", "default": false },
+        "web_search": { "type": "boolean", "default": false },
+        "web_fetch": { "type": "boolean", "default": false }
+      }
+    },
+    "webConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "description": "Adapter id: brave, tavily, searxng, or provider_native. Empty = disabled.",
+          "type": "string",
+          "enum": ["", "brave", "tavily", "searxng", "provider_native"],
+          "default": ""
+        },
+        "cred_ref": {
+          "description": "Opaque reference to the API credential in the credentials service (never a secret in YAML or logs). Required for brave and tavily when those providers are enabled; optional for searxng; unused for provider_native (uses the routed model's own search).",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^cred_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "origin": {
+          "description": "https origin for a self-hosted SearXNG (or similar). No credentials, query or fragment. Required when provider is searxng.",
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 512,
+          "pattern": "^https?://[^\\s?#]+$"
+        },
+        "max_searches": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16,
+          "default": 3
+        },
+        "max_fetches": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16,
+          "default": 3
+        },
+        "allow_hosts": {
+          "description": "Deployment-level host suffixes allowed for fetch. Intersected with tenant allow_hosts and package preferred_web_hosts. Empty with web_fetch on refuses every fetch until configured.",
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 253,
+            "pattern": "^[A-Za-z0-9.-]+$"
+          }
+        },
+        "deny_hosts": {
+          "description": "Deployment-level host suffixes always denied. Unioned with tenant deny_hosts; deny wins over allow.",
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 253,
+            "pattern": "^[A-Za-z0-9.-]+$"
+          }
+        }
+      }
+    }
+  }
+}

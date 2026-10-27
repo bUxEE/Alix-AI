@@ -609,7 +609,7 @@ func TestImportsStayWithinTheModuleMap(t *testing.T) {
 		"internal/store": true, "internal/audit": true, "internal/identity": true, "internal/capabilities": true,
 		"internal/actions": true, "internal/adapters": true,
 	}
-	dialogueOK := map[string]bool{"internal/policy": true, "internal/sessions": true, "internal/verify": true, "internal/providers": true, "internal/rag": true, "internal/analyst/loop": true}
+	dialogueOK := map[string]bool{"internal/policy": true, "internal/sessions": true, "internal/verify": true, "internal/providers": true, "internal/rag": true, "internal/apppkg": true, "internal/analyst/loop": true}
 	for k := range base {
 		dialogueOK[k] = true
 	}

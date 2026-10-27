@@ -13,7 +13,8 @@ import (
 // Citation for a web-derived claim (ADR 0047). Assembled by the core after fetch. Every web number
 // in the answer must appear in the fetched text of its citation.
 type WebCitation struct {
-	// Core-minted citation id (prefix wcit_).
+	// Core-minted citation id (prefix wcit_). Matches common typedId: lowercase prefix plus
+	// uppercase Crockford ULID. The older lowercase body form remains valid (additive).
 	//
 	// Authority: alixai.
 	ID string `json:"id" alixai:"alixai"`
@@ -35,6 +36,11 @@ type WebCitation struct {
 	//
 	// Authority: alixai.
 	Snippet *string `json:"snippet,omitzero" alixai:"alixai"`
+
+	// Optional SHA-256 of the extracted page text (sha256: + 64 lower-case hex digits).
+	//
+	// Authority: alixai.
+	ContentHash *string `json:"content_hash,omitzero" alixai:"alixai"`
 
 	// Authority: alixai.
 	SourceLabel string `json:"source_label" alixai:"alixai"`

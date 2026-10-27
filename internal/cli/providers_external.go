@@ -1440,6 +1440,9 @@ const extWireProviderName = "rag_external"
 // extWireOnCompose, when set, sees every stack the provider builds (tests).
 var extWireOnCompose func(*extWireStack)
 
+// analystExternalAdmin is the live externalAdmin for analyst profile / credentials lookup.
+var analystExternalAdmin atomic.Pointer[externalAdmin]
+
 // extWireDelegate is the selector and the guard the engine is built with. Until the provider has built the
 // runtime it is the local selector and the local guard.
 type extWireDelegate struct {
@@ -1473,6 +1476,31 @@ func (d *extWireDelegate) Select(ctx context.Context, scope contracts.Scope, rol
 		return rt.Select(ctx, scope, role)
 	}
 	return d.local.Select(ctx, scope, role)
+}
+
+// ResolvedControllerProfile returns the first routed controller profile for the scope.
+func (d *extWireDelegate) ResolvedControllerProfile(ctx context.Context, scope contracts.Scope) (pv.ProviderProfile, bool) {
+	a := analystExternalAdmin.Load()
+	if d == nil || a == nil || d.rt.Load() == nil {
+		return pv.ProviderProfile{}, false
+	}
+	rp := externalSection.extWirePolicy()[modes.RoleController]
+	for _, id := range rp.Profiles {
+		p, err := a.reg.Get(ctx, scope, id)
+		if err == nil && p.Lifecycle != pv.ProfileLifecycleRetired {
+			return p, true
+		}
+	}
+	return pv.ProviderProfile{}, false
+}
+
+// ControllerAnalystCapable reports whether the resolved controller profile is analyst_capable.
+func (d *extWireDelegate) ControllerAnalystCapable(ctx context.Context, scope contracts.Scope) (bool, error) {
+	prof, ok := d.ResolvedControllerProfile(ctx, scope)
+	if !ok || prof.AnalystCapable == nil {
+		return false, nil
+	}
+	return *prof.AnalystCapable, nil
 }
 
 // Guard implements dialogue.PromptGuard.
@@ -1862,11 +1890,43 @@ func extWireProvide(_ context.Context, d serveDeps) error {
 	if err := extGapWireKnowledge(d, rs, st, admin); err != nil {
 		return err
 	}
-	if d.AddService != nil {
-		d.AddService(st.startRevalidation)
-	}
 	del.rt.Store(st.runtime)
 	extFinalVoiceHolder.Store(st.voice)
+	analystExternalAdmin.Store(admin)
+	// Analyst companion (ADR 0047): web_query egress, controller profile, credentials, budgets.
+	serveExternalEgress = func() dataegress.Guard { return admin.egress }
+	serveExternalControllerProfile = func(ctx context.Context, scope contracts.Scope) (pv.ProviderProfile, bool) {
+		return del.ResolvedControllerProfile(ctx, scope)
+	}
+	webProv := "searxng"
+	if p := dialogue.Loaded().Analyst.Web.Provider; p != "" {
+		webProv = p
+	}
+	if r, err := admin.creds.Resolver(contracts.Scope{
+		DeploymentID: admin.deployment, ApplicationID: "alixai-web", TenantID: "alixai-web",
+		WorkspaceID: "alixai-web", PrincipalID: "svc_analyst_web", Roles: []string{"service"},
+		CapabilityScopes: []string{"credentials.resolve"}, SessionID: "analyst-web",
+	}, credentials.ResolverOptions{Provider: pv.ProviderID(webProv), Purpose: "web_search"}); err == nil {
+		bindAnalystWebSecrets(r)
+	}
+	bindAnalystBudgets(admin.budget)
+	// One AddService only: a second registration would overwrite tests (and any
+	// harness) that keep a single start handle — fold analyst cleanup into stop.
+	if d.AddService != nil {
+		d.AddService(func(ctx context.Context) (stop func()) {
+			stopRev := st.startRevalidation(ctx)
+			return func() {
+				stopRev()
+				analystExternalAdmin.Store(nil)
+				serveExternalEgress = func() dataegress.Guard { return nil }
+				serveExternalControllerProfile = func(context.Context, contracts.Scope) (pv.ProviderProfile, bool) {
+					return pv.ProviderProfile{}, false
+				}
+				bindAnalystWebSecrets(nil)
+				bindAnalystBudgets(nil)
+			}
+		})
+	}
 	if extWireOnCompose != nil {
 		extWireOnCompose(st)
 	}

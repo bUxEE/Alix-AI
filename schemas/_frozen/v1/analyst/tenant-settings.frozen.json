@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:analyst:tenant-settings:v1",
+  "title": "TenantAnalystSettings",
+  "description": "Tenant-level analyst ability ceilings and web host policy (ADR 0047). A tenant may only narrow what deployment config and the application package allow. Written via PUT /v1/ops/tenants/{tenant_id}/analyst (ops.analyst.write); read via GET (ops.analyst.read) or the effective view on GET /v1/me/analyst.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "enabled": {
+      "description": "When false, forces the analyst path off for this tenant. Absent inherits deployment.",
+      "type": "boolean"
+    },
+    "abilities": {
+      "description": "Per-ability ceilings. true allows what upper levels allow; false (or absent key when replacing) forces that ability off. Most restrictive wins.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "loop": { "type": "boolean" },
+        "compute": { "type": "boolean" },
+        "forecasts": { "type": "boolean" },
+        "presentation": { "type": "boolean" },
+        "drafts": { "type": "boolean" },
+        "knowledge": { "type": "boolean" },
+        "web_search": { "type": "boolean" },
+        "web_fetch": { "type": "boolean" }
+      }
+    },
+    "web": {
+      "description": "Tenant web host policy. Intersected with deployment allow/deny and package preferred_web_hosts. Deny wins.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allow_hosts": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 253,
+            "pattern": "^[A-Za-z0-9.-]+$"
+          }
+        },
+        "deny_hosts": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 253,
+            "pattern": "^[A-Za-z0-9.-]+$"
+          }
+        }
+      }
+    },
+    "updated_at": {
+      "description": "Set by the core on write.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    }
+  }
+}

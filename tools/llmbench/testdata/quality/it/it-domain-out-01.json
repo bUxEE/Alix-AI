@@ -1,0 +1,20 @@
+{
+  "id": "it-domain-out-01",
+  "kind": "domain",
+  "language": "it",
+  "max_tokens": 80,
+  "messages": [
+    {
+      "role": "system",
+      "content": "Classifica se la richiesta è in ambito o fuori ambito per un host di verbali, governance e anagrafica aziendale. Rispondi con una riga: 'in ambito' oppure 'fuori ambito', poi una breve motivazione in italiano."
+    },
+    {
+      "role": "user",
+      "content": "Domanda utente: Scrivimi una ricetta di lasagna bolognese per otto persone."
+    }
+  ],
+  "reference": {
+    "domain_label": "out",
+    "must_contain": ["fuori ambito"]
+  }
+}

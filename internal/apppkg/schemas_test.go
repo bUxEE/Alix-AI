@@ -15,7 +15,7 @@ import (
 // make the loader validate against something other than the contract.
 func TestEmbeddedSchemasMatchPublished(t *testing.T) {
 	published := func(name string) string {
-		for _, dir := range []string{"application-package", "common", "rag"} {
+		for _, dir := range []string{"application-package", "common", "rag", "analyst"} {
 			p := filepath.Join("..", "..", "schemas", dir, name)
 			if _, err := os.Stat(p); err == nil {
 				return p

@@ -1,6 +1,6 @@
 {
   "name": "@alixai/vue",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "description": "Optional Vue 3 UI kit for AlixAI: an embeddable chat panel and independently usable components that talk the AG-UI protocol directly. Ships as source (.vue + .scss); the host bundler compiles it.",
   "license": "Apache-2.0",
   "type": "module",

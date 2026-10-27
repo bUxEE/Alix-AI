@@ -152,7 +152,7 @@ type EraseRecord struct {
 }
 
 // EraseKinds are the values of EraseRequest.Kind.
-var EraseKinds = []string{"tenant", "principal", "retention"}
+var EraseKinds = []string{"tenant", "principal", "retention", "workspace"}
 
 func (r EraseRequest) validate() error {
 	if err := r.Chain.validate(); err != nil {
@@ -172,7 +172,7 @@ func (r EraseRequest) validate() error {
 		known = known || k == r.Kind
 	}
 	if !known {
-		return contracts.New(contracts.ErrValidationFailed, "audit: the erasure kind is not tenant, principal or retention")
+		return contracts.New(contracts.ErrValidationFailed, "audit: the erasure kind is not tenant, principal, retention or workspace")
 	}
 	if err := checkReason(r.Reason); err != nil {
 		return err
@@ -452,6 +452,9 @@ type Selector struct {
 	Principal string
 	// Before selects the events that occurred before this instant: retention.
 	Before time.Time
+	// Workspace, when set with Principal, further narrows to that workspace
+	// (principal×workspace erasure). Empty means every workspace of the tenant.
+	Workspace string
 	// AfterSeq is a cursor: only chain positions above it.
 	AfterSeq int64
 	// Limit bounds the answer, 1 to MaxEraseBatch.
@@ -488,6 +491,13 @@ func SelectEvents(ctx context.Context, q store.Reader, chain ChainKey, sel Selec
 		}
 		query += ` AND (principal_id = ? OR instr(data, ?) > 0)`
 		args = append(args, sel.Principal, `"`+sel.Principal+`"`)
+		if sel.Workspace != "" {
+			if err := checkID(contracts.LevelWorkspace, sel.Workspace); err != nil {
+				return nil, err
+			}
+			query += ` AND workspace_id = ?`
+			args = append(args, sel.Workspace)
+		}
 	case !sel.Before.IsZero():
 		query += ` AND occurred_at < ?`
 		args = append(args, sel.Before.UnixMilli())

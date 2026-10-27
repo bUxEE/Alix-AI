@@ -37,10 +37,16 @@ dialogue:
     max_turn_wall_ms: 60000
     web:
       provider: brave          # or tavily, searxng, provider_native
+      cred_ref: cred_brave_1   # opaque credentials-service ref (never a secret in YAML)
       max_searches: 3
       max_fetches: 3
       allow_hosts: [gov.it, europa.eu]
 ```
+
+`alixai serve` wires this through `internal/cli` (composition root): compute engine, domain
+classifier, web search/fetch, settings ability resolver, verify streaming, and the stream hub
+progress stages. With `enabled: false` (default) the runner is not attached and Local / 1.4
+behaviour is unchanged.
 
 3. Declare `assistant.domain` (and optional ability ceilings) in the application package.
 4. Tenant settings may only **narrow** abilities further.
@@ -58,6 +64,12 @@ Send `client_capabilities` on each turn (sessions API) or `forwardedProps.alixai
 (AG-UI). Schema: `schemas/analyst/client-capabilities.schema.json`. The 1.5 SDKs and kits fill it
 automatically. **Absent = 1.4:** the server maps analyst stages, new blocks/marks/layouts and
 source labels to the frozen 1.4 form so a 1.4.x client never sees an unknown member. See ADR 0047.
+
+A host that relays AlixAI turn events to its own frontend must announce **only** the
+blocks/stages/marks that frontend actually renders. Over-announcing unlocks shapes the host
+cannot show; under-announcing is safe (server maps down). The gateway copies the announcement
+into the dialogue turn and onto the stream hub before the first publish (including mid-turn
+verified segments and AG-UI reconnect replay).
 
 ## 3. What the model may do
 
@@ -123,16 +135,16 @@ User: “Should my company have applied for the Italian 2026 company discount XX
 
 User: “Is a Persian cat big?” → `out_of_domain` refusal; no search, no read, no model essay.
 
-## 10. Implementation plan (disjoint ownership)
+## 10. Implementation (1.5.0)
 
-Contracts and docs only in this wave. Later implementation splits as:
+Shipped in this release (ADR 0047; everything off until the operator enables abilities):
 
-| Task | Owns | Acceptance (high level) |
-| --- | --- | --- |
-| **A — Compute engine** | `internal/analyst/compute` (+ tests) | Ops match schema; unit/currency refuse; null rules; forecasts labelled / `insufficient_data`; data-class = max of inputs |
-| **B — Step loop** | `internal/dialogue` analyst path, config keys, progress stages; persist `client_capabilities` on the turn | Caps hold; no writes in loop; abilities off → removed from grammar; non-`analyst_capable` → typed reason; injection → no write/foreign read |
-| **C — Domain + web** | `internal/dialogue/scopegate` combo, web adapter seam, `web_query` egress; ops/me analyst settings wiring | Persian-cat refused; eligibility example with fake search/host; confidential query refused; page injection stays in-domain fail-closed; tenant may only narrow |
-| **D — Verifier** | `internal/verify` | Invented number → replace; computed survives; forecast labelled; web number not in source → replace; knowledge-as-tenant → replace; analyst template = table + provenance |
-| **E — Emit mapping + blocks + kits + SDKs** | emit mapper (1.5 → 1.4 when unannounced); rich-block renderers in `ui/*`; SDK/kit announcement fill | Empty announcement → every TurnEvent validates against `schemas/_frozen/v1`; new stages/blocks/marks/layouts/members mapped or omitted; announced items pass through; kits/SDKs announce exactly what they parse |
+| Area | Location |
+| --- | --- |
+| Compute engine | `internal/analyst/compute` — fixed op catalog, exact decimals, typed refusals, labelled forecasts |
+| Step loop | `internal/analyst/loop` + `internal/dialogue` analyst path; config under `dialogue.analyst`; progress stages `analyst_*`; `client_capabilities` on the turn |
+| Domain + web | `internal/analyst/domain`, `internal/analyst/web` (SearXNG-compatible / Brave / Tavily), `web_query` egress; tenant/ops analyst settings |
+| Verifier | `internal/verify` analyst path — invented numbers replaced; materialised table/chart/provenance; CoreMaterialised trust for publish |
+| Emit + kits + SDKs | 1.5 → 1.4 emit mapping when unannounced; Vue/React/demo-mock blocks; Go/TS/Python SDK announcements |
 
-Required cross-cutting test: a 1.5 server with a client that announced nothing never emits a member outside the 1.4 freeze.
+Cross-cutting: a 1.5 server with a client that announced nothing never emits a member outside the 1.4 freeze.

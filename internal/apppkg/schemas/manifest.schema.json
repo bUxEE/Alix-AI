@@ -104,9 +104,38 @@
     "external": {
       "description": "Optional. What the application says about external model providers (external provider mode plan). The mode itself (Local, External, Hybrid) is deployment and tenant policy, never a package field, so switching mode never changes the integration contract. The package can only restrict.",
       "$ref": "#/$defs/external"
+    },
+    "assistant": {
+      "description": "Optional. Analyst companion domain and ability ceilings for this package (ADR 0047). Absent means no domain is declared: domain classification and knowledge/web stay off for this application even if deployment enables them.",
+      "$ref": "#/$defs/assistant"
     }
   },
   "$defs": {
+    "assistant": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "domain": {
+          "description": "Domain scope declaration. Required for in-domain answers that match no capability.",
+          "$ref": "urn:alixai:schema:analyst:domain:v1"
+        },
+        "abilities": {
+          "description": "Optional package ceilings: each true allows the deployment to enable that ability; false (or absent) forces it off for this application. Most restrictive wins with deployment and tenant.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "loop": { "type": "boolean" },
+            "compute": { "type": "boolean" },
+            "forecasts": { "type": "boolean" },
+            "presentation": { "type": "boolean" },
+            "drafts": { "type": "boolean" },
+            "knowledge": { "type": "boolean" },
+            "web_search": { "type": "boolean" },
+            "web_fetch": { "type": "boolean" }
+          }
+        }
+      }
+    },
     "external": {
       "type": "object",
       "additionalProperties": false,

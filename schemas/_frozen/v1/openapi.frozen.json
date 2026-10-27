@@ -536,6 +536,10 @@
             "description": "The AG-UI `AgentCapabilities` object of the release.",
             "type": "object"
           },
+          "analyst": {
+            "$ref": "schemas/analyst/abilities.schema.json",
+            "description": "Optional. Effective analyst abilities for the caller's application/tenant (ADR 0047).\nRead-only; same shape as GET /v1/me/analyst. Absent when the analyst path is not wired.\n"
+          },
           "eventsEmitted": {
             "items": {
               "type": "string"
@@ -615,7 +619,7 @@
             "type": "array"
           },
           "forwardedProps": {
-            "description": "Only the object `alixai` is read: `choiceId` answers the pending clarification, `language` is a BCP 47 tag."
+            "description": "Only the object `alixai` is read: `choiceId` answers the pending clarification, `language` is a\nBCP 47 tag, and optional `clientCapabilities` (same shape as TurnRequest.client_capabilities /\n`schemas/analyst/client-capabilities.schema.json`) announces 1.5 parse support (ADR 0047).\nAbsent clientCapabilities = 1.4 emit surface. The property stays open so 1.4 clients are unchanged.\n"
           },
           "messages": {
             "description": "The conversation as the client holds it. The last user message is the utterance and nothing else of it is\nread as an instruction; the session store is the record of the conversation. An empty list with no\n`resume` is a connect run.\n",
@@ -1144,6 +1148,9 @@
       "DictationTranscript": {
         "$ref": "schemas/voice/dictation-transcript.schema.json"
       },
+      "EffectiveAnalystAbilities": {
+        "$ref": "schemas/analyst/abilities.schema.json"
+      },
       "EgressDisclosure": {
         "$ref": "schemas/providers/egress-disclosure.schema.json"
       },
@@ -1399,10 +1406,11 @@
             "type": "string"
           },
           "scope": {
-            "description": "Present when level is principal (`tenant` or `application`).",
+            "description": "Present when level is principal (`tenant`, `application` or `workspace`).",
             "enum": [
               "tenant",
-              "application"
+              "application",
+              "workspace"
             ],
             "type": "string"
           },
@@ -1452,10 +1460,11 @@
             "type": "string"
           },
           "scope": {
-            "description": "Only when level is principal. `tenant` (default when omitted) is tenant-local;\n`application` is GDPR application-wide (deployment operator only).\n",
+            "description": "Only when level is principal. `tenant` (default when omitted) is tenant-local;\n`application` is GDPR application-wide (deployment operator only);\n`workspace` erases that principal inside one workspace only (requires workspace_id;\nnever revokes credentials/bindings).\n",
             "enum": [
               "tenant",
-              "application"
+              "application",
+              "workspace"
             ],
             "type": "string"
           },
@@ -1464,7 +1473,7 @@
             "type": "string"
           },
           "workspace_id": {
-            "description": "Required when level is workspace (defaults to the token's workspace).",
+            "description": "Required when level is workspace (defaults to the token's workspace), and when\nlevel is principal with scope workspace (defaults to the token's workspace).\n",
             "type": "string"
           }
         },
@@ -3845,6 +3854,98 @@
         ],
         "type": "object"
       },
+      "StepUpOutcomeRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "description": "Host report of the step-up. `completed` is accepted only when adapter Status shows the effect\nfor this preparation's key (ADR 0048).\n",
+            "enum": [
+              "completed",
+              "declined",
+              "failed"
+            ],
+            "type": "string"
+          },
+          "reference": {
+            "description": "Optional host correlation id; no secrets.",
+            "maxLength": 128,
+            "type": "string"
+          }
+        },
+        "required": [
+          "outcome"
+        ],
+        "type": "object"
+      },
+      "TenantAnalystSettings": {
+        "$ref": "schemas/analyst/tenant-settings.schema.json"
+      },
+      "TenantAnalystSettingsUpdate": {
+        "additionalProperties": false,
+        "description": "Body of PUT /v1/ops/tenants/{tenant_id}/analyst. Same shape as TenantAnalystSettings\nwithout server-owned `updated_at` (the core sets it).\n",
+        "properties": {
+          "abilities": {
+            "additionalProperties": false,
+            "properties": {
+              "compute": {
+                "type": "boolean"
+              },
+              "drafts": {
+                "type": "boolean"
+              },
+              "forecasts": {
+                "type": "boolean"
+              },
+              "knowledge": {
+                "type": "boolean"
+              },
+              "loop": {
+                "type": "boolean"
+              },
+              "presentation": {
+                "type": "boolean"
+              },
+              "web_fetch": {
+                "type": "boolean"
+              },
+              "web_search": {
+                "type": "boolean"
+              }
+            },
+            "type": "object"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "web": {
+            "additionalProperties": false,
+            "properties": {
+              "allow_hosts": {
+                "items": {
+                  "maxLength": 253,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9.-]+$",
+                  "type": "string"
+                },
+                "maxItems": 256,
+                "type": "array"
+              },
+              "deny_hosts": {
+                "items": {
+                  "maxLength": 253,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9.-]+$",
+                  "type": "string"
+                },
+                "maxItems": 256,
+                "type": "array"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
       "TranscriptionCapabilities": {
         "$ref": "schemas/voice/transcription-capabilities.schema.json"
       },
@@ -3858,7 +3959,7 @@
             "text"
           ]
         },
-        "description": "Exactly one of text, choice_id, confirmation and reject; attachments only with text.",
+        "description": "Exactly one of text, choice_id, confirmation and reject; attachments only with text. Optional client_capabilities (ADR 0047) announce what the client can parse of the 1.5 surface; absent means 1.4.",
         "oneOf": [
           {
             "required": [
@@ -3894,6 +3995,10 @@
           "choice_id": {
             "description": "Selects one of the choices of the pending clarification.",
             "type": "string"
+          },
+          "client_capabilities": {
+            "$ref": "schemas/analyst/client-capabilities.schema.json",
+            "description": "Optional. What this client can parse of analyst / rich-block additions (ADR 0047). The SDK of a\nrelease fills it with exactly what it decodes. Absent or empty = 1.4: the server emits only\nforms that validate against `schemas/_frozen/v1`.\n"
           },
           "confirmation": {
             "additionalProperties": false,
@@ -5413,6 +5518,37 @@
         }
       ]
     },
+    "/v1/me/analyst": {
+      "get": {
+        "description": "Read-only effective ability set after intersecting deployment config, application package\n`assistant.abilities`, and tenant settings, gated by whether the resolved controller is\n`analyst_capable` (ADR 0047). Same shape as `schemas/analyst/abilities.schema.json`. Also\nexposed optionally on `GET /v1/agui/capabilities` as `analyst`. Self only; no secrets.\n",
+        "operationId": "getPrincipalAnalyst",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EffectiveAnalystAbilities"
+                }
+              }
+            },
+            "description": "The effective set."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Effective analyst abilities for the caller",
+        "tags": [
+          "me"
+        ]
+      }
+    },
     "/v1/me/budget": {
       "get": {
         "description": "Workspace-bound and application-wide principal budgets of the token's principal, with their\nstates. Never another principal's. Operators set budgets with `PUT /v1/providers/budgets`.\nAnswers `unavailable` until the principal usage service is wired.\n",
@@ -6854,6 +6990,91 @@
           }
         },
         "summary": "Queue status of the caller's own scope",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/v1/ops/tenants/{tenant_id}/analyst": {
+      "get": {
+        "description": "Tenant-level analyst settings (ADR 0047). Deployment operator, or tenant admin of this\ntenant with `ops.analyst.read`. The effective abilities a turn sees also intersect\ndeployment config and the application package (`GET /v1/me/analyst`).\n",
+        "operationId": "getTenantAnalyst",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantAnalystSettings"
+                }
+              }
+            },
+            "description": "The tenant settings (empty object when never written)."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Read a tenant's analyst ability ceilings",
+        "tags": [
+          "operations"
+        ]
+      },
+      "parameters": [
+        {
+          "in": "path",
+          "name": "tenant_id",
+          "required": true,
+          "schema": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        }
+      ],
+      "put": {
+        "description": "Replaces the tenant document. A tenant may only narrow: enabling an ability the\ndeployment or package has off is refused (`permission_denied`). Deployment operator,\nor tenant admin of this tenant with `ops.analyst.write`.\n",
+        "operationId": "putTenantAnalyst",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TenantAnalystSettingsUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantAnalystSettings"
+                }
+              }
+            },
+            "description": "The stored settings."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Set a tenant's analyst ability ceilings",
         "tags": [
           "operations"
         ]
@@ -8733,6 +8954,84 @@
           "$ref": "#/components/parameters/SessionId"
         }
       ]
+    },
+    "/v1/sessions/{session_id}/preparations/{preparation_id}/step-up-outcome": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/SessionId"
+        },
+        {
+          "in": "path",
+          "name": "preparation_id",
+          "required": true,
+          "schema": {
+            "pattern": "^[A-Za-z0-9_.-]{1,128}$",
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "description": "Called by the **host backend** after the user completes (or declines / fails) a level-3\n`step_up` preparation in the application's own authenticated interface — including a dialog\nopened from the host's embedded chat panel. The context token must be the same principal and\nsession as the preparation. The AlixAI confirm path can never complete level 3\n(`step_up_required`); this route is the only way the assistant learns the outcome as a\ndurable `ActionReceipt` (ADR 0048).\n\nFor `outcome: completed` the body is never trusted: AlixAI asks the adapter's Status for the\npreparation's idempotency key and accepts only when Status shows the effect. No effect →\n`validation_failed` (`details.reason: step_up_effect_missing`). `declined` and `failed`\nrecord a rejected receipt. Idempotent for the same outcome. Non-`step_up` preparations are\nrefused. Clears the session's prepared-action reference so pending / AG-UI state updates;\nthe receipt is also readable at `GET /v1/actions/{preparation_id}/receipt`.\n",
+        "operationId": "reportStepUpOutcome",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StepUpOutcomeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionReceipt"
+                }
+              }
+            },
+            "description": "The receipt of a completed (committed) outcome."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ActionReceipt"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Declined or failed step-up (rejected receipt), or a conflict with an existing different outcome.\nA rejected receipt is the durable record; a bare Error is used when nothing was recorded.\n"
+          },
+          "410": {
+            "$ref": "#/components/responses/Gone"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "summary": "Report a level-3 step-up outcome from the host backend",
+        "tags": [
+          "sessions"
+        ]
+      }
     },
     "/v1/sessions/{session_id}/turns": {
       "parameters": [

@@ -39,6 +39,9 @@ func publishVerifiedSegment(_ context.Context, scope contracts.Scope, step dialo
 			return
 		}
 	}
+	if caps, ok := dialogue.ClientCapabilitiesForTurn(step.TurnID); ok {
+		turn.SetClientCapabilities(caps)
+	}
 	if step.Replace {
 		_ = turn.PublishTextReplaced(step.Text)
 		return

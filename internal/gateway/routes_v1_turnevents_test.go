@@ -17,9 +17,13 @@ import (
 
 	"github.com/buxee/alix-ai/internal/adapters"
 	"github.com/buxee/alix-ai/internal/blocks"
+	"github.com/buxee/alix-ai/internal/dialogue"
 	"github.com/buxee/alix-ai/internal/stream"
+	"github.com/buxee/alix-ai/internal/verify"
 	"github.com/buxee/alix-ai/pkg/contracts"
 	act "github.com/buxee/alix-ai/pkg/contracts/gen/actions"
+	"github.com/buxee/alix-ai/pkg/contracts/gen/analyst"
+	"github.com/buxee/alix-ai/pkg/contracts/gen/common"
 	"github.com/buxee/alix-ai/pkg/contracts/gen/conversation"
 )
 
@@ -514,7 +518,7 @@ func TestRefusedEventDoesNotBreakSequenceOrder(t *testing.T) {
 			draft   turnEventsDraft
 			refused bool
 		}{{progress, false}, {tooBig, true}, {progress, false}, {tooBig, true}, {done, false}} {
-			err := turnEventsPublishDraft(turn, step.draft)
+			err := turnEventsPublishDraft(turn, step.draft, false)
 			if (err != nil) != step.refused {
 				t.Fatalf("step %d: err = %v, want refused = %v", i, err, step.refused)
 			}
@@ -828,4 +832,85 @@ func TestTurnEventsLiveStreamOutlivesTheServerTimeouts(t *testing.T) {
 	if len(frames) != 3 || frames[2].Event != "done" || frames[1].Event != "token" {
 		t.Fatalf("the live stream = %q", r.body)
 	}
+}
+
+// PublishTrusted must follow the CoreMaterialised provenance flag from the
+// analyst materialiser — never a model-writable dataset_id member.
+func TestCoreMaterialisedFlagNotDatasetID(t *testing.T) {
+	e := turneventsWithHub(t, stream.Config{})
+	turn, id := turneventsOpenTurn(t, e, 77)
+	tid := act.TurnID(id)
+	ds := analyst.DatasetID("ds_core_001")
+	table := conversation.RichBlock{Value: conversation.TableBlock{
+		Type: "table", DatasetID: &ds,
+		Columns: []conversation.TableColumn{{Key: "company", Label: "Company"}, {Key: "revenue", Label: "Revenue"}},
+		Rows:    [][]conversation.TableCell{{"Acme", float64(12400)}},
+	}}
+	chart := conversation.RichBlock{Value: conversation.ChartBlock{
+		Type: "chart", Description: conversation.PlainText("Revenue."), Mark: conversation.ChartBlockMarkBar,
+		DatasetID: &ds,
+		Data:      []conversation.ChartRecord{{"company": "Acme", "revenue": float64(12400)}},
+		Encoding: conversation.ChartEncoding{
+			X: &conversation.ChartChannel{Field: common.FieldName("company"), Type: conversation.ChartChannelTypeNominal},
+			Y: &conversation.ChartChannel{Field: common.FieldName("revenue"), Type: conversation.ChartChannelTypeQuantitative},
+		},
+	}}
+
+	t.Run("dataset_id without flag uses fact-checked Publish", func(t *testing.T) {
+		draft := func(seq conversation.Seq) conversation.TurnEventValue {
+			return conversation.BlockEvent{TurnID: tid, Seq: seq, Block: table}
+		}
+		if err := turnEventsPublishDraft(turn, draft, false); err == nil {
+			t.Fatal("table with dataset_id but no CoreMaterialised flag must be fact-checked and refused")
+		}
+	})
+	t.Run("analyst-materialised table and chart pass PublishTrusted", func(t *testing.T) {
+		for name, b := range map[string]conversation.RichBlock{"table": table, "chart": chart} {
+			blk := b
+			draft := func(seq conversation.Seq) conversation.TurnEventValue {
+				return conversation.BlockEvent{TurnID: tid, Seq: seq, Block: blk}
+			}
+			if err := turnEventsPublishDraft(turn, draft, true); err != nil {
+				t.Fatalf("%s core-materialised refused: %v", name, err)
+			}
+		}
+	})
+	t.Run("buildTurnEvents trusts only the CoreMaterialised flag", func(t *testing.T) {
+		empty := conversation.DialogueDirective{
+			TurnID: tid, Act: conversation.DialogueDirectiveActPresentResult,
+			Facts: []act.Fact{}, MustState: []common.FieldName{}, MissingFields: []common.FieldName{},
+			InvalidFields: []act.Issue{}, AllowedSuggestions: []act.Choice{},
+			Confirmation:         act.ConfirmationRequirement{Mode: act.ConfirmationRequirementModeNone},
+			PermittedNextActions: []act.PermittedNextAction{}, Sources: []conversation.Citation{},
+		}
+		plan := buildTurnEvents(dialogue.Result{
+			TurnID: id, Directive: empty,
+			Response: verify.Outcome{Text: "ok", Blocks: []conversation.RichBlock{table}},
+		}, nil)
+		var trusted []bool
+		for _, item := range plan.leading {
+			if _, ok := item.draft(0).(conversation.BlockEvent); ok {
+				trusted = append(trusted, item.trusted)
+			}
+		}
+		if len(trusted) != 1 || trusted[0] {
+			t.Fatalf("without CoreMaterialised flag, trusted=%v", trusted)
+		}
+		plan2 := buildTurnEvents(dialogue.Result{
+			TurnID: id, Directive: empty,
+			Response: verify.Outcome{
+				Text: "ok", Blocks: []conversation.RichBlock{table, chart},
+				CoreMaterialised: []bool{true, true},
+			},
+		}, nil)
+		trusted = nil
+		for _, item := range plan2.leading {
+			if _, ok := item.draft(0).(conversation.BlockEvent); ok {
+				trusted = append(trusted, item.trusted)
+			}
+		}
+		if len(trusted) != 2 || !trusted[0] || !trusted[1] {
+			t.Fatalf("with CoreMaterialised flags, trusted=%v", trusted)
+		}
+	})
 }

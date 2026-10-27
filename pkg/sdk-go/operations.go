@@ -26,12 +26,13 @@ var (
 	opGetReadiness = Operation{"getReadiness", http.MethodGet, "/readyz", false, true}
 	opGetHealth    = Operation{"getHealth", http.MethodGet, "/v1/health", true, true}
 
-	opCreateSession   = Operation{"createSession", http.MethodPost, "/v1/sessions", true, false}
-	opGetSession      = Operation{"getSession", http.MethodGet, "/v1/sessions/{session_id}", true, true}
-	opEndSession      = Operation{"endSession", http.MethodDelete, "/v1/sessions/{session_id}", true, false}
-	opGetPendingState = Operation{"getPendingState", http.MethodGet, "/v1/sessions/{session_id}/pending", true, true}
-	opSendTurn        = Operation{"sendTurn", http.MethodPost, "/v1/sessions/{session_id}/turns", true, false}
-	opStreamTurnEvent = Operation{"streamTurnEvents", http.MethodGet, "/v1/sessions/{session_id}/turns/{turn_id}/events", true, true}
+	opCreateSession       = Operation{"createSession", http.MethodPost, "/v1/sessions", true, false}
+	opGetSession          = Operation{"getSession", http.MethodGet, "/v1/sessions/{session_id}", true, true}
+	opEndSession          = Operation{"endSession", http.MethodDelete, "/v1/sessions/{session_id}", true, false}
+	opGetPendingState     = Operation{"getPendingState", http.MethodGet, "/v1/sessions/{session_id}/pending", true, true}
+	opSendTurn            = Operation{"sendTurn", http.MethodPost, "/v1/sessions/{session_id}/turns", true, false}
+	opStreamTurnEvent     = Operation{"streamTurnEvents", http.MethodGet, "/v1/sessions/{session_id}/turns/{turn_id}/events", true, true}
+	opReportStepUpOutcome = Operation{"reportStepUpOutcome", http.MethodPost, "/v1/sessions/{session_id}/preparations/{preparation_id}/step-up-outcome", true, false}
 
 	opGetAction        = Operation{"getAction", http.MethodGet, "/v1/actions/{preparation_id}", true, true}
 	opConfirmAction    = Operation{"confirmAction", http.MethodPost, "/v1/actions/{preparation_id}/confirm", true, false}
@@ -129,7 +130,7 @@ var (
 func Operations() []Operation {
 	return []Operation{
 		opGetLiveness, opGetReadiness, opGetHealth,
-		opCreateSession, opGetSession, opEndSession, opGetPendingState, opSendTurn, opStreamTurnEvent,
+		opCreateSession, opGetSession, opEndSession, opGetPendingState, opSendTurn, opStreamTurnEvent, opReportStepUpOutcome,
 		opGetAction, opConfirmAction, opRejectAction, opGetActionReceipt,
 		opRegisterApplication, opGetApplication, opListCapabilities,
 		opGetDictationCapabilities, opCreateSessionDictation,

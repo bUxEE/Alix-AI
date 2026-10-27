@@ -112,8 +112,8 @@ func (t *turn) complete(ctx context.Context, out outcome) (Result, error) {
 
 	res := Result{
 		TurnID: t.id, Language: t.lang, Directive: *d, Response: resp, Prepared: out.prepared,
-		Confirmation: out.token, Receipt: out.receipt, Code: out.code, Trace: t.trace, UIAction: out.ui,
-		MemoryProposals: t.memProps,
+		Confirmation: out.token, Receipt: out.receipt, Code: out.code, Details: out.details,
+		Trace: t.trace, UIAction: out.ui, MemoryProposals: t.memProps,
 	}
 	t.log("turn done", "act", string(d.Act), "code", string(out.code), "model_calls", len(t.trace.ModelCalls),
 		"response", string(t.trace.Response), "stages", strings.Join(t.trace.Stages, ">"))
@@ -137,8 +137,15 @@ func (t *turn) complete(ctx context.Context, out outcome) (Result, error) {
 // used only when it passes. Unverified model text is never returned.
 func (t *turn) respond(ctx context.Context, out outcome, opts verify.Options) (verify.Outcome, error) {
 	d := out.dir
-	if out.analystReply != "" {
-		return verify.Outcome{Text: out.analystReply, Source: verify.SourceModel, Reason: verify.ReasonVerified}, nil
+	if out.analystReply != "" || len(out.analystBlocks) > 0 {
+		src, reason := verify.SourceModel, verify.ReasonVerified
+		if out.analystReply == "" {
+			out.analystReply = " " // non-empty so callers treat it as a finished reply
+		}
+		return verify.Outcome{
+			Text: out.analystReply, Source: src, Reason: reason,
+			Blocks: out.analystBlocks, CoreMaterialised: out.analystCore,
+		}, nil
 	}
 	if t.modelDown || t.templateOnly(d.Act) {
 		return verify.Degraded(d, out.receipt, opts)

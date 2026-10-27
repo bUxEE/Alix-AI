@@ -143,6 +143,32 @@ func TestEraseHistoryOfAPrincipalAndATenant(t *testing.T) {
 	}
 }
 
+func TestEraseHistoryWorkspaceFilter(t *testing.T) {
+	s, clk, db := newStore(t, Config{})
+	ctx := context.Background()
+	alice1 := scopeCaps("tenant-a", "alice", "ses-1", "items.create")
+	alice2 := inWorkspace(scopeCaps("tenant-a", "alice", "ses-2", "items.create"), "ws-2")
+	eraseSeed(t, s, alice1, "alice one", true)
+	eraseSeed(t, s, alice2, "alice two", false)
+
+	wsSpec := EraseSpec{ApplicationID: "demo-app", TenantID: "tenant-a", WorkspaceID: "ws-1", PrincipalID: "alice", Now: clk.Now()}
+	before, err := CountHistory(ctx, db, wsSpec)
+	if err != nil || before.Sessions == 0 {
+		t.Fatalf("CountHistory = %+v %v", before, err)
+	}
+	if got := eraseRun(t, db, wsSpec); got.Sessions != before.Sessions {
+		t.Fatalf("workspace erase = %+v before = %+v", got, before)
+	}
+	left, err := CountHistory(ctx, db, EraseSpec{ApplicationID: "demo-app", TenantID: "tenant-a", WorkspaceID: "ws-2", PrincipalID: "alice", Now: clk.Now()})
+	if err != nil || left.Sessions == 0 {
+		t.Fatalf("other workspace wiped: %+v %v", left, err)
+	}
+	gone, err := CountHistory(ctx, db, wsSpec)
+	if err != nil || gone.Sessions != 0 {
+		t.Fatalf("target workspace still has %+v %v", gone, err)
+	}
+}
+
 // An erasure always names an application and a tenant, and the time an active
 // session is ended at.
 func TestEraseHistoryRefusesAnIncompleteSpec(t *testing.T) {

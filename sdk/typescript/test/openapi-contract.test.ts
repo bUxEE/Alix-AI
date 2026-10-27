@@ -201,7 +201,17 @@ describe("every answer of the fake server conforms to the OpenAPI document", () 
     await client.rejectAction(rejected.preparation_id);
     const another = (await client.sendTurnJson("ses-1", { text: "book" })).confirmation!;
     await client.getActionReceipt(another.preparation_id).catch(() => undefined); // conflict: no outcome yet
-    await client.sendTurnJson("ses-1", { text: "step-up" });
+    const stepPrepId = (turn: { events: Array<{ type: string; prepared_action?: { preparation_id: string } }> }) => {
+      const prepared = turn.events.find((e) => e.type === "prepared_action");
+      return prepared?.prepared_action?.preparation_id ?? "";
+    };
+    const stepUpId = stepPrepId(await client.sendTurnJson("ses-1", { text: "step-up" }));
+    await client.reportStepUpOutcome("ses-1", stepUpId, { outcome: "completed" });
+    await client.reportStepUpOutcome("ses-1", stepUpId, { outcome: "completed" }); // idempotent
+    const stepUpDeclinedId = stepPrepId(await client.sendTurnJson("ses-1", { text: "step-up" }));
+    await client.reportStepUpOutcome("ses-1", stepUpDeclinedId, { outcome: "declined" }).catch(() => undefined); // 409 rejected receipt
+    const stepUpFailedId = stepPrepId(await client.sendTurnJson("ses-1", { text: "step-up" }));
+    await client.reportStepUpOutcome("ses-1", stepUpFailedId, { outcome: "failed" }).catch(() => undefined); // 409 rejected receipt
 
     // ---- reading a turn again: SSE from a cursor, the end of a finished turn (204), and the refusals ----
     const first = await client.sendTurnJson("ses-1", { text: "reply" });

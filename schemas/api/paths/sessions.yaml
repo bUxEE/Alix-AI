@@ -117,6 +117,67 @@ paths:
         '503':
           $ref: ../openapi.yaml#/components/responses/Unavailable
 
+  /v1/sessions/{session_id}/preparations/{preparation_id}/step-up-outcome:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+      - name: preparation_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9_.-]{1,128}$'
+    post:
+      operationId: reportStepUpOutcome
+      tags: [sessions]
+      summary: Report a level-3 step-up outcome from the host backend
+      description: |
+        Called by the **host backend** after the user completes (or declines / fails) a level-3
+        `step_up` preparation in the application's own authenticated interface — including a dialog
+        opened from the host's embedded chat panel. The context token must be the same principal and
+        session as the preparation. The AlixAI confirm path can never complete level 3
+        (`step_up_required`); this route is the only way the assistant learns the outcome as a
+        durable `ActionReceipt` (ADR 0048).
+
+        For `outcome: completed` the body is never trusted: AlixAI asks the adapter's Status for the
+        preparation's idempotency key and accepts only when Status shows the effect. No effect →
+        `validation_failed` (`details.reason: step_up_effect_missing`). `declined` and `failed`
+        record a rejected receipt. Idempotent for the same outcome. Non-`step_up` preparations are
+        refused. Clears the session's prepared-action reference so pending / AG-UI state updates;
+        the receipt is also readable at `GET /v1/actions/{preparation_id}/receipt`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StepUpOutcomeRequest'
+      responses:
+        '200':
+          description: The receipt of a completed (committed) outcome.
+          content:
+            application/json:
+              schema:
+                $ref: ../openapi.yaml#/components/schemas/ActionReceipt
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '409':
+          description: |
+            Declined or failed step-up (rejected receipt), or a conflict with an existing different outcome.
+            A rejected receipt is the durable record; a bare Error is used when nothing was recorded.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: ../openapi.yaml#/components/schemas/ActionReceipt
+                  - $ref: ../openapi.yaml#/components/schemas/Error
+        '410':
+          $ref: ../openapi.yaml#/components/responses/Gone
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
   /v1/sessions/{session_id}/turns:
     parameters:
       - $ref: '#/components/parameters/SessionId'
@@ -322,6 +383,21 @@ components:
         type: string
         pattern: '^[0-9]{1,10}$'
   schemas:
+    StepUpOutcomeRequest:
+      type: object
+      additionalProperties: false
+      required: [outcome]
+      properties:
+        outcome:
+          type: string
+          enum: [completed, declined, failed]
+          description: |
+            Host report of the step-up. `completed` is accepted only when adapter Status shows the effect
+            for this preparation's key (ADR 0048).
+        reference:
+          type: string
+          maxLength: 128
+          description: Optional host correlation id; no secrets.
     Session:
       type: object
       additionalProperties: false

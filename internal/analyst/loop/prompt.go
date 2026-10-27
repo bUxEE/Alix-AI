@@ -17,8 +17,8 @@ const (
 )
 
 // BuildStepPrompt assembles the constrained step prompt. Disabled abilities are
-// absent from both the grammar (caller) and this text. Dataset fields obey
-// MaxEgressClass (restricted never included).
+// absent from both the grammar (caller) and this text. Dataset values obey
+// MaxEgressClass; confidential/restricted columns are listed as withheld.
 func BuildStepPrompt(utterance string, abilities AbilityFlags, datasets map[an.DatasetID]an.Dataset, prior []string, caps Caps) []PromptItem {
 	var frame strings.Builder
 	frame.WriteString("You are the analyst controller. Propose exactly one JSON AnalystStepProposal.\n")

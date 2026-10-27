@@ -1,0 +1,20 @@
+{
+  "id": "it-json-task-proposal-01",
+  "kind": "json_task_proposal",
+  "language": "it",
+  "max_tokens": 400,
+  "messages": [
+    {
+      "role": "system",
+      "content": "Produci SOLO un JSON TaskProposal (model-authority, senza trace_id) valido. Intent out_of_scope quando la richiesta non è un task applicativo. Nessun testo fuori dal JSON."
+    },
+    {
+      "role": "user",
+      "content": "L'utente chiede: 'Raccontami una barzelletta sul calcio'. Emetti TaskProposal JSON con intent out_of_scope, capability_id null, fields vuoti, entity_refs vuoti, uncertainty.overall 0.9."
+    }
+  ],
+  "reference": {
+    "json_schema": "task_proposal",
+    "expected_intent": "out_of_scope"
+  }
+}

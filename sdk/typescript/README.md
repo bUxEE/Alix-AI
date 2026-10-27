@@ -4,8 +4,8 @@ The TypeScript SDK for the AlixAI public API (`/v1`). ESM, strict TypeScript, **
 server-sent-events reader over `ReadableStream`), so it runs in Node 20 and later and in browsers. An in-process fake of the service for your own
 tests ships as `@alixai/sdk/testing`.
 
-**Status: 1.4.1.** The contracts this SDK speaks are frozen for v1 (`schemas/_frozen/v1`, checked by `tools/compat`).
-`package.json` reads `1.4.1`. Compatibility and support rules are in
+**Status: 1.5.0.** The contracts this SDK speaks are frozen for v1 (`schemas/_frozen/v1`, checked by `tools/compat`).
+`package.json` reads `1.5.0`. Compatibility and support rules are in
 [compatibility](../../docs/policies/compatibility.md) and [migration and support](../../docs/policies/migration-and-support.md).
 The version this SDK is tested against is the core in the same repository commit. See [CHANGELOG.md](CHANGELOG.md).
 
@@ -241,6 +241,26 @@ session.correctTranscript("book tuesday");
 ```
 
 `voice.createFakeVoiceTransport` is the test double (`@alixai/sdk` exports it; the browser microphone and speaker are yours).
+
+## Private LLM and `me.llm.putRole` (ADR 0045)
+
+Operator routes under `client.ops.privateLlm` are typed (`PrivateLlmEndpoint`, `PrivateLlmTenantPin`, … from `gen/providers`). After an endpoint is registered
+and ready, bind a role with `private_endpoint_id` and that endpoint's `profile_id`:
+
+```ts
+const endpointId = "ple_01J0000000000000000000000A";
+const ep = await client.ops.privateLlm.putEndpoint(endpointId, {
+  origin: "http://127.0.0.1:8080",
+  api_dialect: "openai-compatible",
+  model_ids: ["local-model"],
+  roles: ["conversational_controller"],
+  owner_kind: "shared",
+});
+await client.me.llm.putRole("conversational_controller", {
+  profile_id: ep.profile_id!,
+  private_endpoint_id: endpointId,
+});
+```
 
 ## Providers, modes, budgets (External provider mode)
 

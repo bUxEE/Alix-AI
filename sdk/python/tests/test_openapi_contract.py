@@ -225,7 +225,21 @@ def test_every_answer_of_the_fake_server_conforms_to_the_document_across_all_ope
     another = client.send_turn_json("ses-1", {"text": "book"}).confirmation
     assert another is not None
     swallow(lambda: client.get_action_receipt(another.preparation_id))  # conflict: no outcome yet
-    client.send_turn_json("ses-1", {"text": "step-up"})
+    def step_prep_id(turn: Any) -> str:
+        for event in turn.events:
+            if getattr(event, "type", None) == "prepared_action":
+                return event.prepared_action.preparation_id
+            if isinstance(event, dict) and event.get("type") == "prepared_action":
+                return event["prepared_action"]["preparation_id"]
+        raise AssertionError("expected prepared_action")
+
+    step_up_id = step_prep_id(client.send_turn_json("ses-1", {"text": "step-up"}))
+    client.report_step_up_outcome("ses-1", step_up_id, {"outcome": "completed"})
+    client.report_step_up_outcome("ses-1", step_up_id, {"outcome": "completed"})  # idempotent
+    step_up_declined_id = step_prep_id(client.send_turn_json("ses-1", {"text": "step-up"}))
+    swallow(lambda: client.report_step_up_outcome("ses-1", step_up_declined_id, {"outcome": "declined"}))  # 409 rejected receipt
+    step_up_failed_id = step_prep_id(client.send_turn_json("ses-1", {"text": "step-up"}))
+    swallow(lambda: client.report_step_up_outcome("ses-1", step_up_failed_id, {"outcome": "failed"}))  # 409 rejected receipt
     client.send_turn_json("ses-1", {"text": "lookup"})
     client.send_turn_json("ses-1", {"text": "fail"})
     client.send_turn_json("ses-1", {"text": "ask"})

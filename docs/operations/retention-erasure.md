@@ -1,6 +1,8 @@
 # Retention and erasure
 
-Status: written for 1.3.0. Design: [ADR 0036](../decisions/0036-audit-retention-and-erasure.md), [ADR 0041](../decisions/0041-per-principal-llm-accounts.md). Production checklist: [production.md](production.md) §8.
+Status: written for 1.5.0. Design: [ADR 0036](../decisions/0036-audit-retention-and-erasure.md), [ADR 0041](../decisions/0041-per-principal-llm-accounts.md). Production checklist: [production.md](production.md) §8.
+
+**Fixed (1.5.0):** workspace-level erasure (`level: workspace`) no longer removes other workspaces' conversation history or memory — it is scoped to the named `workspace_id`.
 
 ## What erasure removes
 
@@ -60,6 +62,6 @@ GET /v1/ops/erasure/{job_id}
 → { "job_id", "status": "queued|running|completed|failed", "scope", "counts": { … }, "finished_at": … }
 ```
 
-Levels: `principal` (requires `principal_id`; optional `scope` `tenant`|`application`), `tenant`, `workspace` (requires `workspace_id`, defaults to the token's workspace). Idempotent: a second request for the same target while one runs returns the running job. The implementation is shared with the CLI.
+Levels: `principal` (requires `principal_id`; optional `scope` `tenant`|`application`|`workspace`), `tenant`, `workspace` (requires `workspace_id`, defaults to the token's workspace). With `level: principal` and `scope: workspace`, only that principal's data in the named workspace is erased (credentials/bindings untouched). Idempotent: a second request for the same target while one runs returns the running job. The implementation is shared with the CLI.
 
 SDKs (server-side, operator token): TypeScript `client.ops.erasure.start` / `status`; Python `client.ops.start_erasure` / `erasure_status`; Go `client.Ops().StartErasure` / `ErasureStatus`.

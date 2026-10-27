@@ -39,12 +39,13 @@ func NewAnalystRunnerFromConfig(cfg AnalystConfig, actionsCoord *actions.Coordin
 		Verifier:  opt.Verifier,
 		Searcher:  opt.Searcher,
 		Fetcher:   opt.Fetcher,
-		Reader:    coordinatorReader{actions: actionsCoord, session: sessionScope},
+		Reader:    coordinatorReader{actions: actionsCoord, session: sessionScope, packages: opt.Packages},
 		Caller:    caller,
 		Budget:    opt.Budget,
 		Progress:  progress,
 		IDs:       opt.IDs,
 		Caps:      caps,
+		Turns:     opt.Turns,
 	})
 }
 
@@ -59,6 +60,8 @@ type AnalystRunnerOptions struct {
 	Budget     loop.Budget
 	IDs        loop.IDSource
 	OnProgress ProgressHook
+	Packages   PackageSource
+	Turns      loop.TurnLifecycle
 }
 
 // ProgressHook sees one progress stage during a turn (analyst_* stages).

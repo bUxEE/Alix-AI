@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:analyst:dataset:v1",
+  "title": "AnalystDataset",
+  "description": "A bounded table of host or computed rows produced in an analyst turn (ADR 0047). Assembled by the core from an adapter Read or a compute op; the model never invents rows or field classes. Sent to an external model only after egress policy filters by field data class.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "fields", "rows", "provenance", "record_count"],
+  "properties": {
+    "id": {
+      "description": "Core-minted dataset id.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:analyst:shared:v1#/$defs/datasetId"
+    },
+    "fields": {
+      "description": "Column schema in display order.",
+      "x-alixai-authority": "alixai",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": { "$ref": "#/$defs/datasetField" }
+    },
+    "rows": {
+      "description": "Row objects keyed by field name. Capped by dialogue.analyst.max_records_per_dataset.",
+      "x-alixai-authority": "host",
+      "type": "array",
+      "maxItems": 5000,
+      "items": { "$ref": "#/$defs/row" }
+    },
+    "record_count": {
+      "description": "Number of rows (may equal rows.length; stated explicitly for truncated projections).",
+      "x-alixai-authority": "alixai",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5000
+    },
+    "provenance": {
+      "description": "How this dataset was produced.",
+      "x-alixai-authority": "alixai",
+      "$ref": "#/$defs/datasetProvenance"
+    }
+  },
+  "$defs": {
+    "datasetField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type", "data_class"],
+      "properties": {
+        "name": {
+          "description": "Field name.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+        },
+        "type": {
+          "description": "Scalar type.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:analyst:shared:v1#/$defs/fieldType"
+        },
+        "data_class": {
+          "description": "Sensitivity. Propagates through compute as the most restrictive class of contributing inputs.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:analyst:shared:v1#/$defs/dataClass"
+        },
+        "unit": {
+          "description": "Optional unit (e.g. kg, employees). Ops that combine fields require matching units or refuse with unit_mismatch.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9%/_.-]{1,32}$"
+        },
+        "currency": {
+          "description": "ISO 4217 currency when the field is money. Ops require matching currency or refuse.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "label": {
+          "description": "Optional human label.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      }
+    },
+    "row": {
+      "description": "One record: flat scalars keyed by field name.",
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 64,
+      "propertyNames": {
+        "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+      },
+      "additionalProperties": { "$ref": "#/$defs/cell" }
+    },
+    "cell": {
+      "description": "One cell value.",
+      "type": ["string", "number", "boolean", "null"],
+      "maxLength": 4096
+    },
+    "datasetProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "description": "read: adapter Read. compute: core op. web: fetched page projection (rare; usually a citation, not a dataset).",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "enum": ["read", "compute", "web"]
+        },
+        "capability_id": {
+          "description": "Capability of a read.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/capabilityId"
+        },
+        "arguments": {
+          "description": "Read arguments after policy filtering (no secrets).",
+          "x-alixai-authority": "alixai",
+          "type": "object",
+          "maxProperties": 32,
+          "propertyNames": {
+            "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+          },
+          "additionalProperties": {
+            "type": ["string", "number", "boolean", "null"],
+            "maxLength": 1024
+          }
+        },
+        "op": {
+          "description": "Compute op name.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+        },
+        "params": {
+          "description": "Op parameters as executed.",
+          "x-alixai-authority": "alixai",
+          "type": "object",
+          "maxProperties": 32,
+          "additionalProperties": {
+            "oneOf": [
+              { "type": "string", "maxLength": 1024 },
+              { "type": "number" },
+              { "type": "boolean" },
+              { "type": "null" },
+              {
+                "type": "array",
+                "maxItems": 64,
+                "items": { "type": ["string", "number", "boolean", "null"], "maxLength": 1024 }
+              }
+            ]
+          }
+        },
+        "input_dataset_ids": {
+          "description": "Datasets the compute op consumed.",
+          "x-alixai-authority": "alixai",
+          "type": "array",
+          "maxItems": 8,
+          "items": { "$ref": "urn:alixai:schema:analyst:shared:v1#/$defs/datasetId" }
+        },
+        "web_citation_id": {
+          "description": "Citation id when kind is web.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 64,
+          "pattern": "^wcit_[a-z0-9][a-z0-9_]{2,60}$"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:analyst:shared:v1",
+  "title": "Analyst shared definitions",
+  "description": "Shared enums and ids for analyst turns (ADR 0047). Definition library only.",
+  "$defs": {
+    "datasetId": {
+      "title": "Dataset id",
+      "description": "Core-minted id of a dataset produced in an analyst turn (prefix ds_). Never invented by the model.",
+      "type": "string",
+      "minLength": 4,
+      "maxLength": 64,
+      "pattern": "^ds_[a-z0-9][a-z0-9_]{2,60}$"
+    },
+    "abilityId": {
+      "title": "Analyst ability",
+      "description": "One independently switchable ability. Model strength never enables these; each is off unless every level allows it and the controller is analyst_capable where required.",
+      "type": "string",
+      "enum": [
+        "loop",
+        "compute",
+        "forecasts",
+        "presentation",
+        "drafts",
+        "knowledge",
+        "web_search",
+        "web_fetch"
+      ]
+    },
+    "sourceLabel": {
+      "title": "Claim source label",
+      "description": "Where a claim or number comes from. app: verified read fact. computed: derived fact with provenance. web: cited fetched page. knowledge: model general knowledge (never the tenant's own figures).",
+      "type": "string",
+      "enum": ["app", "computed", "web", "knowledge"]
+    },
+    "dataClass": {
+      "title": "Field data class",
+      "description": "Sensitivity of a dataset field. Same ladder as RAG: public < internal < confidential < restricted. restricted never leaves for an external model; local compute may still use it.",
+      "type": "string",
+      "enum": ["public", "internal", "confidential", "restricted"]
+    },
+    "fieldType": {
+      "title": "Dataset field type",
+      "description": "Scalar type of a column.",
+      "type": "string",
+      "enum": ["string", "number", "boolean", "date", "datetime", "null"]
+    },
+    "reasonCode": {
+      "title": "Analyst reason code",
+      "description": "Typed reason for an analyst refusal or fallback. Carried on DialogueDirective.reason_code when it is also a common ErrCode, or in details.analyst_reason when more specific. Mirror of common error codes plus analyst-specific codes listed in common/error.",
+      "type": "string",
+      "enum": [
+        "out_of_domain",
+        "ability_disabled",
+        "model_not_analyst_capable",
+        "insufficient_data",
+        "web_query_refused",
+        "analyst_cap_exceeded",
+        "unit_mismatch",
+        "forecast_unavailable",
+        "domain_classification_failed"
+      ]
+    },
+    "progressStage": {
+      "title": "Analyst progress stage",
+      "description": "Stable progress stage ids emitted as TurnEvent progress.stage during an analyst turn (additive values on the turn-event enum).",
+      "type": "string",
+      "enum": [
+        "analyst_read",
+        "analyst_compute",
+        "analyst_search",
+        "analyst_fetch",
+        "analyst_answer"
+      ]
+    },
+    "domainClassification": {
+      "title": "Domain classification",
+      "description": "Model-judged classification of the user message against the application package assistant.domain. Typed; out_of_domain refuses without search or read.",
+      "type": "string",
+      "enum": ["in_domain", "out_of_domain"]
+    },
+    "roundingMode": {
+      "title": "Numeric rounding mode",
+      "description": "How the core rounds derived numbers before they become facts the verifier accepts. half_up is the default.",
+      "type": "string",
+      "enum": ["half_up", "half_even", "floor", "ceil"]
+    },
+    "numberFormat": {
+      "title": "Accepted number presentation",
+      "description": "Forms the verifier accepts as equal to a fact value. The core normalises before compare; the model may use any listed form.",
+      "type": "string",
+      "enum": [
+        "plain",
+        "grouped_space",
+        "grouped_comma",
+        "grouped_dot",
+        "compact_k",
+        "compact_m",
+        "percent",
+        "percent_points",
+        "currency"
+      ]
+    }
+  }
+}

@@ -99,6 +99,8 @@ class Call(Generic[T]):
     query: Sequence[tuple[str, str]] = ()
     #: A value that must appear nowhere in the answer or in an error (a credential, an authorization code).
     forbid: Optional[str] = None
+    #: Extra HTTP statuses that still carry a success body (e.g. 409 with a rejected receipt).
+    allow_status: Optional[Callable[[int], bool]] = None
 
 
 def _timeout_ms(value: Any, name: str) -> Optional[int]:
@@ -226,6 +228,25 @@ class _Calls:
     def action_receipt(preparation_id: Any, timeout_ms: Any) -> Call[ActionReceipt]:
         params = {"preparation_id": path_id("preparation_id", preparation_id)}
         return Call("getActionReceipt", ActionReceipt.model_validate, params, timeout_ms=_timeout_ms(timeout_ms, "timeout_ms"), what="receipt")
+
+    @staticmethod
+    def report_step_up_outcome(session_id: Any, preparation_id: Any, body: Any, timeout_ms: Any) -> Call[ActionReceipt]:
+        if not isinstance(body, Mapping) or body.get("outcome") not in ("completed", "declined", "failed"):
+            raise AlixAIError("validation_failed", "outcome must be completed, declined or failed", details={"argument": "outcome"})
+        params = {
+            "session_id": path_id("session_id", session_id),
+            "preparation_id": path_id("preparation_id", preparation_id),
+        }
+        return Call(
+            "reportStepUpOutcome",
+            ActionReceipt.model_validate,
+            params,
+            body=json.dumps(dict(body)).encode("utf-8"),
+            content_type="application/json",
+            timeout_ms=_timeout_ms(timeout_ms, "timeout_ms"),
+            what="receipt",
+            allow_status=lambda s: s == 409,
+        )
 
     @staticmethod
     def get_application(application_id: Any, timeout_ms: Any) -> Call[Application]:
@@ -374,7 +395,11 @@ class _ClientBase:
     def _decode(call: Call[T], response: httpx.Response) -> T:
         """Checks the status, parses the body, and maps every failure to a typed error."""
         status = response.status_code
-        if not (response.is_success or (call.report_503 and status == 503)):
+        if not (
+            response.is_success
+            or (call.report_503 and status == 503)
+            or (call.allow_status is not None and call.allow_status(status))
+        ):
             raise error_from_response(response)
         if call.empty:
             if status != 204 and response.content:
@@ -582,6 +607,17 @@ class AlixAIClient:
         """Declines a preparation. Nothing is sent to the application."""
         return self._execute(_Calls.reject_action(preparation_id, timeout_ms))
 
+    def report_step_up_outcome(
+        self,
+        session_id: str,
+        preparation_id: str,
+        body: Mapping[str, Any],
+        *,
+        timeout_ms: Optional[int] = None,
+    ) -> ActionReceipt:
+        """Host-backend report of a level-3 step-up outcome (ADR 0048)."""
+        return self._execute(_Calls.report_step_up_outcome(session_id, preparation_id, body, timeout_ms))
+
     def get_action_receipt(self, preparation_id: str, *, timeout_ms: Optional[int] = None) -> ActionReceipt:
         """The durable receipt of an action. ``conflict`` while it has no outcome yet."""
         return self._execute(_Calls.action_receipt(preparation_id, timeout_ms))
@@ -769,6 +805,17 @@ class AlixAIAsyncClient:
     async def reject_action(self, preparation_id: str, *, timeout_ms: Optional[int] = None) -> PreparedAction:
         """Declines a preparation. Nothing is sent to the application."""
         return await self._execute(_Calls.reject_action(preparation_id, timeout_ms))
+
+    async def report_step_up_outcome(
+        self,
+        session_id: str,
+        preparation_id: str,
+        body: Mapping[str, Any],
+        *,
+        timeout_ms: Optional[int] = None,
+    ) -> ActionReceipt:
+        """Host-backend report of a level-3 step-up outcome (ADR 0048)."""
+        return await self._execute(_Calls.report_step_up_outcome(session_id, preparation_id, body, timeout_ms))
 
     async def get_action_receipt(self, preparation_id: str, *, timeout_ms: Optional[int] = None) -> ActionReceipt:
         """The durable receipt of an action. ``conflict`` while it has no outcome yet."""

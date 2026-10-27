@@ -461,6 +461,10 @@ func (h *aguiHandler) run(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if req.HasClientCapabilities {
+		req.Input.ClientCapabilities = req.ClientCapabilities
+		req.Input.HasClientCapabilities = true
+	}
 	extendWriteDeadline(w)
 	// The client's context and the tools it declared reach the engine as data, on the context of the call and not in the
 	// turn input: the engine fences the first and offers a tool only if the host registered it.

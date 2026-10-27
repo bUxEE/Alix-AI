@@ -47,6 +47,9 @@ const (
 	// RuleNotModelKind refuses, in the JSON a model wrote (ModelJSON), a block
 	// of a kind only the core assembles from host and core data.
 	RuleNotModelKind Rule = "not_model_kind"
+	// RuleModelDatasetID refuses a model-authored block that carries dataset_id
+	// (alixai authority): trust comes from who built the block, not a writable member.
+	RuleModelDatasetID Rule = "model.dataset_id"
 )
 
 // Violation is one reason a block was refused: the rule and the JSON location

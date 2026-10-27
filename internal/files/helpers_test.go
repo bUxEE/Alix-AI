@@ -286,7 +286,7 @@ func validateFileRef(t testing.TB, raw []byte) {
 		c := jsonschema.NewCompiler()
 		c.DefaultDraft(jsonschema.Draft2020)
 		c.AssertFormat()
-		for _, area := range []string{"common", "actions", "conversation", "memory"} {
+		for _, area := range []string{"common", "actions", "conversation", "memory", "analyst"} {
 			files, _ := filepath.Glob(filepath.Join("..", "..", "schemas", area, "*.schema.json"))
 			for _, f := range files {
 				b, err := os.ReadFile(f)

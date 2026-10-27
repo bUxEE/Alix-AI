@@ -101,6 +101,8 @@ var ErrErasureBlocked = errors.New("actions: erasure refused because a pending o
 type EraseSpec struct {
 	ApplicationID string
 	TenantID      string
+	// WorkspaceID, when set, narrows to that workspace only.
+	WorkspaceID string
 	// PrincipalID, when set, narrows to the preparations made by that principal.
 	PrincipalID string
 	// Before, when not zero, narrows to preparations last changed before it
@@ -129,6 +131,10 @@ type EraseOutcome struct {
 func (s EraseSpec) matches() (string, []any) {
 	where := "application_id = ? AND tenant_id = ?"
 	args := []any{s.ApplicationID, s.TenantID}
+	if s.WorkspaceID != "" {
+		where += " AND workspace_id = ?"
+		args = append(args, s.WorkspaceID)
+	}
 	if s.PrincipalID != "" {
 		where += " AND principal_id = ?"
 		args = append(args, s.PrincipalID)
@@ -163,7 +169,7 @@ func EraseFinished(ctx context.Context, tx *store.Tx, ap audit.Appender, spec Er
 	case spec.ApplicationID == "" || spec.TenantID == "":
 		return out, contracts.New(contracts.ErrScopeMissing, "actions: an erasure names an application and a tenant")
 	case !slices.Contains(audit.EraseKinds, spec.Kind) || strings.TrimSpace(spec.Reason) == "" || len(spec.Reason) > audit.MaxReasonBytes || strings.TrimSpace(spec.Operator) == "":
-		return out, contracts.New(contracts.ErrValidationFailed, "actions: an erasure states its kind (tenant, principal or retention), a short reason and the operator")
+		return out, contracts.New(contracts.ErrValidationFailed, "actions: an erasure states its kind (tenant, principal, retention or workspace), a short reason and the operator")
 	}
 	where, args := spec.matches()
 

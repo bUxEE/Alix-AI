@@ -38,6 +38,8 @@ type ErasureScope string
 const (
 	ErasureScopeTenant      ErasureScope = "tenant"
 	ErasureScopeApplication ErasureScope = "application"
+	// ErasureScopeWorkspace erases one principal inside one workspace only (1.5.0).
+	ErasureScopeWorkspace ErasureScope = "workspace"
 )
 
 // ErasureRequest is the body of POST /v1/ops/erasure.

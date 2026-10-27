@@ -189,7 +189,7 @@
       },
       "allOf": [
         {
-          "description": "A text part carries user_message or conversation_history or structured_state or deterministic_fact or dialogue_directive or action_receipt or rag_excerpt or rag_metadata data, or file_content: an excerpt of an uploaded file the files setting of the egress policy let through.",
+          "description": "A text part carries user_message or conversation_history or structured_state or deterministic_fact or dialogue_directive or action_receipt or rag_excerpt or rag_metadata data, file_content: an excerpt of an uploaded file the files setting of the egress policy let through, or web_query: a search string to a configured web-search provider (ADR 0047).",
           "properties": {
             "internal": {
               "properties": {
@@ -203,7 +203,8 @@
                     "action_receipt",
                     "rag_excerpt",
                     "rag_metadata",
-                    "file_content"
+                    "file_content",
+                    "web_query"
                   ]
                 }
               }

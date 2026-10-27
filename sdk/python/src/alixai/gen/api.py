@@ -15,7 +15,7 @@ from alixai.gen.providers.connection_status import ConnectionStatus
 from alixai.gen.providers.egress_policy import DataEgressPolicy
 from pydantic import BaseModel, ConfigDict, Field
 
-__all__ = ['ReadyCheck', 'ReadyRole', 'ReadyReport', 'PendingStateCollectedFieldsItem', 'PendingStateQuestion', 'PendingState', 'Session', 'SessionEnded', 'PendingResponse', 'TurnRequestConfirmation', 'TurnRequestReject', 'TurnRequest', 'TurnResponseConfirmation', 'TurnResponse', 'ActionOutcome', 'ActionFailure', 'Package', 'RegistrationFindingsItem', 'Registration', 'ApplicationHealth', 'Application', 'Capability', 'CapabilityList', 'HealthApplication', 'Health', 'ProviderList', 'ProviderCredentialSubmit', 'BillingNoticeAckRequest', 'ProviderMode', 'ProviderModeUpdate', 'EgressPolicyView', 'EgressPolicyUpdateAllowedModelsItem', 'EgressPolicyUpdateFiles', 'EgressPolicyUpdateAudio', 'EgressPolicyUpdate', 'ProviderBudgets', 'ProviderKillSwitch', 'ProviderKillSwitchUpdate', 'OAuthStartRequest', 'OAuthStartedConsentScopesItem', 'OAuthStartedConsent', 'OAuthStarted', 'OAuthCallbackRequest']
+__all__ = ['ReadyCheck', 'ReadyRole', 'ReadyReport', 'StepUpOutcomeRequest', 'PendingStateCollectedFieldsItem', 'PendingStateQuestion', 'PendingState', 'Session', 'SessionEnded', 'PendingResponse', 'TurnRequestConfirmation', 'TurnRequestReject', 'TurnRequest', 'TurnResponseConfirmation', 'TurnResponse', 'ActionOutcome', 'ActionFailure', 'Package', 'RegistrationFindingsItem', 'Registration', 'ApplicationHealth', 'Application', 'Capability', 'CapabilityList', 'HealthApplication', 'Health', 'ProviderList', 'ProviderCredentialSubmit', 'BillingNoticeAckRequest', 'ProviderMode', 'ProviderModeUpdate', 'EgressPolicyView', 'EgressPolicyUpdateAllowedModelsItem', 'EgressPolicyUpdateFiles', 'EgressPolicyUpdateAudio', 'EgressPolicyUpdate', 'ProviderBudgets', 'ProviderKillSwitch', 'ProviderKillSwitchUpdate', 'OAuthStartRequest', 'OAuthStartedConsentScopesItem', 'OAuthStartedConsent', 'OAuthStarted', 'OAuthCallbackRequest']
 
 
 class ReadyCheck(BaseModel):
@@ -40,6 +40,12 @@ class ReadyReport(BaseModel):
     ready: bool
     roles: list[ReadyRole]
     checks: list[ReadyCheck]
+
+
+class StepUpOutcomeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", protected_namespaces=())
+    outcome: Literal["completed", "declined", "failed"]
+    reference: Optional[Annotated[str, Field(max_length=128)]] = None
 
 
 class PendingStateCollectedFieldsItem(BaseModel):

@@ -72,4 +72,17 @@ func TestOpsErasureRequestTenantScopedVsApplicationWide(t *testing.T) {
 			t.Fatalf("req = %+v", req)
 		}
 	})
+
+	t.Run("tenant admin may start workspace-scoped principal erasure", func(t *testing.T) {
+		req, err := opsErasureRequest(context.Background(), adminA, gateway.ErasureRequest{
+			Level: gateway.ErasureLevelPrincipal, Scope: gateway.ErasureScopeWorkspace,
+			PrincipalID: "usr_x", Reason: "leave site",
+		}, auth)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if req.Scope != retention.PrincipalScopeWorkspace || req.TenantID != "ten_a" || req.WorkspaceID != "ws" {
+			t.Fatalf("req = %+v", req)
+		}
+	})
 }

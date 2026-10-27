@@ -91,6 +91,11 @@ func (c *eventsStrictCoordinator) Reject(context.Context, contracts.Scope, strin
 	return contracts.PreparedAction{}, nil
 }
 
+func (c *eventsStrictCoordinator) RecordStepUpOutcome(context.Context, contracts.Scope, actions.StepUpOutcomeInput) (contracts.ActionReceipt, error) {
+	c.t.Fatal("an event notifier must not record a step-up outcome")
+	return contracts.ActionReceipt{}, nil
+}
+
 func (c *eventsStrictCoordinator) Receipt(context.Context, contracts.Scope, string) (contracts.ActionReceipt, error) {
 	c.t.Error("an event read a receipt")
 	return contracts.ActionReceipt{}, nil

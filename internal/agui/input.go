@@ -141,9 +141,11 @@ type Request struct {
 	// untrusted data. It is not part of Input.
 	Context ClientContext
 	// ClientCapabilities is what the client announced it can parse of the 1.5 surface
-	// (forwardedProps.alixai.clientCapabilities, ADR 0047). Zero means 1.4: the stream
-	// hub maps every event to the frozen form before emit.
-	ClientCapabilities analyst.ClientCapabilities
+	// (forwardedProps.alixai.clientCapabilities, ADR 0047). Meaningful only when
+	// HasClientCapabilities is true; absent means 1.4: the stream hub maps every event
+	// to the frozen form before emit.
+	ClientCapabilities    analyst.ClientCapabilities
+	HasClientCapabilities bool
 }
 
 // errNotResolved is the one refusal for everything that does not resolve for the caller: a thread that is not the
@@ -189,7 +191,7 @@ func Intake(ctx context.Context, in RunAgentInput, confirmation string, env Env)
 	}
 	req := Request{
 		ThreadID: in.ThreadID, RunID: in.RunID, ClientTools: tools, UITools: decls, StateMode: StateSnapshotMode,
-		ClientCapabilities: props.ClientCapabilities,
+		ClientCapabilities: props.ClientCapabilities, HasClientCapabilities: props.HasClientCapabilities,
 	}
 	if trimmed := bytes.TrimSpace(in.State); len(trimmed) > 0 && trimmed[0] == '{' {
 		req.StateMode = StatePatchMode
@@ -261,9 +263,10 @@ func (r Request) EngineContext(ctx context.Context) context.Context {
 
 // props are the members of forwardedProps.alixai that AlixAI reads. Anything else in forwardedProps is ignored.
 type props struct {
-	ChoiceID           string
-	Language           string
-	ClientCapabilities analyst.ClientCapabilities
+	ChoiceID              string
+	Language              string
+	ClientCapabilities    analyst.ClientCapabilities
+	HasClientCapabilities bool
 }
 
 var languageRE = regexp.MustCompile(`^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8}){0,3}$`)
@@ -301,6 +304,7 @@ func readProps(raw json.RawMessage) (props, error) {
 			return p, invalid("client_capabilities", "clientCapabilities is not a valid ClientCapabilities")
 		}
 		p.ClientCapabilities = cc
+		p.HasClientCapabilities = true
 	}
 	return p, nil
 }

@@ -45,6 +45,9 @@ type Outcome struct {
 	// Blocks are verified rich blocks of the reply (tables and charts from a model or from the
 	// deterministic template). Empty when the reply is text only.
 	Blocks []conversation.RichBlock
+	// CoreMaterialised is parallel to Blocks: true only for blocks the analyst
+	// materialiser built. Not a JSON member; the gateway uses it for PublishTrusted.
+	CoreMaterialised []bool
 	// Streamed is true when verified segments were already handed to the turn's segment hook
 	// (ADR 0046). The composition root that publishes TurnEvents should not PublishResponse again
 	// for the same text; when Reason is ReasonVerificationFailed and Streamed is true, a
@@ -81,6 +84,9 @@ func RealiseRich(modelText string, proposed []conversation.RichBlock, d *convers
 	}
 	var accepted []conversation.RichBlock
 	for _, b := range proposed {
+		// dataset_id is core authority; a model-supplied one is stripped so it
+		// cannot skip fact checks (trust is CoreMaterialised, never the member).
+		b = blocks.StripModelDatasetID(b)
 		clean, err := blocks.Default().Block(b, blocks.Context{Facts: facts})
 		if err != nil {
 			out, terr := v.template(ReasonVerificationFailed)

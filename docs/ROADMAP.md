@@ -11,6 +11,18 @@ and reviewed. See [Project status](../README.md#project-status) and
   `whisper-turbo-stt` (Balanced), plus `whisper-large-v3-stt` (Performance). Lite keeps Whisper tiny (`en-stt`).
   All run on CPU; GPU is optional.
 
+## Shipped in 1.5.0
+
+- **Analyst turns** ([ADR 0047](decisions/0047-analyst-turns.md)): multi-step reads, core compute, domain classifier, web search/fetch (SearXNG-compatible / Brave / Tavily), verified presentation blocks; all abilities off by default. See [operations/analyst.md](operations/analyst.md).
+- **Host step-up outcome** ([ADR 0048](decisions/0048-step-up-outcome.md)): `POST …/step-up-outcome` records level-3 results into the session.
+- **Workspace-scoped principal erasure** and the fix that workspace-level erase no longer removes other workspaces' conversation history.
+- **llmbench quality mode**; SSRF hardening on analyst fetch.
+
+## Planned for 1.5.1
+
+- **Model-native web search**: the routed model's own search tool as a `search` step with only the vetted query; AlixAI fetches cited pages itself to verify; `native_web_search` catalog flag; `web_searches` meter; fallback native → SearXNG-compatible endpoint → off.
+- **Post-verification reference tokens** in analyst prose: values the model never saw filled in after verification.
+
 ## Shipped in 1.4.0
 
 - **Private self-hosted LLM endpoints** ([ADR 0045](decisions/0045-private-self-hosted-llm-endpoints.md)): per-principal private bindings and per-tenant pins; OpenAI-compatible `self_hosted` adapter; lifecycle with typed `private_llm_starting` / `private_llm_unavailable` (no third-party fallback); ops routes under `/v1/ops/private-llm/…` and `/v1/me/llm/{role}` `private_endpoint_id`. See [operations/private-llm.md](operations/private-llm.md).
@@ -52,14 +64,14 @@ and reviewed. See [Project status](../README.md#project-status) and
 - **UI kit fullscreen and downloads**: Vue/React chat panel fullscreen overlay; opt-in export menu on tables, charts and
   answers (host exporter; kits never call AlixAI).
 
-## Performance / private LLM (1.4.0 in progress)
+## Performance / private LLM (shipped with 1.4.0; measurements still owed)
 
 - **GPU Performance profile** (`deploy/container/performance`): vLLM (pinned) + LocalAI CUDA alternative;
   OpenAI-compatible API, bearer auth, prefix caching with per-tenant `cache_salt` notes.
 - **Private-LLM kit** (`deploy/private-llm`): cloud-init, Scaleway Terraform (L4/L40S/H100), Hetzner Robot
   install path + firewall module; activate/deactivate sequence for hosts.
 - **Candidates** `gpt-oss-20b`, `qwen3-30b-a3b`, `gpt-oss-120b` in `models/registry/` (status candidate).
-- **llmbench** (`tools/llmbench`) and [hardware-and-pricing](operations/hardware-and-pricing.md): replace
+- **llmbench** (`tools/llmbench`, including quality mode) and [hardware-and-pricing](operations/hardware-and-pricing.md): replace
   latency/capacity estimates with measured reports before recommending defaults.
 
 ## Verification still owed (from the 1.0 "not done" list)

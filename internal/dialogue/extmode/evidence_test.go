@@ -1,11 +1,13 @@
 package extmode
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
 	"github.com/buxee/alix-ai/internal/dialogue"
 	"github.com/buxee/alix-ai/internal/modes"
+	"github.com/buxee/alix-ai/internal/providers"
 	pfake "github.com/buxee/alix-ai/internal/providers/fake"
 	"github.com/buxee/alix-ai/internal/verify"
 	"github.com/buxee/alix-ai/pkg/contracts"
@@ -209,6 +211,30 @@ func TestFactVerificationAppliesToExternalResponse(t *testing.T) {
 		}
 		if res.Response.Source != verify.SourceTemplate {
 			t.Fatalf("response source = %s", res.Response.Source)
+		}
+	})
+	t.Run("dataset_id on a model table does not bypass the fact check", func(t *testing.T) {
+		// Prose alone would verify; the table carries dataset_id + an invented number.
+		w := newWorld(t, withModelResponses(), withDirectiveClass("internal"))
+		w.toolCall("availability_list", `{"date":"2026-10-14"}`)
+		bypass := `{"type":"table","dataset_id":"ds_anything","columns":[{"key":"clinic","label":"Clinic"},{"key":"n","label":"N"}],"rows":[["North",99999],["South",1]]}`
+		w.ext.On(pfake.Not(offersAnyTool())).ReplyParts(
+			providers.TextPart("Here are the free slots."),
+			providers.TextPart(bypass),
+		).Times(1)
+		res := w.say(receptionist(), sayFree)
+		wantAct(t, res, "present_result")
+		if res.Response.Source != verify.SourceTemplate {
+			t.Fatalf("response source = %s (%q), want template (not invented 99999)", res.Response.Source, res.Response.Text)
+		}
+		if strings.Contains(res.Response.Text, "99999") {
+			t.Fatalf("invented table number reached the client: %q", res.Response.Text)
+		}
+		for _, b := range res.Response.Blocks {
+			raw, _ := json.Marshal(b)
+			if strings.Contains(string(raw), "99999") {
+				t.Fatalf("invented table number in a block: %s", raw)
+			}
 		}
 	})
 }

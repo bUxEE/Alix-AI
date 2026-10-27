@@ -1083,6 +1083,53 @@ export const createFakeServer = (options: FakeServerOptions = {}): FakeAlixAISer
       }
       case "sendTurn":
         return turnEndpoint(scope, params["session_id"] ?? "", request, body, failure?.truncateAfterEvents);
+      case "reportStepUpOutcome": {
+        const quarantined = quarantineRefusal();
+        if (quarantined) return quarantined;
+        if (params["session_id"] !== scope.session_id) return levelViolation("session");
+        const record = ownedPreparation(scope, params["preparation_id"] ?? "");
+        if (record instanceof Response) return record;
+        const stepBody = isRecord(body) ? body : {};
+        const outcome = typeof stepBody["outcome"] === "string" ? stepBody["outcome"] : "";
+        if (outcome !== "completed" && outcome !== "declined" && outcome !== "failed") {
+          return problem("validation_failed", "outcome must be completed, declined or failed");
+        }
+        if (record.receipt !== undefined) {
+          return json(record.receipt.status === "rejected" ? 409 : 200, record.receipt);
+        }
+        const action = effectiveState(record);
+        if (action.state !== "prepared") return problem("conflict", `the preparation is ${action.state}`);
+        const stamp = new Date().toISOString();
+        const id26 = "0123456789ABCDEFGHJKMNPQRS";
+        if (outcome === "completed") {
+          action.state = "committed";
+          record.receipt = {
+            receipt_id: "rcpt_" + id26,
+            preparation_id: action.preparation_id,
+            capability_id: action.capability_id,
+            status: "committed",
+            records: [{ entity_type: "record", entity_id: "record-1" }],
+            facts: [],
+            errors: [],
+            audit_ref: "aud_" + id26,
+            issued_at: stamp,
+          };
+          return json(200, record.receipt);
+        }
+        action.state = "rejected";
+        record.receipt = {
+          receipt_id: "rcpt_" + id26,
+          preparation_id: action.preparation_id,
+          capability_id: action.capability_id,
+          status: "rejected",
+          records: [],
+          facts: [],
+          errors: [{ code: "conflict", message: `step-up ${outcome} in the host interface` }],
+          audit_ref: "aud_" + id26,
+          issued_at: stamp,
+        };
+        return json(409, record.receipt);
+      }
       case "getAction":
       case "rejectAction":
       case "getActionReceipt": {

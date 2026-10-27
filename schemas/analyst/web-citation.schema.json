@@ -8,12 +8,12 @@
   "required": ["id", "url", "title", "retrieved_at", "source_label"],
   "properties": {
     "id": {
-      "description": "Core-minted citation id (prefix wcit_).",
+      "description": "Core-minted citation id (prefix wcit_). Matches common typedId: lowercase prefix plus uppercase Crockford ULID. The older lowercase body form remains valid (additive).",
       "x-alixai-authority": "alixai",
       "type": "string",
       "minLength": 4,
       "maxLength": 64,
-      "pattern": "^wcit_[a-z0-9][a-z0-9_]{2,60}$"
+      "pattern": "^wcit_([0-9A-HJKMNP-TV-Z]{26}|[a-z0-9][a-z0-9_]{2,60})$"
     },
     "url": {
       "description": "Fetched https URL.",
@@ -40,6 +40,12 @@
       "type": "string",
       "minLength": 1,
       "maxLength": 2000
+    },
+    "content_hash": {
+      "description": "Optional SHA-256 of the extracted page text (sha256: + 64 lower-case hex digits).",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
     },
     "source_label": {
       "x-alixai-authority": "alixai",

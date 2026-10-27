@@ -75,4 +75,12 @@ func (a appPackage) Terminology() []ap.TerminologyTerm {
 	return out
 }
 
+// Assistant implements Package.
+func (a appPackage) Assistant() *ap.ManifestAssistant {
+	if a.Package == nil {
+		return nil
+	}
+	return a.Package.Manifest.Assistant
+}
+
 var _ Package = appPackage{}

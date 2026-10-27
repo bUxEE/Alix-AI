@@ -36,6 +36,12 @@ Older snapshots (e.g. GEX131 ~€1,199 list mid-2026, GEX44 ~€214 with 20 GB) 
 
 Status of all three: **candidate** until `tools/llmbench` + quality gates. Details: `models/registry/*.yaml`.
 
+**Italian quality is not yet measured.** Speed (`llmbench run`) does not score Italian
+meeting-minutes / governance / company-data answer quality. Do not invent pass rates.
+To measure: run `go run ./tools/llmbench quality …` (or `run -mode quality`) against the
+lab endpoint, file `report.json` / `report.md` under `docs/evidence/`, then update this
+section from “not yet measured” to the filed rates. See `tools/llmbench/README.md`.
+
 ## 3. Segments
 
 Latency columns: **estimate — run tools/llmbench to measure.** Streaming TTFT assumes OpenAI-compatible SSE.
@@ -123,6 +129,8 @@ private-LLM rent — measure both.
 
 ## 5. How to replace estimates
 
+### 5.1 Speed / capacity
+
 ```bash
 go run ./tools/llmbench run \
   -endpoint http://127.0.0.1:8000/v1 \
@@ -134,3 +142,20 @@ go run ./tools/llmbench run \
 
 File the JSON/Markdown report under `docs/evidence/` and update the segment rows from estimates to
 measured (with host, image digest, and model revision).
+
+### 5.2 Italian quality (not yet measured)
+
+Italian answer quality for minutes / governance / company-data hosts is **not yet measured** —
+no pass rates appear in this document until a quality report is filed. Measure with:
+
+```bash
+go run ./tools/llmbench quality \
+  -endpoint http://127.0.0.1:8000/v1 \
+  -key "$VLLM_API_KEY" \
+  -model gpt-oss-20b \
+  -out docs/evidence/llmbench-quality/$(date +%Y%m%d)
+```
+
+Scores are automatic (JSON schema validity, verifier pass/replace, fact/number accuracy,
+Italian language check). Optional LLM-as-judge: `-judge-endpoint` (off by default).
+Corpus: `tools/llmbench/testdata/quality/it/`. Do not paste invented percentages here.

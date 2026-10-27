@@ -62,6 +62,10 @@ var registered = FileConfig{}
 
 func init() { config.Register(SectionName, &registered) }
 
+// ConfigSection is the live pointer config.Register holds. Serve registries other
+// than config.Default must register this same pointer (or a copy they Load into).
+func ConfigSection() *FileConfig { return &registered }
+
 // Loaded returns the registered dialogue section after a successful config.Load
 // (or the defaults). Composition roots copy StreamVerified / Analyst into Config.
 func Loaded() FileConfig { return registered }

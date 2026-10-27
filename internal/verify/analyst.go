@@ -7,6 +7,7 @@ import (
 
 	"github.com/buxee/alix-ai/pkg/contracts"
 	"github.com/buxee/alix-ai/pkg/contracts/gen/analyst"
+	"github.com/buxee/alix-ai/pkg/contracts/gen/common"
 	"github.com/buxee/alix-ai/pkg/contracts/gen/conversation"
 )
 
@@ -46,7 +47,22 @@ type AnalystOutcome struct {
 	Reason     Reason
 	Violations []Violation
 	Blocks     []conversation.RichBlock
-	Streamed   bool
+	// CoreMaterialised is parallel to Blocks: true for every block this package
+	// materialised from datasets (never a model-writable member).
+	CoreMaterialised []bool
+	Streamed         bool
+}
+
+// markCoreMaterialised returns a parallel true slice for core-built blocks.
+func markCoreMaterialised(n int) []bool {
+	if n == 0 {
+		return nil
+	}
+	out := make([]bool, n)
+	for i := range out {
+		out[i] = true
+	}
+	return out
 }
 
 // VerifyAnalyst checks answer text (and optional source spans / block plan) against
@@ -72,7 +88,10 @@ func VerifyAnalyst(answer AnalystAnswer, facts AnalystFactSet, opts AnalystOptio
 			out.Violations = []Violation{{Kind: ViolationUnknownNumber, Got: "block"}}
 			return out, nil
 		}
-		return AnalystOutcome{Text: strings.TrimSpace(answer.Text), Source: SourceModel, Reason: ReasonVerified, Blocks: blocks}, nil
+		return AnalystOutcome{
+			Text: strings.TrimSpace(answer.Text), Source: SourceModel, Reason: ReasonVerified,
+			Blocks: blocks, CoreMaterialised: markCoreMaterialised(len(blocks)),
+		}, nil
 	}
 	out, err := analystTemplate(facts, answer.FinalDatasetID, opts.Language)
 	if err != nil {
@@ -518,6 +537,13 @@ func materialiseAnalystBlocks(plans []analyst.StepProposalBlockPlan, facts Analy
 	}
 	var out []conversation.RichBlock
 	for _, p := range plans {
+		switch p.Type {
+		case analyst.StepProposalBlockPlanTypeProvenance:
+			out = append(out, conversation.RichBlock{Value: buildProvenanceBlock(facts)})
+			continue
+		case analyst.StepProposalBlockPlanTypeMarkdown:
+			continue
+		}
 		if p.DatasetID == nil {
 			continue
 		}
@@ -525,14 +551,60 @@ func materialiseAnalystBlocks(plans []analyst.StepProposalBlockPlan, facts Analy
 		if !ok {
 			return nil, fmt.Errorf("unknown dataset")
 		}
-		out = append(out, conversation.RichBlock{Value: conversation.TableBlock{
-			Type:      "table",
-			Columns:   tableCols(ds),
-			Rows:      tableRows(ds),
-			DatasetID: p.DatasetID,
-		}})
+		switch p.Type {
+		case analyst.StepProposalBlockPlanTypeChart:
+			ch, ok := chartFromPlan(ds, p)
+			if !ok {
+				return nil, fmt.Errorf("chart plan incomplete")
+			}
+			out = append(out, conversation.RichBlock{Value: ch})
+		default:
+			out = append(out, conversation.RichBlock{Value: conversation.TableBlock{
+				Type:      "table",
+				Columns:   tableCols(ds),
+				Rows:      tableRows(ds),
+				DatasetID: p.DatasetID,
+			}})
+		}
 	}
 	return out, nil
+}
+
+func chartFromPlan(ds *analyst.Dataset, p analyst.StepProposalBlockPlan) (conversation.ChartBlock, bool) {
+	if ds == nil || len(ds.Fields) < 2 || len(ds.Rows) == 0 {
+		return conversation.ChartBlock{}, false
+	}
+	mark := conversation.ChartBlockMarkBar
+	if p.Mark != nil {
+		mark = conversation.ChartBlockMark(*p.Mark)
+		if !mark.Valid() {
+			return conversation.ChartBlock{}, false
+		}
+	}
+	xField, yField := string(ds.Fields[0].Name), string(ds.Fields[1].Name)
+	if p.Encoding != nil {
+		if p.Encoding.X != nil && *p.Encoding.X != "" {
+			xField = string(*p.Encoding.X)
+		}
+		if p.Encoding.Y != nil && *p.Encoding.Y != "" {
+			yField = string(*p.Encoding.Y)
+		}
+	}
+	data := make([]conversation.ChartRecord, 0, len(ds.Rows))
+	for _, row := range ds.Rows {
+		data = append(data, conversation.ChartRecord{xField: row[xField], yField: row[yField]})
+	}
+	desc := conversation.PlainText("Chart of " + yField + " by " + xField + ".")
+	if p.Description != nil && *p.Description != "" {
+		desc = conversation.PlainText(*p.Description)
+	}
+	return conversation.ChartBlock{
+		Type: "chart", Description: desc, Mark: mark, Data: data, DatasetID: p.DatasetID,
+		Encoding: conversation.ChartEncoding{
+			X: &conversation.ChartChannel{Field: common.FieldName(xField), Type: conversation.ChartChannelTypeNominal},
+			Y: &conversation.ChartChannel{Field: common.FieldName(yField), Type: conversation.ChartChannelTypeQuantitative},
+		},
+	}, true
 }
 
 func tableCols(ds *analyst.Dataset) []conversation.TableColumn {
@@ -584,7 +656,10 @@ func analystTemplate(facts AnalystFactSet, finalID *analyst.DatasetID, lang Lang
 		}})
 	}
 	blocks = append(blocks, conversation.RichBlock{Value: buildProvenanceBlock(facts)})
-	return AnalystOutcome{Text: text, Source: SourceTemplate, Reason: ReasonVerificationFailed, Blocks: blocks}, nil
+	return AnalystOutcome{
+		Text: text, Source: SourceTemplate, Reason: ReasonVerificationFailed,
+		Blocks: blocks, CoreMaterialised: markCoreMaterialised(len(blocks)),
+	}, nil
 }
 
 func buildProvenanceBlock(facts AnalystFactSet) conversation.ProvenanceBlock {

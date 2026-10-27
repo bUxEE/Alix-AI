@@ -17,7 +17,7 @@ import (
 // Unstamped development binaries report ReleaseLine+"-dev" as the package
 // compatibility core version (see apppkg.DevCoreVersion) so packages written
 // for [1.0.0, 2.0.0) load under both stamped releases and source builds.
-const ReleaseLine = "1.4.1"
+const ReleaseLine = "1.5.0"
 
 // Stamped at link time. The zero values mean "not stamped".
 var (

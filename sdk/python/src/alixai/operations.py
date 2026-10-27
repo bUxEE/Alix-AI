@@ -29,6 +29,9 @@ OPERATIONS: Mapping[str, Operation] = {
     "endSession": Operation("DELETE", "/v1/sessions/{session_id}", True),
     "getPendingState": Operation("GET", "/v1/sessions/{session_id}/pending", True),
     "sendTurn": Operation("POST", "/v1/sessions/{session_id}/turns", True),
+    "reportStepUpOutcome": Operation(
+        "POST", "/v1/sessions/{session_id}/preparations/{preparation_id}/step-up-outcome", True
+    ),
     "getAction": Operation("GET", "/v1/actions/{preparation_id}", True),
     "confirmAction": Operation("POST", "/v1/actions/{preparation_id}/confirm", True),
     "rejectAction": Operation("POST", "/v1/actions/{preparation_id}/reject", True),

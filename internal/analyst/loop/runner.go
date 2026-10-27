@@ -27,6 +27,8 @@ type Deps struct {
 	IDs       IDSource
 	Caps      Caps
 	Clock     func() time.Time
+	// Turns is optional; when set, EndTurn runs when the loop returns.
+	Turns TurnLifecycle
 }
 
 // Runner is the bounded analyst step loop.
@@ -101,7 +103,11 @@ func (r *Runner) Run(ctx context.Context, scope contracts.Scope, in Input) (Outc
 		fetched:  map[string]string{},
 		deadline: r.d.Clock().Add(time.Duration(r.d.Caps.MaxTurnWallMS) * time.Millisecond),
 	}
-	return st.loop(ctx)
+	out, err := st.loop(ctx)
+	if r.d.Turns != nil && in.TurnID != "" {
+		r.d.Turns.EndTurn(in.TurnID)
+	}
+	return out, err
 }
 
 type state struct {
@@ -204,7 +210,10 @@ func (s *state) loop(ctx context.Context) (Outcome, error) {
 			s.prior = append(s.prior, fmt.Sprintf("%s error: %s", sp.Kind, code))
 			if code == contracts.ErrAbilityDisabled || code == contracts.ErrWebQueryRefused ||
 				code == contracts.ErrScopeViolation || code == contracts.ErrPermissionDenied {
-				return Outcome{Kind: OutcomeRefuse, Code: code, Steps: step + 1, Prior: s.prior, Facts: s.factSet()}, nil
+				return Outcome{
+					Kind: OutcomeRefuse, Code: code, Details: contracts.DetailsOf(xerr),
+					Steps: step + 1, Prior: s.prior, Facts: s.factSet(),
+				}, nil
 			}
 			continue
 		}
@@ -317,9 +326,16 @@ func (s *state) doSearch(ctx context.Context, sp an.StepProposal) (Outcome, bool
 			WithDetails("cap", string(CapSearches))
 	}
 	if QueryLeaksRestricted(sp.Search.Query, s.datasets) {
-		return Outcome{}, false, contracts.New(contracts.ErrWebQueryRefused, "web query embeds confidential or restricted values")
+		return Outcome{}, false, contracts.New(contracts.ErrWebQueryRefused, "web query embeds confidential or restricted values").
+			WithDetails("reason", "confidential_value")
 	}
-	res, err := s.r.d.Searcher.Search(ctx, s.scope, sp.Search.Query)
+	dsList := make([]an.Dataset, 0, len(s.datasets))
+	for _, ds := range s.datasets {
+		dsList = append(dsList, ds)
+	}
+	res, err := s.r.d.Searcher.Search(ctx, s.scope, SearchInput{
+		Query: sp.Search.Query, TurnID: s.in.TurnID, Datasets: dsList,
+	})
 	if err != nil {
 		return Outcome{}, false, err
 	}
@@ -344,7 +360,9 @@ func (s *state) doFetch(ctx context.Context, sp an.StepProposal) (Outcome, bool,
 	if s.search[idx].URL != sp.Fetch.URL {
 		return Outcome{}, false, contracts.New(contracts.ErrValidationFailed, "fetch url does not match the search hit")
 	}
-	res, err := s.r.d.Fetcher.Fetch(ctx, s.scope, sp.Fetch.URL, idx)
+	res, err := s.r.d.Fetcher.Fetch(ctx, s.scope, FetchInput{
+		URL: sp.Fetch.URL, Index: idx, TurnID: s.in.TurnID,
+	})
 	if err != nil {
 		return Outcome{}, false, err
 	}
@@ -373,12 +391,14 @@ func (s *state) doAnswer(ctx context.Context, sp an.StepProposal) (Outcome, bool
 	vres, err := s.r.d.Verifier.VerifyAnswer(ctx, VerifyAnswerInput{
 		Scope: s.scope, TextPlan: sp.Answer.TextPlan, Blocks: sp.Answer.Blocks,
 		SourceSpans: sp.Answer.SourceSpans, Facts: s.factSet(), Stream: s.in.StreamVerified,
+		Language: s.in.Language,
 	})
 	if err != nil {
 		return Outcome{}, false, err
 	}
 	return Outcome{
-		Kind: OutcomeAnswer, Text: vres.Text, Blocks: vres.Blocks, Spans: sp.Answer.SourceSpans,
+		Kind: OutcomeAnswer, Text: vres.Text, Blocks: vres.Blocks,
+		CoreMaterialised: vres.CoreMaterialised, Spans: sp.Answer.SourceSpans,
 	}, true, nil
 }
 
@@ -391,12 +411,15 @@ func (s *state) tryAnswerFromSoFar(ctx context.Context) (Outcome, bool) {
 	}
 	plan := "Summary of verified data gathered so far."
 	vres, err := s.r.d.Verifier.VerifyAnswer(ctx, VerifyAnswerInput{
-		Scope: s.scope, TextPlan: plan, Facts: s.factSet(),
+		Scope: s.scope, TextPlan: plan, Facts: s.factSet(), Language: s.in.Language,
 	})
 	if err != nil || !vres.Verified {
 		return Outcome{}, false
 	}
-	return Outcome{Kind: OutcomeAnswer, Text: vres.Text, Blocks: vres.Blocks, Facts: s.factSet(), Prior: s.prior}, true
+	return Outcome{
+		Kind: OutcomeAnswer, Text: vres.Text, Blocks: vres.Blocks,
+		CoreMaterialised: vres.CoreMaterialised, Facts: s.factSet(), Prior: s.prior,
+	}, true
 }
 
 func (s *state) factSet() FactSet {

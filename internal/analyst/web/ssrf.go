@@ -108,17 +108,39 @@ func isBlockedAddr(ip netip.Addr) bool {
 		ip.IsMulticast() || ip.IsUnspecified() || !ip.IsGlobalUnicast() {
 		return true
 	}
-	// Extra never-blocks (cloud metadata etc.) even if GlobalUnicast claims otherwise.
+	// Extra never-blocks (cloud metadata, documentation, Teredo).
 	for _, p := range []string{
 		"169.254.0.0/16", "0.0.0.0/8", "224.0.0.0/4", "240.0.0.0/4",
 		"100.64.0.0/10", "192.0.0.0/24", "198.18.0.0/15",
+		"192.0.2.0/24", "198.51.100.0/24", "203.0.113.0/24", // IPv4 documentation (TEST-NET)
 		"fe80::/10", "ff00::/8", "fc00::/7", "::1/128",
+		"2001:db8::/32", // IPv6 documentation
+		"2001::/32",     // Teredo (entire prefix)
 	} {
 		if netip.MustParsePrefix(p).Contains(ip) {
 			return true
 		}
 	}
+	// NAT64 / 6to4: refuse when the embedded IPv4 would itself be blocked.
+	if v4, ok := embeddedIPv4(ip); ok && isBlockedAddr(v4) {
+		return true
+	}
 	return false
+}
+
+// embeddedIPv4 extracts the IPv4 carried inside NAT64 and 6to4 addresses.
+func embeddedIPv4(ip netip.Addr) (netip.Addr, bool) {
+	if !ip.IsValid() || ip.Is4() {
+		return netip.Addr{}, false
+	}
+	b := ip.As16()
+	switch {
+	case netip.MustParsePrefix("64:ff9b::/96").Contains(ip) || netip.MustParsePrefix("64:ff9b:1::/48").Contains(ip):
+		return netip.AddrFrom4([4]byte{b[12], b[13], b[14], b[15]}), true
+	case netip.MustParsePrefix("2002::/16").Contains(ip):
+		return netip.AddrFrom4([4]byte{b[2], b[3], b[4], b[5]}), true
+	}
+	return netip.Addr{}, false
 }
 
 func resolvePublic(ctx context.Context, r Resolver, host string) ([]netip.Addr, error) {

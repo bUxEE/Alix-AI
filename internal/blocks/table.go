@@ -13,6 +13,8 @@ import (
 // application data and silently shows part of it would be a wrong answer.
 // When Context.Facts is set, every finite number in a cell must be one of those
 // facts (the same rule as a chart): a number the application did not state is refused.
+// Only Context.CoreMaterialised (set by the core that built the block) skips the
+// fact check — never a model-writable member such as dataset_id.
 func (v *Validator) checkTable(t conversation.TableBlock, ctx Context, col *collector) {
 	lim := v.limits
 	if len(t.Columns) > lim.MaxTableColumns || len(t.Rows) > lim.MaxTableRows ||
@@ -36,6 +38,7 @@ func (v *Validator) checkTable(t conversation.TableBlock, ctx Context, col *coll
 			col.add(rule, path+"/label")
 		}
 	}
+	requireFacts := ctx.Facts != nil && !ctx.CoreMaterialised
 	for i, row := range t.Rows {
 		if len(row) != len(t.Columns) {
 			col.add(RuleTableShape, fmt.Sprintf("/rows/%d", i))
@@ -43,7 +46,7 @@ func (v *Validator) checkTable(t conversation.TableBlock, ctx Context, col *coll
 		}
 		for j, cell := range row {
 			path := fmt.Sprintf("/rows/%d/%d", i, j)
-			if rule := checkCell(cell, ctx); rule != "" {
+			if rule := checkCell(cell, ctx, requireFacts); rule != "" {
 				col.add(rule, path)
 			}
 		}
@@ -57,8 +60,8 @@ func (v *Validator) checkTable(t conversation.TableBlock, ctx Context, col *coll
 // renderer (the published valid examples put a number in a boolean column), so
 // it does not decide what a cell may hold; what is checked is that the cell is
 // a plain scalar, that a string is clean text, that a number is finite, and —
-// when facts are supplied — that every number is one the application stated.
-func checkCell(cell any, ctx Context) Rule {
+// when requireFacts — that every number is one the application stated.
+func checkCell(cell any, ctx Context, requireFacts bool) Rule {
 	switch x := cell.(type) {
 	case nil, bool:
 		return ""
@@ -66,8 +69,10 @@ func checkCell(cell any, ctx Context) Rule {
 		if rule := textRule(x, kindLine); rule != "" {
 			return rule
 		}
-		if r, ok := numericLiteral(x); ok && !ctx.Facts.has(r) {
-			return RuleChartNumber
+		if requireFacts {
+			if r, ok := numericLiteral(x); ok && !ctx.Facts.has(r) {
+				return RuleChartNumber
+			}
 		}
 		return ""
 	default:
@@ -77,7 +82,7 @@ func checkCell(cell any, ctx Context) Rule {
 			return RuleTableKind
 		case !finite:
 			return RuleChartNumeric
-		case !ctx.Facts.has(r):
+		case requireFacts && !ctx.Facts.has(r):
 			return RuleChartNumber
 		}
 		return ""

@@ -1,0 +1,389 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:analyst:step-proposal:v1",
+  "title": "AnalystStepProposal",
+  "description": "One constrained-JSON step in an analyst turn (ADR 0047). Same transport as TaskProposal (not native tool-calling). The grammar offered to the model includes only step kinds whose abilities are effectively on. Core attaches trace_id. No write executes here: act hands off to prepare → confirm → commit.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "trace_id"],
+  "properties": {
+    "kind": {
+      "description": "Step kind.",
+      "x-alixai-authority": "model",
+      "type": "string",
+      "enum": ["read", "compute", "search", "fetch", "answer", "clarify", "act"]
+    },
+    "read": {
+      "description": "Required when kind is read.",
+      "x-alixai-authority": "model",
+      "$ref": "#/$defs/readStep"
+    },
+    "compute": {
+      "description": "Required when kind is compute. Ability compute (and forecasts for forecast_* ops).",
+      "x-alixai-authority": "model",
+      "$ref": "urn:alixai:schema:analyst:compute-op:v1"
+    },
+    "search": {
+      "description": "Required when kind is search. Ability web_search.",
+      "x-alixai-authority": "model",
+      "$ref": "#/$defs/searchStep"
+    },
+    "fetch": {
+      "description": "Required when kind is fetch. Ability web_fetch.",
+      "x-alixai-authority": "model",
+      "$ref": "#/$defs/fetchStep"
+    },
+    "answer": {
+      "description": "Required when kind is answer.",
+      "x-alixai-authority": "model",
+      "$ref": "#/$defs/answerStep"
+    },
+    "clarify": {
+      "description": "Required when kind is clarify.",
+      "x-alixai-authority": "model",
+      "$ref": "#/$defs/clarifyStep"
+    },
+    "act": {
+      "description": "Required when kind is act. Hands off to the normal action path; never commits in the loop.",
+      "x-alixai-authority": "model",
+      "$ref": "#/$defs/actStep"
+    },
+    "trace_id": {
+      "description": "Trace ID of the inference call. Core-attached.",
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:ids:v1#/$defs/traceId"
+    }
+  },
+  "$defs": {
+    "readStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capability_id", "arguments"],
+      "properties": {
+        "capability_id": {
+          "description": "Must be on the shortlist and policy-allowed for Read.",
+          "x-alixai-authority": "model",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/capabilityId"
+        },
+        "arguments": {
+          "description": "Candidate read arguments; re-validated against the capability schema.",
+          "x-alixai-authority": "model",
+          "type": "object",
+          "maxProperties": 64,
+          "propertyNames": {
+            "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+          },
+          "additionalProperties": {
+            "type": ["string", "number", "boolean", "null"],
+            "maxLength": 4096
+          }
+        }
+      }
+    },
+    "searchStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["query"],
+      "properties": {
+        "query": {
+          "description": "Web search query. Must not embed confidential/restricted dataset values; core checks against turn datasets (web_query egress).",
+          "x-alixai-authority": "model",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      }
+    },
+    "fetchStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url", "search_result_index"],
+      "properties": {
+        "url": {
+          "description": "URL from a prior search hit in this turn. Must match an allow-listed host; deny list wins.",
+          "x-alixai-authority": "model",
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 2048,
+          "pattern": "^https://[A-Za-z0-9._~:/?#\\[\\]@!$&'()*+,;=%-]+$"
+        },
+        "search_result_index": {
+          "description": "Zero-based index into the latest search result list.",
+          "x-alixai-authority": "model",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20
+        }
+      }
+    },
+    "answerStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text_plan", "blocks"],
+      "properties": {
+        "text_plan": {
+          "description": "Outline of the natural-language answer. Numbers in the final text must still verify against facts; this plan is not shown as-is.",
+          "x-alixai-authority": "model",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8000
+        },
+        "blocks": {
+          "description": "Presentation plan: blocks reference dataset ids; core materialises values. Ability presentation for non-table/markdown kinds; drafts for draft blocks.",
+          "x-alixai-authority": "model",
+          "type": "array",
+          "maxItems": 16,
+          "items": { "$ref": "#/$defs/blockPlan" }
+        },
+        "source_spans": {
+          "description": "Optional span labels for claims in the realised text.",
+          "x-alixai-authority": "model",
+          "type": "array",
+          "maxItems": 64,
+          "items": { "$ref": "urn:alixai:schema:analyst:source-span:v1" }
+        }
+      }
+    },
+    "blockPlan": {
+      "description": "Model-chosen presentation. Values come from datasets; never inline application numbers here.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "x-alixai-authority": "model",
+          "type": "string",
+          "enum": [
+            "markdown",
+            "table",
+            "chart",
+            "kpi",
+            "timeline",
+            "record_card",
+            "provenance",
+            "draft",
+            "citation_list"
+          ]
+        },
+        "dataset_id": {
+          "description": "Dataset the core renders from (table, chart, timeline, record_card, kpi series).",
+          "x-alixai-authority": "model",
+          "$ref": "urn:alixai:schema:analyst:shared:v1#/$defs/datasetId"
+        },
+        "title": {
+          "x-alixai-authority": "model",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "description": {
+          "description": "Text alternative (required for chart by the realised block schema).",
+          "x-alixai-authority": "model",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "mark": {
+          "description": "Chart mark when type is chart.",
+          "x-alixai-authority": "model",
+          "type": "string",
+          "enum": [
+            "bar",
+            "line",
+            "area",
+            "point",
+            "pie",
+            "scatter",
+            "heatmap",
+            "combo_bar_line"
+          ]
+        },
+        "bar_layout": {
+          "description": "With mark bar: grouped, stacked or horizontal.",
+          "x-alixai-authority": "model",
+          "type": "string",
+          "enum": ["grouped", "stacked", "horizontal"]
+        },
+        "pie_style": {
+          "description": "With mark pie: donut.",
+          "x-alixai-authority": "model",
+          "type": "string",
+          "enum": ["donut"]
+        },
+        "encoding": {
+          "description": "Chart encoding field names (no expressions).",
+          "x-alixai-authority": "model",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "x": { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName" },
+            "y": { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName" },
+            "y2": {
+              "description": "Secondary series for combo_bar_line.",
+              "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+            },
+            "color": { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName" },
+            "theta": { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName" },
+            "size": { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName" }
+          }
+        },
+        "record_id_field": {
+          "description": "record_card: field holding the record id to show.",
+          "x-alixai-authority": "model",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+        },
+        "record_id": {
+          "description": "record_card: which record.",
+          "x-alixai-authority": "model",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "kpi": {
+          "description": "kpi plan: which derived fact or field.",
+          "x-alixai-authority": "model",
+          "$ref": "#/$defs/kpiPlan"
+        },
+        "draft": {
+          "description": "draft plan (ability drafts).",
+          "x-alixai-authority": "model",
+          "$ref": "#/$defs/draftPlan"
+        },
+        "markdown": {
+          "description": "markdown body plan (still verified).",
+          "x-alixai-authority": "model",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 65536
+        }
+      }
+    },
+    "kpiPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value_fact", "label"],
+      "properties": {
+        "value_fact": {
+          "description": "Derived fact label or dataset field for the value.",
+          "x-alixai-authority": "model",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "label": {
+          "x-alixai-authority": "model",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "delta_fact": {
+          "x-alixai-authority": "model",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "period": {
+          "x-alixai-authority": "model",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "unit": {
+          "x-alixai-authority": "model",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        }
+      }
+    },
+    "draftPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "format", "body"],
+      "properties": {
+        "title": {
+          "x-alixai-authority": "model",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "format": {
+          "x-alixai-authority": "model",
+          "type": "string",
+          "enum": ["markdown", "plain"]
+        },
+        "body": {
+          "description": "Draft body. App data quoted here must verify like answer text.",
+          "x-alixai-authority": "model",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100000
+        }
+      }
+    },
+    "clarifyStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["prompt"],
+      "properties": {
+        "prompt": {
+          "x-alixai-authority": "model",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "field": {
+          "x-alixai-authority": "model",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+        },
+        "choices": {
+          "x-alixai-authority": "model",
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["choice_id", "label"],
+            "properties": {
+              "choice_id": {
+                "x-alixai-authority": "model",
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "label": {
+                "x-alixai-authority": "model",
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              }
+            }
+          }
+        }
+      }
+    },
+    "actStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capability_id", "fields"],
+      "properties": {
+        "capability_id": {
+          "x-alixai-authority": "model",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/capabilityId"
+        },
+        "fields": {
+          "x-alixai-authority": "model",
+          "type": "object",
+          "maxProperties": 64,
+          "propertyNames": {
+            "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+          },
+          "additionalProperties": {
+            "type": ["string", "number", "boolean", "null"],
+            "maxLength": 4096
+          }
+        }
+      }
+    }
+  }
+}

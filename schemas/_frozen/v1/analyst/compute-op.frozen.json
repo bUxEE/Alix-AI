@@ -1,0 +1,287 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:analyst:compute-op:v1",
+  "title": "ComputeOpProposal",
+  "description": "One deterministic compute step the model may propose (ADR 0047). No code execution. The core validates op, inputs and params, refuses unit/currency mismatches and insufficient series, and emits a dataset and/or derived facts. Nulls: aggregations skip nulls unless params.nulls is keep and the op defines otherwise; divide-by-zero and empty inputs after filter → typed refusal.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["op", "inputs"],
+  "properties": {
+    "op": {
+      "description": "Catalog op name.",
+      "x-alixai-authority": "model",
+      "type": "string",
+      "enum": [
+        "filter",
+        "sort",
+        "group_by",
+        "aggregate",
+        "ratio",
+        "percent_change",
+        "difference",
+        "rank",
+        "join",
+        "moving_average",
+        "cumulative",
+        "date_bucket",
+        "forecast_linear",
+        "forecast_holt",
+        "forecast_seasonal_naive"
+      ]
+    },
+    "inputs": {
+      "description": "Dataset ids already produced in this turn. join needs exactly two; others usually one.",
+      "x-alixai-authority": "model",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "items": { "$ref": "urn:alixai:schema:analyst:shared:v1#/$defs/datasetId" }
+    },
+    "params": {
+      "description": "Op-specific parameters. Unknown keys are refused (schema_invalid).",
+      "x-alixai-authority": "model",
+      "$ref": "#/$defs/params"
+    }
+  },
+  "$defs": {
+    "params": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "field": {
+          "description": "Primary numeric or sort field.",
+          "x-alixai-authority": "model",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+        },
+        "fields": {
+          "description": "Multiple fields (group_by keys, join keys).",
+          "x-alixai-authority": "model",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": { "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName" }
+        },
+        "agg": {
+          "description": "Aggregation function for aggregate / group_by measures.",
+          "x-alixai-authority": "model",
+          "type": "string",
+          "enum": ["count", "sum", "avg", "min", "max", "median", "percentile"]
+        },
+        "percentile": {
+          "description": "Percentile in [0,100] when agg is percentile.",
+          "x-alixai-authority": "model",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "measures": {
+          "description": "group_by measure list: each {field, agg, as}.",
+          "x-alixai-authority": "model",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": { "$ref": "#/$defs/measure" }
+        },
+        "predicate": {
+          "description": "filter predicate: closed JSON of {field, op, value}. op in eq,neq,gt,gte,lt,lte,in,contains,is_null,not_null.",
+          "x-alixai-authority": "model",
+          "$ref": "#/$defs/predicate"
+        },
+        "predicates": {
+          "description": "AND-combined predicates for filter.",
+          "x-alixai-authority": "model",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": { "$ref": "#/$defs/predicate" }
+        },
+        "direction": {
+          "description": "sort direction.",
+          "x-alixai-authority": "model",
+          "type": "string",
+          "enum": ["asc", "desc"]
+        },
+        "top_n": {
+          "description": "rank / top-n limit.",
+          "x-alixai-authority": "model",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "numerator": {
+          "description": "ratio numerator field.",
+          "x-alixai-authority": "model",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+        },
+        "denominator": {
+          "description": "ratio denominator field.",
+          "x-alixai-authority": "model",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+        },
+        "baseline_field": {
+          "description": "percent_change / difference baseline field or period key.",
+          "x-alixai-authority": "model",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+        },
+        "current_field": {
+          "description": "percent_change / difference current field.",
+          "x-alixai-authority": "model",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+        },
+        "left_on": {
+          "description": "join key on first input.",
+          "x-alixai-authority": "model",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+        },
+        "right_on": {
+          "description": "join key on second input.",
+          "x-alixai-authority": "model",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+        },
+        "how": {
+          "description": "join type. Only inner and left; no Cartesian.",
+          "x-alixai-authority": "model",
+          "type": "string",
+          "enum": ["inner", "left"]
+        },
+        "window": {
+          "description": "moving_average window length (periods).",
+          "x-alixai-authority": "model",
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 365
+        },
+        "order_by": {
+          "description": "Temporal or sequence field for moving_average, cumulative, forecasts, date_bucket.",
+          "x-alixai-authority": "model",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+        },
+        "bucket": {
+          "description": "date_bucket grain.",
+          "x-alixai-authority": "model",
+          "type": "string",
+          "enum": ["day", "week", "month", "quarter", "year"]
+        },
+        "horizon": {
+          "description": "Forecast steps ahead.",
+          "x-alixai-authority": "model",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 36
+        },
+        "season_length": {
+          "description": "seasonal_naive season length in periods. Required for forecast_seasonal_naive.",
+          "x-alixai-authority": "model",
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 366
+        },
+        "alpha": {
+          "description": "Holt level smoothing in (0,1]. Optional; core default 0.3.",
+          "x-alixai-authority": "model",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        },
+        "beta": {
+          "description": "Holt trend smoothing in (0,1]. Optional; core default 0.1.",
+          "x-alixai-authority": "model",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        },
+        "confidence": {
+          "description": "Forecast interval coverage. Default 0.8.",
+          "x-alixai-authority": "model",
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 0.99
+        },
+        "decimals": {
+          "description": "Rounding decimals for numeric outputs. Default 2; integers use 0.",
+          "x-alixai-authority": "model",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8
+        },
+        "nulls": {
+          "description": "skip (default): ignore null cells in aggregates. keep: preserve null rows in filter/sort only.",
+          "x-alixai-authority": "model",
+          "type": "string",
+          "enum": ["skip", "keep"]
+        }
+      }
+    },
+    "measure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["field", "agg", "as"],
+      "properties": {
+        "field": {
+          "x-alixai-authority": "model",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+        },
+        "agg": {
+          "x-alixai-authority": "model",
+          "type": "string",
+          "enum": ["count", "sum", "avg", "min", "max", "median", "percentile"]
+        },
+        "as": {
+          "description": "Output field name.",
+          "x-alixai-authority": "model",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+        },
+        "percentile": {
+          "x-alixai-authority": "model",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        }
+      }
+    },
+    "predicate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["field", "op"],
+      "properties": {
+        "field": {
+          "x-alixai-authority": "model",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+        },
+        "op": {
+          "x-alixai-authority": "model",
+          "type": "string",
+          "enum": ["eq", "neq", "gt", "gte", "lt", "lte", "in", "contains", "is_null", "not_null"]
+        },
+        "value": {
+          "description": "Comparison value; omitted for is_null / not_null. For in, an array of scalars.",
+          "x-alixai-authority": "model",
+          "oneOf": [
+            { "type": "string", "maxLength": 1024 },
+            { "type": "number" },
+            { "type": "boolean" },
+            { "type": "null" },
+            {
+              "type": "array",
+              "maxItems": 64,
+              "items": { "type": ["string", "number", "boolean", "null"], "maxLength": 1024 }
+            }
+          ]
+        }
+      }
+    },
+    "catalogNotes": {
+      "description": "Documentation-only notes for implementers (not a runtime instance). Data-class propagation: output field class = max(input field classes contributing to that column). Currency/unit: sum/avg/min/max/median/percentile/difference/moving_average/cumulative/forecasts require a single unit and currency across the measure; mismatch → unit_mismatch. ratio and percent_change require commensurate units; output unit is 1 or percent. Forecasts need at least 3 non-null points (Holt: 4; seasonal_naive: 2 full seasons) else insufficient_data / forecast_unavailable. Forecasts require ability forecasts.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "min_points_linear": { "const": 3 },
+        "min_points_holt": { "const": 4 },
+        "default_rounding_decimals": { "const": 2 },
+        "default_holt_alpha": { "const": 0.3 },
+        "default_holt_beta": { "const": 0.1 },
+        "default_forecast_confidence": { "const": 0.8 }
+      }
+    }
+  }
+}

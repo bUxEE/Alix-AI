@@ -310,6 +310,26 @@ func (a *App) Seed(tenant, workspace, itemID, name string) {
 	c.version++
 }
 
+// ApplyOutside records an effect under an idempotency key the way the host's
+// own authenticated UI would after a level-3 step-up (ADR 0048). Status for
+// that key then reports the effect; AlixAI's Commit path is never used.
+func (a *App) ApplyOutside(tenant, workspace, key, name string) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	sk := scopeKey{tenant, workspace}
+	c := a.collection(sk)
+	a.nextID++
+	id := fmt.Sprintf("item_%d", a.nextID)
+	c.items[id] = name
+	c.version++
+	a.effects++
+	b := a.ok(c)
+	b["identifiers"] = []any{record(ItemEntity, id)}
+	b["values"] = []any{fact("name", "text", name)}
+	b["allowed_next_actions"] = []any{map[string]any{"action": "invoke_capability", "capability_id": ReadCapability, "label": "View the item"}}
+	a.commits[commitKey{sk, key}] = commitRecord{fingerprint: name, body: marshal(b)}
+}
+
 func (a *App) collection(k scopeKey) *collection {
 	c := a.colls[k]
 	if c == nil {

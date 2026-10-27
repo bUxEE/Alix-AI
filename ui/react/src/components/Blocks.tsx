@@ -5,6 +5,7 @@ import type { AlixAIBlock, AlixAIProgress } from "@alixai/copilotkit-adapter";
 import { useAlixExports } from "../exports-context.js";
 import { formatNumber, useAlixIntl, useAlixText } from "../i18n/context.js";
 import { AlixExportMenu } from "./ExportMenu.js";
+import { formatKpiDelta } from "./kpi-delta.js";
 
 // The validated blocks AlixAI sends, drawn with the kit's tokens. Every value is rendered as text, so nothing in a payload
 // can become markup; a diagram is shown as its source and a chart is data, never code. Each block is data in, events out.
@@ -423,6 +424,7 @@ const SourceChrome = ({ source }: { source?: string }): ReactElement | null => {
 export const AlixKpiBlock = ({ block }: { block: AlixAIBlock<"kpi"> }): ReactElement => {
   const intl = useAlixIntl();
   const value = typeof block.value === "number" ? formatNumber(intl, block.value) : String(block.value);
+  const delta = formatKpiDelta(block.delta, (n) => formatNumber(intl, n));
   return (
     <div className="alix-kpi" data-alixai="kpi">
       <div className="alix-kpi__head">
@@ -433,6 +435,18 @@ export const AlixKpiBlock = ({ block }: { block: AlixAIBlock<"kpi"> }): ReactEle
         {value}
         {block.unit !== undefined && <span className="alix-kpi__unit"> {block.unit}</span>}
       </p>
+      {(delta !== null || block.period !== undefined) && (
+        <p className="alix-kpi__delta">
+          {delta !== null && (
+            <span aria-label={delta.aria}>
+              <span aria-hidden="true">{delta.arrow}</span>
+              {delta.text}
+            </span>
+          )}
+          {delta !== null && block.period !== undefined && " · "}
+          {block.period !== undefined && block.period}
+        </p>
+      )}
     </div>
   );
 };

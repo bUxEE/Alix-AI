@@ -72,9 +72,16 @@ type SearchResult struct {
 	Hits []SearchHit
 }
 
+// SearchInput is one web_query search call.
+type SearchInput struct {
+	Query    string
+	TurnID   string
+	Datasets []an.Dataset // datasets already read/computed this turn (confidential check)
+}
+
 // WebSearcher runs a web_query search. Nil when web_search is off.
 type WebSearcher interface {
-	Search(ctx context.Context, scope contracts.Scope, query string) (SearchResult, error)
+	Search(ctx context.Context, scope contracts.Scope, in SearchInput) (SearchResult, error)
 }
 
 // FetchResult is a fetched page (untrusted, fenced by the loop).
@@ -83,9 +90,22 @@ type FetchResult struct {
 	Text     string
 }
 
+// FetchInput is one fetch of a prior search hit.
+type FetchInput struct {
+	URL    string
+	Index  int
+	TurnID string
+}
+
 // WebFetcher fetches an allow-listed URL from a prior search hit.
 type WebFetcher interface {
-	Fetch(ctx context.Context, scope contracts.Scope, url string, searchResultIndex int) (FetchResult, error)
+	Fetch(ctx context.Context, scope contracts.Scope, in FetchInput) (FetchResult, error)
+}
+
+// TurnLifecycle is notified when an analyst turn ends so adapters can drop
+// per-turn state (search hits, budgets). Optional.
+type TurnLifecycle interface {
+	EndTurn(turnID string)
 }
 
 // FactSet is the turn's verified fact pool for answer verification.
@@ -104,6 +124,7 @@ type VerifyAnswerInput struct {
 	SourceSpans []an.SourceSpan
 	Facts       FactSet
 	Stream      bool
+	Language    string // BCP-47 tag the turn is answering in (en, it, …)
 }
 
 // VerifiedSegment is one incremental emission during verified streaming.
@@ -115,10 +136,11 @@ type VerifiedSegment struct {
 
 // VerifyAnswerResult is a verified answer (or template fallback).
 type VerifyAnswerResult struct {
-	Text     string
-	Verified bool
-	Blocks   []conversation.RichBlock
-	Segments []VerifiedSegment
+	Text             string
+	Verified         bool
+	Blocks           []conversation.RichBlock
+	CoreMaterialised []bool // parallel to Blocks; set only by the analyst materialiser
+	Segments         []VerifiedSegment
 }
 
 // AnalystVerifier checks answer text/blocks against the fact set (sibling: verify).

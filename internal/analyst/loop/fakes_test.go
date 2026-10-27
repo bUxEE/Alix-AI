@@ -131,14 +131,15 @@ type fakeSearcher struct {
 	queries []string
 }
 
-func (f *fakeSearcher) Search(_ context.Context, _ contracts.Scope, q string) (loop.SearchResult, error) {
-	f.queries = append(f.queries, q)
+func (f *fakeSearcher) Search(_ context.Context, _ contracts.Scope, in loop.SearchInput) (loop.SearchResult, error) {
+	f.queries = append(f.queries, in.Query)
 	return loop.SearchResult{Hits: []loop.SearchHit{{URL: "https://gov.example/rule", Title: "Rule", Snippet: "eligible"}}}, nil
 }
 
 type fakeFetcher struct{}
 
-func (fakeFetcher) Fetch(_ context.Context, _ contracts.Scope, url string, _ int) (loop.FetchResult, error) {
+func (fakeFetcher) Fetch(_ context.Context, _ contracts.Scope, in loop.FetchInput) (loop.FetchResult, error) {
+	url := in.URL
 	return loop.FetchResult{
 		Citation: an.WebCitation{ID: "wcit_1", URL: url, Title: "Rule", SourceLabel: "web"},
 		Text:     "Companies with under 50 employees are eligible.",

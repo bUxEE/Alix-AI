@@ -508,6 +508,17 @@ func (t *Turn) Stats() TurnStats {
 // producer may publish a different event (an error event, say) at the same
 // sequence number. A done event ends the turn.
 func (t *Turn) Publish(ev conversation.TurnEvent) error {
+	return t.publish(ev, blocks.Context{Facts: t.facts})
+}
+
+// PublishTrusted publishes an event the core built (analyst dataset materialisation).
+// Block validation skips the directive-fact number check; dataset_id alone never
+// grants this — only this entry point sets CoreMaterialised.
+func (t *Turn) PublishTrusted(ev conversation.TurnEvent) error {
+	return t.publish(ev, blocks.Context{Facts: t.facts, CoreMaterialised: true})
+}
+
+func (t *Turn) publish(ev conversation.TurnEvent, ctx blocks.Context) error {
 	t.pub.Lock()
 	defer t.pub.Unlock()
 
@@ -527,7 +538,7 @@ func (t *Turn) Publish(ev conversation.TurnEvent) error {
 		return refuse(errors.New("the turn has no sequence numbers left"), "the event was refused")
 	}
 
-	clean, err := t.hub.cfg.Validator.Event(ev, blocks.Context{Facts: t.facts})
+	clean, err := t.hub.cfg.Validator.Event(ev, ctx)
 	if err != nil {
 		return refuse(err, "the event was refused by block validation")
 	}

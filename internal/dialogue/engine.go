@@ -507,6 +507,8 @@ type Result struct {
 	// when the turn did what was asked (an answer, a clarification, a confirmation
 	// request, a committed receipt).
 	Code contracts.ErrCode
+	// Details are optional structured context for Code (e.g. reason=confidential_value).
+	Details map[string]any
 	// Trace says how the turn ran.
 	Trace Trace
 }

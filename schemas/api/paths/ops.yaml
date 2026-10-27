@@ -547,10 +547,12 @@ components:
           enum: [principal, tenant, workspace]
         scope:
           type: string
-          enum: [tenant, application]
+          enum: [tenant, application, workspace]
           description: |
             Only when level is principal. `tenant` (default when omitted) is tenant-local;
-            `application` is GDPR application-wide (deployment operator only).
+            `application` is GDPR application-wide (deployment operator only);
+            `workspace` erases that principal inside one workspace only (requires workspace_id;
+            never revokes credentials/bindings).
         tenant_id:
           type: string
           description: |
@@ -558,7 +560,9 @@ components:
             scope is application (every tenant of the application is erased).
         workspace_id:
           type: string
-          description: Required when level is workspace (defaults to the token's workspace).
+          description: |
+            Required when level is workspace (defaults to the token's workspace), and when
+            level is principal with scope workspace (defaults to the token's workspace).
         principal_id:
           type: string
           description: Required when level is principal.
@@ -631,8 +635,8 @@ components:
           enum: [principal, tenant, workspace]
         scope:
           type: string
-          enum: [tenant, application]
-          description: Present when level is principal (`tenant` or `application`).
+          enum: [tenant, application, workspace]
+          description: Present when level is principal (`tenant`, `application` or `workspace`).
         tenant_id:
           type: string
           description: Empty when scope is application (every tenant of the application).

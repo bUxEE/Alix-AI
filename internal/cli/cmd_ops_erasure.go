@@ -99,8 +99,10 @@ func opsErasureRequest(ctx context.Context, scope contracts.Scope, in gateway.Er
 			scopeKind = retention.PrincipalScopeTenant
 		case gateway.ErasureScopeApplication:
 			scopeKind = retention.PrincipalScopeApplication
+		case gateway.ErasureScopeWorkspace:
+			scopeKind = retention.PrincipalScopeWorkspace
 		default:
-			return retention.Request{}, contracts.New(contracts.ErrValidationFailed, "scope must be tenant or application when level is principal")
+			return retention.Request{}, contracts.New(contracts.ErrValidationFailed, "scope must be tenant, application or workspace when level is principal")
 		}
 	} else if in.Scope != "" {
 		return retention.Request{}, contracts.New(contracts.ErrValidationFailed, "scope applies only when level is principal")
@@ -134,6 +136,9 @@ func opsErasureRequest(ctx context.Context, scope contracts.Scope, in gateway.Er
 		req.Reason = "erasure request"
 	}
 	if req.Level == retention.LevelWorkspace && req.WorkspaceID == "" {
+		req.WorkspaceID = scope.WorkspaceID
+	}
+	if req.Level == retention.LevelPrincipal && req.Scope == retention.PrincipalScopeWorkspace && req.WorkspaceID == "" {
 		req.WorkspaceID = scope.WorkspaceID
 	}
 	if req.Level == retention.LevelPrincipal && req.Scope == "" {

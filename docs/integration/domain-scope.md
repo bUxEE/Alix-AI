@@ -39,7 +39,9 @@ Schema: `schemas/analyst/domain.schema.json`, wired from
 `schemas/application-package/manifest.schema.json` (`assistant`).
 
 Without `assistant.domain`, in-domain answers that match no capability stay unavailable
-(classifier / knowledge / web remain off for that application).
+(classifier / knowledge / web remain off for that application). Integrators must declare
+`assistant.domain` with non-empty `description`, `in_scope` and `out_of_scope` before those
+abilities can become effective; the settings resolver records `domain_undeclared` otherwise.
 
 ## 2. Scopegate and domain classification
 
@@ -76,7 +78,10 @@ Verifier rules:
 Abilities `web_search` / `web_fetch`, off by default. Query egress category **`web_query`**:
 the core rejects queries that embed confidential/restricted values from datasets read in the
 turn (`web_query_refused`). Results are untrusted and fenced. No credentials or cookies are
-sent. Per-tenant allow/deny hosts; package `preferred_web_hosts` intersect with tenant policy.
+sent. Host allow lists are the intersection of deployment `allow_hosts`, tenant
+`allow_hosts`, and package `assistant.domain.preferred_web_hosts` when that package
+list is non-empty (most restrictive wins; an empty/absent package list does not
+narrow). Deny lists are unioned and always win.
 
 ## 5. Drafts
 

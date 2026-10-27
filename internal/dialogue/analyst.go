@@ -55,29 +55,50 @@ func (d deploymentAbilityResolver) Resolve(_ context.Context, _ contracts.Scope,
 
 // coordinatorReader adapts actions.Coordinator.Read to loop.CapabilityReader.
 type coordinatorReader struct {
-	actions *actions.Coordinator
-	session func() contracts.Scope
+	actions  *actions.Coordinator
+	session  func() contracts.Scope
+	packages PackageSource
 }
 
 func (r coordinatorReader) Read(ctx context.Context, scope contracts.Scope, req loop.ReadRequest) (loop.ReadResult, error) {
+	sess := scope
+	if r.session != nil {
+		if s := r.session(); s.SessionID != "" {
+			sess = s
+		}
+	}
 	ro, err := r.actions.Read(ctx, scope, actions.ReadInput{
-		Session: r.session(), CapabilityID: req.CapabilityID, Fields: req.Arguments,
+		Session: sess, CapabilityID: req.CapabilityID, Fields: req.Arguments,
 	})
 	if err != nil {
 		return loop.ReadResult{}, err
 	}
+	meta := map[string]fieldMeta{}
+	if r.packages != nil {
+		if pkg, perr := r.packages.Package(ctx, scope.ApplicationID); perr == nil && pkg != nil {
+			if spec, ok := pkg.Spec(req.CapabilityID); ok {
+				meta = fieldMetaMap(spec)
+			}
+		}
+	}
+	// Keep every host value in the turn dataset (including confidential / sensitive).
+	// Policy projections that hide fields from the single-capability prompt must not
+	// strip them here: SummariseDatasets withholds values from the external step
+	// prompt, and the core materialises table/record_card blocks from the full set.
 	fields := make([]an.DatasetDatasetField, 0, len(ro.Result.Values))
 	row := an.DatasetRow{}
 	seen := map[string]bool{}
 	for _, f := range ro.Result.Values {
 		name := string(f.Field)
+		fm := meta[name]
+		if fm.Type == "" {
+			fm = fieldMeta{Type: an.FieldTypeString, Class: an.DataClassInternal}
+		}
 		if !seen[name] {
 			seen[name] = true
-			fields = append(fields, an.DatasetDatasetField{
-				Name: common.FieldName(name), Type: an.FieldTypeString, DataClass: an.DataClassInternal,
-			})
+			fields = append(fields, datasetField(name, fm))
 		}
-		row[name] = factText(f)
+		row[name] = typedCell(f, fm.Type)
 	}
 	capID := common.CapabilityID(req.CapabilityID)
 	return loop.ReadResult{Dataset: an.Dataset{
@@ -101,7 +122,10 @@ func (t *turn) tryAnalyst(ctx context.Context) (outcome, bool, error) {
 	}
 	in := loop.Input{
 		TurnID: t.id, Utterance: t.userText, AnalystCapable: capable,
-		StreamVerified: t.e.cfg.StreamVerified,
+		StreamVerified: t.e.cfg.StreamVerified, Language: string(t.lang),
+	}
+	if tag := t.in.Language; tag != "" {
+		in.Language = tag
 	}
 	if t.in.HasClientCapabilities {
 		in.ClientCaps = t.in.ClientCapabilities
@@ -123,7 +147,9 @@ func (t *turn) tryAnalyst(ctx context.Context) (outcome, bool, error) {
 	switch res.Kind {
 	case loop.OutcomeAnswer:
 		d := t.newDirective(conversation.DialogueDirectiveActPresentResult, "")
-		return outcome{dir: d, analystReply: res.Text}, true, nil
+		return outcome{
+			dir: d, analystReply: res.Text, analystBlocks: res.Blocks, analystCore: res.CoreMaterialised,
+		}, true, nil
 	case loop.OutcomeClarify:
 		d := t.newDirective(conversation.DialogueDirectiveActAskMissing, "")
 		return outcome{dir: d}, true, nil
@@ -134,7 +160,7 @@ func (t *turn) tryAnalyst(ctx context.Context) (outcome, bool, error) {
 		if code == "" {
 			code = contracts.ErrAnalystCapExceeded
 		}
-		return t.failure(code, ""), true, nil
+		return t.failureDetails(code, "", res.Details), true, nil
 	}
 	return outcome{}, false, nil
 }

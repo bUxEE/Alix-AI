@@ -1,11 +1,17 @@
 import type { Caller } from "../call.js";
 import { sdkError } from "../errors.js";
+import type { PrivateLlmEndpoint } from "../gen/providers/private-llm-endpoint.js";
+import type { PrivateLlmEndpointUpdate } from "../gen/providers/private-llm-endpoint-update.js";
+import type { PrivateLlmPrincipalBinding } from "../gen/providers/private-llm-principal-binding.js";
+import type { PrivateLlmPrincipalBindingUpdate } from "../gen/providers/private-llm-principal-binding-update.js";
+import type { PrivateLlmTenantPin } from "../gen/providers/private-llm-tenant-pin.js";
+import type { PrivateLlmTenantPinUpdate } from "../gen/providers/private-llm-tenant-pin-update.js";
 import type { CallOptions } from "../transport.js";
 import type { OpsOperationId } from "./operations.js";
 
 export type ErasureLevel = "principal" | "tenant" | "workspace";
-/** Tenant-local (default) vs application-wide GDPR erasure; only with level principal. */
-export type ErasureScope = "tenant" | "application";
+/** Tenant-local (default), application-wide, or one workspace; only with level principal. */
+export type ErasureScope = "tenant" | "application" | "workspace";
 
 export interface ErasureRequest {
   level: ErasureLevel;
@@ -35,20 +41,34 @@ export interface ErasureJobStatus {
   finished_at?: string;
 }
 
+/** 1.4 callers may still pass a plain record; typed update is preferred (1.5.0). */
+export type PrivateLlmEndpointBody = PrivateLlmEndpointUpdate | Record<string, unknown>;
+export type PrivateLlmTenantPinBody = PrivateLlmTenantPinUpdate | Record<string, unknown>;
+export type PrivateLlmPrincipalBindingBody = PrivateLlmPrincipalBindingUpdate | Record<string, unknown>;
+
 export interface OpsApi {
   erasure: {
     start: (input: ErasureRequest, options?: CallOptions) => Promise<ErasureJobAccepted>;
     status: (jobId: string, options?: CallOptions) => Promise<ErasureJobStatus>;
   };
   privateLlm: {
-    putEndpoint: (endpointId: string, body: Record<string, unknown>, options?: CallOptions) => Promise<Record<string, unknown>>;
-    getEndpoint: (endpointId: string, options?: CallOptions) => Promise<Record<string, unknown>>;
+    putEndpoint: {
+      (endpointId: string, body: PrivateLlmEndpointUpdate, options?: CallOptions): Promise<PrivateLlmEndpoint>;
+      (endpointId: string, body: Record<string, unknown>, options?: CallOptions): Promise<PrivateLlmEndpoint>;
+    };
+    getEndpoint: (endpointId: string, options?: CallOptions) => Promise<PrivateLlmEndpoint>;
     deleteEndpoint: (endpointId: string, options?: CallOptions) => Promise<void>;
-    putTenantPin: (tenantId: string, body: Record<string, unknown>, options?: CallOptions) => Promise<Record<string, unknown>>;
-    getTenantPin: (tenantId: string, options?: CallOptions) => Promise<Record<string, unknown>>;
+    putTenantPin: {
+      (tenantId: string, body: PrivateLlmTenantPinUpdate, options?: CallOptions): Promise<PrivateLlmTenantPin>;
+      (tenantId: string, body: Record<string, unknown>, options?: CallOptions): Promise<PrivateLlmTenantPin>;
+    };
+    getTenantPin: (tenantId: string, options?: CallOptions) => Promise<PrivateLlmTenantPin>;
     deleteTenantPin: (tenantId: string, options?: CallOptions) => Promise<void>;
-    putPrincipalBinding: (principalId: string, body: Record<string, unknown>, options?: CallOptions) => Promise<Record<string, unknown>>;
-    getPrincipalBinding: (principalId: string, options?: CallOptions) => Promise<Record<string, unknown>>;
+    putPrincipalBinding: {
+      (principalId: string, body: PrivateLlmPrincipalBindingUpdate, options?: CallOptions): Promise<PrivateLlmPrincipalBinding>;
+      (principalId: string, body: Record<string, unknown>, options?: CallOptions): Promise<PrivateLlmPrincipalBinding>;
+    };
+    getPrincipalBinding: (principalId: string, options?: CallOptions) => Promise<PrivateLlmPrincipalBinding>;
     deletePrincipalBinding: (principalId: string, options?: CallOptions) => Promise<void>;
   };
   /** Tenant analyst ability ceilings (ADR 0047). Tenant may only narrow. */
@@ -64,7 +84,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const JOB_ID = /^erj_[0-9A-HJKMNP-TV-Z]{26}$/;
 const PLE_ID = /^ple_[0-9A-HJKMNP-TV-Z]{26}$/;
 const LEVELS = ["principal", "tenant", "workspace"] as const;
-const SCOPES = ["tenant", "application"] as const;
+const SCOPES = ["tenant", "application", "workspace"] as const;
 
 const isAccepted = (value: unknown): value is ErasureJobAccepted =>
   isRecord(value) && typeof value["job_id"] === "string" && typeof value["status"] === "string";
@@ -74,6 +94,29 @@ const isStatus = (value: unknown): value is ErasureJobStatus =>
   typeof value["status"] === "string" &&
   typeof value["level"] === "string" &&
   typeof value["tenant_id"] === "string";
+
+/** Required members only — extra/optional fields from the server must not fail the guard. */
+const isPrivateLlmEndpoint = (value: unknown): value is PrivateLlmEndpoint =>
+  isRecord(value) &&
+  typeof value["endpoint_id"] === "string" &&
+  typeof value["origin"] === "string" &&
+  typeof value["api_dialect"] === "string" &&
+  Array.isArray(value["model_ids"]) &&
+  Array.isArray(value["roles"]) &&
+  typeof value["owner_kind"] === "string" &&
+  typeof value["lifecycle"] === "string";
+
+const isPrivateLlmTenantPin = (value: unknown): value is PrivateLlmTenantPin =>
+  isRecord(value) && typeof value["tenant_id"] === "string" && typeof value["endpoint_id"] === "string";
+
+const isPrivateLlmPrincipalBinding = (value: unknown): value is PrivateLlmPrincipalBinding =>
+  isRecord(value) &&
+  typeof value["principal_id"] === "string" &&
+  typeof value["endpoint_id"] === "string" &&
+  Array.isArray(value["roles"]);
+
+/** Exported for unit tests of the required-member guards. */
+export const privateLlmGuards = { isPrivateLlmEndpoint, isPrivateLlmTenantPin, isPrivateLlmPrincipalBinding };
 
 export const createOpsApi = (caller: Caller): OpsApi => {
   const json = <T>(
@@ -93,7 +136,7 @@ export const createOpsApi = (caller: Caller): OpsApi => {
           throw invalid("level", "it must be principal, tenant or workspace");
         }
         if (input.scope !== undefined && !(SCOPES as readonly string[]).includes(input.scope)) {
-          throw invalid("scope", "it must be tenant or application");
+          throw invalid("scope", "it must be tenant, application or workspace");
         }
         const body: Record<string, unknown> = { level: input.level };
         if (input.scope !== undefined) body["scope"] = input.scope;
@@ -109,37 +152,37 @@ export const createOpsApi = (caller: Caller): OpsApi => {
       },
     },
     privateLlm: {
-      putEndpoint: async (endpointId, body, options) => {
+      putEndpoint: (async (endpointId: string, body: PrivateLlmEndpointBody, options?: CallOptions) => {
         if (typeof endpointId !== "string" || !PLE_ID.test(endpointId)) throw invalid("endpoint_id", "it must be a ple_ ULID");
-        return json("putPrivateLlmEndpoint", { endpoint_id: endpointId }, isRecord, "private LLM endpoint", options, JSON.stringify(body));
-      },
+        return json("putPrivateLlmEndpoint", { endpoint_id: endpointId }, isPrivateLlmEndpoint, "private LLM endpoint", options, JSON.stringify(body));
+      }) as OpsApi["privateLlm"]["putEndpoint"],
       getEndpoint: async (endpointId, options) => {
         if (typeof endpointId !== "string" || !PLE_ID.test(endpointId)) throw invalid("endpoint_id", "it must be a ple_ ULID");
-        return json("getPrivateLlmEndpoint", { endpoint_id: endpointId }, isRecord, "private LLM endpoint", options);
+        return json("getPrivateLlmEndpoint", { endpoint_id: endpointId }, isPrivateLlmEndpoint, "private LLM endpoint", options);
       },
       deleteEndpoint: async (endpointId, options) => {
         if (typeof endpointId !== "string" || !PLE_ID.test(endpointId)) throw invalid("endpoint_id", "it must be a ple_ ULID");
         await caller.empty("deletePrivateLlmEndpoint", { endpoint_id: endpointId }, options);
       },
-      putTenantPin: async (tenantId, body, options) => {
+      putTenantPin: (async (tenantId: string, body: PrivateLlmTenantPinBody, options?: CallOptions) => {
         if (typeof tenantId !== "string" || tenantId === "") throw invalid("tenant_id", "it is required");
-        return json("putTenantPrivateLlm", { tenant_id: tenantId }, isRecord, "tenant private LLM pin", options, JSON.stringify(body));
-      },
+        return json("putTenantPrivateLlm", { tenant_id: tenantId }, isPrivateLlmTenantPin, "tenant private LLM pin", options, JSON.stringify(body));
+      }) as OpsApi["privateLlm"]["putTenantPin"],
       getTenantPin: async (tenantId, options) => {
         if (typeof tenantId !== "string" || tenantId === "") throw invalid("tenant_id", "it is required");
-        return json("getTenantPrivateLlm", { tenant_id: tenantId }, isRecord, "tenant private LLM pin", options);
+        return json("getTenantPrivateLlm", { tenant_id: tenantId }, isPrivateLlmTenantPin, "tenant private LLM pin", options);
       },
       deleteTenantPin: async (tenantId, options) => {
         if (typeof tenantId !== "string" || tenantId === "") throw invalid("tenant_id", "it is required");
         await caller.empty("deleteTenantPrivateLlm", { tenant_id: tenantId }, options);
       },
-      putPrincipalBinding: async (principalId, body, options) => {
+      putPrincipalBinding: (async (principalId: string, body: PrivateLlmPrincipalBindingBody, options?: CallOptions) => {
         if (typeof principalId !== "string" || principalId === "") throw invalid("principal_id", "it is required");
-        return json("putPrincipalPrivateLlm", { principal_id: principalId }, isRecord, "principal private LLM", options, JSON.stringify(body));
-      },
+        return json("putPrincipalPrivateLlm", { principal_id: principalId }, isPrivateLlmPrincipalBinding, "principal private LLM", options, JSON.stringify(body));
+      }) as OpsApi["privateLlm"]["putPrincipalBinding"],
       getPrincipalBinding: async (principalId, options) => {
         if (typeof principalId !== "string" || principalId === "") throw invalid("principal_id", "it is required");
-        return json("getPrincipalPrivateLlm", { principal_id: principalId }, isRecord, "principal private LLM", options);
+        return json("getPrincipalPrivateLlm", { principal_id: principalId }, isPrivateLlmPrincipalBinding, "principal private LLM", options);
       },
       deletePrincipalBinding: async (principalId, options) => {
         if (typeof principalId !== "string" || principalId === "") throw invalid("principal_id", "it is required");

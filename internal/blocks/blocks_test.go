@@ -824,6 +824,53 @@ func TestBlockTextRules(t *testing.T) {
 	}
 }
 
+// dataset_id is a model-writable schema member and must never skip fact checks.
+// Trust is Context.CoreMaterialised (core-built only); ModelJSON refuses a model-supplied dataset_id.
+func TestDatasetIDDoesNotBypassFactCheck(t *testing.T) {
+	v := Default()
+	facts := NewFactSet([]actions.Fact{blocksIntegerFact("north", 12), blocksIntegerFact("south", 18)})
+	bypass := `{"type":"table","dataset_id":"ds_anything","columns":[{"key":"clinic","label":"Clinic"},{"key":"n","label":"N"}],"rows":[["North",99],["South",18]]}`
+	t.Run("model table with dataset_id and invented number is refused", func(t *testing.T) {
+		_, err := v.ModelJSON([]byte(bypass), Context{Facts: facts})
+		if err == nil {
+			t.Fatal("accepted")
+		}
+		if !HasRule(err, RuleChartNumber) && !HasRule(err, RuleModelDatasetID) {
+			t.Fatalf("want chart.number_not_in_facts or model.dataset_id, got %v", err)
+		}
+	})
+	t.Run("model table with dataset_id alone is refused even when numbers match", func(t *testing.T) {
+		okNums := `{"type":"table","dataset_id":"ds_anything","columns":[{"key":"clinic","label":"Clinic"},{"key":"n","label":"N"}],"rows":[["North",12],["South",18]]}`
+		_, err := v.ModelJSON([]byte(okNums), Context{Facts: facts})
+		if !HasRule(err, RuleModelDatasetID) {
+			t.Fatalf("want model.dataset_id, got %v", err)
+		}
+	})
+	t.Run("core-materialised table with dataset numbers passes without directive facts", func(t *testing.T) {
+		core := `{"type":"table","dataset_id":"ds_rev_001","columns":[{"key":"company","label":"Company"},{"key":"revenue","label":"Revenue"}],"rows":[["Acme",12400]]}`
+		if _, err := v.JSON([]byte(core), Context{CoreMaterialised: true}); err != nil {
+			t.Fatalf("core table refused: %v", err)
+		}
+	})
+	t.Run("core-materialised chart with dataset numbers passes without directive facts", func(t *testing.T) {
+		core := `{"type":"chart","description":"Revenue.","mark":"bar","dataset_id":"ds_rev_001","data":[{"company":"Acme","revenue":12400}],"encoding":{"x":{"field":"company","type":"nominal"},"y":{"field":"revenue","type":"quantitative"}}}`
+		if _, err := v.JSON([]byte(core), Context{CoreMaterialised: true}); err != nil {
+			t.Fatalf("core chart refused: %v", err)
+		}
+	})
+	t.Run("StripModelDatasetID clears the member", func(t *testing.T) {
+		b, err := v.JSON([]byte(bypass), Context{CoreMaterialised: true})
+		if err != nil {
+			t.Fatal(err)
+		}
+		stripped := StripModelDatasetID(b)
+		tb, ok := stripped.Value.(conversation.TableBlock)
+		if !ok || tb.DatasetID != nil {
+			t.Fatalf("dataset_id still set: %#v", stripped.Value)
+		}
+	})
+}
+
 // A model may author only text and data blocks. Every valid example of a kind the core assembles (an action card,
 // a confirmation panel, a citation list, clarification choices) passes JSON, the validator of host and core data,
 // and is refused by ModelJSON with not_model_kind; every valid example of a model kind passes ModelJSON as it

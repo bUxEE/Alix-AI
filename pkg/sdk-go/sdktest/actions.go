@@ -214,6 +214,57 @@ func (c *call) getReceipt() {
 	c.json(http.StatusOK, p.receipt)
 }
 
+func (c *call) reportStepUpOutcome() {
+	p, ok := c.prep()
+	if !ok {
+		return
+	}
+	raw, ok := c.readBody()
+	if !ok {
+		return
+	}
+	var body struct {
+		Outcome   string `json:"outcome"`
+		Reference string `json:"reference"`
+	}
+	if !c.closedObject(raw, &body) {
+		return
+	}
+	switch body.Outcome {
+	case "completed", "declined", "failed":
+	default:
+		c.fail(http.StatusBadRequest, contracts.ErrValidationFailed, "outcome must be completed, declined or failed")
+		return
+	}
+	if p.receipt != nil {
+		status := http.StatusOK
+		if p.receipt.Status == "rejected" {
+			status = http.StatusConflict
+		}
+		c.json(status, p.receipt)
+		return
+	}
+	switch c.f.effective(p).State {
+	case actions.PreparedActionStatePrepared:
+	default:
+		c.fail(http.StatusConflict, contracts.ErrConflict, "the preparation is "+string(c.f.effective(p).State))
+		return
+	}
+	switch body.Outcome {
+	case "completed":
+		receipt, failure := c.f.commit(p)
+		if failure != nil {
+			c.json(http.StatusConflict, receipt)
+			return
+		}
+		c.json(http.StatusOK, receipt)
+	default:
+		p.commit = CommitPlan{Status: "rejected", ErrorCode: contracts.ErrConflict, ErrorMessage: "step-up " + body.Outcome + " in the host interface"}
+		receipt, _ := c.f.commit(p)
+		c.json(http.StatusConflict, receipt)
+	}
+}
+
 // ---- applications, capabilities, probes ----
 
 type pkg struct {

@@ -3,12 +3,20 @@
 All notable changes to this package. The format follows [Keep a Changelog](https://keepachangelog.com/); versions follow semantic versioning once 1.0.0
 ships, with the rules of [compatibility.md](../../docs/policies/compatibility.md).
 
-## Unreleased / 1.5.0
+## 1.5.0 — 2026-10-27
 
 ### Added
 
 - Analyst contracts (ADR 0047): generated models under `alixai.gen.analyst`; rich-block and turn-event extensions; `web_query` egress category; new error codes for analyst refusals.
 - `DEFAULT_CLIENT_CAPABILITIES` and optional `client_capabilities` on turn inputs: the SDK announces what it parses; pass a subset to announce less, or `None` to omit (server = 1.4).
+- Typed private-LLM ops: `ops.put_private_llm_endpoint` / tenant pin / principal binding use `alixai.gen.providers` models (`PrivateLLMEndpoint`, `TenantPrivateLLMPin`, …); responses still support 1.4 `res["key"]` via mapping compat.
+- `report_step_up_outcome` — host-backend level-3 step-up outcome into the session (ADR 0048).
+- Erasure `scope: "workspace"` for principal×workspace erase.
+- Documented `me.put_role` with `private_endpoint_id` (bind a role to a private endpoint; `profile_id` must be that endpoint's `profile_id`).
+
+### Notes
+
+- Core: analyst companion (ADR 0047, off by default), step-up outcome (ADR 0048), workspace-scoped principal erasure (workspace-level erase no longer removes other workspaces' conversation history), llmbench quality mode, SSRF hardening, web search via SearXNG-compatible / Brave / Tavily.
 
 ## 1.4.1 — 2026-10-27
 

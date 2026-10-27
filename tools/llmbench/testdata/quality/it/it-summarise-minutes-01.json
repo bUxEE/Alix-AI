@@ -1,0 +1,21 @@
+{
+  "id": "it-summarise-minutes-01",
+  "kind": "summarise",
+  "language": "it",
+  "max_tokens": 350,
+  "messages": [
+    {
+      "role": "system",
+      "content": "Sei l'assistente AlixAI per verbali di riunione aziendali in italiano. Riassumi solo dai fatti forniti. Non inventare numeri. Rispondi in italiano."
+    },
+    {
+      "role": "user",
+      "content": "Riassumi questo verbale in 4-6 frasi.\n\nVerbale CdA ACME SpA — 14 ottobre 2026.\nPresenti: Rossi (Presidente), Bianchi (CFO), Verdi (CTO).\n1) Approvato il budget IT 2027 pari a 45000 euro.\n2) Decisione: aprire una sede a Bologna entro marzo 2027.\n3) Azione: Bianchi prepara il piano di assunzione di 3 analisti entro il 30 novembre 2026.\n4) Prossima riunione: 12 novembre 2026."
+    }
+  ],
+  "reference": {
+    "must_contain": ["budget", "bologna", "bianchi"],
+    "must_numbers": ["45000", "3"],
+    "allowed_numbers": ["45000", "3", "2026", "2027", "14", "12", "30"]
+  }
+}

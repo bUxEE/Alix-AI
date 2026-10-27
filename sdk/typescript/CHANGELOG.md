@@ -3,12 +3,21 @@
 All notable changes to this package. The format follows [Keep a Changelog](https://keepachangelog.com/); versions follow semantic versioning once 1.0.0
 ships, with the rules of [compatibility.md](../../docs/policies/compatibility.md).
 
-## Unreleased / 1.5.0
+## 1.5.0 — 2026-10-27
 
 ### Added
 
 - Analyst contracts (ADR 0047): generated types under `gen/analyst/*`; rich-block types `kpi`, `timeline`, `record_card`, `provenance`, `draft` and extended chart marks; progress stages `analyst_*`; egress category `web_query`; ErrCodes for domain/ability/web/forecast refusals.
 - `DEFAULT_CLIENT_CAPABILITIES` and optional `client_capabilities` on turn inputs: the SDK announces exactly what it parses; pass a subset to announce less, or `null` to omit (server treats absent as 1.4).
+- Typed private-LLM ops: `ops.privateLlm.*` takes/returns `gen/providers/private-llm-*` types (no more `Record<string, unknown>`).
+- Erasure `scope: "workspace"` (with `level: "principal"`) for principal×workspace GDPR erase.
+- `reportStepUpOutcome` — host-backend level-3 step-up outcome into the session (ADR 0048).
+- Documented `me.llm.putRole` with `private_endpoint_id` (bind a role to a private endpoint; `profile_id` must be that endpoint's `profile_id`).
+
+### Notes
+
+- Private-LLM ops keep 1.4 `Record<string, unknown>` call sites type-compatible (overload); response guards accept extra members.
+- Core: analyst companion (ADR 0047, off by default), step-up outcome (ADR 0048), workspace-scoped principal erasure (workspace-level erase no longer removes other workspaces' conversation history), llmbench quality mode, SSRF hardening, web search via SearXNG-compatible / Brave / Tavily.
 
 ## 1.4.1 — 2026-10-27
 

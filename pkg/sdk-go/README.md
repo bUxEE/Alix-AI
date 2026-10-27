@@ -5,8 +5,8 @@ AlixAI public API (`schemas/api/openapi.yaml`). Documents that have a JSON Schem
 library and one small WebSocket library (`github.com/coder/websocket`). A fake AlixAI server for the tests of a host application is in `pkg/sdk-go/sdktest`, and an
 AG-UI proxy for CopilotKit and AG-UI frontends is in `pkg/sdk-go/agui`.
 
-**Status: 1.4.1.** The contracts this SDK speaks are frozen for v1 (`schemas/_frozen/v1`, checked by `tools/compat`).
-`Version` in this package is `"1.4.1"`. Compatibility and support rules are in
+**Status: 1.5.0.** The contracts this SDK speaks are frozen for v1 (`schemas/_frozen/v1`, checked by `tools/compat`).
+`Version` in this package is `"1.5.0"`. Compatibility and support rules are in
 [compatibility](../../docs/policies/compatibility.md) and [migration and support](../../docs/policies/migration-and-support.md). The version this SDK is tested against
 is the core in the same repository commit. The changelog is the last section of this file.
 
@@ -193,9 +193,27 @@ suite; `contract_test.go` and `spec_test.go` hold it to the OpenAPI document.
 
 ## Changelog
 
-### Unreleased / 1.5.0
+### 1.5.0 — 2026-10-27
 
-**Added.** Generated analyst contracts (ADR 0047) under `pkg/contracts/gen/analyst`; rich-block and turn-event extensions; `web_query` send category; new `contracts.ErrCode` values for analyst refusals. `DefaultClientCapabilities` is sent on every turn unless overridden with `WithClientCapabilities` / `WithoutClientCapabilities`.
+**Added.** Generated analyst contracts (ADR 0047) under `pkg/contracts/gen/analyst`; rich-block and turn-event extensions; `web_query` send category; new `contracts.ErrCode` values for analyst refusals. `DefaultClientCapabilities` is sent on every turn unless overridden with `WithClientCapabilities` / `WithoutClientCapabilities`. Typed private-LLM ops via `Ops().PrivateLLM()` (`PutEndpoint` / tenant pin / principal binding) using `pkg/contracts/gen/providers` structs; the 1.4 `map[string]any` methods remain (deprecated). Bind a role to a private endpoint with `Me().PutRole` and `PrincipalLlmBindingUpdate.PrivateEndpointID` (set `ProfileID` to that endpoint's `profile_id` from `GetEndpoint`). `ReportStepUpOutcome` for host-backend level-3 step-up results (ADR 0048). Erasure `scope: workspace` for principal×workspace erase.
+
+**Fixed.** Workspace-level erasure no longer removes other workspaces' conversation history.
+
+**Notes (core).** Analyst companion (ADR 0047, off by default); step-up outcome (ADR 0048); llmbench quality mode; SSRF hardening; web search via SearXNG-compatible / Brave / Tavily.
+
+```go
+endpointID := "ple_01J0000000000000000000000A"
+ep, err := client.Ops().PrivateLLM().PutEndpoint(ctx, endpointID, pv.PrivateLlmEndpointUpdate{
+	Origin: "http://127.0.0.1:8080", APIDialect: "openai-compatible",
+	ModelIDs: []pv.ModelID{"local-model"}, Roles: []pv.PrincipalLlmRole{pv.PrincipalLlmRoleConversationalController},
+	OwnerKind: pv.PrivateEndpointOwnerKindShared,
+})
+// …
+ple := pv.PrivateEndpointID(endpointID)
+_, err = client.Me().PutRole(ctx, "conversational_controller", pv.PrincipalLlmBindingUpdate{
+	ProfileID: *ep.ProfileID, PrivateEndpointID: &ple,
+})
+```
 
 ### 1.4.1 — 2026-10-27
 

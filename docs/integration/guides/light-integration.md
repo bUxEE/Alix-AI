@@ -1,8 +1,17 @@
 # Integrate AlixAI as a chat assistant with external AI (no local LLM)
 
-Status: written for the 1.1.0 additive wave. Companion to [light External deployments](../../operations/guides/light-external.md) and [External mode for integrators](../external-mode.md).
+Status: written for the **1.5.0** additive wave (kept current with ADRs 0041–0048). Companion to [light External deployments](../../operations/guides/light-external.md) and [External mode for integrators](../external-mode.md).
 
 This guide is for a host application that wants a **signed help / FAQ chat assistant** on AlixAI in light External mode (hosted chat provider, no local controller model). Every claim below points at code or a doc that proves it.
+
+### What changed since 1.1
+
+| Wave | What hosts gained | ADR / code |
+| --- | --- | --- |
+| 1.2 | Per-principal LLM accounts; long-term memory; downloadable exports | [0041](../../decisions/0041-per-principal-llm-accounts.md), [0042](../../decisions/0042-long-term-memory.md) |
+| 1.3 | External TTS / per-role providers; principal usage & budgets; browser OAuth callback; verified tables/charts; ops erasure (tenant vs application) | [0043](../../decisions/0043-external-tts-and-per-role-provider-choice.md), [0044](../../decisions/0044-external-directive-class-and-result-blocks.md) |
+| 1.4 | Private self-hosted LLM endpoints; verified incremental streaming | [0045](../../decisions/0045-private-self-hosted-llm-endpoints.md), [0046](../../decisions/0046-verified-incremental-streaming.md) |
+| 1.5 | Analyst turns; host step-up outcome into the session; principal erasure scoped to one workspace | [0047](../../decisions/0047-analyst-turns.md), [0048](../../decisions/0048-step-up-outcome.md) |
 
 ## What AlixAI is not
 
@@ -97,14 +106,14 @@ External STT for dictation needs `routing.stt` naming a profile with role `stt`,
 | `unavailable` on a turn | Mode not External, no controller route, or provider down | Set External at every level; check provider health ([light-external.md](../../operations/guides/light-external.md)) |
 | `permission_denied` / egress denied (`egress_denied` in details) | Egress policy denies the category/class (often `user_message` / `internal` on the first turn) | Allow `user_message` at `internal` for that tenant; see mapping above |
 | `resource_exhausted` reason `no_budget` | No budget configured or exhausted | Set / raise budget (`PUT` budgets routes; [external-mode.md](../external-mode.md) §4) |
-| `compat.core_out_of_range` / package refused at install | Core version outside `compatibility.alixai_core` | Use a package with `[1.0.0, 2.0.0)` (e.g. `valid-help-assistant`); source builds report `1.1.0-dev` (`apppkg.DevCoreVersion`) |
+| `compat.core_out_of_range` / package refused at install | Core version outside `compatibility.alixai_core` | Use a package with `[1.0.0, 2.0.0)` (e.g. `valid-help-assistant`); source builds report a `*-dev` core (`apppkg.DevCoreVersion`) |
 | Context token refused (`unknown_key`, `wrong_audience`, `replayed`, …) | Issuer key, audience, or single-use misuse | Register the issuer key; mint one token per request ([troubleshooting](../../operations/guides/troubleshooting.md) §3) |
 | `/readyz` 503 | No text model cover, LocalAI down, or warming | Light External: ensure controller route + External cover; see troubleshooting §2 and light-external readiness notes |
 | Dictation `validation_failed` | Wrong audio format/length/energy | Send WAV PCM s16le mono 16 kHz within limits ([ADR 0039](../../decisions/0039-dictation-without-vad.md)) |
 
 ## Multiple companies, shared views and per-user accounts
 
-Hosts that serve several companies for one signed-in person map scope like this **today** (1.1 behaviour; no core
+Hosts that serve several companies for one signed-in person map scope like this **today** (no core
 cross-tenant read):
 
 | Host idea | AlixAI scope |
@@ -114,10 +123,17 @@ cross-tenant read):
 | Signed-in user | `principal_id` (same id in every company) |
 | Shared / “all my companies” view | A **personal tenant** for that user; the HOST fills it (aggregate of the user’s companies) through an `api` RAG source with tenant mode `request` |
 
+**Sessions and scope** (`internal/sessions`, `internal/gateway/routes_v1_sessions.go`):
+
+- The **host mints** the session id in the context token; AlixAI never invents one.
+- A session belongs to exactly one scope (application, tenant, workspace, principal) and never spans scopes — that is identity continuity (`identity.CheckContinuity`).
+- A scope may have **any number of sessions** (one per chat is fine).
+- Switching view or company means a different tenant (or workspace) and therefore a **different session**. Mint a fresh context token per request (and a new session id when the scope changes).
+
 Rules that must stay:
 
 - Never use binding mode `shared` for user data.
-- One session per scope; mint a fresh context token per view (and per request).
+- Mint a fresh context token per request; use a new session id whenever tenant/workspace/principal changes.
 - AlixAI never mixes tenants in one turn; the shared view is still one tenant (the personal one).
 
 **Per-user LLM accounts (1.2):** each principal picks a catalog provider/model and brings their own key;
@@ -147,12 +163,13 @@ companies still gate egress — [ADR 0041](../../decisions/0041-per-principal-ll
 
 Host flow for a remote user: `POST /v1/me/oauth/{provider}/start` with `callback: "host"` and your https `redirect_uri` → open `authorization_url` → on the provider redirect, relay to `POST /v1/me/oauth/callback` with a fresh token of the **same** principal. For popup, poll `GET /v1/me/oauth/flows/{flow_id}` (cancel with `DELETE`). Do not use `/v1/oauth/callback` — that route is operator-only.
 
-**Erasing a user (1.3):** two principal erasures — pick by who asks.
+**Erasing a user (1.3 / 1.5):** principal erasures — pick by who asks and how wide.
 
 - **Left one company (tenant-scoped):** a tenant admin (or deployment operator) calls `POST /v1/ops/erasure` with `{ "level": "principal", "principal_id": "…", "reason": "…" }` (optional `"scope": "tenant"`). Erases that principal's data **inside that tenant only**. Never revokes their personal LLM credentials or bindings (those serve every tenant — ADR 0041).
+- **Left one site / workspace (1.5):** `{ "level": "principal", "scope": "workspace", "principal_id": "…", "workspace_id": "…", "reason": "…" }` (workspace defaults to the token's). Erases that principal's sessions, history, memory, exports and RAG-derived per-principal data **in that workspace only**; nothing outside it is touched; credentials/bindings stay. Tenant admin of that tenant may do it.
 - **GDPR erase this person (application-wide):** a **deployment operator** calls with `{ "level": "principal", "scope": "application", "principal_id": "…", "reason": "…" }`. Erases the principal in every tenant of the application and revokes credentials/bindings. Same as `alixai retention erase -principal` (add `-tenant-scoped` on the CLI for the tenant-local path).
 
-Both answer `202` + `job_id`; poll `GET /v1/ops/erasure/{job_id}`. Levels `tenant` and `workspace` are also accepted. SDKs: `client.ops.erasure.start` / `status` (TypeScript), `client.ops.start_erasure` / `erasure_status` (Python), `client.Ops().StartErasure` / `ErasureStatus` (Go). See [retention-erasure.md](../../operations/retention-erasure.md).
+All answer `202` + `job_id`; poll `GET /v1/ops/erasure/{job_id}`. Levels `tenant` and `workspace` (whole workspace) are also accepted. SDKs: `client.ops.erasure.start` / `status` (TypeScript), `client.ops.start_erasure` / `erasure_status` (Python), `client.Ops().StartErasure` / `ErasureStatus` (Go). See [retention-erasure.md](../../operations/retention-erasure.md).
 
 **Long-term memory (1.2):** set `memory.enabled: true`, put `memory.read` / `memory.write` / `memory.confirm` (and
 related) in the context token, then use `GET|POST /v1/memory` and confirm/reject on proposals. Assistant proposals
@@ -214,6 +231,21 @@ When the host runs its own OpenAI-compatible server (vLLM, LocalAI, …), regist
 2. Allowlist provider `self_hosted` and those model ids on egress; set mode External.
 3. Either **pin the tenant** (`PUT /v1/ops/tenants/{tenant_id}/private-llm`) so every principal in that company uses it, or **bind a principal** (`PUT /v1/ops/principals/{id}/private-llm` / `PUT /v1/me/llm/{role}` with `private_endpoint_id`).
 4. While the endpoint is warming, turns refuse with `private_llm_starting` — there is no silent fallback to OpenAI.
+
+SDKs expose typed private-LLM ops and `Me().PutRole` / `me.llm.putRole` / `me.put_role` with `private_endpoint_id` (see each SDK README).
+
+## Step-up outcome back into the session (1.5.0)
+
+A level-3 (`step_up`) preparation is never completed on the AlixAI confirm path (`step_up_required`). The effect happens only in the **application's own authenticated interface** — including a dialog the host opens from its embedded chat panel. `POST /v1/events` can only mark sessions stale; it never records "done".
+
+After the host UI finishes, the **host backend** calls:
+
+```http
+POST /v1/sessions/{session_id}/preparations/{preparation_id}/step-up-outcome
+{ "outcome": "completed" | "declined" | "failed", "reference": "optional-host-id" }
+```
+
+with a context token of the **same principal and session**. AlixAI always checks the adapter's Status for the preparation's idempotency key: `completed` needs the effect present; `declined`/`failed` are refused if the effect is already there (`step_up_effect_present`). Success records an `ActionReceipt` and completes the session goal (capsule + receipt id) so the next turn sees the outcome; the receipt is also at `GET /v1/actions/{preparation_id}/receipt`. Idempotent. See [ADR 0048](../../decisions/0048-step-up-outcome.md) and [application-package.md](../application-package.md) (Step-up capabilities). SDKs: `reportStepUpOutcome` / `ReportStepUpOutcome` / `report_step_up_outcome`.
 
 ## Spike order
 

@@ -43,6 +43,15 @@ func NewFetcher(r Resolver, clk clock.Clock, gen *ids.Generator) *Fetcher {
 	return f
 }
 
+// SetHTTPClientForTest replaces the SSRF-safe client (serve-turn E2E: dial a
+// TLS fixture for an allow-listed public host). Production never calls this.
+func (f *Fetcher) SetHTTPClientForTest(c *http.Client) {
+	if f == nil || c == nil {
+		return
+	}
+	f.client = &safeClient{client: c}
+}
+
 // Fetch retrieves page text for a URL that was returned by a prior search.
 func (f *Fetcher) Fetch(ctx context.Context, turn *Turn, rawURL string) (FetchResult, error) {
 	if f == nil {
@@ -113,12 +122,14 @@ func (f *Fetcher) Fetch(ctx context.Context, turn *Turn, rawURL string) (FetchRe
 	if utf8Len(snippet) > 500 {
 		snippet = truncateRunes(snippet, 500)
 	}
+	hashRef := "sha256:" + hash
 	cit := an.WebCitation{
 		ID:          id,
 		URL:         norm,
 		Title:       title,
 		RetrievedAt: common.Timestamp(now.Format(time.RFC3339Nano)),
 		Snippet:     &snippet,
+		ContentHash: &hashRef,
 		SourceLabel: "web",
 	}
 	return FetchResult{

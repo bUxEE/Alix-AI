@@ -47,6 +47,11 @@ export const OPERATIONS = {
   getPendingState: { method: "GET", path: "/v1/sessions/{session_id}/pending", authenticated: true },
   sendTurn: { method: "POST", path: "/v1/sessions/{session_id}/turns", authenticated: true },
   streamTurnEvents: { method: "GET", path: "/v1/sessions/{session_id}/turns/{turn_id}/events", authenticated: true },
+  reportStepUpOutcome: {
+    method: "POST",
+    path: "/v1/sessions/{session_id}/preparations/{preparation_id}/step-up-outcome",
+    authenticated: true,
+  },
   getAction: { method: "GET", path: "/v1/actions/{preparation_id}", authenticated: true },
   confirmAction: { method: "POST", path: "/v1/actions/{preparation_id}/confirm", authenticated: true },
   rejectAction: { method: "POST", path: "/v1/actions/{preparation_id}/reject", authenticated: true },

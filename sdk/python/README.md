@@ -4,8 +4,8 @@ Sync and async clients for the AlixAI public API (`schemas/api/openapi.yaml`), t
 for CopilotKit and AG-UI frontends, and a fake server for the tests of a host application. Python 3.11 and later; runtime dependencies are `httpx` and
 `pydantic` only.
 
-**Status: 1.4.1.** The contracts this SDK speaks are frozen for v1 (`schemas/_frozen/v1`, checked by `tools/compat`).
-`pyproject.toml` reads `1.4.1` with a Production/Stable classifier. Compatibility and support rules are in
+**Status: 1.5.0.** The contracts this SDK speaks are frozen for v1 (`schemas/_frozen/v1`, checked by `tools/compat`).
+`pyproject.toml` reads `1.5.0` with a Production/Stable classifier. Compatibility and support rules are in
 [compatibility](../../docs/policies/compatibility.md) and [migration and support](../../docs/policies/migration-and-support.md).
 The version this SDK is tested against is the core in the same repository commit. See [CHANGELOG.md](CHANGELOG.md).
 
@@ -124,6 +124,29 @@ result = client.send_turn("ses-1", {"text": "close it"}).result()
 `OPERATIONS` is the table of operations the SDK speaks, checked against `schemas/api/openapi.yaml` by `tests/test_openapi_contract.py`. An application is served only
 while its package is active, and a package becomes active only through a clean integration audit run by the operator
 ([getting started](../../docs/integration/guides/getting-started.md)); an application that is not active serves nothing (`quarantined`).
+
+## Private LLM and `me.put_role` (ADR 0045)
+
+Operator routes on `client.ops` return generated models (`PrivateLLMEndpoint`, `TenantPrivateLLMPin`, …). After an endpoint is registered and ready, bind a
+role with `private_endpoint_id` and that endpoint's `profile_id`:
+
+```python
+endpoint_id = "ple_01J0000000000000000000000A"
+ep = client.ops.put_private_llm_endpoint(
+    endpoint_id,
+    {
+        "origin": "http://127.0.0.1:8080",
+        "api_dialect": "openai-compatible",
+        "model_ids": ["local-model"],
+        "roles": ["conversational_controller"],
+        "owner_kind": "shared",
+    },
+)
+client.me.put_role(
+    "conversational_controller",
+    {"profile_id": ep.profile_id, "private_endpoint_id": endpoint_id},
+)
+```
 
 ## Providers, modes, budgets (External provider mode)
 

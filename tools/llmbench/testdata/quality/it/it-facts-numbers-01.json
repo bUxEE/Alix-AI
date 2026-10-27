@@ -1,0 +1,21 @@
+{
+  "id": "it-facts-numbers-01",
+  "kind": "facts",
+  "language": "it",
+  "max_tokens": 200,
+  "messages": [
+    {
+      "role": "system",
+      "content": "Rispondi solo con i fatti forniti. Usa i numeri esatti. Italiano."
+    },
+    {
+      "role": "user",
+      "content": "Fatti host (company data):\n- Fatturato consolidato 2025: 1280000 euro\n- Dipendenti FTE: 86\n- Sedi operative: 4\n- Margine operativo netto: 12,5%\n\nDomanda: Quanti sono i dipendenti FTE e qual è il fatturato 2025?"
+    }
+  ],
+  "reference": {
+    "must_contain": ["dipendent", "fatturato"],
+    "must_numbers": ["86", "1280000"],
+    "allowed_numbers": ["86", "1280000", "2025", "4", "12.5", "125"]
+  }
+}

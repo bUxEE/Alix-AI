@@ -30,6 +30,8 @@ type outcome struct {
 	// nowhere else.
 	token actions.ConfirmationToken
 	code  contracts.ErrCode
+	// details are optional structured context for a typed Code (e.g. reason).
+	details map[string]any
 	// capID is the capability whose field labels the response uses.
 	capID string
 	// ui is the validated UI action the turn carries to the client (Result.UIAction).
@@ -40,7 +42,10 @@ type outcome struct {
 	resultValues []act.Fact
 	// analystReply is a verifier-accepted analyst answer (ADR 0047). When set, respond
 	// uses it instead of a second model call.
-	analystReply string
+	analystReply  string
+	analystBlocks []conversation.RichBlock
+	// analystCore is parallel to analystBlocks: true only for materialiser-built blocks.
+	analystCore []bool
 }
 
 // newDirective returns an empty directive for an act, with every required array
@@ -86,15 +91,21 @@ func (t *turn) refuse(code contracts.ErrCode, capID string) outcome {
 // failure is the failure directive: the request was fine and could not be done.
 // Nothing was executed (or, for an uncertain outcome, nothing is claimed).
 func (t *turn) failure(code contracts.ErrCode, capID string) outcome {
+	return t.failureDetails(code, capID, nil)
+}
+
+func (t *turn) failureDetails(code contracts.ErrCode, capID string, details map[string]any) outcome {
 	if isRefusal(code) {
-		return t.refuse(code, capID)
+		out := t.refuse(code, capID)
+		out.details = details
+		return out
 	}
 	if !code.Valid() {
 		code = contracts.ErrInternal
 	}
 	d := t.newDirective(conversation.DialogueDirectiveActReportFailure, capID)
 	d.ReasonCode = errorCode(code)
-	return outcome{dir: d, code: code, capID: capID}
+	return outcome{dir: d, code: code, details: details, capID: capID}
 }
 
 // acknowledgeCancel confirms that the goal was dropped.

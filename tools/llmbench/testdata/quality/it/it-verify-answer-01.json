@@ -1,0 +1,28 @@
+{
+  "id": "it-verify-answer-01",
+  "kind": "verify",
+  "language": "it",
+  "max_tokens": 200,
+  "messages": [
+    {
+      "role": "system",
+      "content": "Verbalizza i fatti host in italiano. Usa solo i numeri forniti (anche in forma 45.000). Non inventare altre cifre. Non aggiungere la parola euro o EUR: solo la cifra."
+    },
+    {
+      "role": "user",
+      "content": "Fatti verificati:\n- budget_approvato = 45000 (display 45.000)\n\nScrivi una frase: comunica che il budget approvato è 45.000."
+    }
+  ],
+  "reference": {
+    "facts": {
+      "derived": [
+        {
+          "id": "df_budget_01",
+          "label": "budget_approvato",
+          "value": 45000,
+          "display": "45.000"
+        }
+      ]
+    }
+  }
+}

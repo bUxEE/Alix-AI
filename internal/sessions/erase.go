@@ -39,6 +39,8 @@ var eraseBatch = 1000
 type EraseSpec struct {
 	ApplicationID string
 	TenantID      string
+	// WorkspaceID, when set, narrows to that workspace only (principal×workspace erasure).
+	WorkspaceID string
 	// PrincipalID, when set, narrows to the sessions of that principal and their
 	// transcript.
 	PrincipalID string
@@ -67,6 +69,10 @@ func (s EraseSpec) validate() error {
 // principal) is the spec's.
 func (s EraseSpec) owned() (string, []any) {
 	where, args := "application_id = ? AND tenant_id = ?", []any{s.ApplicationID, s.TenantID}
+	if s.WorkspaceID != "" {
+		where += " AND workspace_id = ?"
+		args = append(args, s.WorkspaceID)
+	}
 	if s.PrincipalID != "" {
 		where += " AND principal_id = ?"
 		args = append(args, s.PrincipalID)
@@ -82,6 +88,11 @@ func (s EraseSpec) ofSession(a string, ended bool) (string, []any) {
 	where := a + ".application_id = ? AND " + a + ".tenant_id = ? AND EXISTS (SELECT 1 FROM sessions se WHERE se.application_id = " + a +
 		".application_id AND se.tenant_id = " + a + ".tenant_id AND se.workspace_id = " + a + ".workspace_id AND se.id = " + a + ".session_id"
 	args := []any{s.ApplicationID, s.TenantID}
+	if s.WorkspaceID != "" {
+		where = a + ".application_id = ? AND " + a + ".tenant_id = ? AND " + a + ".workspace_id = ? AND EXISTS (SELECT 1 FROM sessions se WHERE se.application_id = " + a +
+			".application_id AND se.tenant_id = " + a + ".tenant_id AND se.workspace_id = " + a + ".workspace_id AND se.id = " + a + ".session_id"
+		args = []any{s.ApplicationID, s.TenantID, s.WorkspaceID}
+	}
 	if ended {
 		where += " AND se.status = 'ended'"
 	}

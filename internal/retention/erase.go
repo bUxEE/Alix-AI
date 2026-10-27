@@ -44,6 +44,9 @@ const (
 	// PrincipalScopeApplication erases the principal in every tenant of the application and
 	// revokes principal-owned credentials/bindings. Deployment operator only.
 	PrincipalScopeApplication PrincipalScope = "application"
+	// PrincipalScopeWorkspace erases the principal inside one workspace of one tenant;
+	// never touches credentials/bindings or data outside that workspace.
+	PrincipalScopeWorkspace PrincipalScope = "workspace"
 )
 
 // Request is one erasure of a tenant, workspace or principal.
@@ -127,10 +130,14 @@ func (r Request) EffectiveScope() PrincipalScope {
 	if r.Level != LevelPrincipal {
 		return ""
 	}
-	if r.Scope == PrincipalScopeApplication {
+	switch r.Scope {
+	case PrincipalScopeApplication:
 		return PrincipalScopeApplication
+	case PrincipalScopeWorkspace:
+		return PrincipalScopeWorkspace
+	default:
+		return PrincipalScopeTenant
 	}
-	return PrincipalScopeTenant
 }
 
 // Validate checks the request before any write.
@@ -153,8 +160,15 @@ func (r Request) Validate() error {
 			}
 		case PrincipalScopeApplication:
 			// every tenant of the application; tenant_id optional (ignored when discovering)
+		case PrincipalScopeWorkspace:
+			if r.TenantID == "" {
+				return contracts.New(contracts.ErrValidationFailed, "tenant_id is required for workspace-scoped principal erasure")
+			}
+			if r.WorkspaceID == "" {
+				return contracts.New(contracts.ErrValidationFailed, "workspace_id is required for workspace-scoped principal erasure")
+			}
 		default:
-			return contracts.New(contracts.ErrValidationFailed, "scope must be tenant or application when level is principal")
+			return contracts.New(contracts.ErrValidationFailed, "scope must be tenant, application or workspace when level is principal")
 		}
 	case LevelTenant:
 		if r.TenantID == "" {
@@ -191,6 +205,7 @@ func (r Request) TargetKey() string {
 // Safe to retry; callers that need job-level idempotency use Jobs.
 //
 // Level principal + scope tenant: data inside that tenant only; never credentials/bindings.
+// Level principal + scope workspace: data inside that workspace only; never credentials/bindings.
 // Level principal + scope application: every tenant of the application, then credentials/bindings.
 func (e *Engine) Erase(ctx context.Context, req Request) (Counts, error) {
 	var out Counts
@@ -341,6 +356,9 @@ func (e *Engine) run(ctx context.Context, req Request, clk clock.Clock) (Counts,
 	sel := audit.Selector{All: true}
 	if req.Level == LevelPrincipal {
 		sel = audit.Selector{Principal: req.PrincipalID}
+		if req.EffectiveScope() == PrincipalScopeWorkspace {
+			sel.Workspace = req.WorkspaceID
+		}
 	}
 	erased, _, more, err := e.eraseChain(ctx, req.DryRun, chain, sel, kind, req.Reason, req.Operator)
 	out.AuditEventsErased = erased
@@ -359,6 +377,9 @@ func (e *Engine) run(ctx context.Context, req Request, clk clock.Clock) (Counts,
 	spec := actions.EraseSpec{
 		ApplicationID: req.ApplicationID, TenantID: req.TenantID, PrincipalID: req.PrincipalID,
 		Kind: kind, Reason: req.Reason, Operator: req.Operator,
+	}
+	if req.EffectiveScope() == PrincipalScopeWorkspace || req.Level == LevelWorkspace {
+		spec.WorkspaceID = req.WorkspaceID
 	}
 	limit := e.maxBatches()
 	for i := 0; i < limit; i++ {
@@ -436,12 +457,8 @@ func (e *Engine) eraseChain(ctx context.Context, dry bool, chain audit.ChainKey,
 
 func (e *Engine) history(ctx context.Context, req Request, clk clock.Clock, out *Counts, spec actions.EraseSpec) error {
 	hs := sessions.EraseSpec{ApplicationID: req.ApplicationID, TenantID: req.TenantID, PrincipalID: req.PrincipalID, Now: clk.Now()}
-	if req.Level == LevelWorkspace {
-		// sessions.EraseSpec has no workspace filter (ADR 0036 spans workspaces of a tenant).
-		// Workspace-level erasure still removes tenant history for the named principal when set;
-		// otherwise it clears the tenant's conversation history (same as tenant) and the files
-		// step narrows by workspace.
-		_ = req.WorkspaceID
+	if req.EffectiveScope() == PrincipalScopeWorkspace || req.Level == LevelWorkspace {
+		hs.WorkspaceID = req.WorkspaceID
 	}
 	loc, err := audit.ForIDs(spec.ApplicationID, spec.TenantID, audit.OperatorWorkspace, spec.Operator, "")
 	if err != nil {
@@ -498,6 +515,9 @@ func (e *Engine) history(ctx context.Context, req Request, clk clock.Clock, out 
 
 func (e *Engine) memory(ctx context.Context, req Request, out *Counts, spec actions.EraseSpec) error {
 	ms := memory.EraseSpec{ApplicationID: req.ApplicationID, TenantID: req.TenantID, PrincipalID: req.PrincipalID}
+	if req.EffectiveScope() == PrincipalScopeWorkspace || req.Level == LevelWorkspace {
+		ms.WorkspaceID = req.WorkspaceID
+	}
 	loc, err := audit.ForIDs(spec.ApplicationID, spec.TenantID, audit.OperatorWorkspace, spec.Operator, "")
 	if err != nil {
 		return err
@@ -551,6 +571,10 @@ func (e *Engine) files(ctx context.Context, req Request, out *Counts) error {
 	case LevelPrincipal:
 		where += " AND owner_id = ?"
 		args = append(args, req.PrincipalID)
+		if req.EffectiveScope() == PrincipalScopeWorkspace {
+			where += " AND workspace_id = ?"
+			args = append(args, req.WorkspaceID)
+		}
 	case LevelWorkspace:
 		where += " AND workspace_id = ?"
 		args = append(args, req.WorkspaceID)

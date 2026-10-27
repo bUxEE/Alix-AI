@@ -10,7 +10,8 @@ import type { Timestamp } from "../common/timestamps.js";
  */
 export interface WebCitation {
   /**
-   * Core-minted citation id (prefix wcit_).
+   * Core-minted citation id (prefix wcit_). Matches common typedId: lowercase prefix plus
+   * uppercase Crockford ULID. The older lowercase body form remains valid (additive).
    *
    * @authority alixai
    */
@@ -41,6 +42,13 @@ export interface WebCitation {
    * @authority alixai
    */
   snippet?: string;
+
+  /**
+   * Optional SHA-256 of the extracted page text (sha256: + 64 lower-case hex digits).
+   *
+   * @authority alixai
+   */
+  content_hash?: string;
 
   /**
    * @authority alixai

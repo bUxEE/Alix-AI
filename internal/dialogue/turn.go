@@ -11,6 +11,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/buxee/alix-ai/internal/actions"
+	"github.com/buxee/alix-ai/internal/analyst/loop"
 	"github.com/buxee/alix-ai/internal/capabilities"
 	dctxpkg "github.com/buxee/alix-ai/internal/dialogue/context"
 	"github.com/buxee/alix-ai/internal/policy"
@@ -160,6 +161,9 @@ func clipRunesPlain(s string, n int) string {
 func (t *turn) run(ctx context.Context) (Result, error) {
 	if err := t.admit(ctx); err != nil {
 		return Result{}, err
+	}
+	if t.in.HasClientCapabilities {
+		loop.RememberClientCapabilities(t.id, t.in.ClientCapabilities)
 	}
 	key := t.scope.ApplicationID + "\x00" + t.scope.TenantID + "\x00" + t.scope.WorkspaceID + "\x00" + t.scope.SessionID
 	unlock, err := t.e.locks.lock(ctx, key)

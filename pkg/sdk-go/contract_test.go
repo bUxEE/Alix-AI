@@ -426,6 +426,17 @@ func TestFakeAnswersConformToOpenAPI(t *testing.T) {
 	must("book", err)
 	_, err = client.RejectAction(ctx, declined.Confirmation.PreparationID)
 	must("reject", err)
+	stepTurn, err := client.SendTurnJSON(ctx, "ses-1", sdkgo.TextTurn("book"))
+	must("step-up book", err)
+	if stepTurn.Confirmation == nil {
+		t.Fatal("step-up book: no confirmation grant")
+	}
+	_, err = client.ReportStepUpOutcome(ctx, "ses-1", stepTurn.Confirmation.PreparationID, sdkgo.StepUpOutcomeRequest{Outcome: "declined"})
+	must("report step-up declined", err)
+	stepDone, err := client.SendTurnJSON(ctx, "ses-1", sdkgo.TextTurn("book"))
+	must("step-up completed book", err)
+	_, err = client.ReportStepUpOutcome(ctx, "ses-1", stepDone.Confirmation.PreparationID, sdkgo.StepUpOutcomeRequest{Outcome: "completed"})
+	must("report step-up completed", err)
 	for _, input := range []func(*sdkgo.ConfirmationGrant) sdkgo.TurnInput{
 		func(g *sdkgo.ConfirmationGrant) sdkgo.TurnInput { return sdkgo.ConfirmTurn(g.PreparationID, g.Token) },
 		func(g *sdkgo.ConfirmationGrant) sdkgo.TurnInput { return sdkgo.RejectTurn(g.PreparationID) },
@@ -611,26 +622,28 @@ func TestFakeAnswersConformToOpenAPI(t *testing.T) {
 	must("ops erasure start", err)
 	_, err = client.Ops().ErasureStatus(ctx, "erj_01J0000000000000000000000A")
 	must("ops erasure status", err)
-	_, err = client.Ops().PutPrivateLlmEndpoint(ctx, "ple_01J0000000000000000000000A", map[string]any{
-		"origin": "http://127.0.0.1:8080", "api_dialect": "openai-compatible",
-		"model_ids": []string{"local-model"}, "roles": []string{"conversational_controller"}, "owner_kind": "shared",
+	ple := client.Ops().PrivateLLM()
+	_, err = ple.PutEndpoint(ctx, "ple_01J0000000000000000000000A", pv.PrivateLlmEndpointUpdate{
+		Origin: "http://127.0.0.1:8080", APIDialect: "openai-compatible",
+		ModelIDs: []pv.ModelID{"local-model"}, Roles: []pv.PrincipalLlmRole{pv.PrincipalLlmRoleConversationalController},
+		OwnerKind: pv.PrivateEndpointOwnerKindShared,
 	})
 	must("ops put private llm endpoint", err)
-	_, err = client.Ops().GetPrivateLlmEndpoint(ctx, "ple_01J0000000000000000000000A")
+	_, err = ple.GetEndpoint(ctx, "ple_01J0000000000000000000000A")
 	must("ops get private llm endpoint", err)
-	must("ops delete private llm endpoint", client.Ops().DeletePrivateLlmEndpoint(ctx, "ple_01J0000000000000000000000A"))
-	_, err = client.Ops().PutTenantPrivateLlm(ctx, "ten-1", map[string]any{"endpoint_id": "ple_01J0000000000000000000000A"})
+	must("ops delete private llm endpoint", ple.DeleteEndpoint(ctx, "ple_01J0000000000000000000000A"))
+	_, err = ple.PutTenantPin(ctx, "ten-1", pv.PrivateLlmTenantPinUpdate{EndpointID: "ple_01J0000000000000000000000A"})
 	must("ops put tenant private llm", err)
-	_, err = client.Ops().GetTenantPrivateLlm(ctx, "ten-1")
+	_, err = ple.GetTenantPin(ctx, "ten-1")
 	must("ops get tenant private llm", err)
-	must("ops delete tenant private llm", client.Ops().DeleteTenantPrivateLlm(ctx, "ten-1"))
-	_, err = client.Ops().PutPrincipalPrivateLlm(ctx, "usr_alice", map[string]any{
-		"endpoint_id": "ple_01J0000000000000000000000A", "roles": []string{"conversational_controller"},
+	must("ops delete tenant private llm", ple.DeleteTenantPin(ctx, "ten-1"))
+	_, err = ple.PutPrincipalBinding(ctx, "usr_alice", pv.PrivateLlmPrincipalBindingUpdate{
+		EndpointID: "ple_01J0000000000000000000000A", Roles: []pv.PrincipalLlmRole{pv.PrincipalLlmRoleConversationalController},
 	})
 	must("ops put principal private llm", err)
-	_, err = client.Ops().GetPrincipalPrivateLlm(ctx, "usr_alice")
+	_, err = ple.GetPrincipalBinding(ctx, "usr_alice")
 	must("ops get principal private llm", err)
-	must("ops delete principal private llm", client.Ops().DeletePrincipalPrivateLlm(ctx, "usr_alice"))
+	must("ops delete principal private llm", ple.DeletePrincipalBinding(ctx, "usr_alice"))
 	_, err = client.Me().Usage(ctx, sdkgo.MeUsageQuery{})
 	must("me usage", err)
 	_, err = client.Me().Budget(ctx)
@@ -761,6 +774,7 @@ var goTypes = map[string]func() any{
 	"confirmAction":       func() any { return new(sdkgo.ActionOutcome) },
 	"rejectAction":        func() any { return new(actions.PreparedAction) },
 	"getActionReceipt":    func() any { return new(actions.ActionReceipt) },
+	"reportStepUpOutcome": func() any { return new(actions.ActionReceipt) },
 	"registerApplication": func() any { return new(sdkgo.Registration) },
 	"getApplication":      func() any { return new(sdkgo.Application) },
 	"listCapabilities":    func() any { return new(sdkgo.CapabilityList) },

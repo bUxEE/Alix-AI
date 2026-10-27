@@ -299,6 +299,23 @@ func CodeOf(err error) ErrCode {
 	return ErrInternal
 }
 
+// DetailsOf returns a copy of the Details map of the first *Error in err's chain,
+// or nil when there is none.
+func DetailsOf(err error) map[string]any {
+	if err == nil {
+		return nil
+	}
+	var e *Error
+	if !errors.As(err, &e) || e == nil || len(e.Details) == 0 {
+		return nil
+	}
+	out := make(map[string]any, len(e.Details))
+	for k, v := range e.Details {
+		out[k] = v
+	}
+	return out
+}
+
 // HasCode reports whether any *Error in err's chain has the given code.
 func HasCode(err error, code ErrCode) bool {
 	for err != nil {

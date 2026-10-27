@@ -55,6 +55,8 @@ type ActionService interface {
 	Receipt(ctx context.Context, scope contracts.Scope, preparationID string) (contracts.ActionReceipt, error)
 	// Invalidate is what ending a session needs (sessions.Invalidator).
 	Invalidate(ctx context.Context, scope contracts.Scope, preparationID string, reason act.PreparedActionInvalidationConditionsItem) (contracts.PreparedAction, error)
+	// RecordStepUpOutcome is the host-backend report after a level-3 step-up (ADR 0048).
+	RecordStepUpOutcome(ctx context.Context, scope contracts.Scope, in actions.StepUpOutcomeInput) (contracts.ActionReceipt, error)
 }
 
 var _ ActionService = (*actions.Coordinator)(nil)

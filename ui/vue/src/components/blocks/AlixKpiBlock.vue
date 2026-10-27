@@ -3,6 +3,7 @@ import { computed } from "vue";
 import { useAlix } from "../../i18n";
 import type { KpiBlock } from "../../sdk-types";
 import AlixSourceLabel from "./AlixSourceLabel.vue";
+import { formatKpiDelta } from "./kpi-delta";
 
 const props = defineProps<{
   block: KpiBlock;
@@ -14,11 +15,7 @@ const valueText = computed(() => {
   const v = props.block.value;
   return typeof v === "number" ? formatNumber(v) : String(v);
 });
-const deltaText = computed(() => {
-  const d = props.block.delta;
-  if (d === null || d === undefined) return "";
-  return typeof d === "number" ? formatNumber(d) : String(d);
-});
+const delta = computed(() => formatKpiDelta(props.block.delta, formatNumber));
 </script>
 
 <template>
@@ -44,11 +41,19 @@ const deltaText = computed(() => {
         >{{ block.unit }}</span>
       </p>
       <p
-        v-if="deltaText || block.period"
+        v-if="delta || block.period"
         class="alix-ma-0 alix-text-sm alix-text-muted"
       >
-        <span v-if="deltaText">{{ deltaText }}</span>
-        <span v-if="deltaText && block.period"> · </span>
+        <span
+          v-if="delta"
+          :aria-label="delta.aria"
+        >
+          <span
+            aria-hidden="true"
+          >{{ delta.arrow }}</span>
+          {{ delta.text }}
+        </span>
+        <span v-if="delta && block.period"> · </span>
         <span v-if="block.period">{{ block.period }}</span>
       </p>
     </div>

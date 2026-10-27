@@ -1376,10 +1376,36 @@ A capability whose confirmation mode is `step_up` (level 3) is never committed b
 platform's coordinator refuses every commit of it with `step_up_required` before anything reaches
 the application, and the application must refuse a commit it receives without the step-up in the same
 way and apply nothing. The effect happens only when the user completes the step-up in the
-application's own authenticated interface. Both designs are accepted: the interface applies the
-effect itself (a commit through the adapter then stays refused, and Status never has a record), or it
-records an approval and the commit that follows applies the effect once, like any other commit. The
-seven probe kinds mean, for such a capability:
+application's own authenticated interface. That interface includes a dialog the host opens from its
+embedded chat panel — it is still the host's authenticated UI; the AlixAI confirm path can never
+complete level 3.
+
+Both designs are accepted for applying the effect: the interface applies it itself (a commit through
+the adapter then stays refused, and Status never has a record), or it records an approval and the
+commit that follows applies the effect once, like any other commit.
+
+**Reporting the outcome to AlixAI (1.5.0, ADR 0048).** `POST /v1/events` only invalidates. To tell
+the assistant the step-up finished, the host **backend** calls
+`POST /v1/sessions/{session_id}/preparations/{preparation_id}/step-up-outcome` with a context token
+of the same principal and session and body `{outcome: completed|declined|failed, reference?}`.
+AlixAI always asks the adapter's Status for the preparation's key: `completed` is accepted only
+when Status shows the effect; `declined` / `failed` are refused with `step_up_effect_present` when
+Status shows the effect (report `completed` instead). A durable `ActionReceipt` is recorded
+(committed or rejected) with provenance that it completed in the host's interface. The session
+goal that still references the preparation is completed the same way an in-turn commit is
+(success / cancelled / failure capsule with `ReceiptID`, and a `ResultCommit` when records exist),
+so the **next turn sees the outcome** and must not re-propose that action. The receipt is also at
+`GET /v1/actions/{preparation_id}/receipt`. Mid-stream `receipt` events are not published from this
+route (the stream hub needs a turn id). Sequence:
+
+```text
+user confirms in host UI
+  → host applies effect (or records decline/failure)
+  → host backend POST …/step-up-outcome {outcome}
+  → AlixAI Status-checks → ActionReceipt → goal completed / cancelled → next turn sees it
+```
+
+The seven probe kinds mean, for such a capability:
 
 | Kind | What it means for a `step_up` capability | Declared outcome |
 | --- | --- | --- |

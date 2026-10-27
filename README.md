@@ -486,30 +486,27 @@ docs/                  architecture, ADRs, integration guides, operations, secur
 
 ## Project status
 
-### Unreleased
+### 1.5.0 (2026-10-27)
+
+- **Analyst companion** ([ADR 0047](docs/decisions/0047-analyst-turns.md)): multi-step reads, core compute, domain classifier, web search/fetch (SearXNG-compatible / Brave / Tavily), verified presentation blocks (kpi, timeline, record_card, provenance, draft; extended chart marks). All abilities **off by default**. Client `client_capabilities` announcement; empty announcement maps emit to the 1.4 freeze.
+- **Host step-up outcome** ([ADR 0048](docs/decisions/0048-step-up-outcome.md)): `POST …/step-up-outcome`.
+- **Workspace-scoped principal erasure**; workspace-level erase no longer removes other workspaces' conversation history.
+- SDKs/kits: typed private-LLM ops (1.4 map methods deprecated/compat), `reportStepUpOutcome` / `report_step_up_outcome`, erasure `scope: workspace`, analyst generated types and kit blocks.
+- **llmbench quality mode**; SSRF hardening on analyst fetch.
+
+**Not verified in 1.5.0:** no live provider or live web-search runs in CI (recorded fixtures and fakes only); Italian quality of private models not measured (measure with `tools/llmbench` quality mode); `-race` runs in CI on Linux only. Answer times and capacity in [hardware-and-pricing](docs/operations/hardware-and-pricing.md) remain estimates until llmbench runs on real GPUs.
+
+### Earlier releases
 
 #### 1.4.1 (patch)
 
-- Fixed: SDKs handle TurnEvent `text_replaced` (ADR 0046 verified streaming) — Go `Envelope` / `TurnText`, Python `TURN_EVENT_TYPES` / `turn_text`, TypeScript `viewTurn` / `turnText`. Transport note: prefer SSE for server-to-server reads. No contract change.
+- Fixed: SDKs handle TurnEvent `text_replaced` (ADR 0046 verified streaming) — Go `Envelope` / `TurnText`, Python `TURN_EVENT_TYPES` / `turn_text`, TypeScript `viewTurn` / `turnText`. Prefer SSE for server-to-server reads. No contract change.
 
 #### 1.4.0 (additive)
 
-- Private self-hosted LLM endpoints (ADR 0045): per-principal private bindings and per-tenant pins; `self_hosted` OpenAI-compatible adapter; ops routes; no silent fallback when warming/failed.
-- Verified incremental streaming (ADR 0046): opt-in `dialogue.stream_verified` (default off for 1.3 compatibility); sentence segments verified before emit; TurnEvent `text_replaced` → AG-UI `alixai.text_replaced`; Vue/React kits handle replace.
-- GPU **Performance** profile (`deploy/container/performance`): pinned vLLM OpenAI-compatible server (bearer auth, health, prefix caching / `cache_salt` isolation notes, max-num-seqs / GPU util / per-model max context) plus LocalAI CUDA alternative; loopback publish.
-- **Private-LLM deployment kit** (`deploy/private-llm`): provider-neutral cloud-init, Scaleway Terraform (L4 / L40S / H100), Hetzner Robot install script + firewall module; host activate/deactivate sequence.
-- Registry candidates `gpt-oss-20b`, `qwen3-30b-a3b`, `gpt-oss-120b` (pinned revisions/sha256; licences in `docs/verification/model-licences.md`).
-- **`tools/llmbench`**: AlixAI-shaped corpus (EN+IT), concurrency 1/4/16/64, TTFT / full-answer / tokens/s report; fake-endpoint tests.
-- [Hardware and pricing](docs/operations/hardware-and-pricing.md) for dedicated and shared segments (sourced rents; answer times and capacity are estimates until llmbench runs on real GPUs).
+- Private self-hosted LLM endpoints (ADR 0045); verified incremental streaming (ADR 0046); GPU Performance profile; private-LLM deployment kit; llmbench; hardware-and-pricing estimates.
 
-#### Other unreleased
-
-- Document minimum recommended hardware for light External mode (all models external; 4 vCPU / 8 GB ceiling).
-- Harden the CLI OAuth system-browser opener: only validated `https` or loopback `http` URLs; fixed OS program names, no shell.
-- Per-user usage (`GET /v1/me/usage`) and application-wide principal budgets (`GET /v1/me/budget`, subject kind `principal_application`); operator usage export `principal_id` filter.
-- Mistral chat + Voxtral STT/TTS adapters; kit fullscreen z-index default 2400; npm publish readiness for `@alixai/*` (workflow skips without `NPM_TOKEN`).
-
-**1.4.1 is in tree** (patch on 1.4.0; no contract change). SDKs handle `text_replaced`; prefer SSE for server-to-server turn reads. **1.4.0** remains: private LLM (ADR 0045), verified streaming (ADR 0046), Performance/private-LLM kit and llmbench; answer times and capacity in hardware-and-pricing remain **estimates until llmbench runs on real GPUs**. What 1.3.0 added: external TTS and per-role provider choice ([ADR 0043](docs/decisions/0043-external-tts-and-per-role-provider-choice.md)) — OpenAI / ElevenLabs / Google Cloud TTS / Polly / **Mistral** behind `routing.tts` and principal `tts` bindings (optional `voice` / `language`); attested verified text only; additive meter unit `characters_in`; each of controller, realisation, STT and TTS may use the same provider or different ones; Mistral chat + Voxtral STT + TTS (EU-default residency; `-template mistral`); per-user usage view and application-wide principal budgets across tenants; UI kit fullscreen z-index default 2400 (`fullscreenZIndex` / `--alix-fullscreen-z` / `--alixai-z-fullscreen`). **1.2.0** remains: per-principal LLM accounts ([ADR 0041](docs/decisions/0041-per-principal-llm-accounts.md)), long-term memory ([ADR 0042](docs/decisions/0042-long-term-memory.md)), downloadable exports, UI kit fullscreen and opt-in downloads. Source builds report `1.4.1-dev`; packages declaring `[1.0.0, 2.0.0)` still validate. Contract changes are additive and frozen into `schemas/_frozen/v1`. Not verified in 1.3: live provider runs, voicebench on real hardware, real 8 GB certification, independent security review. Summary:
+**1.5.0 is in tree.** Source builds report `1.5.0-dev`; packages declaring `[1.0.0, 2.0.0)` still validate. Contract changes are additive and frozen into `schemas/_frozen/v1`. What 1.3.0 added: external TTS and per-role provider choice ([ADR 0043](docs/decisions/0043-external-tts-and-per-role-provider-choice.md)); **1.2.0**: per-principal LLM accounts ([ADR 0041](docs/decisions/0041-per-principal-llm-accounts.md)), long-term memory ([ADR 0042](docs/decisions/0042-long-term-memory.md)), downloadable exports. Not verified earlier: live provider runs, voicebench on real hardware, real 8 GB certification, independent security review. Summary:
 
 | Status | Areas |
 | --- | --- |

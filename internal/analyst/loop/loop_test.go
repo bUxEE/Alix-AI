@@ -305,24 +305,31 @@ func TestEgressDeniesRestrictedField(t *testing.T) {
 		Fields: []an.DatasetDatasetField{
 			{Name: "name", Type: an.FieldTypeString, DataClass: an.DataClassInternal},
 			{Name: "ssn", Type: an.FieldTypeString, DataClass: an.DataClassRestricted},
+			{Name: "attendee_name", Type: an.FieldTypeString, DataClass: an.DataClassConfidential},
 		},
-		Rows:        []an.DatasetRow{{"name": "Ada", "ssn": "123-45-6789"}},
+		Rows:        []an.DatasetRow{{"name": "Ada", "ssn": "123-45-6789", "attendee_name": "Maria Rossi"}},
 		RecordCount: 1,
 	}
 	safe := loop.FilterDatasetForEgress(ds, loop.MaxEgressClass)
 	for _, f := range safe.Fields {
-		if f.Name == "ssn" {
-			t.Fatal("restricted field left")
+		if f.Name == "ssn" || f.Name == "attendee_name" {
+			t.Fatal("restricted/confidential field value projection left")
 		}
 	}
 	for _, row := range safe.Rows {
 		if _, ok := row["ssn"]; ok {
 			t.Fatal("restricted cell left")
 		}
+		if _, ok := row["attendee_name"]; ok {
+			t.Fatal("confidential cell left")
+		}
 	}
 	summary := loop.SummariseDatasets(map[an.DatasetID]an.Dataset{"ds_1": ds}, loop.MaxEgressClass, 8000)
-	if strings.Contains(summary, "123-45-6789") || strings.Contains(summary, "ssn") {
+	if strings.Contains(summary, "123-45-6789") || strings.Contains(summary, "Maria Rossi") {
 		t.Fatalf("egress leak in summary: %s", summary)
+	}
+	if !strings.Contains(summary, "ssn") || !strings.Contains(summary, "attendee_name") || !strings.Contains(summary, "withheld") {
+		t.Fatalf("withheld columns must stay referenceable by name: %s", summary)
 	}
 }
 

@@ -129,11 +129,13 @@ func registerServeSections(reg *config.Registry) {
 	reg.Register(auditSectionName, &auditSection)
 	reg.Register(identity.SectionName, identity.ConfigSection())
 	reg.Register(appCredSectionName, &appCredSection)
+	// ADR 0046/0047: stream_verified + analyst (abilities, web, caps).
+	reg.Register(dialogue.SectionName, dialogue.ConfigSection())
 	gateway.RegisterSections(reg)
-	ragSourcesRegisterSections(reg)
 	resourcesRegisterSections(reg)
 	quotaWireRegisterSections(reg)
 	decWireRegisterSections(reg)
+	ragSourcesRegisterSections(reg)
 }
 
 // loadModelRegistry returns the model registry carried in the binary. Tests

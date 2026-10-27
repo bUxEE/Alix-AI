@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:analyst:abilities:v1",
+  "title": "EffectiveAnalystAbilities",
+  "description": "Read-only effective analyst ability set exposed to the host (e.g. GET /v1/agui/capabilities or a settings route). Most restrictive wins across deployment, application package and tenant. A disabled ability is removed from the step grammar and the prompt; a step that uses it anyway is refused with ability_disabled.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "enabled",
+    "analyst_capable",
+    "abilities",
+    "disabled_reasons",
+    "resolved_at"
+  ],
+  "properties": {
+    "enabled": {
+      "description": "True only when dialogue.analyst.enabled is on at every level that sets it and at least loop can run.",
+      "x-alixai-authority": "alixai",
+      "type": "boolean"
+    },
+    "analyst_capable": {
+      "description": "Whether the resolved controller profile/route is marked analyst_capable.",
+      "x-alixai-authority": "alixai",
+      "type": "boolean"
+    },
+    "abilities": {
+      "description": "Effective flags after intersection and analyst_capable gating.",
+      "x-alixai-authority": "alixai",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "loop",
+        "compute",
+        "forecasts",
+        "presentation",
+        "drafts",
+        "knowledge",
+        "web_search",
+        "web_fetch"
+      ],
+      "properties": {
+        "loop": { "type": "boolean" },
+        "compute": { "type": "boolean" },
+        "forecasts": { "type": "boolean" },
+        "presentation": { "type": "boolean" },
+        "drafts": { "type": "boolean" },
+        "knowledge": { "type": "boolean" },
+        "web_search": { "type": "boolean" },
+        "web_fetch": { "type": "boolean" }
+      }
+    },
+    "disabled_reasons": {
+      "description": "Per ability, why it is off (empty when on). Stable codes for UI.",
+      "x-alixai-authority": "alixai",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "loop": { "$ref": "#/$defs/reasonList" },
+        "compute": { "$ref": "#/$defs/reasonList" },
+        "forecasts": { "$ref": "#/$defs/reasonList" },
+        "presentation": { "$ref": "#/$defs/reasonList" },
+        "drafts": { "$ref": "#/$defs/reasonList" },
+        "knowledge": { "$ref": "#/$defs/reasonList" },
+        "web_search": { "$ref": "#/$defs/reasonList" },
+        "web_fetch": { "$ref": "#/$defs/reasonList" }
+      }
+    },
+    "resolved_at": {
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    }
+  },
+  "$defs": {
+    "reasonList": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "string",
+        "enum": [
+          "deployment_off",
+          "application_off",
+          "tenant_off",
+          "master_disabled",
+          "model_not_analyst_capable",
+          "provider_unconfigured",
+          "domain_undeclared"
+        ]
+      }
+    }
+  }
+}

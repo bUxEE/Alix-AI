@@ -1102,6 +1102,53 @@ class FakeAlixAIServer:
             return self._json(200, self._session_doc(session) if operation == "getSession" else {"pending": self._pending_of(session)})
         if operation == "sendTurn":
             return self._turn_endpoint(scope, params["session_id"], request, body, failure.truncate_after_events if failure else None)
+        if operation == "reportStepUpOutcome":
+            refusal = self._quarantine_refusal()
+            if refusal:
+                return refusal
+            if params.get("session_id") != scope.session_id:
+                return self._level_violation("session")
+            record = self._owned(scope, params["preparation_id"])
+            if isinstance(record, httpx.Response):
+                return record
+            outcome = body.get("outcome") if isinstance(body, dict) else None
+            if outcome not in ("completed", "declined", "failed"):
+                return self._problem("validation_failed", "outcome must be completed, declined or failed")
+            if record.receipt is not None:
+                status = 409 if record.receipt.get("status") == "rejected" else 200
+                return self._json(status, record.receipt)
+            action = self._effective(record)
+            if action["state"] != "prepared":
+                return self._problem("conflict", f"the preparation is {action['state']}")
+            stamp = self._iso(self._now())
+            rid = typed_id("rcpt", self._ms())
+            if outcome == "completed":
+                action["state"] = "committed"
+                record.receipt = {
+                    "receipt_id": rid,
+                    "preparation_id": action["preparation_id"],
+                    "capability_id": action["capability_id"],
+                    "status": "committed",
+                    "records": [{"entity_type": "record", "entity_id": "record-1"}],
+                    "facts": [],
+                    "errors": [],
+                    "audit_ref": typed_id("aud", self._ms()),
+                    "issued_at": stamp,
+                }
+                return self._json(200, record.receipt)
+            action["state"] = "rejected"
+            record.receipt = {
+                "receipt_id": rid,
+                "preparation_id": action["preparation_id"],
+                "capability_id": action["capability_id"],
+                "status": "rejected",
+                "records": [],
+                "facts": [],
+                "errors": [{"code": "conflict", "message": f"step-up {outcome} in the host interface"}],
+                "audit_ref": typed_id("aud", self._ms()),
+                "issued_at": stamp,
+            }
+            return self._json(409, record.receipt)
         if operation in ("getAction", "rejectAction", "getActionReceipt"):
             refusal = self._quarantine_refusal()
             if refusal:

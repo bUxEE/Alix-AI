@@ -11,6 +11,7 @@ import (
 type EraseSpec struct {
 	ApplicationID string
 	TenantID      string
+	WorkspaceID   string // empty → every workspace of the tenant
 	PrincipalID   string // empty → whole tenant
 }
 
@@ -31,6 +32,10 @@ func (s EraseSpec) validate() error {
 
 func (s EraseSpec) where() (string, []any) {
 	w, args := "application_id = ? AND tenant_id = ?", []any{s.ApplicationID, s.TenantID}
+	if s.WorkspaceID != "" {
+		w += " AND workspace_id = ?"
+		args = append(args, s.WorkspaceID)
+	}
 	if s.PrincipalID != "" {
 		w += " AND principal_id = ?"
 		args = append(args, s.PrincipalID)

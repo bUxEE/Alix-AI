@@ -94,6 +94,10 @@ type Context struct {
 	// refused. A chart is therefore never a way to state a number the
 	// application did not state.
 	Facts *FactSet
+	// CoreMaterialised is set only by the core when it built the block (analyst
+	// dataset materialisation, stream PublishTrusted). A model-writable member
+	// such as dataset_id must never grant this trust.
+	CoreMaterialised bool
 }
 
 // Validator validates and sanitises rich blocks. It is safe for concurrent use.
@@ -174,6 +178,8 @@ func ModelAuthorable(typ string) bool { return modelKinds[typ] }
 // ModelJSON is JSON for a block a model wrote (a provider's reply, untrusted):
 // a block of a kind only the core assembles is refused (RuleNotModelKind)
 // before anything else is checked, and the rest is validated as JSON does.
+// A model-supplied dataset_id is refused (RuleModelDatasetID): that member is
+// core authority and must not skip fact checks.
 func (v *Validator) ModelJSON(raw []byte, ctx Context) (conversation.RichBlock, error) {
 	if len(raw) > v.limits.MaxBlockBytes {
 		return conversation.RichBlock{}, reject("", Violation{Rule: RuleBlockTooLarge})
@@ -181,15 +187,48 @@ func (v *Validator) ModelJSON(raw []byte, ctx Context) (conversation.RichBlock, 
 	if typ := blockTypeOf(raw); !ModelAuthorable(typ) {
 		return conversation.RichBlock{}, reject(typ, Violation{Rule: RuleNotModelKind, Path: "/type"})
 	}
+	ctx.CoreMaterialised = false
 	b, err := v.JSON(raw, ctx)
 	if err != nil {
 		return conversation.RichBlock{}, err
+	}
+	if modelCarriesDatasetID(b) {
+		return conversation.RichBlock{}, reject(blockTypeOf(raw), Violation{Rule: RuleModelDatasetID, Path: "/dataset_id"})
 	}
 	// The kind is checked again on what was decoded, so no reading of the raw text can disagree with it.
 	if enc, err := json.Marshal(b); err != nil || !ModelAuthorable(blockTypeOf(enc)) {
 		return conversation.RichBlock{}, reject(blockTypeOf(enc), Violation{Rule: RuleNotModelKind, Path: "/type"})
 	}
 	return b, nil
+}
+
+// modelCarriesDatasetID reports a dataset_id on a model-authorable block.
+func modelCarriesDatasetID(b conversation.RichBlock) bool {
+	switch v := b.Value.(type) {
+	case conversation.TableBlock:
+		return v.DatasetID != nil
+	case conversation.ChartBlock:
+		return v.DatasetID != nil
+	}
+	return false
+}
+
+// StripModelDatasetID clears dataset_id on blocks a model may author. Used on the
+// directive realisation path so a leftover member cannot look core-trusted.
+func StripModelDatasetID(b conversation.RichBlock) conversation.RichBlock {
+	switch v := b.Value.(type) {
+	case conversation.TableBlock:
+		if v.DatasetID != nil {
+			v.DatasetID = nil
+			b.Value = v
+		}
+	case conversation.ChartBlock:
+		if v.DatasetID != nil {
+			v.DatasetID = nil
+			b.Value = v
+		}
+	}
+	return b
 }
 
 // Block validates a block and returns the sanitised block: the Markdown of a

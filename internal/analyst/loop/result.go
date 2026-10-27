@@ -21,11 +21,14 @@ const (
 type Outcome struct {
 	Kind OutcomeKind
 	Code contracts.ErrCode
+	// Details are optional structured context for KindRefuse (e.g. reason=confidential_value).
+	Details map[string]any
 
 	// Answer fields (KindAnswer).
-	Text   string
-	Blocks []conversation.RichBlock
-	Spans  []an.SourceSpan
+	Text             string
+	Blocks           []conversation.RichBlock
+	CoreMaterialised []bool // parallel to Blocks; set only by the analyst materialiser
+	Spans            []an.SourceSpan
 
 	// Clarify fields.
 	Clarify *an.StepProposalClarifyStep
@@ -55,4 +58,5 @@ type Input struct {
 	ClientCaps     an.ClientCapabilities
 	HasClientCaps  bool
 	StreamVerified bool
+	Language       string // BCP-47; empty → verifier default English
 }

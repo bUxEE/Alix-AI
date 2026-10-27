@@ -7,10 +7,13 @@ import (
 	an "github.com/buxee/alix-ai/pkg/contracts/gen/analyst"
 )
 
-// MaxEgressClass is the most sensitive class that may leave for an external model
-// at directive_class. Restricted fields never leave; confidential may depending
-// on the guard — the loop always strips restricted before PromptGuard sees them.
-const MaxEgressClass = an.DataClassConfidential
+// MaxEgressClass is the most sensitive class whose *values* may leave for an
+// external model in the step prompt. Confidential and restricted values stay
+// local (core still holds full datasets for block materialisation); their field
+// names are listed as withheld so block plans may reference them.
+const MaxEgressClass = an.DataClassInternal
+
+const withheldFieldNote = "withheld: values not shown, may be referenced in blocks"
 
 func classRank(c an.DataClass) int {
 	switch c {
@@ -25,15 +28,12 @@ func classRank(c an.DataClass) int {
 }
 
 // FilterDatasetForEgress returns a projection safe to send to an external model:
-// fields above max (and always restricted) are removed.
+// fields above max (and always restricted) have values removed.
 func FilterDatasetForEgress(ds an.Dataset, max an.DataClass) an.Dataset {
 	keep := map[string]bool{}
 	var fields []an.DatasetDatasetField
 	for _, f := range ds.Fields {
-		if classRank(f.DataClass) > classRank(max) {
-			continue
-		}
-		if f.DataClass == an.DataClassRestricted {
+		if classRank(f.DataClass) > classRank(max) || f.DataClass == an.DataClassRestricted {
 			continue
 		}
 		keep[string(f.Name)] = true
@@ -57,6 +57,7 @@ func FilterDatasetForEgress(ds an.Dataset, max an.DataClass) an.Dataset {
 }
 
 // SummariseDatasets builds a bounded, egress-filtered summary for the step prompt.
+// Fields above maxClass (and restricted) are listed as withheld without values.
 func SummariseDatasets(datasets map[an.DatasetID]an.Dataset, maxClass an.DataClass, maxToks int) string {
 	if len(datasets) == 0 {
 		return "(no datasets yet)"
@@ -64,8 +65,7 @@ func SummariseDatasets(datasets map[an.DatasetID]an.Dataset, maxClass an.DataCla
 	var b strings.Builder
 	est := 0
 	for id, ds := range datasets {
-		safe := FilterDatasetForEgress(ds, maxClass)
-		line := summariseOne(id, safe)
+		line := summariseOne(id, ds, maxClass)
 		cost := (len(line) + 2) / 3
 		if maxToks > 0 && est+cost > maxToks {
 			b.WriteString("…(datasets truncated to token budget)\n")
@@ -78,29 +78,41 @@ func SummariseDatasets(datasets map[an.DatasetID]an.Dataset, maxClass an.DataCla
 	return b.String()
 }
 
-func summariseOne(id an.DatasetID, ds an.Dataset) string {
+func summariseOne(id an.DatasetID, ds an.Dataset, maxClass an.DataClass) string {
 	type rowView struct {
-		Fields []string         `json:"fields"`
-		Sample []map[string]any `json:"sample"`
-		Count  int64            `json:"record_count"`
-		Prov   string           `json:"provenance_kind"`
+		Fields   []string         `json:"fields"`
+		Withheld []string         `json:"withheld,omitempty"`
+		Sample   []map[string]any `json:"sample"`
+		Count    int64            `json:"record_count"`
+		Prov     string           `json:"provenance_kind"`
 	}
+	keep := map[string]bool{}
 	names := make([]string, 0, len(ds.Fields))
-	classes := make([]string, 0, len(ds.Fields))
+	var withheld []string
 	for _, f := range ds.Fields {
-		names = append(names, string(f.Name)+"("+string(f.DataClass)+")")
-		classes = append(classes, string(f.DataClass))
+		label := string(f.Name) + "(" + string(f.DataClass) + ")"
+		if classRank(f.DataClass) > classRank(maxClass) || f.DataClass == an.DataClassRestricted {
+			withheld = append(withheld, label+": "+withheldFieldNote)
+			continue
+		}
+		keep[string(f.Name)] = true
+		names = append(names, label)
 	}
-	_ = classes
 	sampleN := 3
 	if len(ds.Rows) < sampleN {
 		sampleN = len(ds.Rows)
 	}
 	sample := make([]map[string]any, 0, sampleN)
 	for i := 0; i < sampleN; i++ {
-		sample = append(sample, map[string]any(ds.Rows[i]))
+		nr := map[string]any{}
+		for k, v := range ds.Rows[i] {
+			if keep[k] {
+				nr[k] = v
+			}
+		}
+		sample = append(sample, nr)
 	}
-	v := rowView{Fields: names, Sample: sample, Count: ds.RecordCount, Prov: string(ds.Provenance.Kind)}
+	v := rowView{Fields: names, Withheld: withheld, Sample: sample, Count: ds.RecordCount, Prov: string(ds.Provenance.Kind)}
 	raw, _ := json.Marshal(v)
 	return "dataset " + string(id) + ": " + string(raw)
 }

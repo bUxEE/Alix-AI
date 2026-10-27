@@ -1,0 +1,20 @@
+{
+  "id": "it-json-analyst-step-01",
+  "kind": "json_analyst_step",
+  "language": "it",
+  "max_tokens": 400,
+  "messages": [
+    {
+      "role": "system",
+      "content": "Produci SOLO un JSON AnalystStepProposal (model-authority, senza trace_id). Kind read con capability company.profile.read. Nessun testo fuori dal JSON."
+    },
+    {
+      "role": "user",
+      "content": "Passo richiesto: leggere il profilo azienda cmp_acme_01. Emetti AnalystStepProposal JSON kind=read."
+    }
+  ],
+  "reference": {
+    "json_schema": "analyst_step",
+    "expected_kind": "read"
+  }
+}

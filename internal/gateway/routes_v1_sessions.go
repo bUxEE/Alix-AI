@@ -163,6 +163,7 @@ func registerV1Sessions(rt *Router, d *Deps) {
 	v1.HandleFunc("DELETE /sessions/{session_id}", h.end)
 	v1.HandleFunc("GET /sessions/{session_id}/pending", h.pending)
 	v1.HandleFunc("POST /sessions/{session_id}/turns", h.turn)
+	v1.HandleFunc("POST /sessions/{session_id}/preparations/{preparation_id}/step-up-outcome", h.stepUpOutcome)
 }
 
 // v1Scope returns the verified scope of the request, or writes the refusal.
@@ -481,6 +482,10 @@ func (q TurnRequest) input() (dialogue.TurnInput, error) {
 		}
 		in.Reject = rj.PreparationID
 	}
+	if q.ClientCapabilities != nil {
+		in.ClientCapabilities = *q.ClientCapabilities
+		in.HasClientCapabilities = true
+	}
 	return in, nil
 }
 
@@ -689,11 +694,18 @@ func writeEventStream(w http.ResponseWriter, frames []stream.Frame, grant *Confi
 // after it would then arrive out of order.
 type turnEventsDraft func(seq conversation.Seq) conversation.TurnEventValue
 
+// turnEventsItem is one leading draft plus whether the core materialised it
+// (PublishTrusted). Trust is never inferred from a JSON member such as dataset_id.
+type turnEventsItem struct {
+	draft   turnEventsDraft
+	trusted bool
+}
+
 // turnEventsPlan is the account of one turn, in the order it is published: the
 // events before the text, the response text (which Turn.PublishResponse
 // sanitises as a whole and cuts into token events), and the done event.
 type turnEventsPlan struct {
-	leading []turnEventsDraft
+	leading []turnEventsItem
 	text    string
 	done    turnEventsDraft
 	// export is the verified BlockEvent payloads, in stream order, for durable history.
@@ -706,8 +718,8 @@ type turnEventsPlan struct {
 // published mid-turn (NextSeq > 0), the whole-text PublishResponse is skipped
 // so clients do not see the reply twice (ADR 0046).
 func (p turnEventsPlan) publish(t *stream.Turn, streamed bool) error {
-	for _, d := range p.leading {
-		if err := turnEventsPublishDraft(t, d); err != nil {
+	for _, item := range p.leading {
+		if err := turnEventsPublishDraft(t, item.draft, item.trusted); err != nil {
 			return err
 		}
 	}
@@ -716,11 +728,15 @@ func (p turnEventsPlan) publish(t *stream.Turn, streamed bool) error {
 			return err
 		}
 	}
-	return turnEventsPublishDraft(t, p.done)
+	return turnEventsPublishDraft(t, p.done, false)
 }
 
-func turnEventsPublishDraft(t *stream.Turn, d turnEventsDraft) error {
-	return t.Publish(conversation.TurnEvent{Value: d(conversation.Seq(t.NextSeq()))})
+func turnEventsPublishDraft(t *stream.Turn, d turnEventsDraft, trusted bool) error {
+	ev := conversation.TurnEvent{Value: d(conversation.Seq(t.NextSeq()))}
+	if trusted {
+		return t.PublishTrusted(ev)
+	}
+	return t.Publish(ev)
 }
 
 // buildTurnEvents is the account of one turn as TurnEvents. Everything in it is
@@ -733,7 +749,12 @@ func buildTurnEvents(res dialogue.Result, turnErr error) turnEventsPlan {
 	turnID := act.TurnID(res.TurnID)
 	d := res.Directive
 	var p turnEventsPlan
-	add := func(f turnEventsDraft) { p.leading = append(p.leading, f) }
+	add := func(f turnEventsDraft) {
+		p.leading = append(p.leading, turnEventsItem{draft: f})
+	}
+	addTrusted := func(f turnEventsDraft) {
+		p.leading = append(p.leading, turnEventsItem{draft: f, trusted: true})
+	}
 
 	for _, st := range progressStages(res) {
 		stage := st
@@ -755,6 +776,20 @@ func buildTurnEvents(res dialogue.Result, turnErr error) turnEventsPlan {
 	}
 	for _, m := range dialogue.MemoryProposalEvents(res) {
 		add(turnEventsDraft(m))
+	}
+	// Verified rich blocks (present_result tables/charts, analyst materialisation).
+	// PublishTrusted only when CoreMaterialised was set by the materialiser — never dataset_id.
+	for i, blk := range res.Response.Blocks {
+		b := blk
+		p.export = append(p.export, b)
+		draft := func(seq conversation.Seq) conversation.TurnEventValue {
+			return conversation.BlockEvent{TurnID: turnID, Seq: seq, Block: b}
+		}
+		if i < len(res.Response.CoreMaterialised) && res.Response.CoreMaterialised[i] {
+			addTrusted(draft)
+		} else {
+			add(draft)
+		}
 	}
 
 	if pa := res.Prepared; pa != nil {
@@ -803,7 +838,11 @@ func buildTurnEvents(res dialogue.Result, turnErr error) turnEventsPlan {
 			if msg == "" {
 				msg = "the request could not be completed"
 			}
-			e = problemFor(contracts.New(res.Code, msg)).body
+			ce := contracts.New(res.Code, msg)
+			for k, v := range res.Details {
+				ce = ce.WithDetails(k, v)
+			}
+			e = problemFor(ce).body
 		}
 		add(func(seq conversation.Seq) conversation.TurnEventValue {
 			return conversation.ErrorEvent{TurnID: turnID, Seq: seq, Error: common.Error{

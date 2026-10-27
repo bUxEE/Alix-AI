@@ -12,6 +12,11 @@ single-capability path. Each ability is a separate switch; model strength only d
 
 ## 2. Config keys
 
+Loaded by the dialogue config section (`dialogue.Loaded().Analyst`) and wired into the
+serve composition root (`internal/cli` analyst provider). Caps and ability flags are
+validated against `schemas/analyst/config.schema.json`. Unknown `web.provider` values fail
+closed at startup when analyst is enabled.
+
 Under `dialogue.analyst` (env prefix `ALIXAI_DIALOGUE_ANALYST_*` where the config loader maps
 nested keys):
 
@@ -37,7 +42,7 @@ nested keys):
 | `web.cred_ref` | — | Opaque credentials-service ref (never a secret in YAML) |
 | `web.origin` | — | SearXNG https origin when provider is `searxng` |
 | `web.max_searches` / `max_fetches` | 3 | Caps |
-| `web.allow_hosts` / `deny_hosts` | [] | Deployment host policy |
+| `web.allow_hosts` / `deny_hosts` | [] | Deployment host policy (intersected with tenant allow/deny and package `preferred_web_hosts` when set) |
 
 Application package `assistant.abilities` and tenant settings
 (`PUT /v1/ops/tenants/{tenant_id}/analyst`) may only narrow. Most restrictive wins.
@@ -58,6 +63,39 @@ careful citation. Lite / weak controllers should stay false.
 
 ## 5. Egress
 
-See [external-mode.md](external-mode.md) for category `web_query` and dataset field-class
-propagation. Restricted fields stay local for compute; permitted aggregates may leave at
-`directive_class`.
+Web search (`abilities.web_search` / `web_fetch`) requires **External mode** and an egress
+policy chain that permits category `web_query` (the query’s data class must be allowed on
+every level). Local-only deployments get no web search: the serve composition fails closed
+(`analystWebQueryAllows` / “web search requires External mode” under `-tags noexternal`).
+The serve gate probes with egress `Disclose` (no audit send record) before any real
+`web_query`; restricted dataset fields still refuse at search time via `QueryLeaksRestricted`.
+
+Example (SearXNG self-host; `cred_ref` optional for searxng, required for brave/tavily;
+`allow_hosts` required whenever `web_fetch` is on):
+
+```yaml
+dialogue:
+  analyst:
+    enabled: true
+    abilities:
+      loop: true
+      compute: true
+      forecasts: true
+      presentation: true
+      drafts: true
+      knowledge: true
+      web_search: true
+      web_fetch: true
+    web:
+      provider: searxng
+      origin: "https://searx.example.internal"
+      cred_ref: "cred_01ARZ3NDEKTSV4RRFFQ69G5FAV"
+      max_searches: 3
+      max_fetches: 3
+      allow_hosts: [gov.it]
+```
+
+Operators then enable External mode and PUT egress policies that allow `internal` (or
+narrower) for the tenant that may search. See [external-mode.md](external-mode.md) for
+category `web_query` and dataset field-class propagation. Restricted fields stay local for
+compute; permitted aggregates may leave at `directive_class`.

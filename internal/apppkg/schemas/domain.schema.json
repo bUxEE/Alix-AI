@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:analyst:domain:v1",
+  "title": "AssistantDomain",
+  "description": "Application-package assistant.domain section (ADR 0047): declares the host domain so the assistant may use knowledge and web search only inside it. Additive on the application manifest.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["description", "in_scope", "out_of_scope", "knowledge_allowed", "web_search_allowed"],
+  "properties": {
+    "description": {
+      "description": "Short description of the application's domain (shown to the model).",
+      "x-alixai-authority": "host",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "in_scope": {
+      "description": "Topic areas that are in domain.",
+      "x-alixai-authority": "host",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 256
+      }
+    },
+    "out_of_scope": {
+      "description": "Explicit out-of-scope areas (general chatbot use, unrelated hobbies, etc.).",
+      "x-alixai-authority": "host",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 256
+      }
+    },
+    "examples": {
+      "description": "Per-language examples of in-domain and out-of-domain questions.",
+      "x-alixai-authority": "host",
+      "type": "object",
+      "maxProperties": 16,
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+      },
+      "additionalProperties": { "$ref": "#/$defs/languageExamples" }
+    },
+    "knowledge_allowed": {
+      "description": "Whether general knowledge may be used for in-domain explanations (ability knowledge must still be on).",
+      "x-alixai-authority": "host",
+      "type": "boolean"
+    },
+    "web_search_allowed": {
+      "description": "Whether the package permits web search in this domain (ability web_search must still be on).",
+      "x-alixai-authority": "host",
+      "type": "boolean"
+    },
+    "preferred_web_hosts": {
+      "description": "Hosts the package prefers for official sources (intersected with tenant allow lists).",
+      "x-alixai-authority": "host",
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 253,
+        "pattern": "^[A-Za-z0-9.-]+$"
+      }
+    }
+  },
+  "$defs": {
+    "languageExamples": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "in_domain": {
+          "type": "array",
+          "maxItems": 16,
+          "items": { "type": "string", "minLength": 1, "maxLength": 512 }
+        },
+        "out_of_domain": {
+          "type": "array",
+          "maxItems": 16,
+          "items": { "type": "string", "minLength": 1, "maxLength": 512 }
+        }
+      }
+    }
+  }
+}

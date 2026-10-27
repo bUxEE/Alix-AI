@@ -15,9 +15,10 @@ class WebCitation(BaseModel):
     number in the answer must appear in the fetched text of its citation.
     """
     model_config = ConfigDict(extra="forbid", protected_namespaces=())
-    id: Annotated[str, Field(min_length=4, max_length=64, pattern='^wcit_[a-z0-9][a-z0-9_]{2,60}$')]
+    id: Annotated[str, Field(min_length=4, max_length=64, pattern='^wcit_([0-9A-HJKMNP-TV-Z]{26}|[a-z0-9][a-z0-9_]{2,60})$')]
     url: Annotated[str, Field(min_length=8, max_length=2048, pattern="^https://[A-Za-z0-9._~:/?#\\[\\]@!$&'()*+,;=%-]+$")]
     title: Annotated[str, Field(min_length=1, max_length=512)]
     retrieved_at: Timestamp
     snippet: Optional[Annotated[str, Field(min_length=1, max_length=2000)]] = None
+    content_hash: Optional[Annotated[str, Field(pattern='^sha256:[0-9a-f]{64}$')]] = None
     source_label: Literal["web"]

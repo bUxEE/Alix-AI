@@ -1,0 +1,21 @@
+{
+  "id": "it-extract-actions-01",
+  "kind": "extract",
+  "language": "it",
+  "max_tokens": 350,
+  "messages": [
+    {
+      "role": "system",
+      "content": "Estrai decisioni e azioni dai verbali. Elenca in italiano: Decisioni, poi Azioni (owner + scadenza). Non inventare."
+    },
+    {
+      "role": "user",
+      "content": "Dal verbale del comitato governance del 3 settembre 2026:\nDecisione A: adottare la policy di retention documenti a 7 anni.\nDecisione B: nominare Rossi responsabile privacy.\nAzione 1: Verdi aggiorna il registro trattamenti entro il 15 ottobre 2026.\nAzione 2: Bianchi invia la formazione obbligatoria a 120 dipendenti entro il 1 novembre 2026.\nElenca decisioni e azioni."
+    }
+  ],
+  "reference": {
+    "must_contain": ["retention", "rossi", "verdi", "bianchi"],
+    "must_numbers": ["7", "120"],
+    "allowed_numbers": ["7", "120", "2026", "3", "15", "1"]
+  }
+}

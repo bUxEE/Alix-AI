@@ -83,11 +83,28 @@ func TestHostAllowDeny(t *testing.T) {
 	if p.HostAllowed("evil.example") {
 		t.Fatal("deny from first policy")
 	}
+
+	// Deployment ∪ package preferred_web_hosts (empty package list is omitted by caller).
+	three := MergeHostPolicy(
+		HostPolicy{Allow: []string{"gov.it", "europa.eu"}},
+		HostPolicy{}, // empty tenant allow = nil → does not set allow yet
+		HostPolicy{Allow: []string{"gov.it"}},
+	)
+	if !three.HostAllowed("gov.it") || three.HostAllowed("europa.eu") {
+		t.Fatalf("package preferred_web_hosts must narrow to gov.it, got allow=%v", three.Allow)
+	}
+	absent := MergeHostPolicy(
+		HostPolicy{Allow: []string{"gov.it", "europa.eu"}},
+		HostPolicy{},
+	)
+	if !absent.HostAllowed("europa.eu") {
+		t.Fatal("absent package preferred_web_hosts must leave europa.eu allowed")
+	}
 }
 
 func TestFetchNotFromSearchRefused(t *testing.T) {
 	clk := clock.NewFake(time.Date(2026, 10, 27, 12, 0, 0, 0, time.UTC))
-	f := NewFetcher(stubResolver{"www.gov.it": {netip.MustParseAddr("203.0.113.10")}}, clk, ids.NewGenerator(clk))
+	f := NewFetcher(stubResolver{"www.gov.it": {netip.MustParseAddr("1.1.1.1")}}, clk, ids.NewGenerator(clk))
 	turn := NewTurn(HostPolicy{Allow: []string{"gov.it"}}, Budget{})
 	_, err := f.Fetch(context.Background(), turn, "https://www.gov.it/incentives/xx-2026")
 	if contracts.CodeOf(err) != contracts.ErrWebQueryRefused {
@@ -119,7 +136,7 @@ func TestSSRFCases(t *testing.T) {
 		})
 	}
 	t.Run("non_https", func(t *testing.T) {
-		f := NewFetcher(stubResolver{"www.gov.it": {netip.MustParseAddr("203.0.113.10")}}, clk, ids.NewGenerator(clk))
+		f := NewFetcher(stubResolver{"www.gov.it": {netip.MustParseAddr("1.1.1.1")}}, clk, ids.NewGenerator(clk))
 		turn := NewTurn(HostPolicy{Allow: []string{"gov.it"}}, Budget{})
 		u := "http://www.gov.it/x"
 		turn.RecordHits([]SearchHit{{URL: u}})
@@ -129,7 +146,7 @@ func TestSSRFCases(t *testing.T) {
 		}
 	})
 	t.Run("redirect_to_metadata", func(t *testing.T) {
-		res := stubResolver{"www.gov.it": {netip.MustParseAddr("203.0.113.50")}}
+		res := stubResolver{"www.gov.it": {netip.MustParseAddr("1.1.1.1")}}
 		f := NewFetcher(res, clk, ids.NewGenerator(clk))
 		turn := NewTurn(HostPolicy{Allow: []string{"gov.it", "169.254.169.254"}}, Budget{})
 		meta := "https://169.254.169.254/latest"
@@ -198,12 +215,27 @@ func (f *fakeProvider) Search(context.Context, string) ([]SearchHit, error) {
 }
 
 func TestIsBlockedAddr(t *testing.T) {
-	for _, s := range []string{"127.0.0.1", "10.1.2.3", "192.168.0.1", "169.254.169.254", "::1", "fe80::1"} {
+	blocked := []string{
+		"127.0.0.1", "10.1.2.3", "192.168.0.1", "169.254.169.254", "::1", "fe80::1",
+		"203.0.113.10", "192.0.2.1", "198.51.100.1", // documentation
+		"2001:db8::1",
+		"2001:0:53aa:64c::1",       // Teredo (whole 2001::/32)
+		"64:ff9b::c0a8:101",        // NAT64 → 192.168.1.1
+		"64:ff9b:1:0:0:0:c0a8:101", // NAT64 local → 192.168.1.1
+		"2002:c0a8:0101::1",        // 6to4 → 192.168.1.1
+	}
+	for _, s := range blocked {
 		if !isBlockedAddr(netip.MustParseAddr(s)) {
 			t.Errorf("%s should be blocked", s)
 		}
 	}
-	if isBlockedAddr(netip.MustParseAddr("203.0.113.10")) {
-		t.Error("TEST-NET-3 addresses used as public stubs must not be blocked")
+	if isBlockedAddr(netip.MustParseAddr("1.1.1.1")) {
+		t.Error("public unicast must not be blocked")
+	}
+	if isBlockedAddr(netip.MustParseAddr("64:ff9b::101:101")) { // NAT64 → 1.1.1.1
+		t.Error("NAT64 embedding a public v4 must not be blocked")
+	}
+	if isBlockedAddr(netip.MustParseAddr("2002:0101:0101::1")) { // 6to4 → 1.1.1.1
+		t.Error("6to4 embedding a public v4 must not be blocked")
 	}
 }

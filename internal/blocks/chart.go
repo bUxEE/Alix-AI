@@ -266,6 +266,9 @@ func (v *Validator) checkChart(c conversation.ChartBlock, ctx Context, col *coll
 // checkChartValue checks one value of a channel.
 func (v *Validator) checkChartValue(val any, ctype conversation.ChartChannelType, theta bool, path string,
 	ctx Context, col *collector, report func(Rule, string, string), field string) {
+	// Core-materialised charts (analyst datasets) skip the directive-fact check;
+	// dataset_id alone never grants this — only Context.CoreMaterialised.
+	requireFacts := !ctx.CoreMaterialised
 	if val == nil {
 		if ctype != conversation.ChartChannelTypeQuantitative || theta {
 			report(RuleChartType, path, field+"|null")
@@ -287,7 +290,7 @@ func (v *Validator) checkChartValue(val any, ctype conversation.ChartChannelType
 			}
 		}
 		// A string that is only a number presents a number.
-		if r, ok := numericLiteral(x); ok && !ctx.Facts.has(r) {
+		if r, ok := numericLiteral(x); ok && requireFacts && !ctx.Facts.has(r) {
 			report(RuleChartNumber, path, field+"|num")
 		}
 	case bool:
@@ -303,7 +306,7 @@ func (v *Validator) checkChartValue(val any, ctype conversation.ChartChannelType
 			report(RuleChartNumeric, path, field+"|finite")
 		case ctype == conversation.ChartChannelTypeTemporal:
 			report(RuleChartType, path, field+"|temporal")
-		case !ctx.Facts.has(r):
+		case requireFacts && !ctx.Facts.has(r):
 			// The number is not one the application stated: the model made it up,
 			// computed it or copied it wrongly. It is never repaired.
 			report(RuleChartNumber, path, field+"|num")

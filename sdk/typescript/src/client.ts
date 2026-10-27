@@ -169,6 +169,16 @@ export interface AlixAIClient {
   rejectAction: (preparationId: string, options?: CallOptions) => Promise<PreparedAction>;
   /** The durable receipt of an action. `conflict` while it has no outcome yet. */
   getActionReceipt: (preparationId: string, options?: CallOptions) => Promise<ActionReceipt>;
+  /**
+   * Host-backend report of a level-3 step-up outcome (ADR 0048). `completed` must match adapter Status;
+   * `declined` / `failed` return a rejected receipt (HTTP 409 is accepted as the body).
+   */
+  reportStepUpOutcome: (
+    sessionId: string,
+    preparationId: string,
+    body: { outcome: "completed" | "declined" | "failed"; reference?: string },
+    options?: CallOptions,
+  ) => Promise<ActionReceipt>;
 
   // ---- applications ----
   /** The caller's application with its installed packages and states. */
@@ -569,6 +579,23 @@ const build = (caller: Caller, options: ClientOptions, turnTimeout: number): Ali
       json("rejectAction", { preparation_id: pathId("preparationId", preparationId) }, isPreparedAction, "action", call),
     getActionReceipt: async (preparationId, call) =>
       json("getActionReceipt", { preparation_id: pathId("preparationId", preparationId) }, isActionReceipt, "receipt", call),
+    reportStepUpOutcome: async (sessionId, preparationId, body, call) => {
+      const outcome = body?.outcome;
+      if (outcome !== "completed" && outcome !== "declined" && outcome !== "failed") {
+        throw sdkError("validation_failed", "outcome must be completed, declined or failed", { details: { argument: "outcome" } });
+      }
+      return json(
+        "reportStepUpOutcome",
+        { session_id: pathId("sessionId", sessionId), preparation_id: pathId("preparationId", preparationId) },
+        isActionReceipt,
+        "receipt",
+        call,
+        {
+          body: { contentType: "application/json", payload: JSON.stringify(body) },
+          allowStatus: (status) => status === 409,
+        },
+      );
+    },
 
     getApplication: async (applicationId, call) =>
       json("getApplication", { application_id: pathId("applicationId", applicationId) }, isApplication, "application", call),

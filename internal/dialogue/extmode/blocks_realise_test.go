@@ -2,6 +2,7 @@ package extmode
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/buxee/alix-ai/internal/blocks"
@@ -71,6 +72,28 @@ func TestExternalRichBlocksVerifiedAgainstDirectiveFacts(t *testing.T) {
 		out, err := verify.RealiseRich(text, []conversation.RichBlock{bad}, d, nil, verify.Options{Language: verify.LangEN})
 		if err != nil || out.Source != verify.SourceTemplate {
 			t.Fatalf("source=%s err=%v, want template", out.Source, err)
+		}
+	})
+	t.Run("dataset_id does not bypass the fact check", func(t *testing.T) {
+		// A model table with dataset_id + an invented number must not verify.
+		bypass := `{"type":"table","dataset_id":"ds_anything","columns":[{"key":"clinic","label":"Clinic"},{"key":"n","label":"N"}],"rows":[["North",99],["South",18]]}`
+		res := providers.RichResult{Parts: []providers.ContentPart{
+			providers.TextPart(text), providers.TextPart(bypass),
+		}}
+		got, refused := RichBlocks(blocks.Default(), blocks.Context{Facts: blocks.NewFactSet(facts)}, res)
+		if len(refused) == 0 {
+			t.Fatalf("model table with dataset_id + invented number must be refused, got blocks=%d", len(got))
+		}
+		var bad conversation.RichBlock
+		if err := json.Unmarshal([]byte(bypass), &bad); err != nil {
+			t.Fatal(err)
+		}
+		out, err := verify.RealiseRich(text, []conversation.RichBlock{bad}, d, nil, verify.Options{Language: verify.LangEN})
+		if err != nil || out.Source != verify.SourceTemplate {
+			t.Fatalf("RealiseRich source=%s err=%v, want template (not invented 99)", out.Source, err)
+		}
+		if strings.Contains(out.Text, "99") {
+			t.Fatalf("template must not carry the invented number: %q", out.Text)
 		}
 	})
 }

@@ -369,6 +369,7 @@ func (f *Fake) routes() http.Handler {
 		"confirmAction":                     (*call).confirmAction,
 		"rejectAction":                      (*call).rejectAction,
 		"getActionReceipt":                  (*call).getReceipt,
+		"reportStepUpOutcome":               (*call).reportStepUpOutcome,
 		"registerApplication":               (*call).registerApplication,
 		"getApplication":                    (*call).getApplication,
 		"listCapabilities":                  (*call).listCapabilities,
@@ -508,6 +509,7 @@ func (f *Fake) serve(op sdkgo.Operation, handle func(*call), w http.ResponseWrit
 func quarantines(id string) bool {
 	switch id {
 	case "createSession", "getSession", "endSession", "getPendingState", "sendTurn", "streamTurnEvents",
+		"reportStepUpOutcome",
 		"getAction", "confirmAction", "rejectAction", "getActionReceipt", "listCapabilities", "getDecisionStatus":
 		return true
 	}

@@ -271,6 +271,39 @@ func (c *Client) GetActionReceipt(ctx context.Context, preparationID string, opt
 	return get(ctx, c, opGetActionReceipt, map[string]string{"preparation_id": preparationID}, applyOptions(options), checkReceipt)
 }
 
+// StepUpOutcomeRequest is the body of ReportStepUpOutcome (ADR 0048).
+type StepUpOutcomeRequest struct {
+	Outcome   string `json:"outcome"`
+	Reference string `json:"reference,omitempty"`
+}
+
+// ReportStepUpOutcome records a level-3 step-up result from the host backend
+// (completed must be confirmed by adapter Status). Declined/failed answer 409
+// with the rejected receipt body.
+func (c *Client) ReportStepUpOutcome(ctx context.Context, sessionID, preparationID string, body StepUpOutcomeRequest, options ...CallOption) (*actions.ActionReceipt, error) {
+	if err := pathID("sessionID", sessionID); err != nil {
+		return nil, err
+	}
+	if err := pathID("preparationID", preparationID); err != nil {
+		return nil, err
+	}
+	switch body.Outcome {
+	case "completed", "declined", "failed":
+	default:
+		return nil, invalidArgument("outcome", "it must be completed, declined or failed")
+	}
+	raw, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	r := request{
+		op: opReportStepUpOutcome, params: map[string]string{"session_id": sessionID, "preparation_id": preparationID},
+		accept: "application/json", contentType: "application/json", body: raw,
+		allowStatus: func(status int) bool { return status == http.StatusConflict },
+	}
+	return doJSON(ctx, c.t, r, applyOptions(options).deadline(c.timeout), checkReceipt)
+}
+
 // ---- applications ----
 
 // GetApplication is the caller's application with its installed packages and states.
