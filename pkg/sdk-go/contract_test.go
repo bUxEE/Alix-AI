@@ -16,6 +16,7 @@ import (
 
 	"github.com/buxee/alix-ai/pkg/contracts"
 	"github.com/buxee/alix-ai/pkg/contracts/gen/actions"
+	an "github.com/buxee/alix-ai/pkg/contracts/gen/analyst"
 	"github.com/buxee/alix-ai/pkg/contracts/gen/conversation"
 	"github.com/buxee/alix-ai/pkg/contracts/gen/decision"
 	memgen "github.com/buxee/alix-ai/pkg/contracts/gen/memory"
@@ -70,6 +71,8 @@ func TestOperationsCoverTheImplementedAreas(t *testing.T) {
 		"putPrincipalPrivateLlm":    true,
 		"getPrincipalPrivateLlm":    true,
 		"deletePrincipalPrivateLlm": true,
+		"getTenantAnalyst":          true,
+		"putTenantAnalyst":          true,
 	}
 	have := map[string]bool{}
 	for _, op := range sdkgo.Operations() {
@@ -632,6 +635,12 @@ func TestFakeAnswersConformToOpenAPI(t *testing.T) {
 	must("me usage", err)
 	_, err = client.Me().Budget(ctx)
 	must("me budget", err)
+	_, err = client.Me().Analyst(ctx)
+	must("me analyst", err)
+	_, err = client.Ops().GetTenantAnalyst(ctx, "ten-1")
+	must("ops get tenant analyst", err)
+	_, err = client.Ops().PutTenantAnalyst(ctx, "ten-1", an.TenantSettings{})
+	must("ops put tenant analyst", err)
 	_, err = client.Memory().List(ctx, nil)
 	must("memory list", err)
 	created, err := client.Memory().Create(ctx, memgen.MemoryCreate{Text: "prefer dark mode"})
@@ -819,6 +828,9 @@ var goTypes = map[string]func() any{
 	"deletePrincipalPrivateLlm":         func() any { return nil }, // 204
 	"getMeUsage":                        func() any { return new(pv.MeUsage) },
 	"getMeBudget":                       func() any { return new(pv.MeBudget) },
+	"getPrincipalAnalyst":               func() any { return new(an.Abilities) },
+	"getTenantAnalyst":                  func() any { return new(an.TenantSettings) },
+	"putTenantAnalyst":                  func() any { return new(an.TenantSettings) },
 	"listMemory":                        func() any { return new(memgen.MemoryList) },
 	"createMemory":                      func() any { return new(memgen.MemoryItem) },
 	"patchMemory":                       func() any { return new(memgen.MemoryItem) },

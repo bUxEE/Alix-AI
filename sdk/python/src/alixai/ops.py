@@ -113,6 +113,23 @@ class OpsApi:
             )
         )
 
+    def get_tenant_analyst(self, tenant_id: str, *, timeout_ms: Optional[int] = None) -> Any:
+        return self._client._execute(
+            Call("getTenantAnalyst", lambda d: d, params={"tenant_id": path_id("tenant_id", tenant_id)}, timeout_ms=timeout_ms)
+        )
+
+    def put_tenant_analyst(self, tenant_id: str, body: Mapping[str, Any], *, timeout_ms: Optional[int] = None) -> Any:
+        return self._client._execute(
+            Call(
+                "putTenantAnalyst",
+                lambda d: d,
+                params={"tenant_id": path_id("tenant_id", tenant_id)},
+                body=_json(body),
+                content_type="application/json",
+                timeout_ms=timeout_ms,
+            )
+        )
+
 
 class AsyncOpsApi:
     def __init__(self, client: AlixAIAsyncClient) -> None:
@@ -208,6 +225,23 @@ class AsyncOpsApi:
                 lambda d: d,
                 params={"principal_id": path_id("principal_id", principal_id)},
                 empty=True,
+                timeout_ms=timeout_ms,
+            )
+        )
+
+    async def get_tenant_analyst(self, tenant_id: str, *, timeout_ms: Optional[int] = None) -> Any:
+        return await self._client._execute(
+            Call("getTenantAnalyst", lambda d: d, params={"tenant_id": path_id("tenant_id", tenant_id)}, timeout_ms=timeout_ms)
+        )
+
+    async def put_tenant_analyst(self, tenant_id: str, body: Mapping[str, Any], *, timeout_ms: Optional[int] = None) -> Any:
+        return await self._client._execute(
+            Call(
+                "putTenantAnalyst",
+                lambda d: d,
+                params={"tenant_id": path_id("tenant_id", tenant_id)},
+                body=_json(body),
+                content_type="application/json",
                 timeout_ms=timeout_ms,
             )
         )

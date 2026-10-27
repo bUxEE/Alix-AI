@@ -1,6 +1,6 @@
 import type { HttpMethod } from "../operations.js";
 
-/** Operations area: erasure (1.3.0, ADR 0036) and private LLM (1.4.0, ADR 0045). Operator only. */
+/** Operations area: erasure (1.3.0), private LLM (1.4.0), tenant analyst (1.5.0, ADR 0047). Operator only. */
 export interface OpsOperationSpec {
   readonly method: HttpMethod;
   readonly path: string;
@@ -19,6 +19,8 @@ export const OPS_OPERATIONS = {
   putPrincipalPrivateLlm: { method: "PUT", path: "/v1/ops/principals/{principal_id}/private-llm", safe: false },
   getPrincipalPrivateLlm: { method: "GET", path: "/v1/ops/principals/{principal_id}/private-llm", safe: true },
   deletePrincipalPrivateLlm: { method: "DELETE", path: "/v1/ops/principals/{principal_id}/private-llm", safe: false },
+  getTenantAnalyst: { method: "GET", path: "/v1/ops/tenants/{tenant_id}/analyst", safe: true },
+  putTenantAnalyst: { method: "PUT", path: "/v1/ops/tenants/{tenant_id}/analyst", safe: false },
 } as const satisfies Record<string, OpsOperationSpec>;
 
 export type OpsOperationId = keyof typeof OPS_OPERATIONS;

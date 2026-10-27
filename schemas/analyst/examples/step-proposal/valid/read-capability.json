@@ -1,0 +1,10 @@
+{
+  "kind": "read",
+  "read": {
+    "capability_id": "company.profile.read",
+    "arguments": {
+      "company_id": "cmp_1"
+    }
+  },
+  "trace_id": "trc_01J0000000000000000000000A"
+}

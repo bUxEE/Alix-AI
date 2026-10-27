@@ -1,0 +1,13 @@
+{
+  "enabled": false,
+  "abilities": {
+    "loop": false,
+    "compute": false,
+    "forecasts": false,
+    "presentation": false,
+    "drafts": false,
+    "knowledge": false,
+    "web_search": false,
+    "web_fetch": false
+  }
+}

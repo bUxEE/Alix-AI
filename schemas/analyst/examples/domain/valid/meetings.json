@@ -1,0 +1,20 @@
+{
+  "description": "Meetings, minutes, companies and Italian company governance.",
+  "in_scope": [
+    "company meetings and minutes",
+    "corporate incentives and filings"
+  ],
+  "out_of_scope": [
+    "general chatbot use",
+    "unrelated consumer topics"
+  ],
+  "examples": {
+    "en": {
+      "in_domain": ["Should we apply for incentive XX?"],
+      "out_of_domain": ["Is a Persian cat big?"]
+    }
+  },
+  "knowledge_allowed": true,
+  "web_search_allowed": true,
+  "preferred_web_hosts": ["gov.it"]
+}

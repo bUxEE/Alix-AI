@@ -146,7 +146,7 @@ entry); `agui.Intake(ctx, input, confirmation, env)` applies the rules with the 
 | `messages: []` and no resume | a **connect** run: replay of the history and the state, no turn, no model (section 8) |
 | `tools` | UI declarations, offered to the model only if the host registered them (section 5) |
 | `state`, `context` | fenced, bounded, untrusted data (section 4) |
-| `forwardedProps` | ignored, except the object `alixai`: `choiceId` answers the pending clarification (the structured input of the sessions API: no model), `language` is a BCP 47 tag |
+| `forwardedProps` | ignored, except the object `alixai`: `choiceId` answers the pending clarification (the structured input of the sessions API: no model), `language` is a BCP 47 tag, optional `clientCapabilities` announces 1.5 parse support (ADR 0047; absent = 1.4 emit surface) |
 | `resume` | answers an interrupt (section 6) |
 | `parentRunId`, unknown members | accepted and ignored |
 

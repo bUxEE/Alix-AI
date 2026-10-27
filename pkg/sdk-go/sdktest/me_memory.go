@@ -1,10 +1,12 @@
 package sdktest
 
 import (
+	"encoding/json"
 	"net/http"
 	"time"
 
 	"github.com/buxee/alix-ai/pkg/contracts"
+	an "github.com/buxee/alix-ai/pkg/contracts/gen/analyst"
 	"github.com/buxee/alix-ai/pkg/contracts/gen/common"
 	mem "github.com/buxee/alix-ai/pkg/contracts/gen/memory"
 	pv "github.com/buxee/alix-ai/pkg/contracts/gen/providers"
@@ -154,6 +156,27 @@ func (c *call) meUsage() {
 
 func (c *call) meBudget() {
 	c.json(http.StatusOK, pv.MeBudget{Budgets: []pv.Budget{}, States: []pv.BudgetState{}})
+}
+
+func (c *call) meAnalyst() {
+	now := common.Timestamp(time.Now().UTC().Format(time.RFC3339))
+	c.json(http.StatusOK, an.Abilities{
+		Enabled: false, AnalystCapable: false,
+		Abilities: an.AbilitiesAbilities{}, DisabledReasons: an.AbilitiesDisabledReasons{},
+		ResolvedAt: now,
+	})
+}
+
+func (c *call) opsGetTenantAnalyst() {
+	c.json(http.StatusOK, an.TenantSettings{})
+}
+
+func (c *call) opsPutTenantAnalyst() {
+	now := common.Timestamp(time.Now().UTC().Format(time.RFC3339))
+	var in an.TenantSettings
+	_ = json.NewDecoder(c.r.Body).Decode(&in)
+	in.UpdatedAt = &now
+	c.json(http.StatusOK, in)
 }
 
 func (c *call) memoryList() {

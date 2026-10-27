@@ -5,6 +5,8 @@
 #
 #   ops.queue.read      read the queue counts of the caller's own application, tenant and workspace
 #   ops.providers.read  read the status of the model roles
+#   ops.analyst.read    read a tenant's analyst ability ceilings (ADR 0047)
+#   ops.analyst.write   write a tenant's analyst ability ceilings (narrow only)
 #   audit.export        export the audit events of the caller's own application, tenant and workspace
 #
 # The match is exact (no wildcard, no role stands in), and a token that lacks the capability is
@@ -321,6 +323,66 @@ paths:
         '503':
           $ref: ../openapi.yaml#/components/responses/Unavailable
 
+  /v1/ops/tenants/{tenant_id}/analyst:
+    parameters:
+      - name: tenant_id
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+    get:
+      operationId: getTenantAnalyst
+      tags: [operations]
+      summary: Read a tenant's analyst ability ceilings
+      description: |
+        Tenant-level analyst settings (ADR 0047). Deployment operator, or tenant admin of this
+        tenant with `ops.analyst.read`. The effective abilities a turn sees also intersect
+        deployment config and the application package (`GET /v1/me/analyst`).
+      responses:
+        '200':
+          description: The tenant settings (empty object when never written).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantAnalystSettings'
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+    put:
+      operationId: putTenantAnalyst
+      tags: [operations]
+      summary: Set a tenant's analyst ability ceilings
+      description: |
+        Replaces the tenant document. A tenant may only narrow: enabling an ability the
+        deployment or package has off is refused (`permission_denied`). Deployment operator,
+        or tenant admin of this tenant with `ops.analyst.write`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantAnalystSettingsUpdate'
+      responses:
+        '200':
+          description: The stored settings.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantAnalystSettings'
+        '400':
+          $ref: ../openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
   /v1/ops/principals/{principal_id}/private-llm:
     parameters:
       - name: principal_id
@@ -430,6 +492,50 @@ components:
       $ref: ../../providers/private-llm-principal-binding.schema.json
     PrivateLlmPrincipalBindingUpdate:
       $ref: ../../providers/private-llm-principal-binding-update.schema.json
+
+    TenantAnalystSettings:
+      $ref: ../../analyst/tenant-settings.schema.json
+    TenantAnalystSettingsUpdate:
+      description: |
+        Body of PUT /v1/ops/tenants/{tenant_id}/analyst. Same shape as TenantAnalystSettings
+        without server-owned `updated_at` (the core sets it).
+      type: object
+      additionalProperties: false
+      properties:
+        enabled:
+          type: boolean
+        abilities:
+          type: object
+          additionalProperties: false
+          properties:
+            loop: { type: boolean }
+            compute: { type: boolean }
+            forecasts: { type: boolean }
+            presentation: { type: boolean }
+            drafts: { type: boolean }
+            knowledge: { type: boolean }
+            web_search: { type: boolean }
+            web_fetch: { type: boolean }
+        web:
+          type: object
+          additionalProperties: false
+          properties:
+            allow_hosts:
+              type: array
+              maxItems: 256
+              items:
+                type: string
+                minLength: 1
+                maxLength: 253
+                pattern: '^[A-Za-z0-9.-]+$'
+            deny_hosts:
+              type: array
+              maxItems: 256
+              items:
+                type: string
+                minLength: 1
+                maxLength: 253
+                pattern: '^[A-Za-z0-9.-]+$'
 
     ErasureRequest:
       type: object

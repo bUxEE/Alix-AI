@@ -23,12 +23,13 @@ import (
 // contract says, not a stale copy.
 func TestEmbeddedSchemasMatchPublished(t *testing.T) {
 	originals := map[string]string{
-		"rich-block.schema.json": "conversation/rich-block.schema.json",
-		"citation.schema.json":   "conversation/citation.schema.json",
-		"shared.schema.json":     "actions/shared.schema.json",
-		"error.schema.json":      "common/error.schema.json",
-		"ids.schema.json":        "common/ids.schema.json",
-		"timestamps.schema.json": "common/timestamps.schema.json",
+		"rich-block.schema.json":     "conversation/rich-block.schema.json",
+		"citation.schema.json":       "conversation/citation.schema.json",
+		"shared.schema.json":         "actions/shared.schema.json",
+		"error.schema.json":          "common/error.schema.json",
+		"ids.schema.json":            "common/ids.schema.json",
+		"timestamps.schema.json":     "common/timestamps.schema.json",
+		"analyst-shared.schema.json": "analyst/shared.schema.json",
 	}
 	names := EmbeddedSchemaNames()
 	if len(names) != len(originals) {

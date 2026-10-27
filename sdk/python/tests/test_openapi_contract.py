@@ -338,6 +338,9 @@ def test_every_answer_of_the_fake_server_conforms_to_the_document_across_all_ope
     client.ops.delete_principal_private_llm("usr_alice")
     client.me.usage()
     client.me.budget()
+    client.me.analyst()
+    client.ops.get_tenant_analyst("ten-1")
+    client.ops.put_tenant_analyst("ten-1", {})
     client.memory.list()
     created = client.memory.create({"text": "prefer dark mode"})
     mid = created["id"]

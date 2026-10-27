@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:analyst:source-span:v1",
+  "title": "SourceSpan",
+  "description": "Marks a claim span in an analyst answer with its source label (ADR 0047). The verifier checks consistency: app/computed numbers must match facts; web numbers must appear in the cited page; knowledge may not state tenant-looking figures.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["label", "source"],
+  "properties": {
+    "label": {
+      "description": "Short stable id for the span (model-proposed).",
+      "x-alixai-authority": "model",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "source": {
+      "x-alixai-authority": "model",
+      "$ref": "urn:alixai:schema:analyst:shared:v1#/$defs/sourceLabel"
+    },
+    "fact_id": {
+      "description": "Derived or read fact id when source is app or computed.",
+      "x-alixai-authority": "model",
+      "type": "string",
+      "minLength": 4,
+      "maxLength": 64
+    },
+    "dataset_id": {
+      "x-alixai-authority": "model",
+      "$ref": "urn:alixai:schema:analyst:shared:v1#/$defs/datasetId"
+    },
+    "web_citation_id": {
+      "description": "Required when source is web.",
+      "x-alixai-authority": "model",
+      "type": "string",
+      "minLength": 4,
+      "maxLength": 64,
+      "pattern": "^wcit_[a-z0-9][a-z0-9_]{2,60}$"
+    },
+    "text": {
+      "description": "Optional quote of the span text for UI highlighting.",
+      "x-alixai-authority": "model",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    }
+  }
+}

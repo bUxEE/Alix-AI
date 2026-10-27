@@ -1,0 +1,25 @@
+{
+  "enabled": false,
+  "analyst_capable": true,
+  "abilities": {
+    "loop": false,
+    "compute": false,
+    "forecasts": false,
+    "presentation": false,
+    "drafts": false,
+    "knowledge": false,
+    "web_search": false,
+    "web_fetch": false
+  },
+  "disabled_reasons": {
+    "loop": ["master_disabled"],
+    "compute": ["master_disabled"],
+    "forecasts": ["master_disabled"],
+    "presentation": ["master_disabled"],
+    "drafts": ["master_disabled"],
+    "knowledge": ["master_disabled"],
+    "web_search": ["master_disabled"],
+    "web_fetch": ["master_disabled"]
+  },
+  "resolved_at": "2026-10-27T09:00:00Z"
+}

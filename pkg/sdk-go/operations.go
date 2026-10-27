@@ -108,6 +108,9 @@ var (
 	opDeletePrincipalPrivateLlm         = Operation{"deletePrincipalPrivateLlm", http.MethodDelete, "/v1/ops/principals/{principal_id}/private-llm", true, false}
 	opGetMeUsage                        = Operation{"getMeUsage", http.MethodGet, "/v1/me/usage", true, true}
 	opGetMeBudget                       = Operation{"getMeBudget", http.MethodGet, "/v1/me/budget", true, true}
+	opGetPrincipalAnalyst               = Operation{"getPrincipalAnalyst", http.MethodGet, "/v1/me/analyst", true, true}
+	opGetTenantAnalyst                  = Operation{"getTenantAnalyst", http.MethodGet, "/v1/ops/tenants/{tenant_id}/analyst", true, true}
+	opPutTenantAnalyst                  = Operation{"putTenantAnalyst", http.MethodPut, "/v1/ops/tenants/{tenant_id}/analyst", true, false}
 
 	// Long-term memory (ADR 0042, 1.2.0).
 	opListMemory    = Operation{"listMemory", http.MethodGet, "/v1/memory", true, true}
@@ -145,7 +148,8 @@ func Operations() []Operation {
 		opPutPrivateLlmEndpoint, opGetPrivateLlmEndpoint, opDeletePrivateLlmEndpoint,
 		opPutTenantPrivateLlm, opGetTenantPrivateLlm, opDeleteTenantPrivateLlm,
 		opPutPrincipalPrivateLlm, opGetPrincipalPrivateLlm, opDeletePrincipalPrivateLlm,
-		opGetMeUsage, opGetMeBudget,
+		opGetMeUsage, opGetMeBudget, opGetPrincipalAnalyst,
+		opGetTenantAnalyst, opPutTenantAnalyst,
 		opListMemory, opCreateMemory, opPatchMemory, opDeleteMemory, opConfirmMemory, opRejectMemory,
 		opCreateExport,
 	}

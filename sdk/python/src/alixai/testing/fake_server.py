@@ -1322,6 +1322,32 @@ class FakeAlixAIServer:
             return self._json(200, {"groups": [], "next_cursor": None})
         if operation == "getMeBudget":
             return self._json(200, {"budgets": [], "states": []})
+        if operation == "getPrincipalAnalyst":
+            return self._json(
+                200,
+                {
+                    "enabled": False,
+                    "analyst_capable": False,
+                    "abilities": {
+                        "loop": False,
+                        "compute": False,
+                        "forecasts": False,
+                        "presentation": False,
+                        "drafts": False,
+                        "knowledge": False,
+                        "web_search": False,
+                        "web_fetch": False,
+                    },
+                    "disabled_reasons": {},
+                    "resolved_at": "2026-10-27T00:00:00Z",
+                },
+            )
+        if operation == "getTenantAnalyst":
+            return self._json(200, {})
+        if operation == "putTenantAnalyst":
+            out = dict(body or {})
+            out["updated_at"] = "2026-10-27T00:00:00Z"
+            return self._json(200, out)
         if operation == "listMemory":
             return self._json(200, {"items": []})
         if operation == "createMemory":

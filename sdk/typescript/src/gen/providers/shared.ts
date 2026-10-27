@@ -727,9 +727,11 @@ export interface SafeAccount {
 /**
  * SendCategory mirrors urn:alixai:schema:providers:shared:v1#/$defs/sendCategory.
  *
- * A category of data that can be placed in an external request. There is no category for
- * credentials, raw application database content, filesystem paths, database handles or MCP URLs:
- * those are not sendable and have no representation in a request envelope (see blockedCategory).
+ * A category of data that can be placed in an external request. web_query (ADR 0047) is a search
+ * string sent to a configured web-search provider: it must never carry confidential or restricted
+ * application field values. There is no category for credentials, raw application database
+ * content, filesystem paths, database handles or MCP URLs: those are not sendable and have no
+ * representation in a request envelope (see blockedCategory).
  *
  * Only the values listed in the schema are valid.
  */
@@ -744,7 +746,8 @@ export type SendCategory =
   | "rag_metadata"
   | "file_content"
   | "image_content"
-  | "audio_content";
+  | "audio_content"
+  | "web_query";
 
 /**
  * SourceID mirrors urn:alixai:schema:providers:shared:v1#/$defs/sourceId.

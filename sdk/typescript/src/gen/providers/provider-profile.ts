@@ -111,6 +111,16 @@ export interface ProviderProfile {
   streaming: boolean;
 
   /**
+   * Optional, default false. When true the operator marks this profile as strong enough for
+   * analyst turns (ADR 0047). It only decides what CAN be enabled: each dialogue.analyst
+   * ability stays off until switched on at every level. A non-capable resolved controller
+   * cannot enable analyst abilities (typed model_not_analyst_capable).
+   *
+   * @authority host
+   */
+  analyst_capable?: boolean;
+
+  /**
    * The structured-output guarantee. none: no support. json_mode: valid JSON, no schema
    * guarantee. schema_best_effort: a schema is supplied but conformance is not guaranteed.
    * strict_schema: the provider constrains decoding so output always conforms to the

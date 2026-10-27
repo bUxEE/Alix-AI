@@ -193,6 +193,10 @@ suite; `contract_test.go` and `spec_test.go` hold it to the OpenAPI document.
 
 ## Changelog
 
+### Unreleased / 1.5.0
+
+**Added.** Generated analyst contracts (ADR 0047) under `pkg/contracts/gen/analyst`; rich-block and turn-event extensions; `web_query` send category; new `contracts.ErrCode` values for analyst refusals.
+
 ### 1.4.1 — 2026-10-27
 
 **Fixed.** `text_replaced` TurnEvent (ADR 0046): `Envelope` accepts it (and `memory_proposal`); `TurnText` resets on replacement so joined text is the template only. Streams with a replace complete over SSE and WebSocket, including resume after `text_replaced`.

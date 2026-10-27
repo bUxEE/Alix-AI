@@ -40,37 +40,46 @@ type ErrorCode string
 
 // The valid values of ErrorCode.
 const (
-	ErrorCodeScopeMissing         ErrorCode = "scope_missing"
-	ErrorCodeUnauthenticated      ErrorCode = "unauthenticated"
-	ErrorCodePermissionDenied     ErrorCode = "permission_denied"
-	ErrorCodeScopeViolation       ErrorCode = "scope_violation"
-	ErrorCodeSchemaInvalid        ErrorCode = "schema_invalid"
-	ErrorCodeUnknownCapability    ErrorCode = "unknown_capability"
-	ErrorCodeAmbiguous            ErrorCode = "ambiguous"
-	ErrorCodeMissingFields        ErrorCode = "missing_fields"
-	ErrorCodeValidationFailed     ErrorCode = "validation_failed"
-	ErrorCodeStale                ErrorCode = "stale"
-	ErrorCodeExpired              ErrorCode = "expired"
-	ErrorCodeReplayed             ErrorCode = "replayed"
-	ErrorCodeConfirmationRequired ErrorCode = "confirmation_required"
-	ErrorCodeStepUpRequired       ErrorCode = "step_up_required"
-	ErrorCodeConflict             ErrorCode = "conflict"
-	ErrorCodeUnavailable          ErrorCode = "unavailable"
-	ErrorCodeDegraded             ErrorCode = "degraded"
-	ErrorCodeTimeout              ErrorCode = "timeout"
-	ErrorCodeRateLimited          ErrorCode = "rate_limited"
-	ErrorCodeResourceExhausted    ErrorCode = "resource_exhausted"
-	ErrorCodeNoSupportedEvidence  ErrorCode = "no_supported_evidence"
-	ErrorCodeUncertainOutcome     ErrorCode = "uncertain_outcome"
-	ErrorCodePartialFailure       ErrorCode = "partial_failure"
-	ErrorCodeQuarantined          ErrorCode = "quarantined"
-	ErrorCodeInternal             ErrorCode = "internal"
+	ErrorCodeScopeMissing               ErrorCode = "scope_missing"
+	ErrorCodeUnauthenticated            ErrorCode = "unauthenticated"
+	ErrorCodePermissionDenied           ErrorCode = "permission_denied"
+	ErrorCodeScopeViolation             ErrorCode = "scope_violation"
+	ErrorCodeSchemaInvalid              ErrorCode = "schema_invalid"
+	ErrorCodeUnknownCapability          ErrorCode = "unknown_capability"
+	ErrorCodeAmbiguous                  ErrorCode = "ambiguous"
+	ErrorCodeMissingFields              ErrorCode = "missing_fields"
+	ErrorCodeValidationFailed           ErrorCode = "validation_failed"
+	ErrorCodeStale                      ErrorCode = "stale"
+	ErrorCodeExpired                    ErrorCode = "expired"
+	ErrorCodeReplayed                   ErrorCode = "replayed"
+	ErrorCodeConfirmationRequired       ErrorCode = "confirmation_required"
+	ErrorCodeStepUpRequired             ErrorCode = "step_up_required"
+	ErrorCodeConflict                   ErrorCode = "conflict"
+	ErrorCodeUnavailable                ErrorCode = "unavailable"
+	ErrorCodeDegraded                   ErrorCode = "degraded"
+	ErrorCodeTimeout                    ErrorCode = "timeout"
+	ErrorCodeRateLimited                ErrorCode = "rate_limited"
+	ErrorCodeResourceExhausted          ErrorCode = "resource_exhausted"
+	ErrorCodeNoSupportedEvidence        ErrorCode = "no_supported_evidence"
+	ErrorCodeUncertainOutcome           ErrorCode = "uncertain_outcome"
+	ErrorCodePartialFailure             ErrorCode = "partial_failure"
+	ErrorCodeQuarantined                ErrorCode = "quarantined"
+	ErrorCodeOutOfDomain                ErrorCode = "out_of_domain"
+	ErrorCodeAbilityDisabled            ErrorCode = "ability_disabled"
+	ErrorCodeModelNotAnalystCapable     ErrorCode = "model_not_analyst_capable"
+	ErrorCodeInsufficientData           ErrorCode = "insufficient_data"
+	ErrorCodeWebQueryRefused            ErrorCode = "web_query_refused"
+	ErrorCodeAnalystCapExceeded         ErrorCode = "analyst_cap_exceeded"
+	ErrorCodeUnitMismatch               ErrorCode = "unit_mismatch"
+	ErrorCodeForecastUnavailable        ErrorCode = "forecast_unavailable"
+	ErrorCodeDomainClassificationFailed ErrorCode = "domain_classification_failed"
+	ErrorCodeInternal                   ErrorCode = "internal"
 )
 
 // Valid reports whether v is one of the values the schema lists.
 func (v ErrorCode) Valid() bool {
 	switch v {
-	case ErrorCodeScopeMissing, ErrorCodeUnauthenticated, ErrorCodePermissionDenied, ErrorCodeScopeViolation, ErrorCodeSchemaInvalid, ErrorCodeUnknownCapability, ErrorCodeAmbiguous, ErrorCodeMissingFields, ErrorCodeValidationFailed, ErrorCodeStale, ErrorCodeExpired, ErrorCodeReplayed, ErrorCodeConfirmationRequired, ErrorCodeStepUpRequired, ErrorCodeConflict, ErrorCodeUnavailable, ErrorCodeDegraded, ErrorCodeTimeout, ErrorCodeRateLimited, ErrorCodeResourceExhausted, ErrorCodeNoSupportedEvidence, ErrorCodeUncertainOutcome, ErrorCodePartialFailure, ErrorCodeQuarantined, ErrorCodeInternal:
+	case ErrorCodeScopeMissing, ErrorCodeUnauthenticated, ErrorCodePermissionDenied, ErrorCodeScopeViolation, ErrorCodeSchemaInvalid, ErrorCodeUnknownCapability, ErrorCodeAmbiguous, ErrorCodeMissingFields, ErrorCodeValidationFailed, ErrorCodeStale, ErrorCodeExpired, ErrorCodeReplayed, ErrorCodeConfirmationRequired, ErrorCodeStepUpRequired, ErrorCodeConflict, ErrorCodeUnavailable, ErrorCodeDegraded, ErrorCodeTimeout, ErrorCodeRateLimited, ErrorCodeResourceExhausted, ErrorCodeNoSupportedEvidence, ErrorCodeUncertainOutcome, ErrorCodePartialFailure, ErrorCodeQuarantined, ErrorCodeOutOfDomain, ErrorCodeAbilityDisabled, ErrorCodeModelNotAnalystCapable, ErrorCodeInsufficientData, ErrorCodeWebQueryRefused, ErrorCodeAnalystCapExceeded, ErrorCodeUnitMismatch, ErrorCodeForecastUnavailable, ErrorCodeDomainClassificationFailed, ErrorCodeInternal:
 		return true
 	}
 	return false

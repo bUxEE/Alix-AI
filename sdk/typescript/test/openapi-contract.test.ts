@@ -46,6 +46,8 @@ describe("the SDK's operation table matches schemas/api/openapi.yaml", () => {
       "putPrincipalPrivateLlm",
       "getPrincipalPrivateLlm",
       "deletePrincipalPrivateLlm",
+      "getTenantAnalyst",
+      "putTenantAnalyst",
     ]);
     const documented = spec.operations.filter(
       (o) =>
@@ -306,6 +308,9 @@ describe("every answer of the fake server conforms to the OpenAPI document", () 
     await client.ops.privateLlm.deletePrincipalBinding("usr_alice");
     await client.me.usage();
     await client.me.budget();
+    await client.me.analyst();
+    await client.ops.analyst.getTenant("ten-1");
+    await client.ops.analyst.putTenant("ten-1", {});
     await client.memory.list();
     const remembered = await client.memory.create({ text: "prefer dark mode" });
     await client.memory.patch(remembered.id, { text: "prefer light mode" });

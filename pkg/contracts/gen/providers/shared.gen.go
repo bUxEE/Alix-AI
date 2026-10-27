@@ -1392,9 +1392,11 @@ type SafeAccount struct {
 
 // SendCategory mirrors urn:alixai:schema:providers:shared:v1#/$defs/sendCategory.
 //
-// A category of data that can be placed in an external request. There is no category for
-// credentials, raw application database content, filesystem paths, database handles or MCP URLs:
-// those are not sendable and have no representation in a request envelope (see blockedCategory).
+// A category of data that can be placed in an external request. web_query (ADR 0047) is a search
+// string sent to a configured web-search provider: it must never carry confidential or restricted
+// application field values. There is no category for credentials, raw application database
+// content, filesystem paths, database handles or MCP URLs: those are not sendable and have no
+// representation in a request envelope (see blockedCategory).
 //
 // Only the values listed in the schema are valid.
 type SendCategory string
@@ -1412,12 +1414,13 @@ const (
 	SendCategoryFileContent         SendCategory = "file_content"
 	SendCategoryImageContent        SendCategory = "image_content"
 	SendCategoryAudioContent        SendCategory = "audio_content"
+	SendCategoryWebQuery            SendCategory = "web_query"
 )
 
 // Valid reports whether v is one of the values the schema lists.
 func (v SendCategory) Valid() bool {
 	switch v {
-	case SendCategoryUserMessage, SendCategoryConversationHistory, SendCategoryStructuredState, SendCategoryDeterministicFact, SendCategoryDialogueDirective, SendCategoryActionReceipt, SendCategoryRAGExcerpt, SendCategoryRAGMetadata, SendCategoryFileContent, SendCategoryImageContent, SendCategoryAudioContent:
+	case SendCategoryUserMessage, SendCategoryConversationHistory, SendCategoryStructuredState, SendCategoryDeterministicFact, SendCategoryDialogueDirective, SendCategoryActionReceipt, SendCategoryRAGExcerpt, SendCategoryRAGMetadata, SendCategoryFileContent, SendCategoryImageContent, SendCategoryAudioContent, SendCategoryWebQuery:
 		return true
 	}
 	return false

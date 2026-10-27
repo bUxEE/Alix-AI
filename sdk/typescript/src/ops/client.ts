@@ -51,6 +51,11 @@ export interface OpsApi {
     getPrincipalBinding: (principalId: string, options?: CallOptions) => Promise<Record<string, unknown>>;
     deletePrincipalBinding: (principalId: string, options?: CallOptions) => Promise<void>;
   };
+  /** Tenant analyst ability ceilings (ADR 0047). Tenant may only narrow. */
+  analyst: {
+    getTenant: (tenantId: string, options?: CallOptions) => Promise<Record<string, unknown>>;
+    putTenant: (tenantId: string, body: Record<string, unknown>, options?: CallOptions) => Promise<Record<string, unknown>>;
+  };
 }
 
 const invalid = (argument: string, reason: string) => sdkError("validation_failed", `${argument}: ${reason}`, { details: { argument } });
@@ -139,6 +144,16 @@ export const createOpsApi = (caller: Caller): OpsApi => {
       deletePrincipalBinding: async (principalId, options) => {
         if (typeof principalId !== "string" || principalId === "") throw invalid("principal_id", "it is required");
         await caller.empty("deletePrincipalPrivateLlm", { principal_id: principalId }, options);
+      },
+    },
+    analyst: {
+      getTenant: async (tenantId, options) => {
+        if (typeof tenantId !== "string" || tenantId === "") throw invalid("tenant_id", "it is required");
+        return json("getTenantAnalyst", { tenant_id: tenantId }, isRecord, "tenant analyst", options);
+      },
+      putTenant: async (tenantId, body, options) => {
+        if (typeof tenantId !== "string" || tenantId === "") throw invalid("tenant_id", "it is required");
+        return json("putTenantAnalyst", { tenant_id: tenantId }, isRecord, "tenant analyst", options, JSON.stringify(body ?? {}));
       },
     },
   };

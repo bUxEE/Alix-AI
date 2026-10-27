@@ -65,4 +65,13 @@ export type ErrorCode =
   | "uncertain_outcome"
   | "partial_failure"
   | "quarantined"
+  | "out_of_domain"
+  | "ability_disabled"
+  | "model_not_analyst_capable"
+  | "insufficient_data"
+  | "web_query_refused"
+  | "analyst_cap_exceeded"
+  | "unit_mismatch"
+  | "forecast_unavailable"
+  | "domain_classification_failed"
   | "internal";

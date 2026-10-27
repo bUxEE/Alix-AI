@@ -4,12 +4,13 @@ from __future__ import annotations
 
 from typing import Annotated, Literal, Optional, Union
 from alixai.gen.actions.shared import Choice, ConfirmationRequirement, Effect, Fact, PermittedNextAction, PreparationId, ReceiptId, RiskLevel
+from alixai.gen.analyst.shared import DatasetId, SourceLabel
 from alixai.gen.common.ids import CapabilityId, FieldName
 from alixai.gen.common.timestamps import Timestamp
 from alixai.gen.conversation.citation import Citation
 from pydantic import BaseModel, ConfigDict, Field
 
-__all__ = ['PlainText', 'MarkdownBlock', 'CodeBlock', 'TableCell', 'TableColumn', 'TableBlock', 'ChartChannel', 'ChartEncoding', 'ChartScalar', 'ChartRecord', 'ChartBlock', 'DiagramBlock', 'CitationListBlock', 'ActionCardBlock', 'ClarificationChoicesBlock', 'ConfirmationPanelBlock', 'RichBlock']
+__all__ = ['PlainText', 'MarkdownBlock', 'CodeBlock', 'TableCell', 'TableColumn', 'TableBlock', 'ChartChannel', 'ChartEncoding', 'ChartScalar', 'ChartRecord', 'ChartBlock', 'DiagramBlock', 'CitationListBlock', 'ActionCardBlock', 'ClarificationChoicesBlock', 'ConfirmationPanelBlock', 'KpiBlock', 'TimelineEvent', 'TimelineBlock', 'RecordCardField', 'RecordCardBlock', 'ProvenanceStep', 'ProvenanceBlock', 'DraftBlock', 'RichBlock']
 
 
 PlainText = Annotated[str, Field(pattern='^([^<]|<([^A-Za-z/!?]|$))*$')]
@@ -53,6 +54,8 @@ class TableBlock(BaseModel):
     caption: Optional[Annotated[str, Field(min_length=1, max_length=256)]] = None
     columns: Annotated[list[TableColumn], Field(min_length=1, max_length=32)]
     rows: Annotated[list[Annotated[list[TableCell], Field(max_length=32)]], Field(max_length=1000)]
+    dataset_id: Optional[DatasetId] = None
+    source: Optional[SourceLabel] = None
 
 
 class ChartChannel(BaseModel):
@@ -64,14 +67,16 @@ class ChartChannel(BaseModel):
 
 class ChartEncoding(BaseModel):
     """
-    Channel to field mappings. A cartesian mark (bar, line, area, point) uses x and y and may
-    add color; a pie uses theta and color. Channels hold a field name and a type, never an
-    expression.
+    Channel to field mappings. A cartesian mark (bar, line, area, point, scatter, heatmap,
+    combo_bar_line) uses x and y and may add color, y2 or size; a pie (including pie_style
+    donut) uses theta and color. Channels hold a field name and a type, never an expression.
     """
     model_config = ConfigDict(extra="forbid", protected_namespaces=())
     x: Optional[ChartChannel] = None
     y: Optional[ChartChannel] = None
+    y2: Optional[ChartChannel] = None
     color: Optional[ChartChannel] = None
+    size: Optional[ChartChannel] = None
     theta: Optional[ChartChannel] = None
 
 
@@ -94,9 +99,13 @@ class ChartBlock(BaseModel):
     type: Literal["chart"]
     title: Optional[Annotated[PlainText, Field(min_length=1, max_length=200)]] = None
     description: Annotated[PlainText, Field(min_length=1, max_length=1000)]
-    mark: Literal["bar", "line", "area", "point", "pie"]
+    mark: Literal["bar", "line", "area", "point", "pie", "scatter", "heatmap", "combo_bar_line"]
+    bar_layout: Optional[Literal["grouped", "stacked", "horizontal"]] = None
+    pie_style: Optional[Literal["donut"]] = None
     data: Annotated[list[ChartRecord], Field(min_length=1, max_length=1000)]
     encoding: ChartEncoding
+    dataset_id: Optional[DatasetId] = None
+    source: Optional[SourceLabel] = None
 
 
 class DiagramBlock(BaseModel):
@@ -170,4 +179,88 @@ class ConfirmationPanelBlock(BaseModel):
     confirmation: ConfirmationRequirement
 
 
-RichBlock = Annotated[Union[MarkdownBlock, CodeBlock, TableBlock, ChartBlock, DiagramBlock, CitationListBlock, ActionCardBlock, ClarificationChoicesBlock, ConfirmationPanelBlock], Field(discriminator='type')]
+class KpiBlock(BaseModel):
+    """
+    A single KPI tile (ADR 0047). Values are core-filled from verified facts; the model proposes
+    labels only via the block plan.
+    """
+    model_config = ConfigDict(extra="forbid", protected_namespaces=())
+    type: Literal["kpi"]
+    label: Annotated[PlainText, Field(min_length=1, max_length=128)]
+    value: Union[Annotated[str, Field(max_length=128)], float]
+    delta: Optional[Union[Annotated[str, Field(max_length=128)], float, None]] = None
+    period: Optional[Annotated[PlainText, Field(min_length=1, max_length=64)]] = None
+    unit: Optional[Annotated[str, Field(min_length=1, max_length=32)]] = None
+    source: Optional[SourceLabel] = None
+    dataset_id: Optional[DatasetId] = None
+
+
+class TimelineEvent(BaseModel):
+    model_config = ConfigDict(extra="forbid", protected_namespaces=())
+    at: Annotated[str, Field(min_length=4, max_length=40)]
+    label: Annotated[PlainText, Field(min_length=1, max_length=256)]
+    detail: Optional[Annotated[PlainText, Field(min_length=1, max_length=1024)]] = None
+
+
+class TimelineBlock(BaseModel):
+    """A sequence of dated events from a dataset (ADR 0047)."""
+    model_config = ConfigDict(extra="forbid", protected_namespaces=())
+    type: Literal["timeline"]
+    title: Optional[Annotated[PlainText, Field(min_length=1, max_length=200)]] = None
+    events: Annotated[list[TimelineEvent], Field(min_length=1, max_length=200)]
+    dataset_id: Optional[DatasetId] = None
+    source: Optional[SourceLabel] = None
+
+
+class RecordCardField(BaseModel):
+    model_config = ConfigDict(extra="forbid", protected_namespaces=())
+    key: FieldName
+    label: Annotated[str, Field(min_length=1, max_length=128)]
+    value: Union[Annotated[str, Field(max_length=1024)], float, bool, None]
+
+
+class RecordCardBlock(BaseModel):
+    """Key-value card for one host record (ADR 0047)."""
+    model_config = ConfigDict(extra="forbid", protected_namespaces=())
+    type: Literal["record_card"]
+    title: Annotated[str, Field(min_length=1, max_length=256)]
+    fields: Annotated[list[RecordCardField], Field(min_length=1, max_length=64)]
+    dataset_id: Optional[DatasetId] = None
+    source: Optional[Literal["app"]] = None
+
+
+class ProvenanceStep(BaseModel):
+    model_config = ConfigDict(extra="forbid", protected_namespaces=())
+    kind: Literal["read", "compute", "forecast", "search", "fetch"]
+    summary: Annotated[PlainText, Field(min_length=1, max_length=512)]
+    capability_id: Optional[CapabilityId] = None
+    op: Optional[Annotated[str, Field(min_length=1, max_length=64)]] = None
+    dataset_id: Optional[DatasetId] = None
+    web_citation_id: Optional[Annotated[str, Field(min_length=4, max_length=64)]] = None
+
+
+class ProvenanceBlock(BaseModel):
+    """
+    How an analyst answer was calculated: reads, ops and forecast methods (ADR 0047). Assembled
+    by the core.
+    """
+    model_config = ConfigDict(extra="forbid", protected_namespaces=())
+    type: Literal["provenance"]
+    title: Optional[Annotated[PlainText, Field(min_length=1, max_length=200)]] = None
+    steps: Annotated[list[ProvenanceStep], Field(min_length=1, max_length=64)]
+
+
+class DraftBlock(BaseModel):
+    """
+    A generated document draft (ADR 0047). Saving it is a host capability action, never
+    automatic. App data quoted in the body follows the same tracing rules as answer text.
+    """
+    model_config = ConfigDict(extra="forbid", protected_namespaces=())
+    type: Literal["draft"]
+    title: Annotated[PlainText, Field(min_length=1, max_length=200)]
+    format: Literal["markdown", "plain"]
+    body: Annotated[str, Field(min_length=1, max_length=100000)]
+    source: Optional[SourceLabel] = None
+
+
+RichBlock = Annotated[Union[MarkdownBlock, CodeBlock, TableBlock, ChartBlock, DiagramBlock, CitationListBlock, ActionCardBlock, ClarificationChoicesBlock, ConfirmationPanelBlock, KpiBlock, TimelineBlock, RecordCardBlock, ProvenanceBlock, DraftBlock], Field(discriminator='type')]

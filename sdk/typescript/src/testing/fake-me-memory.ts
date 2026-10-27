@@ -159,6 +159,29 @@ export const createFakeMeMemory = (ctx: FakeContext) => {
         return ctx.json(200, { groups: [], next_cursor: null });
       case "getMeBudget":
         return ctx.json(200, { budgets: [], states: [] });
+      case "getPrincipalAnalyst":
+        return ctx.json(200, {
+          enabled: false,
+          analyst_capable: false,
+          abilities: {
+            loop: false,
+            compute: false,
+            forecasts: false,
+            presentation: false,
+            drafts: false,
+            knowledge: false,
+            web_search: false,
+            web_fetch: false,
+          },
+          disabled_reasons: {},
+          resolved_at: ctx.iso(ctx.nowMs()),
+        });
+      case "getTenantAnalyst":
+        return ctx.json(200, {});
+      case "putTenantAnalyst": {
+        const bodyObj = isRecord(body) ? body : {};
+        return ctx.json(200, { ...bodyObj, updated_at: ctx.iso(ctx.nowMs()) });
+      }
       case "listMemory":
         return ctx.json(200, { items: [] });
       case "createMemory": {

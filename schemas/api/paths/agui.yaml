@@ -299,7 +299,11 @@ components:
             type: object
           description: The page's readable context. Untrusted, bounded, fenced data that reaches no prompt (until M3-32).
         forwardedProps:
-          description: 'Only the object `alixai` is read: `choiceId` answers the pending clarification, `language` is a BCP 47 tag.'
+          description: |
+            Only the object `alixai` is read: `choiceId` answers the pending clarification, `language` is a
+            BCP 47 tag, and optional `clientCapabilities` (same shape as TurnRequest.client_capabilities /
+            `schemas/analyst/client-capabilities.schema.json`) announces 1.5 parse support (ADR 0047).
+            Absent clientCapabilities = 1.4 emit surface. The property stays open so 1.4 clients are unchanged.
         resume:
           type: array
           maxItems: 1
@@ -361,6 +365,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AguiPendingFeature'
+        analyst:
+          description: |
+            Optional. Effective analyst abilities for the caller's application/tenant (ADR 0047).
+            Read-only; same shape as GET /v1/me/analyst. Absent when the analyst path is not wired.
+          $ref: ../../analyst/abilities.schema.json
 
     AguiCancelResult:
       type: object

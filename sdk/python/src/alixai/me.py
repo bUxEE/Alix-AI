@@ -164,6 +164,10 @@ class MeApi:
         """The caller's own principal budgets and states (``GET /v1/me/budget``)."""
         return self._client._execute(Call("getMeBudget", lambda d: d, timeout_ms=timeout_ms))
 
+    def analyst(self, *, timeout_ms: Optional[int] = None) -> Any:
+        """Effective analyst abilities (``GET /v1/me/analyst``, ADR 0047)."""
+        return self._client._execute(Call("getPrincipalAnalyst", lambda d: d, timeout_ms=timeout_ms))
+
 
 class AsyncMeApi:
     def __init__(self, client: AlixAIAsyncClient) -> None:
@@ -309,3 +313,6 @@ class AsyncMeApi:
 
     async def budget(self, *, timeout_ms: Optional[int] = None) -> Any:
         return await self._client._execute(Call("getMeBudget", lambda d: d, timeout_ms=timeout_ms))
+
+    async def analyst(self, *, timeout_ms: Optional[int] = None) -> Any:
+        return await self._client._execute(Call("getPrincipalAnalyst", lambda d: d, timeout_ms=timeout_ms))

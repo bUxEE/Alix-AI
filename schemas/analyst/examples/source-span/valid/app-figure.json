@@ -1,0 +1,6 @@
+{
+  "label": "employee_count",
+  "source": "app",
+  "dataset_id": "ds_company_profile_01",
+  "text": "42 employees"
+}

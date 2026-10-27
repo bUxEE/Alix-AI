@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:analyst:client-capabilities:v1",
+  "title": "ClientCapabilities",
+  "description": "What this client can parse of the 1.5 analyst / rich-block surface (ADR 0047). Sent on TurnRequest.client_capabilities and on AG-UI forwardedProps.alixai.clientCapabilities. Absent or empty means 1.4: the server emits only forms that validate against schemas/_frozen/v1. The SDK of a release fills this with exactly what it can decode; kits copy the same announcement.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "contract": {
+      "description": "Highest contract generation the client claims. Absent or \"1.4\" = frozen 1.4 surface only. \"1.5\" unlocks items listed in the other members.",
+      "type": "string",
+      "enum": ["1.4", "1.5"]
+    },
+    "blocks": {
+      "description": "Rich-block type strings the client can render beyond the 1.4 set. Unknown or unlisted 1.5 types are mapped to table or markdown.",
+      "type": "array",
+      "maxItems": 32,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "markdown",
+          "code",
+          "table",
+          "chart",
+          "diagram",
+          "citation_list",
+          "action_card",
+          "clarification_choices",
+          "confirmation_panel",
+          "kpi",
+          "timeline",
+          "record_card",
+          "provenance",
+          "draft"
+        ]
+      }
+    },
+    "chart_marks": {
+      "description": "Chart mark values the client accepts. 1.4 marks are bar, line, area, point, pie. Unannounced marks are mapped to the closest 1.4 mark or a table.",
+      "type": "array",
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "bar",
+          "line",
+          "area",
+          "point",
+          "pie",
+          "scatter",
+          "heatmap",
+          "combo_bar_line"
+        ]
+      }
+    },
+    "chart_layouts": {
+      "description": "Optional chart layout / style members the client accepts (bar_layout and pie_style values).",
+      "type": "array",
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": ["grouped", "stacked", "horizontal", "donut"]
+      }
+    },
+    "progress_stages": {
+      "description": "ProgressEvent.stage values beyond the 1.4 set. Unannounced analyst_* stages are mapped to retrieving, generating or verifying.",
+      "type": "array",
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "interpreting",
+          "retrieving",
+          "sources",
+          "validating",
+          "preparing",
+          "committing",
+          "tool_call",
+          "queued",
+          "generating",
+          "verifying",
+          "analyst_read",
+          "analyst_compute",
+          "analyst_search",
+          "analyst_fetch",
+          "analyst_answer"
+        ]
+      }
+    },
+    "source_labels": {
+      "description": "True when the client accepts source / source_spans / WebCitation chrome. False or absent: those members are omitted from emitted events.",
+      "type": "boolean"
+    },
+    "block_fields": {
+      "description": "Optional 1.5-only members on blocks the client accepts (dataset_id, bar_layout, pie_style, source). Unannounced members are stripped before emit.",
+      "type": "array",
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": ["dataset_id", "bar_layout", "pie_style", "source"]
+      }
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "id": "ds_company_profile_01",
+  "fields": [
+    {
+      "name": "employees",
+      "type": "number",
+      "data_class": "internal",
+      "unit": "employees"
+    },
+    {
+      "name": "region",
+      "type": "string",
+      "data_class": "internal"
+    }
+  ],
+  "rows": [
+    {
+      "employees": 42,
+      "region": "Lombardia"
+    }
+  ],
+  "record_count": 1,
+  "provenance": {
+    "kind": "read",
+    "capability_id": "company.profile.read",
+    "arguments": {
+      "company_id": "cmp_1"
+    }
+  }
+}

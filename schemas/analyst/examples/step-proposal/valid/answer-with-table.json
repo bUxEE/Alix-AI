@@ -1,0 +1,18 @@
+{
+  "kind": "answer",
+  "answer": {
+    "text_plan": "Summarise eligibility with a criteria table and provenance.",
+    "blocks": [
+      {
+        "type": "table",
+        "dataset_id": "ds_company_criteria_01",
+        "title": "Eligibility criteria"
+      },
+      {
+        "type": "provenance",
+        "title": "How this was calculated"
+      }
+    ]
+  },
+  "trace_id": "trc_01J0000000000000000000000A"
+}

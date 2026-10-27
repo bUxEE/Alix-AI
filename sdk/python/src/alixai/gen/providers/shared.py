@@ -117,7 +117,7 @@ MeterUnit = Literal["toks_in", "toks_out", "toks_in_cached", "images_in", "image
 Channel = Literal["interactive", "background"]
 
 
-SendCategory = Literal["user_message", "conversation_history", "structured_state", "deterministic_fact", "dialogue_directive", "action_receipt", "rag_excerpt", "rag_metadata", "file_content", "image_content", "audio_content"]
+SendCategory = Literal["user_message", "conversation_history", "structured_state", "deterministic_fact", "dialogue_directive", "action_receipt", "rag_excerpt", "rag_metadata", "file_content", "image_content", "audio_content", "web_query"]
 
 
 BlockedCategory = Literal["credential", "raw_database_content", "filesystem_path", "database_handle", "mcp_url", "local_only_field"]

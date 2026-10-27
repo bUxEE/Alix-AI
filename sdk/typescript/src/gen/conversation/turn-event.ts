@@ -380,7 +380,12 @@ export type ProgressEventStage =
   | "tool_call"
   | "queued"
   | "generating"
-  | "verifying";
+  | "verifying"
+  | "analyst_read"
+  | "analyst_compute"
+  | "analyst_search"
+  | "analyst_fetch"
+  | "analyst_answer";
 
 /**
  * ProgressEventState mirrors

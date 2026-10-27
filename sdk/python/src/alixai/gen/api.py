@@ -6,6 +6,7 @@ from typing import Annotated, Any, Literal, Optional, Union
 from alixai.gen.actions.action_receipt import ActionReceipt
 from alixai.gen.actions.prepared_action import PreparedAction
 from alixai.gen.actions.shared import Choice
+from alixai.gen.analyst.client_capabilities import ClientCapabilities
 from alixai.gen.common.error import Error
 from alixai.gen.conversation.turn_event import TurnEvent
 from alixai.gen.providers.budget import ProviderBudget
@@ -99,10 +100,15 @@ class TurnRequestReject(BaseModel):
 
 
 class TurnRequest(BaseModel):
-    """Exactly one of text, choice_id, confirmation and reject; attachments only with text."""
+    """
+    Exactly one of text, choice_id, confirmation and reject; attachments only with text.
+    Optional client_capabilities (ADR 0047) announce what the client can parse of the 1.5
+    surface; absent means 1.4.
+    """
     model_config = ConfigDict(extra="forbid", protected_namespaces=())
     text: Optional[Annotated[str, Field(min_length=1)]] = None
     language: Optional[str] = None
+    client_capabilities: Optional[ClientCapabilities] = None
     choice_id: Optional[str] = None
     confirmation: Optional[TurnRequestConfirmation] = None
     reject: Optional[TurnRequestReject] = None

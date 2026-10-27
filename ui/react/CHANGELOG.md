@@ -3,6 +3,12 @@
 All notable changes to this package. Versions follow semantic versioning with the rules of
 [compatibility.md](../../docs/policies/compatibility.md).
 
+## Unreleased / 1.5.0
+
+### Notes
+
+- Core/SDK add analyst rich blocks and source labels (ADR 0047). Kit renderers for new block types land with the implementation tasks; until then unknown block types keep the text alternative.
+
 ## 1.4.1 — 2026-10-27
 
 ### Fixed

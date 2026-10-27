@@ -36,6 +36,11 @@ Four principles shape every field:
 A package does **not** contain business logic, credentials, model files, user data or prompts.
 Examples inside it are test-only.
 
+**Analyst domain (1.5, ADR 0047).** Optional additive `assistant` on the manifest declares
+`domain` (in/out of scope, knowledge/web allowances) and optional ability ceilings. See
+[domain-scope.md](domain-scope.md) and `schemas/analyst/domain.schema.json`. Absent `assistant.domain`
+keeps domain classification and knowledge/web off for that application.
+
 **Before you write a package: readiness discovery (advisory).** `alixai readiness scan <dir>` reads a project
 directory you name and reports which of the things a package declares (and which the audit later checks) the
 project already has: MCP tools, API descriptions, operations, documentation, conversation contracts, RAG

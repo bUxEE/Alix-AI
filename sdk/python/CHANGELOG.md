@@ -3,6 +3,12 @@
 All notable changes to this package. The format follows [Keep a Changelog](https://keepachangelog.com/); versions follow semantic versioning once 1.0.0
 ships, with the rules of [compatibility.md](../../docs/policies/compatibility.md).
 
+## Unreleased / 1.5.0
+
+### Added
+
+- Analyst contracts (ADR 0047): generated models under `alixai.gen.analyst`; rich-block and turn-event extensions; `web_query` egress category; new error codes for analyst refusals.
+
 ## 1.4.1 — 2026-10-27
 
 ### Fixed

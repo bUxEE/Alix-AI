@@ -18,8 +18,9 @@ encode that rule in a machine-readable annotation, `x-alixai-authority`, on ever
 | PreparedAction | `schemas/actions/prepared-action.schema.json` |
 | ActionReceipt | `schemas/actions/action-receipt.schema.json` |
 | DeterministicResult | `schemas/actions/deterministic-result.schema.json` |
-| TurnEvent (union of 10 event types) | `schemas/conversation/turn-event.schema.json` |
-| RichBlock (union of 9 block types) | `schemas/conversation/rich-block.schema.json` |
+| TurnEvent (union including progress stages for analyst turns, ADR 0047) | `schemas/conversation/turn-event.schema.json` |
+| RichBlock (union including kpi, timeline, record_card, provenance, draft; extended chart marks, ADR 0047) | `schemas/conversation/rich-block.schema.json` |
+| AnalystStepProposal, AnalystDataset, ComputeOp, DerivedFact, domain, abilities, config | `schemas/analyst/*.schema.json` |
 | Citation | `schemas/conversation/citation.schema.json` |
 | FileRef | `schemas/conversation/file-ref.schema.json` |
 | Shared building blocks (fact, canonical value, data version, effect, choice, issue, IDs, ...) | `schemas/actions/shared.schema.json` |

@@ -1,0 +1,10 @@
+{
+  "op": "aggregate",
+  "inputs": ["ds_invoices_01"],
+  "params": {
+    "field": "amount",
+    "agg": "sum",
+    "decimals": 2,
+    "nulls": "skip"
+  }
+}

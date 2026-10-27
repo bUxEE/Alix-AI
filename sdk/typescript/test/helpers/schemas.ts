@@ -13,7 +13,7 @@ import { REPO_ROOT } from "./repo.js";
 // ajv-formats is CommonJS: depending on the loader the function is the module or its default export.
 const addFormats = ((addFormatsImport as unknown as { default?: unknown }).default ?? addFormatsImport) as (ajv: Ajv2020) => void;
 
-const AREAS = ["common", "actions", "conversation", "memory", "providers"];
+const AREAS = ["common", "actions", "conversation", "memory", "providers", "analyst"];
 
 export const createAjv = (): Ajv2020 => {
   const ajv = new Ajv2020({ strict: false, allErrors: true });

@@ -48,6 +48,30 @@ paths:
         '503':
           $ref: ../openapi.yaml#/components/responses/Unavailable
 
+  /v1/me/analyst:
+    get:
+      operationId: getPrincipalAnalyst
+      tags: [me]
+      summary: Effective analyst abilities for the caller
+      description: |
+        Read-only effective ability set after intersecting deployment config, application package
+        `assistant.abilities`, and tenant settings, gated by whether the resolved controller is
+        `analyst_capable` (ADR 0047). Same shape as `schemas/analyst/abilities.schema.json`. Also
+        exposed optionally on `GET /v1/agui/capabilities` as `analyst`. Self only; no secrets.
+      responses:
+        '200':
+          description: The effective set.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EffectiveAnalystAbilities'
+        '401':
+          $ref: ../openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ../openapi.yaml#/components/responses/Forbidden
+        '503':
+          $ref: ../openapi.yaml#/components/responses/Unavailable
+
   /v1/me/llm/{role}:
     put:
       operationId: putPrincipalLlmRole
@@ -433,6 +457,8 @@ components:
   schemas:
     ProviderCatalog:
       $ref: ../../providers/provider-catalog.schema.json
+    EffectiveAnalystAbilities:
+      $ref: ../../analyst/abilities.schema.json
     PrincipalLlm:
       $ref: ../../providers/principal-llm.schema.json
     PrincipalLlmBindingUpdate:

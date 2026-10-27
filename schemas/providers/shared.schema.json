@@ -246,7 +246,7 @@
     },
     "sendCategory": {
       "title": "Sendable data category",
-      "description": "A category of data that can be placed in an external request. There is no category for credentials, raw application database content, filesystem paths, database handles or MCP URLs: those are not sendable and have no representation in a request envelope (see blockedCategory).",
+      "description": "A category of data that can be placed in an external request. web_query (ADR 0047) is a search string sent to a configured web-search provider: it must never carry confidential or restricted application field values. There is no category for credentials, raw application database content, filesystem paths, database handles or MCP URLs: those are not sendable and have no representation in a request envelope (see blockedCategory).",
       "type": "string",
       "enum": [
         "user_message",
@@ -259,7 +259,8 @@
         "rag_metadata",
         "file_content",
         "image_content",
-        "audio_content"
+        "audio_content",
+        "web_query"
       ]
     },
     "blockedCategory": {

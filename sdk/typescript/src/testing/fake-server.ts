@@ -1033,6 +1033,9 @@ export const createFakeServer = (options: FakeServerOptions = {}): FakeAlixAISer
       case "deletePrincipalPrivateLlm":
       case "getMeUsage":
       case "getMeBudget":
+      case "getPrincipalAnalyst":
+      case "getTenantAnalyst":
+      case "putTenantAnalyst":
       case "listMemory":
       case "createMemory":
       case "patchMemory":

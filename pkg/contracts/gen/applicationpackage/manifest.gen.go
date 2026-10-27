@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/buxee/alix-ai/pkg/contracts/gen/analyst"
 	"github.com/buxee/alix-ai/pkg/contracts/gen/common"
 )
 
@@ -95,6 +96,11 @@ type Manifest struct {
 	// never a package field, so switching mode never changes the integration contract. The
 	// package can only restrict.
 	External *ManifestExternal `json:"external,omitzero"`
+
+	// Optional. Analyst companion domain and ability ceilings for this package (ADR 0047).
+	// Absent means no domain is declared: domain classification and knowledge/web stay off for
+	// this application even if deployment enables them.
+	Assistant *ManifestAssistant `json:"assistant,omitzero"`
 }
 
 // MarshalJSON encodes the value with its const members forced to the value the
@@ -134,6 +140,40 @@ type ManifestApplication struct {
 
 	// Optional short description of what the application does.
 	Description *Text `json:"description,omitzero"`
+}
+
+// ManifestAssistant mirrors urn:alixai:schema:application-package:manifest:v1#/$defs/assistant.
+type ManifestAssistant struct {
+	// Domain scope declaration. Required for in-domain answers that match no capability.
+	Domain *analyst.Domain `json:"domain,omitzero"`
+
+	// Optional package ceilings: each true allows the deployment to enable that ability; false
+	// (or absent) forces it off for this application. Most restrictive wins with deployment
+	// and tenant.
+	Abilities *ManifestAssistantAbilities `json:"abilities,omitzero"`
+}
+
+// ManifestAssistantAbilities mirrors
+// urn:alixai:schema:application-package:manifest:v1#/$defs/assistant/properties/abilities.
+//
+// Optional package ceilings: each true allows the deployment to enable that ability; false (or
+// absent) forces it off for this application. Most restrictive wins with deployment and tenant.
+type ManifestAssistantAbilities struct {
+	Loop *bool `json:"loop,omitzero"`
+
+	Compute *bool `json:"compute,omitzero"`
+
+	Forecasts *bool `json:"forecasts,omitzero"`
+
+	Presentation *bool `json:"presentation,omitzero"`
+
+	Drafts *bool `json:"drafts,omitzero"`
+
+	Knowledge *bool `json:"knowledge,omitzero"`
+
+	WebSearch *bool `json:"web_search,omitzero"`
+
+	WebFetch *bool `json:"web_fetch,omitzero"`
 }
 
 // ManifestCompatibility mirrors

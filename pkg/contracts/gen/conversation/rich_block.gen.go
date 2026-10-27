@@ -8,30 +8,36 @@ import (
 	"fmt"
 
 	"github.com/buxee/alix-ai/pkg/contracts/gen/actions"
+	"github.com/buxee/alix-ai/pkg/contracts/gen/analyst"
 	"github.com/buxee/alix-ai/pkg/contracts/gen/common"
 )
 
 // RichBlock mirrors urn:alixai:schema:conversation:rich-block:v1.
 //
-// One block of a rich assistant message (master plan 14.1): markdown, code, table, chart, diagram,
-// citation_list, action_card, clarification_choices or confirmation_panel, discriminated by type.
-// Blocks are data, never executable HTML or JavaScript: no block has a URL, a path, an expression,
-// a script, a callback or an HTML member, and every fixed-shape object forbids additional
-// properties. Free content (markdown text, code, table cells, chart data, diagram source) is
-// 'model' authority: it is verified against the DialogueDirective, sanitised in the core (M3-05)
-// and treated as untrusted by the renderer. Blocks that present application state (action_card,
-// confirmation_panel, citation_list, clarification_choices) are assembled by the core from
-// PreparedActions, ActionReceipts, citations and adapter results, so their identifying and factual
+// One block of a rich assistant message (master plan 14.1, ADR 0047): markdown, code, table,
+// chart, diagram, citation_list, action_card, clarification_choices, confirmation_panel, plus
+// analyst blocks kpi, timeline, record_card, provenance and draft, discriminated by type. Blocks
+// are data, never executable HTML or JavaScript: no block has a path, an expression, a script, a
+// callback or an HTML member (web citations may carry https URLs), and every fixed-shape object
+// forbids additional properties. Free content (markdown text, code, table cells, chart data,
+// diagram source, draft body) is 'model' authority: it is verified against the DialogueDirective /
+// analyst facts, sanitised in the core (M3-05) and treated as untrusted by the renderer. Blocks
+// that present application state (action_card, confirmation_panel, citation_list,
+// clarification_choices, provenance) are assembled by the core from PreparedActions,
+// ActionReceipts, citations, datasets and adapter results, so their identifying and factual
 // members are 'alixai' or 'host'. The host application decides which renderers are enabled; a
-// client that does not support a type shows the text alternative.
+// client that does not support a type shows the text alternative or a table fallback. New types
+// are emitted only when the client announced support.
 //
 // It is a union discriminated by the "type" property: exactly one of MarkdownBlock, CodeBlock,
 // TableBlock, ChartBlock, DiagramBlock, CitationListBlock, ActionCardBlock,
-// ClarificationChoicesBlock, ConfirmationPanelBlock.
+// ClarificationChoicesBlock, ConfirmationPanelBlock, KpiBlock, TimelineBlock, RecordCardBlock,
+// ProvenanceBlock, DraftBlock.
 type RichBlock struct {
 	// Value holds the variant: one of MarkdownBlock, CodeBlock, TableBlock, ChartBlock,
 	// DiagramBlock, CitationListBlock, ActionCardBlock, ClarificationChoicesBlock,
-	// ConfirmationPanelBlock. The zero value holds none and cannot be encoded.
+	// ConfirmationPanelBlock, KpiBlock, TimelineBlock, RecordCardBlock, ProvenanceBlock,
+	// DraftBlock. The zero value holds none and cannot be encoded.
 	Value RichBlockValue
 }
 
@@ -49,6 +55,11 @@ func (CitationListBlock) isRichBlock()         {}
 func (ActionCardBlock) isRichBlock()           {}
 func (ClarificationChoicesBlock) isRichBlock() {}
 func (ConfirmationPanelBlock) isRichBlock()    {}
+func (KpiBlock) isRichBlock()                  {}
+func (TimelineBlock) isRichBlock()             {}
+func (RecordCardBlock) isRichBlock()           {}
+func (ProvenanceBlock) isRichBlock()           {}
+func (DraftBlock) isRichBlock()                {}
 
 // MarshalJSON encodes the variant that is set. The discriminator is written by
 // the variant itself, so it can never disagree with the variant's type.
@@ -130,6 +141,36 @@ func (u *RichBlock) UnmarshalJSON(data []byte) error {
 		u.Value = v
 	case "confirmation_panel":
 		v, err := decodeStrict[ConfirmationPanelBlock](data)
+		if err != nil {
+			return fmt.Errorf("RichBlock: %w", err)
+		}
+		u.Value = v
+	case "kpi":
+		v, err := decodeStrict[KpiBlock](data)
+		if err != nil {
+			return fmt.Errorf("RichBlock: %w", err)
+		}
+		u.Value = v
+	case "timeline":
+		v, err := decodeStrict[TimelineBlock](data)
+		if err != nil {
+			return fmt.Errorf("RichBlock: %w", err)
+		}
+		u.Value = v
+	case "record_card":
+		v, err := decodeStrict[RecordCardBlock](data)
+		if err != nil {
+			return fmt.Errorf("RichBlock: %w", err)
+		}
+		u.Value = v
+	case "provenance":
+		v, err := decodeStrict[ProvenanceBlock](data)
+		if err != nil {
+			return fmt.Errorf("RichBlock: %w", err)
+		}
+		u.Value = v
+	case "draft":
+		v, err := decodeStrict[DraftBlock](data)
 		if err != nil {
 			return fmt.Errorf("RichBlock: %w", err)
 		}
@@ -220,13 +261,26 @@ type ChartBlock struct {
 	// Authority: model.
 	Description PlainText `json:"description" alixai:"model"`
 
-	// The mark type.
+	// The mark type. Additive analyst marks (ADR 0047): scatter, heatmap, combo_bar_line.
+	// Grouped/stacked/horizontal bars use mark bar plus bar_layout; donut uses mark pie plus
+	// pie_style. Clients that do not announce a mark or layout receive a table or text
+	// fallback.
 	//
 	// Authority: model.
 	Mark ChartBlockMark `json:"mark" alixai:"model"`
 
+	// Optional. With mark bar: grouped, stacked or horizontal (ADR 0047).
+	//
+	// Authority: model.
+	BarLayout *ChartBlockBarLayout `json:"bar_layout,omitzero" alixai:"model"`
+
+	// Optional. With mark pie: donut draws with a hole (ADR 0047).
+	//
+	// Authority: model.
+	PieStyle *ChartBlockPieStyle `json:"pie_style,omitzero" alixai:"model"`
+
 	// Inline data: an array of records, each a flat object of scalar values keyed by field
-	// name. Never a URL.
+	// name. Never a URL. When dataset_id is set the core may fill data from the dataset.
 	//
 	// Authority: model.
 	Data []ChartRecord `json:"data" alixai:"model"`
@@ -235,6 +289,16 @@ type ChartBlock struct {
 	//
 	// Authority: model.
 	Encoding ChartEncoding `json:"encoding" alixai:"model"`
+
+	// Optional. Analyst dataset the core materialised chart data from (ADR 0047).
+	//
+	// Authority: alixai.
+	DatasetID *analyst.DatasetID `json:"dataset_id,omitzero" alixai:"alixai"`
+
+	// Optional source label for the block as a whole.
+	//
+	// Authority: alixai.
+	Source *analyst.SourceLabel `json:"source,omitzero" alixai:"alixai"`
 }
 
 // MarshalJSON encodes the value with its const members forced to the value the
@@ -249,27 +313,82 @@ func (v ChartBlock) MarshalJSON() ([]byte, error) {
 	return json.Marshal(a)
 }
 
+// ChartBlockBarLayout mirrors
+// urn:alixai:schema:conversation:rich-block:v1#/$defs/chartBlock/properties/bar_layout.
+//
+// Optional. With mark bar: grouped, stacked or horizontal (ADR 0047).
+//
+// Only the values listed in the schema are valid.
+type ChartBlockBarLayout string
+
+// The valid values of ChartBlockBarLayout.
+const (
+	ChartBlockBarLayoutGrouped    ChartBlockBarLayout = "grouped"
+	ChartBlockBarLayoutStacked    ChartBlockBarLayout = "stacked"
+	ChartBlockBarLayoutHorizontal ChartBlockBarLayout = "horizontal"
+)
+
+// Valid reports whether v is one of the values the schema lists.
+func (v ChartBlockBarLayout) Valid() bool {
+	switch v {
+	case ChartBlockBarLayoutGrouped, ChartBlockBarLayoutStacked, ChartBlockBarLayoutHorizontal:
+		return true
+	}
+	return false
+}
+
+// MarshalJSON refuses to encode a value outside the enum, so an unset or
+// corrupt value fails instead of producing a document the schema rejects.
+func (v ChartBlockBarLayout) MarshalJSON() ([]byte, error) {
+	if !v.Valid() {
+		return nil, fmt.Errorf("ChartBlockBarLayout: %v is not a valid value", string(v))
+	}
+	return json.Marshal(string(v))
+}
+
+// UnmarshalJSON accepts only the values the schema lists; null and anything
+// else is an error.
+func (v *ChartBlockBarLayout) UnmarshalJSON(data []byte) error {
+	if bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
+		return fmt.Errorf("ChartBlockBarLayout: null is not a valid value")
+	}
+	var raw string
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return fmt.Errorf("ChartBlockBarLayout: %w", err)
+	}
+	if !ChartBlockBarLayout(raw).Valid() {
+		return fmt.Errorf("ChartBlockBarLayout: %v is not a valid value", raw)
+	}
+	*v = ChartBlockBarLayout(raw)
+	return nil
+}
+
 // ChartBlockMark mirrors
 // urn:alixai:schema:conversation:rich-block:v1#/$defs/chartBlock/properties/mark.
 //
-// The mark type.
+// The mark type. Additive analyst marks (ADR 0047): scatter, heatmap, combo_bar_line.
+// Grouped/stacked/horizontal bars use mark bar plus bar_layout; donut uses mark pie plus
+// pie_style. Clients that do not announce a mark or layout receive a table or text fallback.
 //
 // Only the values listed in the schema are valid.
 type ChartBlockMark string
 
 // The valid values of ChartBlockMark.
 const (
-	ChartBlockMarkBar   ChartBlockMark = "bar"
-	ChartBlockMarkLine  ChartBlockMark = "line"
-	ChartBlockMarkArea  ChartBlockMark = "area"
-	ChartBlockMarkPoint ChartBlockMark = "point"
-	ChartBlockMarkPie   ChartBlockMark = "pie"
+	ChartBlockMarkBar          ChartBlockMark = "bar"
+	ChartBlockMarkLine         ChartBlockMark = "line"
+	ChartBlockMarkArea         ChartBlockMark = "area"
+	ChartBlockMarkPoint        ChartBlockMark = "point"
+	ChartBlockMarkPie          ChartBlockMark = "pie"
+	ChartBlockMarkScatter      ChartBlockMark = "scatter"
+	ChartBlockMarkHeatmap      ChartBlockMark = "heatmap"
+	ChartBlockMarkComboBarLine ChartBlockMark = "combo_bar_line"
 )
 
 // Valid reports whether v is one of the values the schema lists.
 func (v ChartBlockMark) Valid() bool {
 	switch v {
-	case ChartBlockMarkBar, ChartBlockMarkLine, ChartBlockMarkArea, ChartBlockMarkPoint, ChartBlockMarkPie:
+	case ChartBlockMarkBar, ChartBlockMarkLine, ChartBlockMarkArea, ChartBlockMarkPoint, ChartBlockMarkPie, ChartBlockMarkScatter, ChartBlockMarkHeatmap, ChartBlockMarkComboBarLine:
 		return true
 	}
 	return false
@@ -298,6 +417,54 @@ func (v *ChartBlockMark) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("ChartBlockMark: %v is not a valid value", raw)
 	}
 	*v = ChartBlockMark(raw)
+	return nil
+}
+
+// ChartBlockPieStyle mirrors
+// urn:alixai:schema:conversation:rich-block:v1#/$defs/chartBlock/properties/pie_style.
+//
+// Optional. With mark pie: donut draws with a hole (ADR 0047).
+//
+// Only the values listed in the schema are valid.
+type ChartBlockPieStyle string
+
+// The valid values of ChartBlockPieStyle.
+const (
+	ChartBlockPieStyleDonut ChartBlockPieStyle = "donut"
+)
+
+// Valid reports whether v is one of the values the schema lists.
+func (v ChartBlockPieStyle) Valid() bool {
+	switch v {
+	case ChartBlockPieStyleDonut:
+		return true
+	}
+	return false
+}
+
+// MarshalJSON refuses to encode a value outside the enum, so an unset or
+// corrupt value fails instead of producing a document the schema rejects.
+func (v ChartBlockPieStyle) MarshalJSON() ([]byte, error) {
+	if !v.Valid() {
+		return nil, fmt.Errorf("ChartBlockPieStyle: %v is not a valid value", string(v))
+	}
+	return json.Marshal(string(v))
+}
+
+// UnmarshalJSON accepts only the values the schema lists; null and anything
+// else is an error.
+func (v *ChartBlockPieStyle) UnmarshalJSON(data []byte) error {
+	if bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
+		return fmt.Errorf("ChartBlockPieStyle: null is not a valid value")
+	}
+	var raw string
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return fmt.Errorf("ChartBlockPieStyle: %w", err)
+	}
+	if !ChartBlockPieStyle(raw).Valid() {
+		return fmt.Errorf("ChartBlockPieStyle: %v is not a valid value", raw)
+	}
+	*v = ChartBlockPieStyle(raw)
 	return nil
 }
 
@@ -374,8 +541,9 @@ func (v *ChartChannelType) UnmarshalJSON(data []byte) error {
 
 // ChartEncoding mirrors urn:alixai:schema:conversation:rich-block:v1#/$defs/chartEncoding.
 //
-// Channel to field mappings. A cartesian mark (bar, line, area, point) uses x and y and may add
-// color; a pie uses theta and color. Channels hold a field name and a type, never an expression.
+// Channel to field mappings. A cartesian mark (bar, line, area, point, scatter, heatmap,
+// combo_bar_line) uses x and y and may add color, y2 or size; a pie (including pie_style donut)
+// uses theta and color. Channels hold a field name and a type, never an expression.
 //
 // The schema also states cross-field rules (if/then/else, required alternatives and similar) that
 // this type does not express: validate payloads against the schema.
@@ -385,17 +553,27 @@ type ChartEncoding struct {
 	// Authority: model.
 	X *ChartChannel `json:"x,omitzero" alixai:"model"`
 
-	// Vertical position.
+	// Vertical position (or bar length for horizontal_bar).
 	//
 	// Authority: model.
 	Y *ChartChannel `json:"y,omitzero" alixai:"model"`
 
-	// Series or slice colour.
+	// Secondary series for combo_bar_line (typically the line).
+	//
+	// Authority: model.
+	Y2 *ChartChannel `json:"y2,omitzero" alixai:"model"`
+
+	// Series, slice or heatmap colour.
 	//
 	// Authority: model.
 	Color *ChartChannel `json:"color,omitzero" alixai:"model"`
 
-	// Angle of a pie slice.
+	// Point size for scatter.
+	//
+	// Authority: model.
+	Size *ChartChannel `json:"size,omitzero" alixai:"model"`
+
+	// Angle of a pie or donut slice.
 	//
 	// Authority: model.
 	Theta *ChartChannel `json:"theta,omitzero" alixai:"model"`
@@ -669,6 +847,128 @@ func (v DiagramBlock) MarshalJSON() ([]byte, error) {
 	return json.Marshal(a)
 }
 
+// DraftBlock mirrors urn:alixai:schema:conversation:rich-block:v1#/$defs/draftBlock.
+//
+// A generated document draft (ADR 0047). Saving it is a host capability action, never automatic.
+// App data quoted in the body follows the same tracing rules as answer text.
+type DraftBlock struct {
+	// Authority: alixai.
+	Type string `json:"type" alixai:"alixai"`
+
+	// Authority: model.
+	Title PlainText `json:"title" alixai:"model"`
+
+	// Authority: model.
+	Format DraftBlockFormat `json:"format" alixai:"model"`
+
+	// Authority: model.
+	Body string `json:"body" alixai:"model"`
+
+	// Dominant source label; mixed drafts may omit and rely on source_spans.
+	//
+	// Authority: alixai.
+	Source *analyst.SourceLabel `json:"source,omitzero" alixai:"alixai"`
+}
+
+// MarshalJSON encodes the value with its const members forced to the value the
+// schema fixes and with required arrays and maps never null.
+func (v DraftBlock) MarshalJSON() ([]byte, error) {
+	type plain DraftBlock
+	a := plain(v)
+	a.Type = "draft"
+	return json.Marshal(a)
+}
+
+// DraftBlockFormat mirrors
+// urn:alixai:schema:conversation:rich-block:v1#/$defs/draftBlock/properties/format.
+//
+// Only the values listed in the schema are valid.
+type DraftBlockFormat string
+
+// The valid values of DraftBlockFormat.
+const (
+	DraftBlockFormatMarkdown DraftBlockFormat = "markdown"
+	DraftBlockFormatPlain    DraftBlockFormat = "plain"
+)
+
+// Valid reports whether v is one of the values the schema lists.
+func (v DraftBlockFormat) Valid() bool {
+	switch v {
+	case DraftBlockFormatMarkdown, DraftBlockFormatPlain:
+		return true
+	}
+	return false
+}
+
+// MarshalJSON refuses to encode a value outside the enum, so an unset or
+// corrupt value fails instead of producing a document the schema rejects.
+func (v DraftBlockFormat) MarshalJSON() ([]byte, error) {
+	if !v.Valid() {
+		return nil, fmt.Errorf("DraftBlockFormat: %v is not a valid value", string(v))
+	}
+	return json.Marshal(string(v))
+}
+
+// UnmarshalJSON accepts only the values the schema lists; null and anything
+// else is an error.
+func (v *DraftBlockFormat) UnmarshalJSON(data []byte) error {
+	if bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
+		return fmt.Errorf("DraftBlockFormat: null is not a valid value")
+	}
+	var raw string
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return fmt.Errorf("DraftBlockFormat: %w", err)
+	}
+	if !DraftBlockFormat(raw).Valid() {
+		return fmt.Errorf("DraftBlockFormat: %v is not a valid value", raw)
+	}
+	*v = DraftBlockFormat(raw)
+	return nil
+}
+
+// KpiBlock mirrors urn:alixai:schema:conversation:rich-block:v1#/$defs/kpiBlock.
+//
+// A single KPI tile (ADR 0047). Values are core-filled from verified facts; the model proposes
+// labels only via the block plan.
+type KpiBlock struct {
+	// Authority: alixai.
+	Type string `json:"type" alixai:"alixai"`
+
+	// Authority: model.
+	Label PlainText `json:"label" alixai:"model"`
+
+	// Verified numeric or string value.
+	//
+	// Authority: alixai.
+	Value any `json:"value" alixai:"alixai"`
+
+	// Optional verified change vs a prior period.
+	//
+	// Authority: alixai.
+	Delta any `json:"delta,omitzero" alixai:"alixai"`
+
+	// Authority: model.
+	Period *PlainText `json:"period,omitzero" alixai:"model"`
+
+	// Authority: alixai.
+	Unit *string `json:"unit,omitzero" alixai:"alixai"`
+
+	// Authority: alixai.
+	Source *analyst.SourceLabel `json:"source,omitzero" alixai:"alixai"`
+
+	// Authority: alixai.
+	DatasetID *analyst.DatasetID `json:"dataset_id,omitzero" alixai:"alixai"`
+}
+
+// MarshalJSON encodes the value with its const members forced to the value the
+// schema fixes and with required arrays and maps never null.
+func (v KpiBlock) MarshalJSON() ([]byte, error) {
+	type plain KpiBlock
+	a := plain(v)
+	a.Type = "kpi"
+	return json.Marshal(a)
+}
+
 // MarkdownBlock mirrors urn:alixai:schema:conversation:rich-block:v1#/$defs/markdownBlock.
 //
 // Markdown text. Text only: no raw HTML is honoured and sanitisation happens in the core (M3-05)
@@ -703,6 +1003,148 @@ func (v MarkdownBlock) MarshalJSON() ([]byte, error) {
 // `^([^<]|<([^A-Za-z/!?]|$))*$`.
 type PlainText string
 
+// ProvenanceBlock mirrors urn:alixai:schema:conversation:rich-block:v1#/$defs/provenanceBlock.
+//
+// How an analyst answer was calculated: reads, ops and forecast methods (ADR 0047). Assembled by
+// the core.
+type ProvenanceBlock struct {
+	// Authority: alixai.
+	Type string `json:"type" alixai:"alixai"`
+
+	// Authority: alixai.
+	Title *PlainText `json:"title,omitzero" alixai:"alixai"`
+
+	// Authority: alixai.
+	Steps []ProvenanceStep `json:"steps" alixai:"alixai"`
+}
+
+// MarshalJSON encodes the value with its const members forced to the value the
+// schema fixes and with required arrays and maps never null.
+func (v ProvenanceBlock) MarshalJSON() ([]byte, error) {
+	type plain ProvenanceBlock
+	a := plain(v)
+	a.Type = "provenance"
+	if a.Steps == nil {
+		a.Steps = []ProvenanceStep{}
+	}
+	return json.Marshal(a)
+}
+
+// ProvenanceStep mirrors urn:alixai:schema:conversation:rich-block:v1#/$defs/provenanceStep.
+type ProvenanceStep struct {
+	// Authority: alixai.
+	Kind ProvenanceStepKind `json:"kind" alixai:"alixai"`
+
+	// Authority: alixai.
+	Summary PlainText `json:"summary" alixai:"alixai"`
+
+	// Authority: alixai.
+	CapabilityID *common.CapabilityID `json:"capability_id,omitzero" alixai:"alixai"`
+
+	// Authority: alixai.
+	Op *string `json:"op,omitzero" alixai:"alixai"`
+
+	// Authority: alixai.
+	DatasetID *analyst.DatasetID `json:"dataset_id,omitzero" alixai:"alixai"`
+
+	// Authority: alixai.
+	WebCitationID *string `json:"web_citation_id,omitzero" alixai:"alixai"`
+}
+
+// ProvenanceStepKind mirrors
+// urn:alixai:schema:conversation:rich-block:v1#/$defs/provenanceStep/properties/kind.
+//
+// Only the values listed in the schema are valid.
+type ProvenanceStepKind string
+
+// The valid values of ProvenanceStepKind.
+const (
+	ProvenanceStepKindRead     ProvenanceStepKind = "read"
+	ProvenanceStepKindCompute  ProvenanceStepKind = "compute"
+	ProvenanceStepKindForecast ProvenanceStepKind = "forecast"
+	ProvenanceStepKindSearch   ProvenanceStepKind = "search"
+	ProvenanceStepKindFetch    ProvenanceStepKind = "fetch"
+)
+
+// Valid reports whether v is one of the values the schema lists.
+func (v ProvenanceStepKind) Valid() bool {
+	switch v {
+	case ProvenanceStepKindRead, ProvenanceStepKindCompute, ProvenanceStepKindForecast, ProvenanceStepKindSearch, ProvenanceStepKindFetch:
+		return true
+	}
+	return false
+}
+
+// MarshalJSON refuses to encode a value outside the enum, so an unset or
+// corrupt value fails instead of producing a document the schema rejects.
+func (v ProvenanceStepKind) MarshalJSON() ([]byte, error) {
+	if !v.Valid() {
+		return nil, fmt.Errorf("ProvenanceStepKind: %v is not a valid value", string(v))
+	}
+	return json.Marshal(string(v))
+}
+
+// UnmarshalJSON accepts only the values the schema lists; null and anything
+// else is an error.
+func (v *ProvenanceStepKind) UnmarshalJSON(data []byte) error {
+	if bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
+		return fmt.Errorf("ProvenanceStepKind: null is not a valid value")
+	}
+	var raw string
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return fmt.Errorf("ProvenanceStepKind: %w", err)
+	}
+	if !ProvenanceStepKind(raw).Valid() {
+		return fmt.Errorf("ProvenanceStepKind: %v is not a valid value", raw)
+	}
+	*v = ProvenanceStepKind(raw)
+	return nil
+}
+
+// RecordCardBlock mirrors urn:alixai:schema:conversation:rich-block:v1#/$defs/recordCardBlock.
+//
+// Key-value card for one host record (ADR 0047).
+type RecordCardBlock struct {
+	// Authority: alixai.
+	Type string `json:"type" alixai:"alixai"`
+
+	// Authority: host.
+	Title string `json:"title" alixai:"host"`
+
+	// Authority: host.
+	Fields []RecordCardField `json:"fields" alixai:"host"`
+
+	// Authority: alixai.
+	DatasetID *analyst.DatasetID `json:"dataset_id,omitzero" alixai:"alixai"`
+
+	// Authority: alixai.
+	Source *string `json:"source,omitzero" alixai:"alixai"`
+}
+
+// MarshalJSON encodes the value with its const members forced to the value the
+// schema fixes and with required arrays and maps never null.
+func (v RecordCardBlock) MarshalJSON() ([]byte, error) {
+	type plain RecordCardBlock
+	a := plain(v)
+	a.Type = "record_card"
+	if a.Fields == nil {
+		a.Fields = []RecordCardField{}
+	}
+	return json.Marshal(a)
+}
+
+// RecordCardField mirrors urn:alixai:schema:conversation:rich-block:v1#/$defs/recordCardField.
+type RecordCardField struct {
+	// Authority: host.
+	Key common.FieldName `json:"key" alixai:"host"`
+
+	// Authority: host.
+	Label string `json:"label" alixai:"host"`
+
+	// Authority: host.
+	Value any `json:"value" alixai:"host"`
+}
+
 // TableBlock mirrors urn:alixai:schema:conversation:rich-block:v1#/$defs/tableBlock.
 //
 // A table of plain values. Every row has one cell per column, in column order; the renderer treats
@@ -721,10 +1163,21 @@ type TableBlock struct {
 	// Authority: model.
 	Columns []TableColumn `json:"columns" alixai:"model"`
 
-	// Row data. Each row is an array of cells in column order.
+	// Row data. Each row is an array of cells in column order. When dataset_id is set the core
+	// fills rows from the dataset after verification.
 	//
 	// Authority: model.
 	Rows [][]TableCell `json:"rows" alixai:"model"`
+
+	// Optional. Analyst dataset the core materialised this table from (ADR 0047).
+	//
+	// Authority: alixai.
+	DatasetID *analyst.DatasetID `json:"dataset_id,omitzero" alixai:"alixai"`
+
+	// Optional source label for the block as a whole.
+	//
+	// Authority: alixai.
+	Source *analyst.SourceLabel `json:"source,omitzero" alixai:"alixai"`
 }
 
 // MarshalJSON encodes the value with its const members forced to the value the
@@ -816,4 +1269,50 @@ func (v *TableColumnKind) UnmarshalJSON(data []byte) error {
 	}
 	*v = TableColumnKind(raw)
 	return nil
+}
+
+// TimelineBlock mirrors urn:alixai:schema:conversation:rich-block:v1#/$defs/timelineBlock.
+//
+// A sequence of dated events from a dataset (ADR 0047).
+type TimelineBlock struct {
+	// Authority: alixai.
+	Type string `json:"type" alixai:"alixai"`
+
+	// Authority: model.
+	Title *PlainText `json:"title,omitzero" alixai:"model"`
+
+	// Authority: alixai.
+	Events []TimelineEvent `json:"events" alixai:"alixai"`
+
+	// Authority: alixai.
+	DatasetID *analyst.DatasetID `json:"dataset_id,omitzero" alixai:"alixai"`
+
+	// Authority: alixai.
+	Source *analyst.SourceLabel `json:"source,omitzero" alixai:"alixai"`
+}
+
+// MarshalJSON encodes the value with its const members forced to the value the
+// schema fixes and with required arrays and maps never null.
+func (v TimelineBlock) MarshalJSON() ([]byte, error) {
+	type plain TimelineBlock
+	a := plain(v)
+	a.Type = "timeline"
+	if a.Events == nil {
+		a.Events = []TimelineEvent{}
+	}
+	return json.Marshal(a)
+}
+
+// TimelineEvent mirrors urn:alixai:schema:conversation:rich-block:v1#/$defs/timelineEvent.
+type TimelineEvent struct {
+	// ISO-8601 date or datetime.
+	//
+	// Authority: alixai.
+	At string `json:"at" alixai:"alixai"`
+
+	// Authority: alixai.
+	Label PlainText `json:"label" alixai:"alixai"`
+
+	// Authority: alixai.
+	Detail *PlainText `json:"detail,omitzero" alixai:"alixai"`
 }

@@ -46,8 +46,8 @@ func TestErrCodesMatchGolden(t *testing.T) {
 
 func TestErrCodesAreWellFormed(t *testing.T) {
 	codes := AllErrCodes()
-	if len(codes) != 25 {
-		t.Fatalf("taxonomy has %d codes, want 25", len(codes))
+	if len(codes) != 34 {
+		t.Fatalf("taxonomy has %d codes, want 34", len(codes))
 	}
 	seen := map[ErrCode]bool{}
 	for _, c := range codes {

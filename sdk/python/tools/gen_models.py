@@ -45,7 +45,7 @@ GEN_DIR = SDK_ROOT / "src" / "alixai" / "gen"
 GEN_PACKAGE = "alixai.gen"
 
 # The JSON Schema areas the SDK needs: a type of one of them is what the API sends and receives.
-AREAS = ("common", "actions", "conversation", "decision", "providers", "readiness", "memory")
+AREAS = ("common", "actions", "conversation", "decision", "providers", "readiness", "memory", "analyst")
 # The OpenAPI documents whose components are generated: the root and the areas the SDK implements.
 API_DOCUMENTS = ("openapi.yaml", "paths/sessions.yaml", "paths/actions.yaml", "paths/apps.yaml", "paths/providers.yaml", "paths/oauth.yaml")
 

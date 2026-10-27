@@ -99,7 +99,7 @@ class ProgressEvent(BaseModel):
     type: Literal["progress"]
     turn_id: TurnId
     seq: Seq
-    stage: Literal["interpreting", "retrieving", "sources", "validating", "preparing", "committing", "tool_call", "queued", "generating", "verifying"]
+    stage: Literal["interpreting", "retrieving", "sources", "validating", "preparing", "committing", "tool_call", "queued", "generating", "verifying", "analyst_read", "analyst_compute", "analyst_search", "analyst_fetch", "analyst_answer"]
     state: Literal["started", "progress", "completed", "failed"]
     percent: Optional[Annotated[int, Field(ge=0, le=100)]] = None
     capability_id: Optional[CapabilityId] = None

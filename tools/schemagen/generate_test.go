@@ -427,7 +427,8 @@ func TestSchemaConstructs(t *testing.T) {
 			t.Errorf("RichBlock methods = %v, want MarshalJSON and UnmarshalJSON", m)
 		}
 		variants := []string{"MarkdownBlock", "CodeBlock", "TableBlock", "ChartBlock", "DiagramBlock",
-			"CitationListBlock", "ActionCardBlock", "ClarificationChoicesBlock", "ConfirmationPanelBlock"}
+			"CitationListBlock", "ActionCardBlock", "ClarificationChoicesBlock", "ConfirmationPanelBlock",
+			"KpiBlock", "TimelineBlock", "RecordCardBlock", "ProvenanceBlock", "DraftBlock"}
 		for _, v := range variants {
 			if methods(rb, v)["isRichBlock"] != 1 {
 				t.Errorf("%s does not implement the RichBlock union", v)

@@ -21,6 +21,7 @@ export const ME_OPERATIONS = {
   cancelPrincipalOAuthFlow: { method: "DELETE", path: "/v1/me/oauth/flows/{flow_id}", safe: false },
   getMeUsage: { method: "GET", path: "/v1/me/usage", safe: true },
   getMeBudget: { method: "GET", path: "/v1/me/budget", safe: true },
+  getPrincipalAnalyst: { method: "GET", path: "/v1/me/analyst", safe: true },
 } as const satisfies Record<string, MeOperationSpec>;
 
 export type MeOperationId = keyof typeof ME_OPERATIONS;

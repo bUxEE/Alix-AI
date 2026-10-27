@@ -1,5 +1,6 @@
 import type { Caller } from "../call.js";
 import { sdkError } from "../errors.js";
+import type { Abilities } from "../gen/analyst/abilities.js";
 import type { MeBudget } from "../gen/providers/me-budget.js";
 import type { MeUsage } from "../gen/providers/me-usage.js";
 import type { PrincipalLlm } from "../gen/providers/principal-llm.js";
@@ -93,6 +94,8 @@ export interface MeApi {
   usage: (query?: MeUsageQuery, options?: CallOptions) => Promise<MeUsage>;
   /** The caller's own principal budgets and states (`GET /v1/me/budget`). */
   budget: (options?: CallOptions) => Promise<MeBudget>;
+  /** Effective analyst abilities (`GET /v1/me/analyst`, ADR 0047). */
+  analyst: (options?: CallOptions) => Promise<Abilities>;
   llm: {
     get: (options?: CallOptions) => Promise<PrincipalLlm>;
     putRole: (role: PrincipalLlmRole | string, body: PrincipalLlmBindingUpdate, options?: CallOptions) => Promise<PrincipalLlm>;
@@ -170,6 +173,14 @@ const isMeUsage = (value: unknown): value is MeUsage =>
 const isMeBudget = (value: unknown): value is MeBudget =>
   isRecord(value) && Array.isArray(value["budgets"]) && Array.isArray(value["states"]);
 
+const isAbilities = (value: unknown): value is Abilities =>
+  isRecord(value) &&
+  typeof value["enabled"] === "boolean" &&
+  typeof value["analyst_capable"] === "boolean" &&
+  isRecord(value["abilities"]) &&
+  isRecord(value["disabled_reasons"]) &&
+  typeof value["resolved_at"] === "string";
+
 /** Builds the me area over a caller. */
 export const createMeApi = (caller: Caller): MeApi => {
   const json = <T>(
@@ -213,6 +224,8 @@ export const createMeApi = (caller: Caller): MeApi => {
     },
 
     budget: async (options) => json("getMeBudget", {}, isMeBudget, "me budget", options),
+
+    analyst: async (options) => json("getPrincipalAnalyst", {}, isAbilities, "me analyst", options),
 
     llm: {
       get: async (options) => json("getPrincipalLlm", {}, isPrincipalLlm, "principal llm", options),

@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:analyst:web-citation:v1",
+  "title": "WebCitation",
+  "description": "Citation for a web-derived claim (ADR 0047). Assembled by the core after fetch. Every web number in the answer must appear in the fetched text of its citation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "url", "title", "retrieved_at", "source_label"],
+  "properties": {
+    "id": {
+      "description": "Core-minted citation id (prefix wcit_).",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "minLength": 4,
+      "maxLength": 64,
+      "pattern": "^wcit_[a-z0-9][a-z0-9_]{2,60}$"
+    },
+    "url": {
+      "description": "Fetched https URL.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 2048,
+      "pattern": "^https://[A-Za-z0-9._~:/?#\\[\\]@!$&'()*+,;=%-]+$"
+    },
+    "title": {
+      "description": "Page title as retrieved (sanitised plain text).",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "retrieved_at": {
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:common:timestamps:v1#/$defs/timestamp"
+    },
+    "snippet": {
+      "description": "Optional short excerpt used for verification display.",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "source_label": {
+      "x-alixai-authority": "alixai",
+      "const": "web"
+    }
+  }
+}

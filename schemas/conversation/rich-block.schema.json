@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:alixai:schema:conversation:rich-block:v1",
   "title": "RichBlock",
-  "description": "One block of a rich assistant message (master plan 14.1): markdown, code, table, chart, diagram, citation_list, action_card, clarification_choices or confirmation_panel, discriminated by type. Blocks are data, never executable HTML or JavaScript: no block has a URL, a path, an expression, a script, a callback or an HTML member, and every fixed-shape object forbids additional properties. Free content (markdown text, code, table cells, chart data, diagram source) is 'model' authority: it is verified against the DialogueDirective, sanitised in the core (M3-05) and treated as untrusted by the renderer. Blocks that present application state (action_card, confirmation_panel, citation_list, clarification_choices) are assembled by the core from PreparedActions, ActionReceipts, citations and adapter results, so their identifying and factual members are 'alixai' or 'host'. The host application decides which renderers are enabled; a client that does not support a type shows the text alternative.",
+  "description": "One block of a rich assistant message (master plan 14.1, ADR 0047): markdown, code, table, chart, diagram, citation_list, action_card, clarification_choices, confirmation_panel, plus analyst blocks kpi, timeline, record_card, provenance and draft, discriminated by type. Blocks are data, never executable HTML or JavaScript: no block has a path, an expression, a script, a callback or an HTML member (web citations may carry https URLs), and every fixed-shape object forbids additional properties. Free content (markdown text, code, table cells, chart data, diagram source, draft body) is 'model' authority: it is verified against the DialogueDirective / analyst facts, sanitised in the core (M3-05) and treated as untrusted by the renderer. Blocks that present application state (action_card, confirmation_panel, citation_list, clarification_choices, provenance) are assembled by the core from PreparedActions, ActionReceipts, citations, datasets and adapter results, so their identifying and factual members are 'alixai' or 'host'. The host application decides which renderers are enabled; a client that does not support a type shows the text alternative or a table fallback. New types are emitted only when the client announced support.",
   "oneOf": [
     { "$ref": "#/$defs/markdownBlock" },
     { "$ref": "#/$defs/codeBlock" },
@@ -12,7 +12,12 @@
     { "$ref": "#/$defs/citationListBlock" },
     { "$ref": "#/$defs/actionCardBlock" },
     { "$ref": "#/$defs/clarificationChoicesBlock" },
-    { "$ref": "#/$defs/confirmationPanelBlock" }
+    { "$ref": "#/$defs/confirmationPanelBlock" },
+    { "$ref": "#/$defs/kpiBlock" },
+    { "$ref": "#/$defs/timelineBlock" },
+    { "$ref": "#/$defs/recordCardBlock" },
+    { "$ref": "#/$defs/provenanceBlock" },
+    { "$ref": "#/$defs/draftBlock" }
   ],
   "$defs": {
     "plainText": {
@@ -91,7 +96,7 @@
           "items": { "$ref": "#/$defs/tableColumn" }
         },
         "rows": {
-          "description": "Row data. Each row is an array of cells in column order.",
+          "description": "Row data. Each row is an array of cells in column order. When dataset_id is set the core fills rows from the dataset after verification.",
           "x-alixai-authority": "model",
           "type": "array",
           "maxItems": 1000,
@@ -100,6 +105,16 @@
             "maxItems": 32,
             "items": { "$ref": "#/$defs/tableCell" }
           }
+        },
+        "dataset_id": {
+          "description": "Optional. Analyst dataset the core materialised this table from (ADR 0047).",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:analyst:shared:v1#/$defs/datasetId"
+        },
+        "source": {
+          "description": "Optional source label for the block as a whole.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:analyst:shared:v1#/$defs/sourceLabel"
         }
       }
     },
@@ -158,13 +173,34 @@
           "maxLength": 1000
         },
         "mark": {
-          "description": "The mark type.",
+          "description": "The mark type. Additive analyst marks (ADR 0047): scatter, heatmap, combo_bar_line. Grouped/stacked/horizontal bars use mark bar plus bar_layout; donut uses mark pie plus pie_style. Clients that do not announce a mark or layout receive a table or text fallback.",
           "x-alixai-authority": "model",
           "type": "string",
-          "enum": ["bar", "line", "area", "point", "pie"]
+          "enum": [
+            "bar",
+            "line",
+            "area",
+            "point",
+            "pie",
+            "scatter",
+            "heatmap",
+            "combo_bar_line"
+          ]
+        },
+        "bar_layout": {
+          "description": "Optional. With mark bar: grouped, stacked or horizontal (ADR 0047).",
+          "x-alixai-authority": "model",
+          "type": "string",
+          "enum": ["grouped", "stacked", "horizontal"]
+        },
+        "pie_style": {
+          "description": "Optional. With mark pie: donut draws with a hole (ADR 0047).",
+          "x-alixai-authority": "model",
+          "type": "string",
+          "enum": ["donut"]
         },
         "data": {
-          "description": "Inline data: an array of records, each a flat object of scalar values keyed by field name. Never a URL.",
+          "description": "Inline data: an array of records, each a flat object of scalar values keyed by field name. Never a URL. When dataset_id is set the core may fill data from the dataset.",
           "x-alixai-authority": "model",
           "type": "array",
           "minItems": 1,
@@ -175,6 +211,16 @@
           "description": "Which data field drives which visual channel.",
           "x-alixai-authority": "model",
           "$ref": "#/$defs/chartEncoding"
+        },
+        "dataset_id": {
+          "description": "Optional. Analyst dataset the core materialised chart data from (ADR 0047).",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:analyst:shared:v1#/$defs/datasetId"
+        },
+        "source": {
+          "description": "Optional source label for the block as a whole.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:analyst:shared:v1#/$defs/sourceLabel"
         }
       },
       "if": {
@@ -221,7 +267,7 @@
       ]
     },
     "chartEncoding": {
-      "description": "Channel to field mappings. A cartesian mark (bar, line, area, point) uses x and y and may add color; a pie uses theta and color. Channels hold a field name and a type, never an expression.",
+      "description": "Channel to field mappings. A cartesian mark (bar, line, area, point, scatter, heatmap, combo_bar_line) uses x and y and may add color, y2 or size; a pie (including pie_style donut) uses theta and color. Channels hold a field name and a type, never an expression.",
       "type": "object",
       "additionalProperties": false,
       "minProperties": 1,
@@ -232,17 +278,27 @@
           "$ref": "#/$defs/chartChannel"
         },
         "y": {
-          "description": "Vertical position.",
+          "description": "Vertical position (or bar length for horizontal_bar).",
+          "x-alixai-authority": "model",
+          "$ref": "#/$defs/chartChannel"
+        },
+        "y2": {
+          "description": "Secondary series for combo_bar_line (typically the line).",
           "x-alixai-authority": "model",
           "$ref": "#/$defs/chartChannel"
         },
         "color": {
-          "description": "Series or slice colour.",
+          "description": "Series, slice or heatmap colour.",
+          "x-alixai-authority": "model",
+          "$ref": "#/$defs/chartChannel"
+        },
+        "size": {
+          "description": "Point size for scatter.",
           "x-alixai-authority": "model",
           "$ref": "#/$defs/chartChannel"
         },
         "theta": {
-          "description": "Angle of a pie slice.",
+          "description": "Angle of a pie or donut slice.",
           "x-alixai-authority": "model",
           "$ref": "#/$defs/chartChannel"
         }
@@ -485,6 +541,267 @@
           }
         }
       ]
+    },
+    "kpiBlock": {
+      "description": "A single KPI tile (ADR 0047). Values are core-filled from verified facts; the model proposes labels only via the block plan.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "label", "value"],
+      "properties": {
+        "type": {
+          "x-alixai-authority": "alixai",
+          "const": "kpi"
+        },
+        "label": {
+          "x-alixai-authority": "model",
+          "$ref": "#/$defs/plainText",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "value": {
+          "description": "Verified numeric or string value.",
+          "x-alixai-authority": "alixai",
+          "type": ["string", "number"],
+          "maxLength": 128
+        },
+        "delta": {
+          "description": "Optional verified change vs a prior period.",
+          "x-alixai-authority": "alixai",
+          "type": ["string", "number", "null"],
+          "maxLength": 128
+        },
+        "period": {
+          "x-alixai-authority": "model",
+          "$ref": "#/$defs/plainText",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "unit": {
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "source": {
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:analyst:shared:v1#/$defs/sourceLabel"
+        },
+        "dataset_id": {
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:analyst:shared:v1#/$defs/datasetId"
+        }
+      }
+    },
+    "timelineBlock": {
+      "description": "A sequence of dated events from a dataset (ADR 0047).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "events"],
+      "properties": {
+        "type": {
+          "x-alixai-authority": "alixai",
+          "const": "timeline"
+        },
+        "title": {
+          "x-alixai-authority": "model",
+          "$ref": "#/$defs/plainText",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "events": {
+          "x-alixai-authority": "alixai",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 200,
+          "items": { "$ref": "#/$defs/timelineEvent" }
+        },
+        "dataset_id": {
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:analyst:shared:v1#/$defs/datasetId"
+        },
+        "source": {
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:analyst:shared:v1#/$defs/sourceLabel"
+        }
+      }
+    },
+    "timelineEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["at", "label"],
+      "properties": {
+        "at": {
+          "description": "ISO-8601 date or datetime.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 40
+        },
+        "label": {
+          "x-alixai-authority": "alixai",
+          "$ref": "#/$defs/plainText",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "detail": {
+          "x-alixai-authority": "alixai",
+          "$ref": "#/$defs/plainText",
+          "minLength": 1,
+          "maxLength": 1024
+        }
+      }
+    },
+    "recordCardBlock": {
+      "description": "Key-value card for one host record (ADR 0047).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "title", "fields"],
+      "properties": {
+        "type": {
+          "x-alixai-authority": "alixai",
+          "const": "record_card"
+        },
+        "title": {
+          "x-alixai-authority": "host",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "fields": {
+          "x-alixai-authority": "host",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/recordCardField" }
+        },
+        "dataset_id": {
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:analyst:shared:v1#/$defs/datasetId"
+        },
+        "source": {
+          "x-alixai-authority": "alixai",
+          "const": "app"
+        }
+      }
+    },
+    "recordCardField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "label", "value"],
+      "properties": {
+        "key": {
+          "x-alixai-authority": "host",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/fieldName"
+        },
+        "label": {
+          "x-alixai-authority": "host",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "value": {
+          "x-alixai-authority": "host",
+          "type": ["string", "number", "boolean", "null"],
+          "maxLength": 1024
+        }
+      }
+    },
+    "provenanceBlock": {
+      "description": "How an analyst answer was calculated: reads, ops and forecast methods (ADR 0047). Assembled by the core.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "steps"],
+      "properties": {
+        "type": {
+          "x-alixai-authority": "alixai",
+          "const": "provenance"
+        },
+        "title": {
+          "x-alixai-authority": "alixai",
+          "$ref": "#/$defs/plainText",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "steps": {
+          "x-alixai-authority": "alixai",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/provenanceStep" }
+        }
+      }
+    },
+    "provenanceStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "summary"],
+      "properties": {
+        "kind": {
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "enum": ["read", "compute", "forecast", "search", "fetch"]
+        },
+        "summary": {
+          "x-alixai-authority": "alixai",
+          "$ref": "#/$defs/plainText",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "capability_id": {
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:common:ids:v1#/$defs/capabilityId"
+        },
+        "op": {
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "dataset_id": {
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:analyst:shared:v1#/$defs/datasetId"
+        },
+        "web_citation_id": {
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 64
+        }
+      }
+    },
+    "draftBlock": {
+      "description": "A generated document draft (ADR 0047). Saving it is a host capability action, never automatic. App data quoted in the body follows the same tracing rules as answer text.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "title", "format", "body"],
+      "properties": {
+        "type": {
+          "x-alixai-authority": "alixai",
+          "const": "draft"
+        },
+        "title": {
+          "x-alixai-authority": "model",
+          "$ref": "#/$defs/plainText",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "format": {
+          "x-alixai-authority": "model",
+          "type": "string",
+          "enum": ["markdown", "plain"]
+        },
+        "body": {
+          "x-alixai-authority": "model",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100000
+        },
+        "source": {
+          "description": "Dominant source label; mixed drafts may omit and rely on source_spans.",
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:analyst:shared:v1#/$defs/sourceLabel"
+        }
+      }
     }
   }
 }

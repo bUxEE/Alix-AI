@@ -510,22 +510,27 @@ type ProgressEventStage string
 
 // The valid values of ProgressEventStage.
 const (
-	ProgressEventStageInterpreting ProgressEventStage = "interpreting"
-	ProgressEventStageRetrieving   ProgressEventStage = "retrieving"
-	ProgressEventStageSources      ProgressEventStage = "sources"
-	ProgressEventStageValidating   ProgressEventStage = "validating"
-	ProgressEventStagePreparing    ProgressEventStage = "preparing"
-	ProgressEventStageCommitting   ProgressEventStage = "committing"
-	ProgressEventStageToolCall     ProgressEventStage = "tool_call"
-	ProgressEventStageQueued       ProgressEventStage = "queued"
-	ProgressEventStageGenerating   ProgressEventStage = "generating"
-	ProgressEventStageVerifying    ProgressEventStage = "verifying"
+	ProgressEventStageInterpreting   ProgressEventStage = "interpreting"
+	ProgressEventStageRetrieving     ProgressEventStage = "retrieving"
+	ProgressEventStageSources        ProgressEventStage = "sources"
+	ProgressEventStageValidating     ProgressEventStage = "validating"
+	ProgressEventStagePreparing      ProgressEventStage = "preparing"
+	ProgressEventStageCommitting     ProgressEventStage = "committing"
+	ProgressEventStageToolCall       ProgressEventStage = "tool_call"
+	ProgressEventStageQueued         ProgressEventStage = "queued"
+	ProgressEventStageGenerating     ProgressEventStage = "generating"
+	ProgressEventStageVerifying      ProgressEventStage = "verifying"
+	ProgressEventStageAnalystRead    ProgressEventStage = "analyst_read"
+	ProgressEventStageAnalystCompute ProgressEventStage = "analyst_compute"
+	ProgressEventStageAnalystSearch  ProgressEventStage = "analyst_search"
+	ProgressEventStageAnalystFetch   ProgressEventStage = "analyst_fetch"
+	ProgressEventStageAnalystAnswer  ProgressEventStage = "analyst_answer"
 )
 
 // Valid reports whether v is one of the values the schema lists.
 func (v ProgressEventStage) Valid() bool {
 	switch v {
-	case ProgressEventStageInterpreting, ProgressEventStageRetrieving, ProgressEventStageSources, ProgressEventStageValidating, ProgressEventStagePreparing, ProgressEventStageCommitting, ProgressEventStageToolCall, ProgressEventStageQueued, ProgressEventStageGenerating, ProgressEventStageVerifying:
+	case ProgressEventStageInterpreting, ProgressEventStageRetrieving, ProgressEventStageSources, ProgressEventStageValidating, ProgressEventStagePreparing, ProgressEventStageCommitting, ProgressEventStageToolCall, ProgressEventStageQueued, ProgressEventStageGenerating, ProgressEventStageVerifying, ProgressEventStageAnalystRead, ProgressEventStageAnalystCompute, ProgressEventStageAnalystSearch, ProgressEventStageAnalystFetch, ProgressEventStageAnalystAnswer:
 		return true
 	}
 	return false

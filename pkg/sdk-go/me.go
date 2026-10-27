@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"time"
 
+	an "github.com/buxee/alix-ai/pkg/contracts/gen/analyst"
 	pv "github.com/buxee/alix-ai/pkg/contracts/gen/providers"
 )
 
@@ -216,9 +217,22 @@ func (m *MeClient) Budget(ctx context.Context, options ...CallOption) (*pv.MeBud
 	return doJSON(ctx, m.c.t, req, applyOptions(options).deadline(m.c.timeout), checkMeBudget)
 }
 
+// Analyst returns the caller's effective analyst abilities (GET /v1/me/analyst, ADR 0047).
+func (m *MeClient) Analyst(ctx context.Context, options ...CallOption) (*an.Abilities, error) {
+	req := request{op: opGetPrincipalAnalyst, accept: "application/json"}
+	return doJSON(ctx, m.c.t, req, applyOptions(options).deadline(m.c.timeout), checkAnalyst)
+}
+
 func checkMeUsage(u *pv.MeUsage) error {
 	if u.Groups == nil {
 		return fmt.Errorf("me usage: groups must be present")
+	}
+	return nil
+}
+
+func checkAnalyst(a *an.Abilities) error {
+	if a == nil {
+		return fmt.Errorf("me analyst: body is required")
 	}
 	return nil
 }

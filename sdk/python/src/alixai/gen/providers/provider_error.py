@@ -30,7 +30,7 @@ class ProviderError(BaseModel):
     occurred_at: Timestamp
     provider: ProviderRef
     kind: ProviderErrorKind
-    code: Literal["scope_missing", "unauthenticated", "permission_denied", "scope_violation", "schema_invalid", "unknown_capability", "ambiguous", "missing_fields", "validation_failed", "stale", "expired", "replayed", "confirmation_required", "step_up_required", "conflict", "unavailable", "degraded", "timeout", "rate_limited", "resource_exhausted", "no_supported_evidence", "uncertain_outcome", "partial_failure", "quarantined", "internal"]
+    code: Literal["scope_missing", "unauthenticated", "permission_denied", "scope_violation", "schema_invalid", "unknown_capability", "ambiguous", "missing_fields", "validation_failed", "stale", "expired", "replayed", "confirmation_required", "step_up_required", "conflict", "unavailable", "degraded", "timeout", "rate_limited", "resource_exhausted", "no_supported_evidence", "uncertain_outcome", "partial_failure", "quarantined", "out_of_domain", "ability_disabled", "model_not_analyst_capable", "insufficient_data", "web_query_refused", "analyst_cap_exceeded", "unit_mismatch", "forecast_unavailable", "domain_classification_failed", "internal"]
     retryable: bool
     message: Annotated[str, Field(min_length=1, max_length=512, pattern='^[^\\x00-\\x1f\\x7f]+$')]
     status: Optional[Annotated[int, Field(ge=100, le=599)]]

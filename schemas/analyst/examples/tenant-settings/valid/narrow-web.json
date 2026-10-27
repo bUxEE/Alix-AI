@@ -1,0 +1,18 @@
+{
+  "enabled": true,
+  "abilities": {
+    "loop": true,
+    "compute": true,
+    "forecasts": false,
+    "presentation": true,
+    "drafts": false,
+    "knowledge": true,
+    "web_search": true,
+    "web_fetch": true
+  },
+  "web": {
+    "allow_hosts": ["gov.it"],
+    "deny_hosts": []
+  },
+  "updated_at": "2026-10-27T09:00:00Z"
+}

@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:alixai:schema:analyst:derived-fact:v1",
+  "title": "DerivedFact",
+  "description": "One core-computed scalar or named entity the verifier accepts as a fact (ADR 0047). Provenance ties it to compute inputs; forecasts carry method, horizon and interval.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "label", "value", "data_class", "provenance"],
+  "properties": {
+    "id": {
+      "description": "Core-minted fact id (prefix df_).",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "minLength": 4,
+      "maxLength": 64,
+      "pattern": "^df_[a-z0-9][a-z0-9_]{2,60}$"
+    },
+    "label": {
+      "description": "Stable label the model and verifier use (e.g. revenue_2025_sum).",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-z][a-z0-9_]{0,127}$"
+    },
+    "value": {
+      "description": "The fact value after rounding.",
+      "x-alixai-authority": "alixai",
+      "type": ["string", "number", "boolean", "null"],
+      "maxLength": 4096
+    },
+    "display": {
+      "description": "Canonical display string the verifier accepts (one of the numberFormat forms).",
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "unit": {
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32
+    },
+    "currency": {
+      "x-alixai-authority": "alixai",
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "data_class": {
+      "x-alixai-authority": "alixai",
+      "$ref": "urn:alixai:schema:analyst:shared:v1#/$defs/dataClass"
+    },
+    "source_label": {
+      "description": "Always computed for derived facts.",
+      "x-alixai-authority": "alixai",
+      "const": "computed"
+    },
+    "provenance": {
+      "x-alixai-authority": "alixai",
+      "$ref": "#/$defs/derivedProvenance"
+    },
+    "forecast": {
+      "description": "Present when the value is a forecast estimate.",
+      "x-alixai-authority": "alixai",
+      "$ref": "#/$defs/forecastMeta"
+    }
+  },
+  "$defs": {
+    "derivedProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["op", "input_dataset_ids", "params", "rounding"],
+      "properties": {
+        "op": {
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+        },
+        "input_dataset_ids": {
+          "x-alixai-authority": "alixai",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": { "$ref": "urn:alixai:schema:analyst:shared:v1#/$defs/datasetId" }
+        },
+        "params": {
+          "x-alixai-authority": "alixai",
+          "type": "object",
+          "maxProperties": 32,
+          "additionalProperties": {
+            "oneOf": [
+              { "type": "string", "maxLength": 1024 },
+              { "type": "number" },
+              { "type": "boolean" },
+              { "type": "null" },
+              {
+                "type": "array",
+                "maxItems": 64,
+                "items": { "type": ["string", "number", "boolean", "null"], "maxLength": 1024 }
+              }
+            ]
+          }
+        },
+        "rounding": {
+          "x-alixai-authority": "alixai",
+          "$ref": "#/$defs/rounding"
+        }
+      }
+    },
+    "rounding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "decimals"],
+      "properties": {
+        "mode": {
+          "x-alixai-authority": "alixai",
+          "$ref": "urn:alixai:schema:analyst:shared:v1#/$defs/roundingMode"
+        },
+        "decimals": {
+          "description": "Decimal places kept for numeric facts (0–8). Percentages use the same scale on the percent value.",
+          "x-alixai-authority": "alixai",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8
+        }
+      }
+    },
+    "forecastMeta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "horizon", "interval_low", "interval_high"],
+      "properties": {
+        "method": {
+          "description": "Forecast method. Must be stated in the answer text.",
+          "x-alixai-authority": "alixai",
+          "type": "string",
+          "enum": ["linear_trend", "holt", "seasonal_naive"]
+        },
+        "horizon": {
+          "description": "Steps ahead (periods in the series bucket).",
+          "x-alixai-authority": "alixai",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 36
+        },
+        "interval_low": {
+          "description": "Lower bound of the prediction interval (same unit as value).",
+          "x-alixai-authority": "alixai",
+          "type": "number"
+        },
+        "interval_high": {
+          "description": "Upper bound of the prediction interval.",
+          "x-alixai-authority": "alixai",
+          "type": "number"
+        },
+        "confidence": {
+          "description": "Nominal interval coverage, e.g. 0.8 or 0.95.",
+          "x-alixai-authority": "alixai",
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 0.99
+        }
+      }
+    }
+  }
+}

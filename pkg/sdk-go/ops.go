@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"time"
+
+	an "github.com/buxee/alix-ai/pkg/contracts/gen/analyst"
 )
 
 // OpsClient is the operator operations surface (erasure, 1.3.0).
@@ -160,4 +162,26 @@ func (o *OpsClient) DeletePrincipalPrivateLlm(ctx context.Context, principalID s
 	}
 	req := request{op: opDeletePrincipalPrivateLlm, params: map[string]string{"principal_id": principalID}}
 	return doEmpty(ctx, o.c.t, req, applyOptions(options).deadline(o.c.timeout))
+}
+
+// GetTenantAnalyst reads a tenant's analyst ability ceilings (ADR 0047).
+func (o *OpsClient) GetTenantAnalyst(ctx context.Context, tenantID string, options ...CallOption) (*an.TenantSettings, error) {
+	if tenantID == "" {
+		return nil, invalidArgument("tenantID", "it is required")
+	}
+	req := request{op: opGetTenantAnalyst, params: map[string]string{"tenant_id": tenantID}, accept: "application/json"}
+	return doJSON(ctx, o.c.t, req, applyOptions(options).deadline(o.c.timeout), func(*an.TenantSettings) error { return nil })
+}
+
+// PutTenantAnalyst replaces a tenant's analyst ability ceilings (ADR 0047). Tenant may only narrow.
+func (o *OpsClient) PutTenantAnalyst(ctx context.Context, tenantID string, body an.TenantSettings, options ...CallOption) (*an.TenantSettings, error) {
+	if tenantID == "" {
+		return nil, invalidArgument("tenantID", "it is required")
+	}
+	raw, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	req := request{op: opPutTenantAnalyst, params: map[string]string{"tenant_id": tenantID}, accept: "application/json", contentType: "application/json", body: raw}
+	return doJSON(ctx, o.c.t, req, applyOptions(options).deadline(o.c.timeout), func(*an.TenantSettings) error { return nil })
 }

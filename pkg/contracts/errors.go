@@ -88,6 +88,33 @@ const (
 	// ErrQuarantined: the application, package, source or capability is
 	// quarantined and may not execute.
 	ErrQuarantined ErrCode = "quarantined"
+	// ErrOutOfDomain: the user request is outside the application package's
+	// declared assistant domain (ADR 0047).
+	ErrOutOfDomain ErrCode = "out_of_domain"
+	// ErrAbilityDisabled: an analyst step used an ability that is off at
+	// deployment, application or tenant level (ADR 0047).
+	ErrAbilityDisabled ErrCode = "ability_disabled"
+	// ErrModelNotAnalystCapable: the resolved controller is not marked
+	// analyst_capable so analyst abilities cannot run (ADR 0047).
+	ErrModelNotAnalystCapable ErrCode = "model_not_analyst_capable"
+	// ErrInsufficientData: a compute or forecast op lacks enough rows or
+	// non-null points (ADR 0047).
+	ErrInsufficientData ErrCode = "insufficient_data"
+	// ErrWebQueryRefused: a web_query would carry confidential or restricted
+	// application values, or the host is not allowed (ADR 0047).
+	ErrWebQueryRefused ErrCode = "web_query_refused"
+	// ErrAnalystCapExceeded: an analyst turn hit a step, record, token, wall
+	// or cost cap (ADR 0047).
+	ErrAnalystCapExceeded ErrCode = "analyst_cap_exceeded"
+	// ErrUnitMismatch: a compute op combined fields with incompatible units
+	// or currencies (ADR 0047).
+	ErrUnitMismatch ErrCode = "unit_mismatch"
+	// ErrForecastUnavailable: a forecast op cannot run (series too short or
+	// ability forecasts off) (ADR 0047).
+	ErrForecastUnavailable ErrCode = "forecast_unavailable"
+	// ErrDomainClassificationFailed: the domain classifier failed closed
+	// (malformed or unavailable) so the analyst path does not proceed (ADR 0047).
+	ErrDomainClassificationFailed ErrCode = "domain_classification_failed"
 	// ErrInternal: an unexpected AlixAI fault. Fails closed.
 	ErrInternal ErrCode = "internal"
 )
@@ -122,6 +149,15 @@ var codeInfo = [...]struct {
 	{ErrUncertainOutcome, false},
 	{ErrPartialFailure, false},
 	{ErrQuarantined, false},
+	{ErrOutOfDomain, false},
+	{ErrAbilityDisabled, false},
+	{ErrModelNotAnalystCapable, false},
+	{ErrInsufficientData, false},
+	{ErrWebQueryRefused, false},
+	{ErrAnalystCapExceeded, false},
+	{ErrUnitMismatch, false},
+	{ErrForecastUnavailable, false},
+	{ErrDomainClassificationFailed, false},
 	{ErrInternal, false},
 }
 
