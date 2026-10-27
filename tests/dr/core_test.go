@@ -442,6 +442,106 @@ func sameReceipts(a, b []receiptRow) error {
 	return nil
 }
 
+// lateAuditTypes may land on a chain after a request returns and before a live
+// backup finishes; they are not part of a receipt's guarantee.
+var lateAuditTypes = map[string]bool{
+	"credentials.use": true,
+}
+
+// assertBackupHoldsBefore checks that the backup kept everything that existed
+// when backup create started. Extra events after the pre-backup head are only
+// allowed when every one is a lateAuditTypes background write.
+func assertBackupHoldsBefore(t *testing.T, cfgPath, backupDB string, before, fromBackup snapshot) {
+	t.Helper()
+	if err := sameReceipts(before.Receipts, fromBackup.Receipts); err != nil {
+		t.Fatalf("the backup's receipts are not what existed before backup create: %v", err)
+	}
+	if fromBackup.Turns != before.Turns || fromBackup.TurnsDigest != before.TurnsDigest {
+		t.Fatalf("the backup's transcript is not what existed before backup create: %d turns digest %s, want %d %s",
+			fromBackup.Turns, fromBackup.TurnsDigest, before.Turns, before.TurnsDigest)
+	}
+	db := openDB(t, cfgPath, backupDB)
+	defer db.Close()
+	for _, b := range before.Chains {
+		a, ok := fromBackup.chain(b.Chain)
+		if !ok {
+			t.Fatalf("the backup lost audit chain %s", b.Chain)
+		}
+		if a.Events < b.Events {
+			t.Fatalf("the backup dropped events on %s: %d, had %d before backup create", b.Chain, a.Events, b.Events)
+		}
+		got, err := eventHashAt(db, b.Chain, b.Events)
+		if err != nil {
+			t.Fatalf("read the pre-backup head of %s in the backup: %v", b.Chain, err)
+		}
+		if got != b.HeadHash {
+			t.Fatalf("the backup's chain %s does not keep the pre-backup head: at seq %d hash %s, want %s",
+				b.Chain, b.Events, got, b.HeadHash)
+		}
+		if a.Events == b.Events {
+			continue
+		}
+		extra, err := eventTypesAfter(db, b.Chain, b.Events)
+		if err != nil {
+			t.Fatalf("list the extra events of %s in the backup: %v", b.Chain, err)
+		}
+		for typ := range extra {
+			if !lateAuditTypes[typ] {
+				t.Fatalf("the backup grew chain %s after the pre-backup snapshot with non-background events: %v", b.Chain, extra)
+			}
+		}
+	}
+}
+
+func splitChainName(name string) (app, tenant string, err error) {
+	app, ten, ok := strings.Cut(name, "/")
+	if !ok || app == "" {
+		return "", "", fmt.Errorf("bad chain %q", name)
+	}
+	if ten == "-" {
+		ten = ""
+	}
+	return app, ten, nil
+}
+
+func eventHashAt(db *store.DB, chain string, seq int64) (string, error) {
+	app, tenant, err := splitChainName(chain)
+	if err != nil {
+		return "", err
+	}
+	var hash string
+	err = db.QueryRowContext(context.Background(),
+		`SELECT hash FROM audit_events WHERE application_id = ? AND tenant_id = ? AND chain_seq = ?`,
+		app, tenant, seq).Scan(&hash)
+	return hash, err
+}
+
+func eventTypesAfter(db *store.DB, chain string, afterSeq int64) (map[string]int, error) {
+	app, tenant, err := splitChainName(chain)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := db.QueryContext(context.Background(),
+		`SELECT event_type, count(*) FROM audit_events
+		 WHERE application_id = ? AND tenant_id = ? AND chain_seq > ?
+		 GROUP BY event_type ORDER BY event_type`,
+		app, tenant, afterSeq)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[string]int{}
+	for rows.Next() {
+		var typ string
+		var n int
+		if err := rows.Scan(&typ, &n); err != nil {
+			return nil, err
+		}
+		out[typ] = n
+	}
+	return out, rows.Err()
+}
+
 // Summary is the one line the evidence report gives for a database: counts, and that the chains verify.
 func (s snapshot) Summary() string {
 	events := int64(0)

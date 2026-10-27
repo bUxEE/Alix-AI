@@ -35,8 +35,8 @@ type drState struct {
 	offMachine string
 	backupPub  string
 
-	atBackup  snapshot // the database when the backup was taken: receipt 1
-	afterWork snapshot // the database before the disaster: receipts 1 and 2
+	atBackup  snapshot // the backup's own alixai.db: receipt 1 and the chains the restore must match
+	afterWork snapshot // the live database before the disaster: receipts 1 and 2
 
 	backupDur, verifyDur time.Duration
 	backupBytes          int64
@@ -129,12 +129,16 @@ func setupBackedUp(t *testing.T, label string) *drState {
 
 	s.srv = d.startServe()
 	s.r1Body = bookThroughService(t, s.srv, s.w, s.r1)
-	s.atBackup = takeSnapshot(t, d.cfgPath, d.dbPath())
-	if err := s.atBackup.chainsOK(); err != nil {
+	beforeBackup := takeSnapshot(t, d.cfgPath, d.dbPath())
+	if err := beforeBackup.chainsOK(); err != nil {
 		t.Fatal(err)
 	}
 
-	// The backup, while the service is up.
+	// The backup, while the service is up. Expected restore state is taken from the
+	// backup's own database copy: the live chain can still grow after the booking
+	// returns (credentials.use on every MCP round-trip from background re-audit /
+	// Describe work on clinic-dr), and those events are not part of the receipt.
+	// beforeBackup still proves the backup kept everything that existed when create started.
 	backups := filepath.Join(d.root, "backups")
 	var created struct {
 		ID    string `json:"backup_id"`
@@ -147,6 +151,18 @@ func setupBackedUp(t *testing.T, label string) *drState {
 	}
 	s.backupID, s.backupDir, s.backupDur = created.ID, created.Dir, r.Dur
 	s.backupBytes = dirSize(created.Dir)
+	// Read a copy: opening the backup file in-process would change its bytes and
+	// break the signed manifest verify that follows.
+	backupDBCopy := filepath.Join(d.root, "at-backup-alixai.db")
+	copyFile(t, filepath.Join(created.Dir, "alixai.db"), backupDBCopy)
+	s.atBackup = takeSnapshot(t, d.cfgPath, backupDBCopy)
+	if err := s.atBackup.chainsOK(); err != nil {
+		t.Fatal(err)
+	}
+	if len(s.atBackup.Receipts) != 1 {
+		t.Fatalf("the backup must hold receipt 1: %s", s.atBackup)
+	}
+	assertBackupHoldsBefore(t, d.cfgPath, backupDBCopy, beforeBackup, s.atBackup)
 	if fi, err := os.Stat(filepath.Join(created.Dir, "alixai.db")); err == nil {
 		recordEnv("Database after "+fmt.Sprint(transcriptTurns)+" transcript turns, in a backup (VACUUM INTO, so compact)", fmt.Sprintf("%.1f MiB, including the history index and the audit chains", float64(fi.Size())/(1<<20)))
 	}

@@ -74,6 +74,13 @@ const (
 	askKnowledge = "What are the opening hours of the reception and which code do visitors need?"
 	askFree      = "Which appointments are free on 2026-10-14?"
 	askFreeLater = "Which appointments are free on 2026-10-15?"
+
+	// patientGivenA/B are the given names planted for each tenant. They must each contain a
+	// letter outside [0-9a-f]: family canaries are hex-shaped and the clinic host matches by
+	// substring, so purely hex names like "Ada"/"Bea" intermittently match the other tenant's
+	// probe against the caller's own family canary (a false cross-tenant failure).
+	patientGivenA = "Amy"
+	patientGivenB = "Zoe"
 )
 
 // turnsOf runs the turns of one tenant's conversation: a question for the documents, a search of the
@@ -147,8 +154,10 @@ func TestSecNoForeignTextInAnyPrompt(t *testing.T) {
 	}
 
 	// The seeds: the application's data of each tenant, and the documents of each.
-	w.plant(mA.tenant, mA.patientID, "Ada", mA.adapter)
-	w.plant(mB.tenant, mB.patientID, "Bea", mB.adapter)
+	// Given names must contain a letter outside the hex alphabet: family canaries are
+	// hex and the clinic matches names by substring, so "Ada"/"Bea" falsely hit own data.
+	w.plant(mA.tenant, mA.patientID, patientGivenA, mA.adapter)
+	w.plant(mB.tenant, mB.patientID, patientGivenB, mB.adapter)
 	srcA := w.addSource(scA, "docs-a", docFor(mA))
 	w.addSource(scB, "docs-b", docFor(mB))
 
@@ -180,14 +189,14 @@ func TestSecNoForeignTextInAnyPrompt(t *testing.T) {
 
 	// The conversations. B first, then A with the same questions, then B again: a leak through any state
 	// shared between the tenants would show in either direction.
-	w.turnsOf(scB, mB, "Bea")
-	w.turnsOf(scA, mA, "Ada")
+	w.turnsOf(scB, mB, patientGivenB)
+	w.turnsOf(scA, mA, patientGivenA)
 	// A asks for B's patient by name, and B for A's: the application answers each from its own data.
 	for _, c := range []struct {
 		sc    contracts.Scope
 		m     markers
 		other string
-	}{{scA, mA, "Bea"}, {scB, mB, "Ada"}} {
+	}{{scA, mA, patientGivenB}, {scB, mB, patientGivenA}} {
 		res := w.say(c.sc, clientFor(c.m), "Find the patient "+c.other)
 		wantAct(t, res, "present_result")
 		if n, _ := factOf(res, "patient_count"); n != "0" {
@@ -211,8 +220,8 @@ func TestSecNoForeignTextInAnyPrompt(t *testing.T) {
 	t.Run("no marker of one tenant is in any prompt sent for the other", func(t *testing.T) {
 		needlesB, needlesA := mB.needles(), mA.needles()
 		needlesB["tenant B's settings document"] = settingsDoc
-		needlesB["the other's patient (given name and record)"] = "Bea " + mB.adapter
-		needlesA["the other's patient (given name and record)"] = "Ada " + mA.adapter
+		needlesB["the other's patient (given name and record)"] = patientGivenB + " " + mB.adapter
+		needlesA["the other's patient (given name and record)"] = patientGivenA + " " + mA.adapter
 		if hits := scan(forA, needlesB); len(hits) != 0 {
 			t.Errorf("text of tenant B reached a prompt sent for tenant A:\n  %s", strings.Join(hits, "\n  "))
 		}
@@ -288,8 +297,8 @@ func TestSecNoForeignTextInAnyPrompt(t *testing.T) {
 		}
 		// The frame A gets beside B is the frame A gets alone.
 		alone := newWorld(t, []string{mA.tenant}, withRAG())
-		alone.plant(mA.tenant, mA.patientID, "Ada", mA.adapter)
-		alone.say(scA, clientFor(mA), "Find the patient Ada. Note for later: my locker code is "+mA.history)
+		alone.plant(mA.tenant, mA.patientID, patientGivenA, mA.adapter)
+		alone.say(scA, clientFor(mA), "Find the patient "+patientGivenA+". Note for later: my locker code is "+mA.history)
 		var ref string
 		for _, c := range forTenant(alone.sent(), mA.tenant) {
 			if c.Kind == "chat/constrained" && c.Model == "dialogue" {
@@ -332,7 +341,7 @@ func TestSecNoForeignTextInAnyPrompt(t *testing.T) {
 		}
 		// The history of A holds a message with B's marker.
 		before = w.mark()
-		w.say(scA, client{}, "Find the patient Ada. Note for later: my locker code is "+mB.history)
+		w.say(scA, client{}, "Find the patient "+patientGivenA+". Note for later: my locker code is "+mB.history)
 		w.say(scA, client{}, askFreeLater)
 		if hits := scan(fresh(), map[string]string{"a message of the history": mB.history}); len(hits) < 2 {
 			t.Errorf("the scan did not see B's marker in A's history, asked and replayed (hits: %v)", hits)
